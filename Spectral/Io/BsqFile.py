@@ -153,6 +153,7 @@ class BsqFile(SpyFile):
         colStartPos = colBounds[0] * self.sampleSize
 
         f = self.fid
+        f.seek(self.offset, 0)
         
         # Get the type of the Numeric array (must be a better way)
         ta = array(self.format)
@@ -214,6 +215,7 @@ class BsqFile(SpyFile):
         d_row = d_band * self.nBands
 
         f = self.fid
+        f.seek(self.offset, 0)
         
         # Get the type of the Numeric array (must be a better way)
         ta = array(self.format)
