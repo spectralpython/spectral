@@ -276,5 +276,51 @@ def help(x):
     
     print x.__doc__
 
+def saveTrainingSets(sets, file):
+    '''
+    Saves a list of TrainingSet objects to a file.  This function assumes
+    that all the sets in the list refer to the same image and mask array.
+    If that is not the case, this function should not be used.
+    '''
+    import pickle
+    
+    f = open(file, 'w')
+    z = array([])
+    
+    pickle.dump(len(sets), f)
+    DumpArray(sets[0].mask, f)
+    for s in sets:
+        s.mask = z
+        s.dump(f)
+
+    f.close()
+    
+def loadTrainingSets(file, im = 0):
+    '''
+    Loads a list of TrainingSet objects from a file.  This function assumes
+    that all the sets in the list refer to the same image and mask array.
+    If that is not the case, this function should not be used.
+    '''
+    from Spectral.Algorithms import TrainingSet
+    import pickle
+    
+    f = open(file)
+    sets = []
+
+    nSets = pickle.load(f)
+    mask = LoadArray(f)
+    for i in range(nSets):
+        s = TrainingSet(0,0)
+        s.load(f)
+        s.mask = mask
+        if im:
+            s.image = im
+        else:
+            s.image = image(s.image)
+        sets.append(s)
+
+    f.close()
+    return sets   
+
 
 
