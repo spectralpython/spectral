@@ -55,6 +55,7 @@ def mean_cov(vectors):
     '''
 
     from Numeric import *
+    import time
     
     if len(vectors.shape) == 3 and vectors.shape[2] > 1:
     	#  Assuming vectors are along 3rd dimension
@@ -62,12 +63,13 @@ def mean_cov(vectors):
 	mean = zeros((B,), Float)
 	cov = zeros((B, B), Float)
 	for i in range(M):
+            print '\tMean: %5.1f%%' % (float(i) / M * 100.)
 	    for j in range(N):
 	    	mean += vectors[i, j]
 	mean /= float(M * N)
 	
 	for i in range(M):
-            print 'cov: ', i
+            print '\tCovariance: %5.1f%%' % (float(i) / M * 100.)
 	    for j in range(N):
 		x = (vectors[i, j] - mean)[:, NewAxis].astype(Float)
 		cov += matrixmultiply(x, transpose(x))
@@ -81,6 +83,7 @@ def mean_cov(vectors):
 	cov = zeros((N, N), Float)
 
 	for i in range(M):
+            print '\tCovariance: %5.1f%%' % (float(i) / M * 100.)
 	    x = (vectors[i] - mean)[:, NewAxis]
 	    cov += matrixmultiply(x, transpose(x))
 	cov /= M - 1
@@ -111,7 +114,7 @@ def principalComponents(image):
     (L, V) = eigenvectors(cov)
 
     #  Normalize eigenvectors
-    V = V / sum(V * V)
+    V = V / sqrt(sum(V * V))
 
     return (L, V, mean, cov)
 
@@ -298,19 +301,20 @@ class TrainingSet:
         # TO DO:
         # Note that reading the entire training set at once
         # could be bad if it is defined for a large region. This
-        # needs to be reworked using some type of iterate to avoid
+        # needs to be reworked using some type of iterator to avoid
         # having the entire training set in memory at once.
 
         data = zeros((inds.shape[0], nBands), self.image.typecode())
         for i in range(inds.shape[0]):
             d = self.image[inds[i][0], inds[i][1]]
             data[i] = d
-        (self.mean, self.cov) = mean_cov(data)
+        (self.mean, self.cov) = mean_cov(data.astype(Float))
         self.invCov = inverse(self.cov)
         
         try:
             self.logDetCov = log(determinant(self.cov))
-        except OverflowError:
+#        except OverflowError:
+        except :
             self.logDetCov = sum(log(eigenvalues(self.cov)))
 
         self._statsValid = 1
@@ -354,11 +358,12 @@ def createTrainingSets(image, classMask, calcStats = 0):
         sets                A list of TrainingSet objects
 
     The dimensions of classMask should be the same as the first two
-    dimensions of the corresponding image.
+    dimensions of the corresponding image. Values of zero in classMask
+    are considered unlabeled and are not added to a training set.
     '''
 
     sets = []
-    for i in range(max(classMask.flat)):
+    for i in range(1, max(classMask.flat)):
         if sum(equal(classMask, i).flat) > 0:
             ts = TrainingSet(image, classMask, i)
             if calcStats:
@@ -423,7 +428,7 @@ def classifyImage(im, classes):
     
     print 'Classifying image:'
     for i in range(nRows):
-        print '%5.1f%%' % (float(i) / nRows * 100.)
+        print '\tClassifying: %5.1f%%' % (float(i) / nRows * 100.)
         for j in range(nCols):
             classMap[i, j] = classifySpectrum(im[i, j], classes)
     print '\tDone.'
@@ -480,6 +485,9 @@ def bhattacharyyaDistance(a, b):
     return linTerm[0,0] + float(quadTerm)
 
 
+bDistance = bhattacharyyaDistance
+
+
 def transformImage(image, matrix):
     '''
     Perform linear transformation on all pixels in an image.
@@ -491,6 +499,10 @@ def transformImage(image, matrix):
         matrix          The linear transform to apply
     RETURN VALUE:
         trData          The transformed image data
+
+    Reads in an entire image, transforming each pixel by matrix on input.
+    This function can also be used to transform each pixel in a rank-3
+    NumPy array.
     '''
     
     (M, N, B) = image.shape
@@ -536,4 +548,84 @@ def orthogonalize(vecs, start = 0):
 
     return transpose(basis)
 	
-	
+
+def unmix(data, members):
+    '''
+    Perform linear unmixing on image data.
+
+    USAGE: mix = unmix(data, members)
+
+    ARGUMENTS:
+        data                The MxNxB image data to be unmixed
+        members             An CxB array of C endmembers
+    RETURN VALUE:
+        mix                 An MxNxC array of endmember fractions.
+
+    unmix performs linear unmixing on the image data.  After calling the
+    function, mix[:,:,i] will then represent the fractional abundances
+    for the i'th endmember. If the result of unmix is returned into 'mix',
+    then an array of indices of greatest fractional endmembers is obtained
+    by argmax(mix).
+
+    Note that depending on endmembers given, fractional abundances for
+    endmembers may be negative.
+    '''
+
+    from LinearAlgebra import inverse
+
+    assert members.shape[1] == data.shape[2], \
+           'Matrix dimensions are not aligned.'
+
+    # Calculate the pseudo inverse
+    pi = dot(members, transpose(members))
+    pi = dot(inverse(pi), members)
+
+    (M, N, B) = data.shape
+    unmixed = zeros((M, N, members.shape[0]), Float)
+    for i in range(M):
+        for j in range(N):
+            unmixed[i, j] = dot(pi, data[i,j])
+    return unmixed
+
+
+def spectralAngles(data, members):
+    '''
+    Perform spectral angle mapping of data.
+
+    USAGE: angles = spectralAngles(data, members)
+
+    ARGUMENTS:
+        data            MxNxB image data
+        members         CxB array of spectral endmembers
+    RETURN VALUE:
+        angles          An MxNxC array of spectral angles.
+
+    
+    Calculates the spectral angles between each vector in data and each
+    of the endmembers.  The output of this function (angles) can be used
+    to classify the data by minimum spectral angle by calling argmin(angles).
+    This function currently does not use second order statistics.
+    '''
+
+    assert members.shape[1] == data.shape[2], \
+           'Matrix dimensions are not aligned.'    
+
+    (M, N, B) = data.shape
+    m = array(members)
+    C = m.shape[0]
+
+    # Normalize endmembers
+    for i in range(C):
+        m[i] /= sqrt(dot(m[i], m[i]))
+    
+    angles = zeros((M, N, C), Float)
+    
+    for i in range(M):
+        for j in range(N):
+            v = data[i, j].astype(Float)
+            v = v / sqrt(dot(v, v))
+            for k in range(C):
+                angles[i, j, k] = dot(v, m[k])
+
+    return arccos(angles)
+            
