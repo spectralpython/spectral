@@ -48,7 +48,7 @@ class SpyWxPythonThreadStarter:
         This is the first function executed in the wxWindows thread.
         It creates the wxApp and starts the main event loop.
         '''    
-        from SpyWxPythonThread import *
+        from SpyWxPythonThread import WxImageServer
         self.app = WxImageServer(0)
         self.app.MainLoop()
 
@@ -70,8 +70,9 @@ def view(*args, **kwargs):
     '''Displays an image in a wxWindows frame.'''
     
     import Graphics
-    from Spectral.Io import *
-    from Numeric import *
+#    from Spectral.Io import *
+    from Spectral.Io.SpyFile import SpyFile
+    from Numeric import UnsignedInt8
 
     rgb = apply(Graphics.getImageDisplayData, args, kwargs)
 
