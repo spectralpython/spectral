@@ -35,6 +35,10 @@ class SpyFile:
     '''A base class for accessing spectral image files'''
 
     def __init__(self, params, metadata = None):
+
+        self.setParams(params, metadata)
+
+    def setParams(self, params, metadata):
         import Spectral
         import array
         from exceptions import Exception
@@ -236,10 +240,115 @@ class SubImage(SpyFile):
         return self.parent.readPixel(row + self.rowOffset, \
                                 col + self.colOffset)
 
-    def readSubImage(self, rowBounds, colBounds, bands = []):
-        return self.parent.readSubImage([rowBounds[0] + self.rowOffset, \
-                                    rowBounds[1] + self.rowOffset], \
-                                   [colBounds[0] + self.colOffset, \
-                                    colBounds[1] + self.colOffset], \
-                                   bands)
+    def readSubImage(self, rows, cols, bands = []):
+        return self.parent.readSubImage(list(array(rows) + self.rowOffset), \
+                                        list(array(cols) + self.colOffset), \
+                                        bands)
 
+    def readSubRegion(self, rowBounds, colBounds, bands = None):
+        '''
+        Reads a contiguous rectangular sub-region from the image. First
+        arg is a 2-tuple specifying min and max row indices.  Second arg
+        specifies column min and max.  If third argument containing list
+        of band indices is not given, all bands are read.
+        '''
+        return self.parent.readSubImage(list(array(rowBounds) + self.rowOffset), \
+                                        list(array(colBounds) + self.colOffset), \
+                                        bands)
+
+class TransformedImage(SpyFile):
+    '''
+    An image with a linear transformation applied to each pixel spectrum.
+    The transformation is not applied until data is read from the image file.
+    '''
+    
+    def __init__(self, matrix, img):
+        import Numeric
+
+        if not isinstance(img, SpyFile):
+            raise 'Invalid image argument to to TransformedImage constructor.'
+
+        arrayType = type(Numeric.array([1]))
+        if type(matrix) != arrayType:
+            raise 'First argument must be a transformation matrix.'
+        if len(matrix.shape) != 2:
+            raise 'Transformation matrix has invalid shape.'
+
+        params = img.params()
+        self.setParams(params, params.metadata)
+
+
+        # If img is also a TransformedImage, then just modify the transform
+        if isinstance(img, TransformedImage):
+            self.matrix = matrixmultiply(matrix, img.matrix)
+            self.image = img.image
+            if matrix.shape[1] != img.matrix.shape[0]:
+                raise 'Invalid shape for transformation matrix.'
+            # Set shape to what it will be after linear transformation
+            self.shape = [self.image.shape[0], self.image.shape[1], matrix.shape[0]]
+        else:
+            self.matrix = matrix
+            self.image = img
+            if matrix.shape[1] != img.nBands:
+                raise 'Invalid shape for transformation matrix.'
+            # Set shape to what it will be after linear transformation
+            self.shape = [img.shape[0], img.shape[1], matrix.shape[0]]
+
+    def __getitem__(self, args):
+        '''
+        Get data from the image and apply the transform.
+        '''
+        orig = SpyFile.__getitem__(self.image, args)
+        if len(orig.shape) == 1:
+            orig = orig[NewAxis, NewAxis, :]
+        elif len(orig.shape) == 2:
+            orig = orig[NewAxis, :]
+        transformed = zeros([orig.shape[0], orig.shape[1], self.shape[2]], Float)
+        for i in range(transformed.shape[0]):
+            for j in range(transformed.shape[1]):
+                transformed[i, j] = matrixmultiply(self.matrix, orig[i, j])
+        # Remove unnecessary dimensions
+        if transformed.shape[0] == 1:
+            transformed.shape = transformed.shape[1:]
+        if transformed.shape[0] == 1:
+            transformed.shape = transformed.shape[1:]
+            
+        return transformed
+
+
+    def readPixel(self, row, col):
+        return matrixmultiply(self.matrix, self.image.readPixel(row, col))                       
+                   
+    
+    def readSubRegion(self, rowBounds, colBounds, bands = None):
+        '''
+        Reads a contiguous rectangular sub-region from the image. First
+        arg is a 2-tuple specifying min and max row indices.  Second arg
+        specifies column min and max.  If third argument containing list
+        of band indices is not given, all bands are read.
+        '''
+
+        orig = self.image.readSubRegion(rowBounds, colBounds, bands)
+        transformed = zeros([orig.shape[0], orig.shape[1], self.shape[2]], Float)
+        for i in range(transformed.shape[0]):
+            for j in range(transformed.shape[1]):
+                transformed[i, j] = matrixmultiply(self.matrix, orig[i, j])
+        return transformed
+
+
+    def readSubImage(self, rows, cols, bands = None):
+        '''
+        Reads a sub-image from a rectangular region within the image.
+        First arg is a 2-tuple specifying min and max row indices.
+        Second arg specifies column min and max. If third argument
+        containing list of band indices is not given, all bands are read.
+        '''
+
+        orig = self.image.readSubImage(rows, cols, bands)
+        transformed = zeros([orig.shape[0], orig.shape[1], self.shape[2]], Float)
+        for i in range(transformed.shape[0]):
+            for j in range(transformed.shape[1]):
+                transformed[i, j] = matrixmultiply(self.matrix, orig[i, j])
+        return transformed
+
+        
