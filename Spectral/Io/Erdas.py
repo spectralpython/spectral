@@ -66,7 +66,7 @@ def ReadErdasLanHeader(fileName):
     '''Read parameters from a lan file header.'''
 
     from exceptions import IOError
-    from array import *
+    from array import array
     word = array('h');  word.byteswap()
     dword = array('i'); dword.byteswap()
     float = array('f'); float.byteswap()

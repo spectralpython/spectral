@@ -50,7 +50,7 @@ class BipFile(SpyFile):
     def readBand(self, band):
         '''Read a single band from the image.'''
 
-        from array import *
+        from array import array
         import Numeric
 
         vals = array(self.format)
@@ -77,7 +77,7 @@ class BipFile(SpyFile):
     def readBands(self, bands):
         '''Read specified bands from the image.'''
 
-        from array import *
+        from array import array
         import Numeric
 
         vals = array(self.format)
@@ -109,7 +109,7 @@ class BipFile(SpyFile):
     def readPixel(self, row, col):
         '''Read the pixel at position (row,col) from the file.'''
 
-        from array import *
+        from array import array
         import Numeric
 
         vals = array(self.format)

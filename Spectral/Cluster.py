@@ -189,7 +189,6 @@ class OnePassClusterEngine:
     '''
     A class to implement a one-pass clustering algorithm with replacement.
     '''
-    from Numeric import *
 
     def __init__(self, image, maxClusters, maxDistance = 0, dist = L2):
         self.image = image

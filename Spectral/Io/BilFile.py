@@ -50,7 +50,7 @@ class BilFile(SpyFile):
     def readBand(self, band):
         '''Read a single band from the image.'''
 
-        from array import *
+        from array import array
         import Numeric
 
         vals = array(self.format)
@@ -74,7 +74,7 @@ class BilFile(SpyFile):
     def readBands(self, bands):
         '''Read specified bands from the image.'''
 
-        from array import *
+        from array import array
         import Numeric
 
         f = self.fid
@@ -111,7 +111,7 @@ class BilFile(SpyFile):
     def readPixel(self, row, col):
         '''Read the pixel at position (row,col) from the file.'''
 
-        from array import *
+        from array import array
         import Numeric
 
         vals = array(self.format)
@@ -142,7 +142,7 @@ class BilFile(SpyFile):
         of band indices is not given, all bands are read.
         '''
 
-        from array import *
+        from array import array
         import Numeric
 
         nSubRows = rowBounds[1] - rowBounds[0] + 1  # Rows in sub-image
@@ -195,7 +195,8 @@ class BilFile(SpyFile):
         all bands are read.
         '''
 
-        from array import *
+#        import array
+        from array import array
         import Numeric
 
         nSubRows = len(rows)                        # Rows in sub-image
@@ -237,7 +238,6 @@ class BilFile(SpyFile):
         subArray = Numeric.array(vals.tolist())
         subArray = Numeric.reshape(subArray, (nSubRows, nSubCols, nSubBands))
 
-
         return subArray
 
     def readDatum(self, i, j, k):
@@ -247,14 +247,14 @@ class BilFile(SpyFile):
         such cases, use readBands or readPixel instead.
         '''
 
-        from array import *
+        import array
 
         d_col = self.sampleSize
         d_band = d_col * self.nCols
         d_row = d_band * self.nBands
 
         self.fid.seek(self.offset + i * d_row + j * d_col + k * d_band, 0)
-        vals = array(self.format)
+        vals = array.array(self.format)
         vals.fromfile(self.fid, 1)
         return vals.tolist()[0]
 

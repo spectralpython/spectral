@@ -88,7 +88,7 @@ def image(file):
         pass
 
     # Maybe it's an Erdas Lan file
-    from Io.Erdas import *
+    from Io.Erdas import ErdasLan
     try:
         return ErdasLan(file)
     except:
@@ -168,7 +168,7 @@ def viewIndexed(*args, **kwargs):
     default color table is used.
     '''
 
-    from Spectral import *
+    from Spectral import viewer, spyColors
 
     if not kwargs.has_key('colors'):
         kwargs['colors'] = spyColors
@@ -195,9 +195,8 @@ def saveImage(*args, **kwargs):
     . Any values outside of the range (lower, upper) will be clipped.
     '''
 
-    from Io import *
     import Graphics
-    from Numeric import *
+    from Numeric import transpose
     import StringIO
     import Image, ImageDraw
 

@@ -34,7 +34,7 @@ Various functions and algorithms for processing spectral data.
 '''
 
 from Numeric import *
-from LinearAlgebra import *
+#from LinearAlgebra import *
 
 
 def mean_cov(vectors):
@@ -55,7 +55,6 @@ def mean_cov(vectors):
     length B vectors, or a SpyFile object.
     '''
 
-    from Numeric import *
     import time
     
     if len(vectors.shape) == 3 and vectors.shape[2] > 1:
@@ -204,6 +203,7 @@ def reduceEigenvectors(L, V, fraction = 0.99):
     '''
 
     import Numeric
+    from LinearAlgebra import eigenvalues
 
     cumEig = Numeric.cumsum(L)
     sum = cumEig[-1]
@@ -222,6 +222,7 @@ def reduceEigenvectors(L, V, fraction = 0.99):
     return (L, V)
 
 def logDeterminant(x):
+    from LinearAlgebra import eigenvalues
     return sum(log(eigenvalues(x)))
 
 class TrainingSet:
@@ -282,7 +283,7 @@ class TrainingSet:
         Calculates statistic for the class.
         '''
 
-        from LinearAlgebra import *
+        from LinearAlgebra import inverse
 
         (nRows, nCols, nBands) = self.image.shape
 
@@ -327,7 +328,7 @@ class TrainingSet:
         USAGE: set.transform(m)
         '''
 
-        from LinearAlgebra import *
+        from LinearAlgebra import inverse, determinant, eigenvalues
 
         self.mean = dot(m, self.mean[:, NewAxis])[:, 0]
         self.cov = dot(m, dot(self.cov, transpose(m)))
@@ -345,7 +346,6 @@ class TrainingSet:
         responsibility of the loader to verify that the file name
         is replaced with an actual image object.
         '''
-        from Numeric import *
         import pickle
 
         pickle.dump(self.image.fileName, fp)
@@ -365,7 +365,6 @@ class TrainingSet:
         file before serialization.  The member should be replaced by
         the caller with an actual image object.
         '''
-        from Numeric import *
         import pickle
 
         self.image = pickle.load(fp)
@@ -459,7 +458,6 @@ def classifyImage(im, classes):
                     TrainingSet object.
     '''
 
-    from LinearAlgebra import *
 
     (nRows, nCols) = im.shape[:2]
     classMap = zeros((nRows, nCols), Int0)
@@ -590,7 +588,7 @@ def orthogonalize(vecs, start = 0):
     orthonormal.
     '''
 
-    from LinearAlgebra import *
+    from LinearAlgebra import transpose, inverse
     from math import sqrt
     
     (M, N) = vecs.shape
