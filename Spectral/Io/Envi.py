@@ -128,6 +128,18 @@ def EnviHdr(file, image = ''):
         #  char
         p.format = 'b'
         p.typecode = '1'
+    elif h["data type"] == '3':
+        #  float32
+        p.format = 'f'
+        p.typecode = 'f'
+    elif h["data type"] == '4':
+        #  float32
+        p.format = 'f'
+        p.typecode = 'f'
+    elif h["data type"] == '12':
+        #  Int16
+        p.format = 'H'
+        p.typecode = 's'
     else:
         #  Don't recognize this type code
         raise TypeError, 'Unrecognized data type code in header ' + \
@@ -143,7 +155,6 @@ def EnviHdr(file, image = ''):
         from Spectral.Io.BipFile import BipFile
         return BipFile(p, h)
     else:
-        raise TypeError, 'Looks like I forgot to include BSQ format' + \
-              ' for ENVI HDR files.  Send me a bug report and I\'ll' + \
-              ' fix it ASAP.'
+        from Spectral.Io.BsqFile import BsqFile
+        return BsqFile(p, h)
 
