@@ -120,6 +120,18 @@ def getImageDisplayData(source, bands = None, **kwargs):
                 for j in range(s[1]):
                     rgb3[i, j] = pal[rgb[i, j, 0]]
             rgb = rgb3
+        elif kwargs.has_key("colorScale") and kwargs["colorScale"]:
+            # Colors should be generated from the supplied color scale
+            # This section assumes rgb colors in the range 0-255.
+            rgb = rgb[:,:,0]
+            scale = kwargs["colorScale"]
+            if kwargs.has_key("autoScale") and kwargs["autoScale"]:
+                scale.setRange(min(rgb.flat), max(rgb.flat))
+            rgb3 = zeros((s[0], s[1], 3), Int)
+            for i in range(s[0]):
+                for j in range(s[1]):
+                    rgb3[i, j] = scale(rgb[i, j])
+            rgb = rgb3.astype(Float) / 255.  
         else:
             monochrome = 1
             rgb = repeat(rgb, 3, 2).astype(Float)
