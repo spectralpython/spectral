@@ -41,6 +41,7 @@ BIP = 2
 
 from Numeric import *
 from Spectral import *
+from Io.SpyFile import SubImage
 from Graphics.SpyGnuplot import *
 from Algorithms import *
 from Cluster import *
