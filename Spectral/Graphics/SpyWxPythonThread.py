@@ -94,6 +94,7 @@ class WxImageFrame(wxFrame):
 #        wxScrolledWindow.__init__(self, parent, index, style = wxSUNKEN_BORDER)
 
         img = wxEmptyImage(rgb.shape[0], rgb.shape[1])
+        img = wxEmptyImage(rgb.shape[1], rgb.shape[0])
         img.SetData(rgb.tostring())
         self.bmp = img.ConvertToBitmap()
         self.kwargs = kwargs
@@ -123,10 +124,10 @@ class WxImageFrame(wxFrame):
         dc.EndDrawing()
 
     def leftDoubleClick(self, evt):
-        print (evt.m_x, evt.m_y)
+        print (evt.m_y, evt.m_x)
         from Spectral.Graphics.SpyGnuplot import qp
         if self.kwargs.has_key("data source"):
-            qp(self.kwargs["data source"][evt.m_x, evt.m_y])
+            qp(self.kwargs["data source"][evt.m_y, evt.m_x])
         
 
 
