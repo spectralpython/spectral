@@ -34,6 +34,7 @@ Various functions and algorithms for processing spectral data.
 '''
 
 from Numeric import *
+from LinearAlgebra import *
 
 
 def mean_cov(vectors):
@@ -86,7 +87,7 @@ def mean_cov(vectors):
             print '\tCovariance: %5.1f%%' % (float(i) / M * 100.)
 	    x = (vectors[i] - mean)[:, NewAxis]
 	    cov += matrixmultiply(x, transpose(x))
-	cov /= M - 1
+	cov /= (M - 1)
     	return (mean, cov)
 
 
@@ -124,7 +125,7 @@ def canonicalAnalysis(classes):
     '''
     Solve for canonical eigenvalues and eigenvectors.
 
-    USAGE: (L, V) = canonicalAnalysis(classes)
+    USAGE: (L, V, CB, CW) = canonicalAnalysis(classes)
 
     Determines the solution to the generalized eigenvalue problem
     
@@ -134,8 +135,9 @@ def canonicalAnalysis(classes):
     
             (inv(cov_w) * cov_b) * x = lambda * x
             
-    The return value is a 2-tuple containing the vector of eigenvalues
-    and a matrix containing the corresponding eigenvectors.
+    The return value is a 4-tuple containing the vector of eigenvalues,
+    a matrix of the corresponding eigenvectors, the between-class
+    covariance matrix, and the within-class covariance matrix.
     '''
 
     from LinearAlgebra import inverse, eigenvectors
@@ -219,6 +221,8 @@ def reduceEigenvectors(L, V, fraction = 0.99):
     V = V[:i + 1, :]
     return (L, V)
 
+def logDeterminant(x):
+    return sum(log(eigenvalues(x)))
 
 class TrainingSet:
     def __init__(self, image, mask, index = 0, classProb = 1.0):
@@ -306,19 +310,14 @@ class TrainingSet:
 
         data = zeros((inds.shape[0], nBands), self.image.typecode())
         for i in range(inds.shape[0]):
-            d = self.image[inds[i][0], inds[i][1]]
+            d = self.image[inds[i][0], inds[i][1]].astype(data.typecode())
             data[i] = d
         (self.mean, self.cov) = mean_cov(data.astype(Float))
         self.invCov = inverse(self.cov)
         
-        try:
-            self.logDetCov = log(determinant(self.cov))
-#        except OverflowError:
-        except :
-            self.logDetCov = sum(log(eigenvalues(self.cov)))
+        self.logDetCov = logDeterminant(self.cov)
 
         self._statsValid = 1
-
 
     def transformStatistics(self, m):
         '''
@@ -339,6 +338,45 @@ class TrainingSet:
         except OverflowError:
             self.logDetCov = sum(log(eigenvalues(self.cov)))
 
+    def dump(self, fp):
+        '''
+        Dumps the TrainingSet object to a file stream.  Note that the
+        image reference is replaced by the images file name.  It the
+        responsibility of the loader to verify that the file name
+        is replaced with an actual image object.
+        '''
+        from Numeric import *
+        import pickle
+
+        pickle.dump(self.image.fileName, fp)
+        pickle.dump(self.index, fp)
+        pickle.dump(self._size, fp)
+        pickle.dump(self.classProb, fp)
+        DumpArray(self.mask, fp)
+        DumpArray(self.mean, fp)
+        DumpArray(self.cov, fp)
+        DumpArray(self.invCov, fp)
+        pickle.dump(self.logDetCov, fp)
+        
+    def load(self, fp):
+        '''
+        Loads the TrainingSet object from a file stream.  The image
+        member was probably replaced by the name of the image's source
+        file before serialization.  The member should be replaced by
+        the caller with an actual image object.
+        '''
+        from Numeric import *
+        import pickle
+
+        self.image = pickle.load(fp)
+        self.index = pickle.load(fp)
+        self._size = pickle.load(fp)
+        self.classProb = pickle.load(fp)
+        self.mask = LoadArray(fp)
+        self.mean = LoadArray(fp)
+        self.cov = LoadArray(fp)
+        self.invCov = LoadArray(fp)
+        self.logDetCov = pickle.load(fp)
 
 def createTrainingSets(image, classMask, calcStats = 0):
     '''
@@ -476,16 +514,39 @@ def bhattacharyyaDistance(a, b):
     RETURN VALUE:
         bd                  The B-distance between a and b.
     '''
-
-    m = a.mean - b.mean
-    linTerm = (1/8.) * matrixmultiply(transpose(m), \
-        matrixmultiply(inverse((a.cov + b.cov) / 2), m))
-    quadTerm = 0.5 * log(determinant(0.5 * (a.cov + b.cov)) \
-        / (sqrt(determinant(a.cov)) * sqrt(determinant(b.cov))))
-    return linTerm[0,0] + float(quadTerm)
+    
+    terms = bDistanceTerms(a, b)
+    return terms[0] + terms[1]
 
 
 bDistance = bhattacharyyaDistance
+
+def bDistanceTerms(a, b):
+    '''
+    Calulate the linear and quadratic terms of the Bhattacharyya distance
+    between two classes.
+
+    USAGE:  (linTerm, quadTerm = bDistanceTerms(a, b)
+
+    ARGUMENTS:
+        (a, b)              The classes for which to determine the
+                            B-distance.
+    RETURN VALUE:
+                            A 2-tuple of the linear and quadratic terms
+    '''
+    from math import exp
+
+    m = a.mean - b.mean
+    avgCov = (a.cov + b.cov) / 2
+
+    linTerm = (1/8.) * matrixmultiply(transpose(m), \
+        matrixmultiply(inverse(avgCov), m))
+
+    quadTerm = 0.5 * (logDeterminant(avgCov) \
+                      - 0.5 * a.logDetCov \
+                      - 0.5 * b.logDetCov)
+
+    return (linTerm, float(quadTerm))
 
 
 def transformImage(image, matrix):
