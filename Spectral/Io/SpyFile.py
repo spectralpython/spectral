@@ -68,6 +68,33 @@ class SpyFile:
         except:
             raise
 
+    def __str__(self):
+        s =  '\tData Source:   \'%s\'\n' % self.fileName
+        s += '\t# Rows:         %6d\n' % (self.nRows)
+        s += '\t# Samples:      %6d\n' % (self.nCols)
+        s += '\t# Bands:        %6d\n' % (self.nBands)
+        s += '\tQuantization: %3d bits\n' % (self.sampleSize * 8)
+
+        tc = self._typecode
+        if tc == '1':
+            tcs = 'char'
+        elif tc == 's':
+            tcs = 'Int16'
+        elif tc == 'i':
+            tcs = Int32
+        elif tc == 'f':
+            tcs = 'Float32'
+        elif tc == 'd':
+            tcs = 'Float64'
+        else:
+            tcs = _typecode
+            
+        s += '\tData format:  %8s' % tcs
+        return s
+
+    def __repr__(self):
+        return self.__str__()
+
     def typecode(self):
         '''Returns the typecode of the Numeric array type for this
         image file.
@@ -129,9 +156,10 @@ class SpyFile:
             if zstep == None:
                 zstep = 1
             bands = range(zstart, zstop, zstep)
-        elif type(args[2] == intType):
+        elif type(args[2]) == intType:
             bands = [args[2]]
         else:
+            # Band indices should be in a list
             bands = args[2]
             
         return self.readSubImage(rows, cols, bands)
@@ -179,13 +207,16 @@ class SubImage(SpyFile):
             raise IndexError, 'SubImage index out of range.'
 
         p = image.params()
-        p.nRows = rowRange[1] - rowRange[0]
-        p.nCols = colRange[1] - colRange[0]
+#        p.nRows = rowRange[1] - rowRange[0]
+#        p.nCols = colRange[1] - colRange[0]
 
         SpyFile.__init__(self, p, image.metadata)
         self.parent = image
         self.rowOffset = rowRange[0]
         self.colOffset = colRange[0]
+        self.nRows = rowRange[1] - rowRange[0]
+        self.nCols = colRange[1] - colRange[0]
+        self.shape = (self.nRows, self.nCols, self.nBands)
 
     def readBand(self, band):
         return self.parent.readSubRegion([self.rowOffset, \
