@@ -36,6 +36,8 @@ A module to use Gnuplot for creating x-y plots of pixel spectra.
 import Gnuplot
 from Numeric import *
 
+xyPlot = Gnuplot.Gnuplot()
+
 def plot(data):
     '''
     Creates an x-y plot.
@@ -47,6 +49,8 @@ def plot(data):
     be drawn as a separate series.
     '''
 
+    global xyPlot
+
     g = Gnuplot.Gnuplot()
     g('set data style lines')
     g('set grid')
@@ -54,13 +58,18 @@ def plot(data):
 
     if len(s) == 1:
         # plot a vector
+        g('set xrange [0: %d]' % s[0])
         g.plot(Gnuplot.Data(range(s[0]), data, with='lines'))
     elif len(s) == 2:
         xvals = range(s[1])
+        g('set xrange [0: %d]' % s[1])
         g.plot(Gnuplot.Data(xvals, data[0,:], with='lines'))
         for i in range(1, s[0]):
             g.replot(Gnuplot.Data(xvals, data[i,:], with='lines'))
-    wait()
+    xyPlot = g
+    return g
+#    raw_input('Please press return to continue...\n')
+
 
 qp = plot
         
