@@ -98,12 +98,9 @@ class WxImageFrame(wxFrame):
         img.SetData(rgb.tostring())
         self.bmp = img.ConvertToBitmap()
         self.kwargs = kwargs
-        self.xSize = self.bmp.GetWidth()
-        self.ySize = self.bmp.GetHeight()
-
         wxFrame.__init__(self, parent, index, title,
-                         wxPyDefaultPosition,
-                         wxSize(self.xSize, self.ySize))
+                         wxPyDefaultPosition)
+        self.SetClientSizeWH(self.bmp.GetWidth(), self.bmp.GetHeight())
         EVT_PAINT(self, self.OnPaint)
         EVT_LEFT_DCLICK(self, self.leftDoubleClick)
 
