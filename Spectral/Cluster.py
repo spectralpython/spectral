@@ -31,7 +31,7 @@
 from Numeric import *
 
 def L1(v1, v2):
-    'Returns Euclidean distance between 2 rank-1 arrays.'
+    'Returns L1 distance between 2 rank-1 arrays.'
     return sum(abs((v1 - v2)))
 
 
@@ -41,21 +41,22 @@ def L2(v1, v2):
     return dot(delta, delta)
 
 
-def kMeans(image, nClusters = 8, maxIter = 20, compare = None):
+def isoCluster(image, nClusters = 8, maxIter = 20, startClusters = None,
+           compare = None, distance = L1):
     '''
-    Performs K-means clustering on image data.
+    Performs iterative self-organizing clustering of image data.
 
-    USAGE: (clMap, centers) = kMeans(image [, nClusters = 8]
-                                     [, maxIter = 20]
-                                     [, startCenters = None]
-                                     [, compare = None]
-                                     [, distance = L1])
+    USAGE: (clMap, centers) = isoCluster(image [, nClusters = 8]
+                                               [, maxIter = 20]
+                                               [, startClusters = None]
+                                               [, compare = None]
+                                               [, distance = L1])
 
     ARGUMENTS:
         image           A SpyFile or an MxNxB NumPy array
         nClusters       Number of clusters to create. Default is 8
         maxIter         Max number of iterations. Default is 20
-        startCenters    Initial cluster centers. This must be an
+        startClusters    Initial cluster centers. This must be an
                         nClusters x B array.
         compare         Optional comparison funtion. compare must be a
                         function which takes 2 MxN NumPy arrays as its
@@ -71,11 +72,11 @@ def kMeans(image, nClusters = 8, maxIter = 20, compare = None):
                         cluster for the corresponding element of image.
         centers         An nClusters x B array of cluster centers.
     '''
-    (nRows, nCols, nBands,) = (image.nRows, image.nCols, image.nBands)
+    (nRows, nCols, nBands) = image.shape
     clusters = zeros((nRows, nCols))
     oldClusters = None
     if startClusters:
-        assert (startClusters.shape[1] == nClusters), 'There must be \
+        assert (startClusters.shape[0] == nClusters), 'There must be \
         nClusters clusters in the startCenters array.'
         centers = array(startClusters)
     else:
@@ -83,15 +84,17 @@ def kMeans(image, nClusters = 8, maxIter = 20, compare = None):
         centers = []
         for i in range(nClusters):
             centers.append((((ones(nBands) * i) * maxVal) / nClusters))
+        centers = array(centers)
 
-    iter = 0
-    while (iter < maxIter):
+    iter = 1
+    while (iter <= maxIter):
+        print '\tIteration', iter
         for i in range(nRows):
+            print '\t\t%5.1f%%' % (float(i) / nRows * 100.)
             for j in range(nCols):
                 minDist = 10000000000000.0
-                center = 0
                 for k in range(len(centers)):
-                    dist = sum(abs((image[i, j] - centers[k])))
+                    dist = distance(image[i, j], centers[k])
                     if (dist < minDist):
                         clusters[i, j] = k
                         minDist = dist
@@ -107,22 +110,31 @@ def kMeans(image, nClusters = 8, maxIter = 20, compare = None):
         centers = []
         for i in range(nClusters):
             if (counts[i] > 0):
-                print i
                 centers.append((sums[i] / counts[i]))
+        centers = array(centers)
 
-        nClusters = len(centers)
+        nClusters = centers.shape[0]
         if compare:
             if compare(oldClusters, clusters):
+                print '\tisoCluster converged with', centers.shape[0], \
+                      'clusters in', iter, 'iterations.'
                 return (clusters, centers)
-        elif (oldClusters and (sum(sum((clusters - oldClusters))) == 0)):
-            return (clusters, centers)
-        else:
-            oldClusters = clusters
-            clusters = zeros((nRows, nCols))
+        elif oldClusters:
+            nChanged = abs(sum((clusters - oldClusters).flat))
+            if nChanged == 0:
+                print '\tisoCluster converged with', centers.shape[0], \
+                      'clusters in', iter, 'iterations.'
+                return (clusters, centers)
+            else:
+                print '\t%d pixels reassigned.' % (nChanged)
+
+        oldClusters = clusters
+        clusters = zeros((nRows, nCols))
         iter += 1
 
-    print 'kMeans terminated after', iter, 'iterations.'
-    return (clusters, centers)
+    print '\tisoCluster terminated with', centers.shape[0], \
+          'clusters after', iter - 1, 'iterations.'
+    return (oldClusters, centers)
 
 
 def clusterOnePass(image, maxDist, nClusters = 10):
@@ -296,6 +308,7 @@ class OnePassClusterEngine:
         self.initClusters()
         hd = 0
         for i in range(image.shape[0]):
+            print '\t%5.1f%%' % (float(i) / image.shape[0] * 100.)
             for j in range(image.shape[1]):
                 minDistance = self.maxDist
                 for k in range(len(clusters)):
@@ -308,6 +321,7 @@ class OnePassClusterEngine:
                     cl = self.clusterToGo
                     self.addCluster(image[i, j])
                     self.clusterMap[i, j] = cl
+        print '\tDone.'
 
 
 def cluster(data, nClusters = 10):
