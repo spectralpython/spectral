@@ -175,11 +175,11 @@ def viewIndexed(*args, **kwargs):
     apply(viewer.view, args, kwargs)
     
 
-def saveImage(*args, **kwargs):
+def makePilImage(*args, **kwargs):
     '''
     Save data as a JPEG image file.
 
-    USAGE: view(file, source [, bands] [stretch = 1] [stretchAll = 1]
+    USAGE: view(source [, bands] [stretch = 1] [stretchAll = 1]
                 [bounds = (lower, upper)] )
 
     source is the data source and can be either a SpyFile object or a
@@ -200,7 +200,7 @@ def saveImage(*args, **kwargs):
     import StringIO
     import Image, ImageDraw
 
-    rgb = apply(Graphics.getImageDisplayData, args[1:], kwargs)
+    rgb = apply(Graphics.getImageDisplayData, args, kwargs)
 
     if not kwargs.has_key("colors"):
         rgb = (rgb * 255).astype(UnsignedInt8)
@@ -215,7 +215,30 @@ def saveImage(*args, **kwargs):
     for i in range(rgb.shape[0]):
         for j in range(rgb.shape[1]):
             draw.point((i, j), tuple(rgb[i, j]))
-#    im.putdata(rgb.flat)
+
+    return im
+    
+def saveImage(*args, **kwargs):
+    '''
+    Save data as a JPEG image file.
+
+    USAGE: view(file, source [, bands] [stretch = 1] [stretchAll = 1]
+                [bounds = (lower, upper)] )
+
+    source is the data source and can be either a SpyFile object or a
+    NumPy array.  bands is an optional list which specifies the RGB
+    channels to display. If bands is not present and source is a SpyFile
+    object, it's metadata dict will be checked if it contains a "default
+    bands" item.  Otherwise, the first, middle and last band will be
+    displayed. If stretch is defined, the image data will be scaled
+    so that the maximum value in the display data will be 1. If
+    stretchAll is defined, each color channel will be scaled separately
+    so that its maximum value is 1. If bounds is specified, the data will
+    be scaled so that lower and upper correspond to 0 and 1, respectively
+    . Any values outside of the range (lower, upper) will be clipped.
+    '''
+
+    im = apply(makePilImage, args[1:], kwargs)
 
     if kwargs.has_key("format"):
         fmt = kwargs["format"]
