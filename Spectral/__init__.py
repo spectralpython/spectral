@@ -31,8 +31,6 @@
 
 __version__ = '0.1'
 
-__all__ = ["Io"]
-
 byteOrder = 0   # little endian
 
 BSQ = 0

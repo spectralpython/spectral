@@ -29,6 +29,4 @@
 #
 
 
-__all__ = ["BilFile", "BipFile"]
-
 from SpyFile import *
