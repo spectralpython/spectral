@@ -54,12 +54,15 @@ def getImageDisplayData(source, bands = None, **kwargs):
     . Any values outside of the range (lower, upper) will be clipped.
     '''
 
-    from Numeric import *
+    from Numeric import take, zeros, repeat, ravel, minimum, maximum, clip, \
+         Float, Int, NewAxis
     from Spectral.Io.SpyFile import SpyFile
     from exceptions import TypeError
 
     if not bands:
         bands = []
+    if len(bands) != 0 and len(bands) != 1 and len(bands) != 3:
+        raise "Invalid number of bands specified."
     monochrome = 0
 
     if isinstance(source, SpyFile):
@@ -86,18 +89,23 @@ def getImageDisplayData(source, bands = None, **kwargs):
             rgb = source[:, :, NewAxis]
         elif (len(s) == 3 and s[2] == 1):
             rgb = source            
-        elif len(s) == 3 and s[2] == 3:
-            if len(bands) == 0:
-                # keep data as is.
-                rgb = source
-            elif len(bands) == 3 and bands[0] == 0 and \
-                 bands[1] == 1 and bands[2] == 2:
-                # Same as first 'if', bands just specified explicitly.
-                rgb = source.astype(Float)
-            else:
+        elif len(s) == 3:
+            if s[2] == 3:
+                if len(bands) == 0:
+                    # keep data as is.
+                    rgb = source.astype(Float)
+                elif len(bands) == 3:
+                    if bands[0] == 0 and bands[1] == 1 and bands[2] == 2:
+                        # Same as first 'if', bands just explicit.
+                        rgb = source.astype(Float)
+                    else:
+                        rgb = take(source, bands, 2).astype(Float)
+            elif s[2] > 3 and (len(bands) == 1 or len(bands) == 3):
                 rgb = take(source, bands, 2).astype(Float)
+            else:
+                rgb = take(source, [0, s[2] / 2, s[2] - 1], 2).astype(Float)
         else:
-            rgb = take(source, [0, s[2] / 2, s[2] - 1], 2).astype(Float)
+            raise 'Invalid array shape for image display'
 
             
 
