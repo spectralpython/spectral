@@ -57,6 +57,7 @@ def ReadEnviHdr(file):
     try:
         while i < len(lines):
             if find(lines[i], '=') == -1:
+                i += 1
                 continue
             (key, val) = split(lines[i], '=')
             key = strip(key)
@@ -107,9 +108,9 @@ def EnviHdr(file, image = ''):
             if os.access(file[:-4], os.F_OK):
                 image = file[:-4]
             elif os.access(file[:-4] + '.img', os.F_OK):
-                image = file[:-4] + '.img', os.F_OK
+                image = file[:-4] + '.img'
             elif os.access(file[:-4] + '.IMG', os.F_OK):
-                image = file[:-4] + '.IMG', os.F_OK
+                image = file[:-4] + '.IMG'
         if image == '':
             raise IOError, 'Unable to determine image file name.'
     if not os.access(image, os.F_OK):
@@ -123,7 +124,7 @@ def EnviHdr(file, image = ''):
         #  Int16
         p.format = 'h'
         p.typecode = 's'
-    elif h["data type" == '1']:
+    elif h["data type"] == '1':
         #  char
         p.format = 'b'
         p.typecode = '1'
