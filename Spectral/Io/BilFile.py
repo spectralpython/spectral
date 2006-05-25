@@ -145,8 +145,8 @@ class BilFile(SpyFile):
         from array import array
         import Numeric
 
-        nSubRows = rowBounds[1] - rowBounds[0] + 1  # Rows in sub-image
-        nSubCols = colBounds[1] - colBounds[0] + 1  # Cols in sub-image
+        nSubRows = rowBounds[1] - rowBounds[0]  # Rows in sub-image
+        nSubCols = colBounds[1] - colBounds[0]  # Cols in sub-image
         d_row = self.sampleSize * self.nCols * self.nBands
         colStartPos = colBounds[0] * self.sampleSize
 
@@ -172,7 +172,7 @@ class BilFile(SpyFile):
         nSubBands = len(bands)
 
         # Pixel format is BIL
-        for i in range(rowBounds[0], rowBounds[1] + 1):
+        for i in range(rowBounds[0], rowBounds[1]):
             f.seek(offset + i * d_row + colStartPos, 0)
             rowPos = f.tell()
             vals = array(self.format)

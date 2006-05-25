@@ -147,8 +147,8 @@ class BsqFile(SpyFile):
         from array import array
         import Numeric
 
-        nSubRows = rowBounds[1] - rowBounds[0] + 1  # Rows in sub-image
-        nSubCols = colBounds[1] - colBounds[0] + 1  # Cols in sub-image
+        nSubRows = rowBounds[1] - rowBounds[0]  # Rows in sub-image
+        nSubCols = colBounds[1] - colBounds[0]  # Cols in sub-image
         d_row = self.sampleSize * self.nCols * self.nBands
         colStartPos = colBounds[0] * self.sampleSize
 
@@ -182,7 +182,7 @@ class BsqFile(SpyFile):
         for i in bands:
             vals = array(self.format)
             bandOffset = i * bandSize
-            for j in range(rowBounds[0], rowBounds[1] + 1):
+            for j in range(rowBounds[0], rowBounds[1]):
                 f.seek(self.offset \
                        + bandOffset \
                        + rowStartOffset + j * rowSize \
