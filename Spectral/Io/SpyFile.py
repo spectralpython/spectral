@@ -76,7 +76,7 @@ class SpyFile:
         s =  '\tData Source:   \'%s\'\n' % self.fileName
         s += '\t# Rows:         %6d\n' % (self.nRows)
         s += '\t# Samples:      %6d\n' % (self.nCols)
-        s += '\t# Bands:        %6d\n' % (self.nBands)
+        s += '\t# Bands:        %6d\n' % (self.shape[2])
         s += '\tQuantization: %3d bits\n' % (self.sampleSize * 8)
 
         tc = self._typecode
@@ -148,7 +148,7 @@ class SpyFile:
             else:
                 cols = [args[1]]
 
-        if len(args) == 2:
+        if len(args) == 2 or args[2] == None:
             bands = range(self.nBands)
         elif type(args[2]) == sliceType:
             (zstart, zstop, zstep) = (args[2].start, args[2].stop, \
@@ -211,8 +211,6 @@ class SubImage(SpyFile):
             raise IndexError, 'SubImage index out of range.'
 
         p = image.params()
-#        p.nRows = rowRange[1] - rowRange[0]
-#        p.nCols = colRange[1] - colRange[0]
 
         SpyFile.__init__(self, p, image.metadata)
         self.parent = image
@@ -298,16 +296,41 @@ class TransformedImage(SpyFile):
         '''
         Get data from the image and apply the transform.
         '''
-        orig = SpyFile.__getitem__(self.image, args)
+        if len(args) < 2:
+            raise 'Must pass at least two subscript arguments'
+
+        # Note that band indices are wrt transformed features
+        if len(args) == 2 or args[2] == None:
+            bands = range(self.nBands)
+        elif type(args[2]) == slice:
+            (zstart, zstop, zstep) = (args[2].start, args[2].stop, \
+                                      args[2].step)
+            if zstart == None:
+                zstart = 0
+            if zstop == None:
+                zstop = self.nBands
+            if zstep == None:
+                zstep = 1
+            bands = range(zstart, zstop, zstep)
+        elif type(args[2]) == int:
+            bands = [args[2]]
+        else:
+            # Band indices should be in a list
+            bands = args[2]
+
+        orig = SpyFile.__getitem__(self.image, args[:2])
         if len(orig.shape) == 1:
             orig = orig[NewAxis, NewAxis, :]
         elif len(orig.shape) == 2:
             orig = orig[NewAxis, :]
-        transformed = zeros([orig.shape[0], orig.shape[1], self.shape[2]], Float)
-        for i in range(transformed.shape[0]):
-            for j in range(transformed.shape[1]):
-                transformed[i, j] = matrixmultiply(self.matrix, orig[i, j])
+        transformed_xy = zeros([orig.shape[0], orig.shape[1], self.shape[2]], Float)
+        for i in range(transformed_xy.shape[0]):
+            for j in range(transformed_xy.shape[1]):
+                transformed_xy[i, j] = matrixmultiply(self.matrix, orig[i, j])
         # Remove unnecessary dimensions
+
+        transformed = take(transformed_xy, bands, 2)
+        
         if transformed.shape[0] == 1:
             transformed.shape = transformed.shape[1:]
         if transformed.shape[0] == 1:
@@ -328,12 +351,15 @@ class TransformedImage(SpyFile):
         of band indices is not given, all bands are read.
         '''
 
-        orig = self.image.readSubRegion(rowBounds, colBounds, bands)
+        orig = self.image.readSubRegion(rowBounds, colBounds)
         transformed = zeros([orig.shape[0], orig.shape[1], self.shape[2]], Float)
         for i in range(transformed.shape[0]):
             for j in range(transformed.shape[1]):
                 transformed[i, j] = matrixmultiply(self.matrix, orig[i, j])
-        return transformed
+        if bands:
+            return take(transformed, bands, 2)
+        else:
+            return transformed
 
 
     def readSubImage(self, rows, cols, bands = None):
@@ -344,11 +370,17 @@ class TransformedImage(SpyFile):
         containing list of band indices is not given, all bands are read.
         '''
 
-        orig = self.image.readSubImage(rows, cols, bands)
+        orig = self.image.readSubImage(rows, cols)
         transformed = zeros([orig.shape[0], orig.shape[1], self.shape[2]], Float)
         for i in range(transformed.shape[0]):
             for j in range(transformed.shape[1]):
                 transformed[i, j] = matrixmultiply(self.matrix, orig[i, j])
-        return transformed
+        if bands:
+            return take(transformed, bands, 2)
+        else:
+            return transformed
+
+    def readDatum(self, i, j, k):
+        return take(self.readPixel(i, j), k)
 
         
