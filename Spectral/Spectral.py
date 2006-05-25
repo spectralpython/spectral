@@ -2,7 +2,7 @@
 #
 #   Spectral.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001 Thomas Boggs
+#   Copyright (C) 2001-2006 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -266,18 +266,17 @@ def tileImage(im, nRows, nCols):
     '''
 
     from Numeric import array, Int
+    from Io.SpyFile import SubImage
     x = (array(range(nRows + 1)) * float(im.nRows) / nRows).astype(Int)
     y = (array(range(nCols + 1)) * float(im.nCols) / nCols).astype(Int)
     x[-1] = im.nRows
     y[-1] = im.nCols
-    print x
-    print y
 
     tiles = []
     for r in range(len(x) - 1):
         row = []
         for c in range(len(y) - 1):
-            si = SubRegion(im, [x[r], x[r + 1]], [y[c], y[c + 1]])
+            si = SubImage(im, [x[r], x[r + 1]], [y[c], y[c + 1]])
             row.append(si)
         tiles.append(row)
     return tiles
