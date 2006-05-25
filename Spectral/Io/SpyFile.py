@@ -292,6 +292,8 @@ class TransformedImage(SpyFile):
             # Set shape to what it will be after linear transformation
             self.shape = [img.shape[0], img.shape[1], matrix.shape[0]]
 
+        self.nBands = matrix.shape[0]
+
     def __getitem__(self, args):
         '''
         Get data from the image and apply the transform.
