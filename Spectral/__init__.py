@@ -29,7 +29,7 @@
 # Thomas Boggs, tboggs@users.sourceforge.net
 #
 
-__version__ = '0.1'
+__version__ = '0.2'
 byteOrder = 0   # little endian
 
 BSQ = 0
