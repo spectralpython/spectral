@@ -30,7 +30,6 @@
 #
 
 __version__ = '0.1'
-
 byteOrder = 0   # little endian
 
 BSQ = 0
@@ -39,8 +38,9 @@ BIP = 2
 
 from Numeric import *
 from Spectral import *
-from Io.SpyFile import SubImage
+from Io.SpyFile import SubImage, TransformedImage
 from Graphics.SpyGnuplot import *
 from Algorithms import *
-from Cluster import *
 
+import Utilities.Status
+status = Utilities.Status.StatusDisplay()
