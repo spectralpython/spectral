@@ -1,0 +1,31 @@
+################################################################################
+
+2006-05-25	tboggs <tboggs@users.sourceforge.net>
+
+    * Created new directories for Algorithms and Utilities.
+    * Encapsulated classification algorithms into classes.
+    * Added status display object for cleaner status output.
+
+	* __init__.py:
+	  Changed several imports due to package restructuring.
+	  Setting package-level status member.
+	  Incremented SPy version to 0.2
+	* Spectral.py (tileImage): Now reads SubImages instead of SubRegions.
+	* Algorithms/Algorithms.py : Moved file from Spectral/.
+	  Added iterator classes and functions for generic iteration over image
+	    pixels.
+	  (mean_cov): Now additionally returns number of pixels used in
+	    calculating the mean and std dev.
+	  (TrainingSet) Several changes and is renamed TrainingClass.
+	* Algorithms/__init__.py: New file.
+	* Algorithms/Classifiers.py: New file.
+	* Algorithms/Cluster.py: Moved from Spectral/.
+	* Io/BilFile.py (readSubRegion): Upper bound is now exclusive to match
+	  python slice syntax
+	* Io/BipFile.py: ditto
+	* Io/BsqFile.py: ditto
+	* Io/SpyFile.py (TransformedImage): Fixed broken logic for reading
+	  data from TransformedImage objects.
+	* Utilities/__init__.py: New file.
+	* Utilities/Status.py: New file containing StatusDisplay class that
+	  provides pretty output for status messages.
