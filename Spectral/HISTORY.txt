@@ -1,0 +1,28 @@
+################################################################################
+# SPy History file
+#
+# This file contains release notes for various SPy releases
+################################################################################
+
+SPy 0.2
+================================================================================
+Release date: 2006.06.16
+
+- New features:
+  - BSQ interleaved files are now supported.
+  - Mahalanobis Classifier has been added.
+
+- Package layout has changed in a few significant ways:
+  - There is now an Algorithms sub-package.
+  - Classification algorithms are now python classes, derived from Classifier.
+  - Iterators are now used for many algorithms.
+
+- Better progress indicator output for lengthy operations and integration with
+  other tools.
+
+
+SPy 0.1
+================================================================================
+Release date: 2001.11.28
+
+This is the initial release of SPy.
