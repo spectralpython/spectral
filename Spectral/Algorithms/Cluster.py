@@ -29,6 +29,7 @@
 #
 
 from Numeric import *
+from Classifiers import Classifier
 
 def L1(v1, v2):
     'Returns L1 distance between 2 rank-1 arrays.'
@@ -41,6 +42,52 @@ def L2(v1, v2):
     return dot(delta, delta)
 
 
+class IsoClusterer(Classifier):
+    '''An unsupervised classifier using an interative clustering algorithm'''
+    def __init__(self, nClusters = 8, maxIter = 20, endCondition = None, distanceMeasure = L1):
+        '''
+        ARGUMENTS:
+            nClusters       Number of clusters to create. Default is 8
+            maxIter         Max number of iterations. Default is 20
+            endCondition    Optional comparison function. This should be a
+                            function which takes 2 MxN NumPy arrays as its
+                            arguments and returns non-zero when clustering
+                            is to be terminated. The two arguments are the
+                            cluster maps for the previous and current cluster
+                            cycle, respectively.
+            distanceMeasure The distance measure to use for comparison. The
+                            default is the L1 distance. For  Euclidean
+                            distance, specify L2 (no quotes).
+        '''
+        self.nClusters = nClusters
+        self.maxIterations = maxIter
+        self.endCondition = endCondition
+        self.distanceMeasure = distanceMeasure
+        
+    def classifyImage(self, image, startClusters = None, iterations = None):
+        '''
+        Performs iterative self-organizing clustering of image data.
+
+        USAGE: (clMap, centers) = cl.classifyImage(image
+                                                   [, startClusters = None]
+                                                   [, iterations = None])
+
+        ARGUMENTS:
+            image           A SpyFile or an MxNxB NumPy array
+            startClusters   Initial cluster centers. This must be an
+                            nClusters x B array.
+            iterations      If this argument is passed and is a list object,
+                            each intermediate cluster map is appended to
+                            the list.
+        RETURN VALUES:
+            clMap           An MxN array whos values are the indices of the
+                            cluster for the corresponding element of image.
+            centers         An nClusters x B array of cluster centers.
+        '''
+        return isoCluster(image, self.nClusters, self.maxIterations, startClusters,
+                          self.endCondition, self.distanceMeasure, iterations)
+                
+    
 def isoCluster(image, nClusters = 8, maxIter = 20, startClusters = None,
            compare = None, distance = L1, iterations = None):
     '''
@@ -173,6 +220,8 @@ def clusterOnePass(image, maxDist, nClusters = 10):
     carefully.  For an alternate (better) one-pass clustering algorithm,
     see 'cluster'.
     '''
+    import warnings
+    warnings.warn('This function has been deprecated.')
     (nRows, nCols, nBands,) = (image.nRows, image.nCols, image.nBands)
     clusters = zeros((nRows, nCols))
     centers = [image[0, 0]]
@@ -194,20 +243,14 @@ def clusterOnePass(image, maxDist, nClusters = 10):
     return (clusters, centers)
 
 
-class OnePassClusterEngine:
+class OnePassClusterer(Classifier):
     '''
     A class to implement a one-pass clustering algorithm with replacement.
     '''
-
-    def __init__(self, image, maxClusters, maxDistance = 0, dist = L2):
-        self.image = image
+    def __init__(self, maxClusters, maxDistance = 0, dist = L2):
         self.maxClusters = maxClusters
         self.maxDist = maxDistance
         self.dist = dist
-        self.clusterMap = zeros(self.image.shape[:2], Int)
-        self.clusters = zeros((self.maxClusters, self.image.shape[2]), image.typecode())
-        self.nClusters = 0
-
 
     def addCluster(self, pixel):
         'Adds a new cluster center or replaces an existing one.'
@@ -218,7 +261,6 @@ class OnePassClusterEngine:
         self.calcMinHalfDistances()
         self.calcMaxDistance()
         self.findNextToGo()
-
 
     def calcMinHalfDistances(self):
         '''
@@ -242,10 +284,8 @@ class OnePassClusterEngine:
 
             self.minHalfDistance[i] *= 0.5
 
-
     def calcMinDistances(self):
         pass
-
 
     def calcDistances(self):
         self.distances = zeros((self.nClusters, self.nClusters))
@@ -255,7 +295,6 @@ class OnePassClusterEngine:
                                                  self.clusters[j])
         self.distances += transpose(self.distances)
 
-
     def calcMaxDistance(self):
         'Determine greatest inter-cluster distance.'
         maxDist = 0
@@ -264,7 +303,6 @@ class OnePassClusterEngine:
             if (rowMax > maxDist):
                 maxDist = rowMax
         self.maxDist = maxDist
-
 
     def initClusters(self):
         'Assign initial cluster centers.'
@@ -309,9 +347,12 @@ class OnePassClusterEngine:
             self.clusterToGo = a
             self.clusterToGoTo = b
 
-    def go(self):
+    def classifyImage(self, image):
         from Spectral import status
-        image = self.image
+        self.image = image
+        self.clusterMap = zeros(self.image.shape[:2], Int)
+        self.clusters = zeros((self.maxClusters, self.image.shape[2]), image.typecode())
+        self.nClusters = 0
         clusters = self.clusters
         self.initClusters()
         hd = 0
@@ -331,6 +372,8 @@ class OnePassClusterEngine:
                     self.addCluster(image[i, j])
                     self.clusterMap[i, j] = cl
         status.endPercentage()
+        self.image = None
+        return (self.clusterMap, self.clusters)
 
 
 def cluster(data, nClusters = 10):
@@ -358,8 +401,7 @@ def cluster(data, nClusters = 10):
     The advantages of this algorithm are that threshold distances need
     not be specified and the number of clusters remains fixed.
     '''
-    e = OnePassClusterEngine(data, nClusters)
-    e.go()
-    return (e.clusterMap, e.clusters)
+    opc = OnePassClusterer(nClusters)
+    return opc.classifyImage(data)
 
 
