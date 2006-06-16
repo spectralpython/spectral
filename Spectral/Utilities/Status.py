@@ -1,6 +1,6 @@
 #########################################################################
 #
-#   Cluster.py - This file is part of the Spectral Python (SPy) package.
+#   Status.py - This file is part of the Spectral Python (SPy) package.
 #
 #   Copyright (C) 2001-2006 Thomas Boggs
 #

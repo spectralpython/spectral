@@ -1,6 +1,6 @@
 #########################################################################
 #
-#   BilFile.py - This file is part of the Spectral Python (SPy) package.
+#   BsqFile.py - This file is part of the Spectral Python (SPy) package.
 #
 #   Copyright (C) 2001 Thomas Boggs
 #
