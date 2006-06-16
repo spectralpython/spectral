@@ -131,10 +131,9 @@ def mean_cov(image, mask = None, index = None):
                         the covariance of the vectors.
 
     Calculate the mean and covariance of of the given vectors. The argument
-    is either M vectors of length N in an M x N array, an M x N array of
-    length B vectors, or a SpyFile object.
+    can be an Iterator, a SpyFile object, or an MxNxB array.
     '''
-    import time, Spectral
+    import Spectral
     from Spectral import status
     
     if not isinstance(image, Iterator):
