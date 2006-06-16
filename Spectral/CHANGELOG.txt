@@ -1,4 +1,25 @@
 ################################################################################
+# Spectral package change log
+################################################################################
+
+2006-06-16	tboggs <tboggs@users.sourceforge.net>
+
+    * Converted clustering functions into Classifier classes.
+    * Added Mahalanobis Classifier.
+    * Corrected several copyright headers.
+
+	* Algorithms/__init__.py: Corrected copyright header.
+	* Algorithms/Algorithms.py:
+	  (mean_cov): Corrected doc string. Removed unused time import.
+	* Algorithms/Classifiers.py: Added copyright header.
+	  (Classifier.classifiyImage): Changed typecode of classification map.
+	  (MahalanobisDistanceClassifier): New class
+	* Algorithms/Cluster.py:
+	  (cluster): Modified to use new OnePassClusterer class.
+	  (IsoClusterer.): New class
+	  (OnePassClusterer): New class replacing OnePassClusterEngine.
+	* Io/BsqFile.py: Corrected copyright header.
+	* Utilities/Status.py: Corrected copyright header.
 
 2006-05-25	tboggs <tboggs@users.sourceforge.net>
 
