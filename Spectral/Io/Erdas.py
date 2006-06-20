@@ -38,8 +38,9 @@ def ErdasLan(file):
     '''
 
     from BilFile import BilFile
+    from SpyFile import findFilePath
 
-    lh = ReadErdasLanHeader(file)
+    lh = ReadErdasLanHeader(findFilePath(file))
 
     class Params: pass
     p = Params()
