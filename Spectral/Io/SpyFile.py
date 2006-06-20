@@ -31,6 +31,24 @@
 
 from Numeric import *
 
+def findFilePath(filename):
+    '''
+    Search cwd and SPECTRAL_DATA directories for the given file.
+    '''
+    import os
+    pathname = None
+    dirs = ['.']
+    if os.environ.has_key('SPECTRAL_DATA'):
+        dirs += os.environ['SPECTRAL_DATA'].split(';')
+    for d in dirs:
+        testpath = os.path.join(d, filename)
+        if os.path.isfile(testpath):
+            pathname = testpath
+            break
+    if not pathname:
+        raise IOError('Unable to locate file ' % file)
+    return pathname
+
 class SpyFile:
     '''A base class for accessing spectral image files'''
 
@@ -64,7 +82,7 @@ class SpyFile:
             else:
                 self.metadata = metadata
 
-            self.fid = open(self.fileName, "rb")
+            self.fid = open(findFilePath(self.fileName), "rb")
 
             # So that we can use this more like a Numeric array
             self.shape = (self.nRows, self.nCols, self.nBands)
