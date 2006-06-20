@@ -69,35 +69,35 @@ spyColors = array([[  0,   0,   0],
 
 def image(file):
     '''
-    Try to automatically determine the type of an image file and open it.
+    Try to locate and determine the type of an image file and open it.
 
     USAGE: im = image(file)
     '''
 
     from exceptions import IOError
     import os
+    from Io.SpyFile import findFilePath
 
-    # Raise an exception if the file does not exist.
-    s = os.stat(file)
-
+    pathname = findFilePath(file)
+        
     # Try to open it as an ENVI header file.
     from Io.Envi import EnviHdr
     try:
-        return EnviHdr(file)
+        return EnviHdr(pathname)
     except:
         pass
 
     # Maybe it's an Erdas Lan file
     from Io.Erdas import ErdasLan
     try:
-        return ErdasLan(file)
+        return ErdasLan(pathname)
     except:
         pass
 
     # See if the size is consistent with an Aviris file
     from Io.Aviris import Aviris
     try:
-        return Aviris(file)
+        return Aviris(pathname)
     except:
         pass
 
