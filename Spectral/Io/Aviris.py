@@ -2,7 +2,7 @@
 #
 #   Aviris.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001 Thomas Boggs
+#   Copyright (C) 2001-2006 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -38,11 +38,12 @@ def Aviris(file):
     from Spectral.Io.BipFile import BipFile
     import os
     from exceptions import IOError
+    from SpyFile import findFilePath
 
     class Params: pass
     p = Params()
 
-    p.fileName = file
+    p.fileName = findFilePath(file)
     p.nBands = 224
     p.nCols = 614
     fileSize = os.stat(file)[6]
