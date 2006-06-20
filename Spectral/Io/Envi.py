@@ -2,7 +2,7 @@
 #
 #   Envi.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001 Thomas Boggs
+#   Copyright (C) 2001-2006 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -83,13 +83,15 @@ def ReadEnviHdr(file):
         raise IOError, "Error while reading ENVI file header."
 
 
-def EnviHdr(file, image = ''):
+def EnviHdr(file, image = None):
     '''Creates a SpyFile object from an ENVI HDR file.'''
 
     import os
     from exceptions import IOError, TypeError
+    from SpyFile import findFilePath
 
-    h = ReadEnviHdr(file)
+    headerPath = findFilePath(file)
+    h = ReadEnviHdr(headerPath)
     h["header file"] = file
 
     class Params: pass
@@ -101,22 +103,19 @@ def EnviHdr(file, image = ''):
     p.byteOrder = int(h["byte order"])
 
     #  Validate image file name
-    if image == '':
+    if not image:
         #  Try to determine the name of the image file
-        if file[-4:] == '.hdr' or file[-4:] == '.HDR.':
-            #  Try header name without extension or with (.img)
-            if os.access(file[:-4], os.F_OK):
-                image = file[:-4]
-            elif os.access(file[:-4] + '.img', os.F_OK):
-                image = file[:-4] + '.img'
-            elif os.access(file[:-4] + '.IMG', os.F_OK):
-                image = file[:-4] + '.IMG'
-        if image == '':
+        headerDir = os.path.split(headerPath)
+        if headerPath[-4:].lower() == '.hdr':
+            headerPathTitle = headerPath[:-4]
+            exts = ['', '.img', '.IMG']
+            for ext in exts:
+                testname = headerPathTitle + ext
+                if os.path.isfile(testname):
+                    image = testname
+                    break
+        if not image:
             raise IOError, 'Unable to determine image file name.'
-    if not os.access(image, os.F_OK):
-        raise IOError, 'File ' + image + ' not found.'
-    if not os.access(image, os.R_OK):
-        raise IOError, 'No read access for file ' + image + '.'
     p.fileName = image
 
     #  Determine numeric data type
