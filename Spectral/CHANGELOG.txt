@@ -2,6 +2,21 @@
 # Spectral package change log
 ################################################################################
 
+2006-06-20	tboggs <tboggs@users.sourceforge.net>
+
+    Functions that open data files now search for the files in directories
+    specified in the SPECTRAL_DATA environment variable. SPECTRAL_DATA contains
+    a semi-colon delimited list of directories.  cwd is always searched first.
+
+	* Io/Erdas.py (ErdasLan): Modified to search SPECTRAL_DATA directories. 
+	* Spectral.py (image): Ditto.
+	* Io/Envi.py (EnviHdr): Ditto
+	* Io/Aviris.py (Aviris): Ditto
+	* Io/SpyFile.py (SpyFile.setParams): Ditto.
+	*   (findFilePath): New function to determine data file path.
+
+    * __init__.py : Updated __version__ to 0.3
+
 2006-06-16	tboggs <tboggs@users.sourceforge.net>
 
     * Converted clustering functions into Classifier classes.
