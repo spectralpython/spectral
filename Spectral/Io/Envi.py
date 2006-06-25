@@ -108,7 +108,7 @@ def EnviHdr(file, image = None):
         headerDir = os.path.split(headerPath)
         if headerPath[-4:].lower() == '.hdr':
             headerPathTitle = headerPath[:-4]
-            exts = ['', '.img', '.IMG']
+            exts = ['', '.img', '.IMG', '.dat', '.DAT']
             for ext in exts:
                 testname = headerPathTitle + ext
                 if os.path.isfile(testname):
