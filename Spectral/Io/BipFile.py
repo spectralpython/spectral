@@ -134,7 +134,7 @@ class BipFile(SpyFile):
         of band indices is not given, all bands are read.
         '''
 
-        from array import *
+        import array
         import Numeric
 
         offset = self.offset
@@ -143,7 +143,7 @@ class BipFile(SpyFile):
         nSubCols = colBounds[1] - colBounds[0]  # Cols in sub-image
         d_row = self.sampleSize * self.nCols * self.nBands
         colStartPos = colBounds[0] * self.sampleSize * self.nBands
-        vals = array(self.format)
+        vals = array.array(self.format)
         nVals = self.nRows * self.nCols
 
         # Increments between bands
@@ -191,7 +191,7 @@ class BipFile(SpyFile):
         Second arg specifies column min and max. If third argument
         containing list of band indices is not given, all bands are read.
         '''
-        from array import *
+        import array
         import Numeric
 
         offset = self.offset
@@ -201,7 +201,7 @@ class BipFile(SpyFile):
         d_band = self.sampleSize
         d_col = d_band * self.nBands
         d_row = d_col * self.nCols
-        vals = array(self.format)
+        vals = array.array(self.format)
         nVals = self.nRows * self.nCols
 
         # Increments between bands
