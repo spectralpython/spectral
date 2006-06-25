@@ -3,7 +3,7 @@
 #   SpyWxPythonThread.py - This file is part of the Spectral Python (SPy)
 #   package.
 #
-#   Copyright (C) 2001 Thomas Boggs
+#   Copyright (C) 2001-2006 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -52,7 +52,7 @@ def EVT_VIEW_IMAGE(win, func):
 
 class ViewImageRequest(wxPyEvent):
     '''A request for a new image.'''
-    def __init__(self, rgb, kwargs):
+    def __init__(self, rgb, **kwargs):
         wxPyEvent.__init__(self)
         self.SetEventType(wxEVT_VIEW_IMAGE)
         self.rgb = rgb
@@ -72,11 +72,16 @@ class HiddenCatcher(wxFrame):
 #        self.bmp = wxBitmap("/dos/myphotos/roll2/can.bmp",
 #                            wxBITMAP_TYPE_BMP)
 
-    def viewImage(self, evt): 
-        #_ViewImage(evt.rgb, evt.kwargs)
-        frame = WxImageFrame(NULL, -1, evt.rgb, evt.kwargs)
-        frame.Show(TRUE)
-
+    def viewImage(self, evt):
+        if evt.kwargs.has_key('function'):
+            frame = evt.kwargs['function']()
+            frame.Show(TRUE)
+            self.app.SetTopWindow(frame)
+            frame.Raise()
+        else:
+            frame = WxImageFrame(NULL, -1, evt.rgb, **evt.kwargs)
+            frame.Show(TRUE)
+            self.app.SetTopWindow(frame)
 
 
 class WxImageFrame(wxFrame):
@@ -85,7 +90,7 @@ class WxImageFrame(wxFrame):
     images.  The frames also handle left double-click events by
     displaying an x-y plot of the spectrum for the associated pixel.
     '''
-    def __init__(self, parent, index, rgb, kwargs):
+    def __init__(self, parent, index, rgb, **kwargs):
         if kwargs.has_key('title'):
             title = kwargs['title']
         else:
@@ -139,6 +144,7 @@ class WxImageServer(wxApp):
     def OnInit(self):
         wxInitAllImageHandlers()
         catcher = HiddenCatcher()
+        catcher.app = self
         #self.SetTopWindow(catcher)
         self.catcher = catcher
         return true
