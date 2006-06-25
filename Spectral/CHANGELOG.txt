@@ -2,6 +2,41 @@
 # Spectral package change log
 ################################################################################
 
+2006-06-24	tboggs <tboggs@users.sourceforge.net>
+
+    Added code for rendering interactive hypercubes.
+
+	* Graphics/ColorScale.py: New file for creating color scales.
+	* Graphics/Hypercube.py: New file for rendering hypercubes.
+	* Graphics/SpyWxPython.py:
+	  Updated copyright header.
+	  (SpyWxPythonThreadStarter.view) - Converted kwargs to **kwargs.
+	  (view) - Converted kwargs to **kwargs.
+	* Graphics/SpyWxPythonThread.py:
+	  Updated copyright header.
+	  (ViewImageRequest.__init__): Converted kwargs from arg to **kwargs.
+	  (HiddenCatcher.viewImage):  Now accepts an arbitrary functor (that
+	    returns a wxFrame) to perform window construction and rendering.
+	  (WxImageFrame.__init__): Converted kwargs from arg to **kwargs.
+	  (WxImageServer.OnInit): Settting app reference in HiddenCatcher.
+
+    Fixed bug in file exception handling code.
+
+	* Io/SpyFile.py:
+	  Updated copyright header.
+	  (findFilePath): Fixed [ironic] error in exception handling code.
+
+    Searching for additional ENVI file extensions.
+
+	* Io/Envi.py (EnviHdr): Look for .dat and .DAT file extensions.
+
+    Prevent import warnings.
+
+	* Io/BipFile.py:
+	  (BipFile.readSubRegion): Avoid method-level import *.
+	  (BipFile.readSubImage): Avoid method-level import *.
+
+
 2006-06-20	tboggs <tboggs@users.sourceforge.net>
 
     Functions that open data files now search for the files in directories
