@@ -2,7 +2,7 @@
 #
 #   SpyWxPython.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001 Thomas Boggs
+#   Copyright (C) 2001-2006 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -52,11 +52,11 @@ class SpyWxPythonThreadStarter:
         self.app = WxImageServer(0)
         self.app.MainLoop()
 
-    def view(self, rgb, kwargs):
+    def view(self, rgb, **kwargs):
         '''Sends a view request to the wxWindows thread.'''
         
         import SpyWxPythonThread
-        evt = SpyWxPythonThread.ViewImageRequest(rgb, kwargs)
+        evt = SpyWxPythonThread.ViewImageRequest(rgb, **kwargs)
         SpyWxPythonThread.wxPostEvent(self.app.catcher, evt)
 
 
@@ -70,7 +70,6 @@ def view(*args, **kwargs):
     '''Displays an image in a wxWindows frame.'''
     
     import Graphics
-#    from Spectral.Io import *
     from Spectral.Io.SpyFile import SpyFile
     from Numeric import UnsignedInt8
 
@@ -86,5 +85,5 @@ def view(*args, **kwargs):
         rgb = (rgb * 255).astype(UnsignedInt8)
     else:
         rgb = rgb.astype(UnsignedInt8)
-    viewer.view(rgb, kwargs)
+    viewer.view(rgb, **kwargs)
     
