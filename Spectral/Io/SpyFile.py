@@ -2,7 +2,7 @@
 #
 #   SpyFile.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001 Thomas Boggs
+#   Copyright (C) 2001-2006 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -46,7 +46,7 @@ def findFilePath(filename):
             pathname = testpath
             break
     if not pathname:
-        raise IOError('Unable to locate file ' % file)
+        raise IOError('Unable to locate file ' % filename)
     return pathname
 
 class SpyFile:
