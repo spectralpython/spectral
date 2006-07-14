@@ -77,6 +77,8 @@ class WxHypercubeWindow(wxGLCanvas):
         self.rotation = [-60, 0, -30]
         self.distance = -5
         self.light = False
+
+        self.texturesLoaded = False
         
         EVT_SIZE(self,self.wxSize)
         EVT_PAINT(self,self.wxPaint)
@@ -85,9 +87,7 @@ class WxHypercubeWindow(wxGLCanvas):
 
         self.w, self.h = self.GetClientSizeTuple()
 
-        print 'Processing hypercube...',
         self.InitGL()
-        print 'done.'
 
         print 'Press "h" for keybind help'
 
@@ -96,7 +96,7 @@ class WxHypercubeWindow(wxGLCanvas):
 
     def InitGL(self):				# We call this right after our OpenGL window is created.
         
-        self.LoadTextures()
+##        self.LoadTextures()
 
         glEnable(GL_TEXTURE_2D)
         glClearColor(0.0, 0.0, 0.0, 0.0)	# This Will Clear The Background Color To Black
@@ -165,6 +165,7 @@ class WxHypercubeWindow(wxGLCanvas):
         images.append(image)				# bottom
         
         self.textures = glGenTextures(6)
+        print 'self.textures =', self.textures
 
         texImages = []
         (a, b, c) = data.shape
@@ -207,6 +208,10 @@ class WxHypercubeWindow(wxGLCanvas):
         self.SwapBuffers()
 
     def DrawCube(self):
+
+        if not self.texturesLoaded:
+            self.LoadTextures()
+            self.texturesLoaded = True
 
         divisor = max(self.hsi.shape[:2])
         hh, hw = [float(x) / divisor for x in self.hsi.shape[:2]]
