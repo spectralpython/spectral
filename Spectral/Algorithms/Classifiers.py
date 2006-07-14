@@ -106,19 +106,17 @@ class GaussianClassifier(SupervisedClassifier):
 
         maxProb = -100000000000.
         maxClass = -1
+        first = True
 
-        for i in range(len(self.classes)):
-            cl = self.classes[i]
+        for cl in self.classes:
             delta = (x - cl.stats.mean)[:, NewAxis]
             prob = log(cl.classProb) - 0.5 * cl.stats.logDetCov		\
                     - 0.5 * matrixmultiply(transpose(delta),	\
                     matrixmultiply(cl.stats.invCov, delta))
-            if i == 0:
+            if first or prob[0,0] > maxProb:
+                first = False
                 maxProb = prob[0,0]
-                maxClass = self.classes[0].index
-            elif (prob[0,0] > maxProb):
-                maxProb = prob[0,0]
-                maxClass = self.classes[i].index
+                maxClass = cl.index
         return maxClass
 
 class MahalanobisDistanceClassifier(GaussianClassifier):
@@ -155,16 +153,14 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
  
         maxClass = -1
         d2_min = -1
+        first = True
 
-        for i in range(len(self.classes)):
-            cl = self.classes[i]
+        for cl in self.classes:
             delta = (x - cl.stats.mean)[:, NewAxis]
             d2 = matrixmultiply(transpose(delta), matrixmultiply(self.invCovariance, delta))
-            if i == 0:
+            if first or d2 < d2_min:
+                first = False
                 d2_min = d2
-                maxClass = self.classes[0].index
-            elif (d2 < d2_min):
-                d2_min = d2
-                maxClass = self.classes[i].index
+                maxClass = cl.index
         return maxClass
 
