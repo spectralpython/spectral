@@ -2,6 +2,40 @@
 # Spectral package change log
 ################################################################################
 
+2006-07-14	tboggs <tboggs@users.sourceforge.net>
+
+    Implemented formal TrainingClassSet class to hold training classes.
+
+    Renamed canonicalAnalysis to proper linearDiscriminant.
+
+    Added several sample iterator classes.
+
+	* Algorithms/Algorithms.py
+	  (ImageMaskIterator.__iter__): Handle case where shape of sample is
+	    rank-3 instead of rank-1.
+	  (canonicalAnalysis): Renamed to linearDiscriminant.
+	  (TrainingClass): Added numBands member. Added sample iteration.
+	    Renamed transformStatistics to simply transform.
+	  (SampleIterator): New class.
+	  (TrainingClassSet): New class.
+	* Algorithms/Classifiers.py:
+	  (GaussianClassifier.classifySpectrum): Handling TrainingClassSet
+	    objects now instead of lists of TrainingClass objects.
+	  MahalanobisDistanceClassifier.classifySpectrum): Ditto.
+
+    Added Multi-Layer Perceptron neural network classifier.
+
+	* Algorithms/__init__.py: Importing PerceptronClassifier.
+	* Algorithms/Perceptron.py: New file containing multi-layer Perceptron
+	  classifier.
+
+    Fixed bug where glGenTextures was returning bad numbers under linux
+
+	* Graphics/Hypercube.py(WxHypercubeWindow): Wait to load textures
+          until after window is initialized.
+
+
+
 2006-06-24	tboggs <tboggs@users.sourceforge.net>
 
     Added code for rendering interactive hypercubes.
