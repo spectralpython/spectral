@@ -32,3 +32,4 @@
 from Algorithms import *
 from Classifiers import *
 from Cluster import *
+from Perceptron import PerceptronClassifier
