@@ -100,7 +100,8 @@ class ImageMaskIterator(Iterator):
 
         for i in range(inds.shape[0]):
             sample = self.image[inds[i][0], inds[i][1]].astype(typecode)
-            sample.shape = (sample.shape[2],)
+            if len(sample.shape) == 3:
+                sample.shape = (sample.shape[2],)
             (self.row, self.col) = inds[i][:2]
             yield sample
 
@@ -195,9 +196,9 @@ def principalComponents(image):
     return (L, V, mean, cov)
 
 
-def canonicalAnalysis(classes):
+def linearDiscriminant(classes):
     '''
-    Solve for canonical eigenvalues and eigenvectors.
+    Solve Fisher's linear discriminant for eigenvalues and eigenvectors.
 
     USAGE: (L, V, CB, CW) = canonicalAnalysis(classes)
 
@@ -217,20 +218,23 @@ def canonicalAnalysis(classes):
     from LinearAlgebra import inverse, eigenvectors
     import math
 
-    B = classes[0].stats.cov.shape[0]	# Number of bands
     C = len(classes)		# Number of training sets
     rank = len(classes) - 1
 
     # Calculate total # of training pixels and total mean
     N = 0
-    mean = zeros(B, Float)
-    for s in classes: 
+    B = None            # Don't know number of bands yet
+    mean = None
+    for s in classes:
+        if not mean:
+            B = s.numBands
+            mean = zeros(B, Float)
 	N += s.size()
 	mean += s.size() * s.stats.mean
     mean /= float(N)
 
-    cov_b = zeros((B, B), Float)
-    cov_w = zeros((B, B), Float)
+    cov_b = zeros((B, B), Float)            # cov between classes
+    cov_w = zeros((B, B), Float)            # cov within classes
 
     for s in classes:
 	cov_w += (s.size() - 1) * s.stats.cov
@@ -248,12 +252,13 @@ def canonicalAnalysis(classes):
     # Diagonalize cov_within in the new space
     v = matrixmultiply(vecs, matrixmultiply(cov_w, transpose(vecs)))
     d = diagonal(v)
-#    vecs /= sqrt(d) #[:, NewAxis]
     for i in range(vecs.shape[0]):
     	vecs[i, :] /= math.sqrt(d[i].real)
     	
     return (vals.real, vecs.real, cov_b, cov_w)
 
+# Alias for Linear Discriminant Analysis (LDA)
+lda = linearDiscriminant
 
 
 def reduceEigenvectors(L, V, fraction = 0.99):
@@ -324,12 +329,18 @@ class TrainingClass:
         weighting during classification).
         '''
         self.image = image
+        self.numBands = image.shape[2]
         self.mask = mask
         self.index = index
         self.classProb = classProb
 
         self._statsValid = 0
         self._size = 0
+
+    def __iter__(self):
+        it = ImageMaskIterator(self.image, self.mask, self.index)
+        for i in it:
+            yield i
 
     def statsValid(self, tf):
         '''
@@ -354,8 +365,7 @@ class TrainingClass:
         if self.index:
             return sum(equal(self.mask, self.index).flat)
         else:
-            return sum(not_equal(self.mask, 0).flat)
-        
+            return sum(not_equal(self.mask, 0).flat)        
 
     def calcStatistics(self):
         '''
@@ -368,7 +378,7 @@ class TrainingClass:
         self._size = self.stats.numSamples
         self._statsValid = 1
 
-    def transformStatistics(self, m):
+    def transform(self, m):
         '''
         Perform a linear transformation, m, on the statistics of the
         training set.
@@ -377,6 +387,7 @@ class TrainingClass:
         '''
 
         from LinearAlgebra import inverse, determinant, eigenvalues
+        from Spectral.Io.SpyFile import TransformedImage
 
         self.stats.mean = dot(m, self.stats.mean[:, NewAxis])[:, 0]
         self.stats.cov = dot(m, dot(self.stats.cov, transpose(m)))
@@ -386,6 +397,9 @@ class TrainingClass:
             self.stats.logDetCov = log(determinant(self.stats.cov))
         except OverflowError:
             self.stats.logDetCov = logDeterminant(self.stats.cov)
+
+        self.numBands = m.shape[0]
+        self.image = TransformedImage(m, self.image)
 
     def dump(self, fp):
         '''
@@ -428,8 +442,46 @@ class TrainingClass:
         self.stats.logDetCov = pickle.load(fp)
         self.stats.numSamples = self._size
 
-
-def createTrainingClasses(image, classMask, calcStats = 0):
+class SampleIterator:
+    '''An iterator over all samples of all classes in a TrainingData object.'''
+    def __init__(self, trainingData):
+        self.classes = trainingData
+    def __iter__(self):
+        for cl in self.classes:
+            for sample in cl:
+                yield sample
+            
+class TrainingClassSet:
+    def __init__(self):
+        self.classes = {}
+        self.numBands = None
+    def __item__(self, i):
+        '''Returns the class having index i.'''
+        return self.classes[i]
+    def __len__(self):
+        return len(self.classes)
+    def addClass(self, cl):
+        if self.classes.has_key(cl.index):
+            raise 'Attempting to add class with duplicate index.'
+        self.classes[cl.index] = cl
+        if not self.numBands:
+            self.numBands = cl.numBands
+    def transform(self, M):
+        '''Apply linear transform, M, to all training classes.'''
+        for cl in self.classes.values():
+            cl.transform(M)
+        self.numBands = M.shape[0]
+        
+    def __iter__(self):
+        '''
+        Returns an iterator over all TrainingClass objects.
+        '''
+        for cl in self.classes.values():
+            yield cl
+    def allSamples(self):
+        return SampleIterator(self)
+        
+def createTrainingClasses(image, classMask, calcStats = 0, indices = None):
     '''
     Create a list of TrainingClass objects from an indexed array.
 
@@ -453,12 +505,19 @@ def createTrainingClasses(image, classMask, calcStats = 0):
 
     from sets import Set
     classIndices = Set(classMask.flat)
-    classes = []
+##    classes = []
+    classes = TrainingClassSet()
     for i in classIndices:
+        if i == 0:
+            # Index 0 denotes unlabled pixel
+            continue
+        elif indices and not i in indices:
+            continue
         cl = TrainingClass(image, classMask, i)
         if calcStats:
             cl.calcStatistics()
-        classes.append(cl)
+##        classes.append(cl)
+        classes.addClass(cl)
     return classes
 
 
