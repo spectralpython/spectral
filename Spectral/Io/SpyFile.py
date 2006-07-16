@@ -27,7 +27,9 @@
 # Send comments to:
 # Thomas Boggs, tboggs@users.sourceforge.net
 #
-
+'''
+Common code for accessing hyperspectral image files.
+'''
 
 from Numeric import *
 

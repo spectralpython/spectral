@@ -27,6 +27,9 @@
 # Send comments to:
 # Thomas Boggs, tboggs@users.sourceforge.net
 #
+'''
+Unsupervised clustering algorithms.
+'''
 
 from Numeric import *
 from Classifiers import Classifier

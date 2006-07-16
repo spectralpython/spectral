@@ -28,6 +28,9 @@
 # Send comments to:
 # Thomas Boggs, tboggs@users.sourceforge.net
 #
+'''
+Base classes for classifiers and implementations of basic statistical classifiers.
+'''
 
 class Classifier:
     '''
