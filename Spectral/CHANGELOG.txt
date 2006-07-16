@@ -2,6 +2,18 @@
 # Spectral package change log
 ################################################################################
 
+2006-07-16	tboggs <tboggs@users.sourceforge.net>
+
+    Documentation:
+
+	* Algorithms/Classifiers.py: Added module-level doc string.
+	* Algorithms/Cluster.py: Added module-level doc string.
+	* Io/SpyFile.py:  Added module-level doc string.
+
+	* Algorithms/Algorithms.py
+	  (linearDiscriminant, bDistanceTerms, orthogonalize): Fixed doc string.
+
+
 2006-07-14	tboggs <tboggs@users.sourceforge.net>
 
     Implemented formal TrainingClassSet class to hold training classes.
@@ -33,7 +45,6 @@
 
 	* Graphics/Hypercube.py(WxHypercubeWindow): Wait to load textures
           until after window is initialized.
-
 
 
 2006-06-24	tboggs <tboggs@users.sourceforge.net>
