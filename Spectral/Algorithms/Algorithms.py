@@ -200,7 +200,7 @@ def linearDiscriminant(classes):
     '''
     Solve Fisher's linear discriminant for eigenvalues and eigenvectors.
 
-    USAGE: (L, V, CB, CW) = canonicalAnalysis(classes)
+    USAGE: (L, V, CB, CW) = linearDiscriminant(classes)
 
     Determines the solution to the generalized eigenvalue problem
     
@@ -505,7 +505,6 @@ def createTrainingClasses(image, classMask, calcStats = 0, indices = None):
 
     from sets import Set
     classIndices = Set(classMask.flat)
-##    classes = []
     classes = TrainingClassSet()
     for i in classIndices:
         if i == 0:
@@ -516,7 +515,6 @@ def createTrainingClasses(image, classMask, calcStats = 0, indices = None):
         cl = TrainingClass(image, classMask, i)
         if calcStats:
             cl.calcStatistics()
-##        classes.append(cl)
         classes.addClass(cl)
     return classes
 
@@ -571,7 +569,7 @@ def bDistanceTerms(a, b):
     Calulate the linear and quadratic terms of the Bhattacharyya distance
     between two classes.
 
-    USAGE:  (linTerm, quadTerm = bDistanceTerms(a, b)
+    USAGE:  (linTerm, quadTerm) = bDistanceTerms(a, b)
 
     ARGUMENTS:
         (a, b)              The classes for which to determine the
@@ -631,7 +629,7 @@ def orthogonalize(vecs, start = 0):
     '''
     Perform Gram-Schmidt Orthogonalization on a set of vectors.
 
-    USAGE:  basis = gso(vecs [, start = 0])
+    USAGE:  basis = orthogonalize(vecs [, start = 0])
 
     RETURN VALUE:
         basis           An orthonormal basis spanning vecs.
