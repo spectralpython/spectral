@@ -4,15 +4,55 @@
 # This file contains release notes for various SPy releases
 ################################################################################
 
+SPy 0.3
+================================================================================
+Release date: 2006.07.19
+
+- New Features:
+
+  - Neural network classifier (PerceptronClassifier) added.  This classifier
+    is implementad as a Multi-Layer Perceptron with a single hidden layer. As
+    with neural networks in general, choosing the right number of hidden layer
+    neurons heavily influences training time and final classification accuracy.
+
+  - Hypercube visualization added.  Call the hypercube function to render
+    an interactive hypercube that can be translated, rotated, and stretched.
+    You can also specify the image bands to display on the top face of the cube,
+    as well as the color scale to be used on the sides.  PyOpenGL and GLUT must
+    be installed to render hypercubes.
+
+  - SPECTRAL_DATA environment variable is now searched for file names passed to
+    the image function. SPECTRAL_DATA is expected to be a semicolon-delimited
+    list of directory names.  As one would expect, the current working directory
+    is always searched first.
+
+- Changes
+
+  - The TrainingClassSet class was introduced to replace the simple list of
+    TrainingClass objects that was previously being passed to classifiers.
+    This provides a more generic interface for extending SPy capabilities and
+    allows generic iterators to be used for both training and classification.
+
+  - The canonicalAnalysis function (which was a misnomer) was renamed to
+    linearDiscriminant (which is also aliased to lda).
+
+  - The transformStatistics method of SpyFile and TrainingClass was renamed to
+    just transform.  For TrainingClass, this method should rarely be called
+    anyway because the TrainigClassSet.transform method handles applying
+    the transform to all associated TrainingClass objects.
+
+
 SPy 0.2
 ================================================================================
 Release date: 2006.06.16
 
-- New features:
+- New Features:
+
   - BSQ interleaved files are now supported.
   - Mahalanobis Classifier has been added.
 
 - Package layout has changed in a few significant ways:
+
   - There is now an Algorithms sub-package.
   - Classification algorithms are now python classes, derived from Classifier.
   - Iterators are now used for many algorithms.
