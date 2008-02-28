@@ -2,7 +2,7 @@
 #
 #   Aviris.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001-2006 Thomas Boggs
+#   Copyright (C) 2001-2008 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -51,7 +51,7 @@ def Aviris(file):
         raise IOError, 'File size not consitent with Aviris format.'
     p.nRows = fileSize / 275072
     p.format = 'h'
-    p.typecode = 's'
+    p.typecode = 'h'
     p.offset = 0
     p.byteOrder = 1
     metadata = {'default bands' : ['29', '18', '8']}
