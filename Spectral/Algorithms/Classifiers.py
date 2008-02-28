@@ -3,7 +3,7 @@
 #   Classifiers.py - This file is part of the Spectral Python (SPy)
 #   package.
 #
-#   Copyright (C) 2001-2006 Thomas Boggs
+#   Copyright (C) 2001-2008 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -32,6 +32,8 @@
 Base classes for classifiers and implementations of basic statistical classifiers.
 '''
 
+import numpy
+
 class Classifier:
     '''
     Base class for Classifiers.  Child classes must implement the
@@ -42,9 +44,9 @@ class Classifier:
     def classifySpectrum(self, *args, **kwargs):
         raise NotImplementedError('Classifier.classifySpectrum must be overridden by a child class.')
     def classifyImage(self, image):
-        from Spectral import status, Int0
+        from Spectral import status
         from Algorithms import ImageIterator
-        from Numeric import zeros
+        from numpy import zeros
         status.displayPercentage('Classifying image...')
         it = ImageIterator(image)
         classMap = zeros(image.shape[:2])
@@ -74,11 +76,10 @@ class GaussianClassifier(SupervisedClassifier):
         if trainingData:
             self.train(trainingData)
     def train(self, trainingData):
-        from LinearAlgebra import inverse
         from Algorithms import logDeterminant
         if not self.minSamples:
             # Set minimum number of samples to the number of bands in the image
-            self.minSamples = trainingData[0].image.shape[2]
+            self.minSamples = trainingData.numBands
         self.classes = []
         for cl in trainingData:
             if cl.size() >= self.minSamples:
@@ -89,7 +90,7 @@ class GaussianClassifier(SupervisedClassifier):
             if not hasattr(cl, 'stats'):
                 cl.calcStatistics()
             if not hasattr(cl.stats, 'invCov'):
-                cl.stats.invCov = inverse(cl.stats.cov)
+                cl.stats.invCov = numpy.linalg.inv(cl.stats.cov)
                 cl.stats.logDetCov = logDeterminant(cl.stats.cov)
 
     def classifySpectrum(self, x):
@@ -104,7 +105,8 @@ class GaussianClassifier(SupervisedClassifier):
             classIndex  The 'index' property of the most likely class
                         in classes.
         '''
-        from Numeric import NewAxis, matrixmultiply, transpose
+        from numpy import dot, transpose
+        from numpy.oldnumeric import NewAxis
         from math import log
 
         maxProb = -100000000000.
@@ -114,8 +116,7 @@ class GaussianClassifier(SupervisedClassifier):
         for cl in self.classes:
             delta = (x - cl.stats.mean)[:, NewAxis]
             prob = log(cl.classProb) - 0.5 * cl.stats.logDetCov		\
-                    - 0.5 * matrixmultiply(transpose(delta),	\
-                    matrixmultiply(cl.stats.invCov, delta))
+                    - 0.5 * dot(transpose(delta), dot(cl.stats.invCov, delta))
             if first or prob[0,0] > maxProb:
                 first = False
                 maxProb = prob[0,0]
@@ -129,16 +130,14 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
         Calculate a single coveriance as a weighted average of the
         individual training class covariances.
         '''
-        import Numeric
-        from LinearAlgebra import inverse
         GaussianClassifier.train(self, trainingData)
 
-        covariance = Numeric.zeros(self.classes[0].stats.cov.shape, Numeric.Float)
+        covariance = numpy.zeros(self.classes[0].stats.cov.shape, numpy.Float)
         numSamples = 0
         for cl in self.classes:
             covariance += cl.stats.numSamples * cl.stats.cov
             numSamples += cl.stats.numSamples
-        self.invCovariance = inverse(covariance / numSamples)
+        self.invCovariance = numpy.linalg.inv(covariance / numSamples)
 
     def classifySpectrum(self, x):
         '''
@@ -152,7 +151,8 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
             classIndex  The 'index' property of the most likely class
                         in classes.
         '''
-        from Numeric import NewAxis, matrixmultiply, transpose
+        from numpy import dot, transpose
+        from numpy.oldnumeric import NewAxis
  
         maxClass = -1
         d2_min = -1
@@ -160,7 +160,7 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
 
         for cl in self.classes:
             delta = (x - cl.stats.mean)[:, NewAxis]
-            d2 = matrixmultiply(transpose(delta), matrixmultiply(self.invCovariance, delta))
+            d2 = dot(transpose(delta), dot(self.invCovariance, delta))
             if first or d2 < d2_min:
                 first = False
                 d2_min = d2
