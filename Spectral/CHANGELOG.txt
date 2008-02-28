@@ -2,6 +2,120 @@
 # Spectral package change log
 ################################################################################
 
+2008-02-28	tboggs <tboggs@users.sourceforge.net>
+
+    Massive updates to upgrade SPy to Python 2.5, NumPy, and wxPython 2.8.
+
+	* __init__.py: Changed import from Numeric to numpy
+	* Spectral.py: Updated copyright.  Converted to numpy import.
+	  (makePilImage): Converted to numpy.
+	  (tileImage): Converted to numpy.
+	* Algorithms/Algorithms.py: Updated copyright. Converted to numpy import.
+	  (ImageIterator.__iter__): Removed unecessary typecode variable.
+	  (ImageMaskIterator): Converted to numpy.
+	  (iterator): Converted to numpy.
+	  (mean_cov): Converted to numpy.
+	  (principalComponents): Converted to numpy.  Note that eigenvectors
+	    returned by numpy are in columns (not rows like Numeric).
+	  (linearDiscriminant): Converted to numpy.  Note that eigenvectors
+	    returned by numpy are in columns (not rows like Numeric).
+	  (reduceEigenvectors): Converted to numpy.
+	  (logDeterminant): Converted to numpy.
+	  (TrainingClass.size): Converted to numpy.
+	  (TrainingClass.calcStatistics): Converted to numpy. Calculate
+	    invCov and logDetCov.
+	  (TrainingClass.transform): Converted to numpy.
+	  (TrainingClassSet.__item__): Renamed method __getitem__.
+	  (createTrainingClasses): Converted to numpy.
+	  (ndvi): Converted to numpy.
+	  (bDistanceTerms): Corrected to use values in stats objects of
+	    training class objects.
+	  (transformImage): Converted to numpy.
+	  (orthogonalize): Converted to numpy.
+	  (unmix): Converted to numpy.
+	  (spectralAngles): Converted to numpy.
+	* Classifiers.py: Updated copyright.
+	  (Classifier.classifyImage): Converted to numpy.
+	  (GaussianClassifier.train): Converted to numpy.
+	  (GaussianClassifier.classifySpectrum): Converted to numpy.
+	  (MahalanobisDistanceClassifier.train): Converted to numpy.
+	  (MahalanobisDistanceClassifier.classifySpectrum): Converted to numpy.
+	* Cluster.py: Updated copyright.
+	  (L1): Converted to numpy.
+	  (L2): Converted to numpy. Return distance instead of distance^2.
+	  (isoCluster): Converted to numpy.
+	  (clusterOnePass): Converted to numpy.
+	  (OnePassClusterer): Converted to numpy.
+	* Perceptron.py: Updated copyright.
+	  (Perceptron.__init__): Converted to numpy.
+	  (Perceptron.input): Converted to numpy.
+	  (Perceptron.train): Converted to numpy.
+	  (MultiLayerPerceptron.input): Converted to numpy.
+	  (MultiLayerPerceptron.train): Converted to numpy.
+	  (MultiLayerPerceptron.resetCorrections): Converted to numpy.
+	  (PerceptronClassifier.classifySpectrum): Converted to numpy.
+	  (PerceptronClassifier.initializeWeights): Converted to numpy.
+	* Graphics/ColorScale.py: Updated copyright.
+	  (ColorScale.__init__): Converted to numpy.
+	  (ColorScale.createDefaultColorScale): Converted to numpy.
+	* Graphics/Graphics.py: Updated copyright.
+	  (getImageDisplayData): Converted to numpy.
+	* Graphics/Hypercube.py: Massive rewrite to accomdate changes in wx and switch
+	  to numpy.  Updated copyright.
+	* SpyGnuplot.py: Updated copyright.
+	  (plot): Converted to numpy.
+	* Graphics/SpyNumTut.py: Updated copyright.
+	  (view): Converted to numpy.
+	* Graphics/SpyWxPython.py: Updated copyright.
+	  (SpyWxPythonThreadStarter.view): wx 2.8 syntax change. Converted to numpy.
+	* Graphics/SpyWxPythonThread.py: Updated copyright. Handle numpy and wx changes.
+	  (ViewImageRequest.__init__): wx 2.8 syntax change.
+	  (HiddenCatcher): wx 2.8 syntax change.
+	  (HiddenCatcher.__init__): wx 2.8 syntax change.
+	  (HiddenCatcher.viewImage): wx 2.8 syntax change.
+	  (WxImageFrame): wx 2.8 syntax change.
+	  (WxImageFrame.__init__): wx 2.8 syntax change.
+	  (WxImageFrame.viewImage): wx 2.8 syntax change.
+	  (WxImageFrame.OnPaint): wx 2.8 syntax change.
+	  (WxImageServer): wx 2.8 syntax change.
+	  (WxImageServer.OnInit): wx 2.8 syntax change.
+	* Io/Aviris.py: Updated copyright.
+	  (Aviris): Changed typecode for numpy.
+	* Io/BilFile.py: Updated copyright.
+	  (BilFile.readBand): Converted to numpy.
+	  (BilFile.readBands): Converted to numpy - Using dtype instead of typecode.
+	  (BilFile.readPixel): Converted to numpy.
+	  (BilFile.readSubRegion): Converted to numpy - Using dtype instead of typecode.
+	  (BilFile.readSubImage): Converted to numpy - Using dtype instead of typecode.
+	* Io/BipFile.py: Updated copyright.
+	  (BipFile.readBand): Converted to numpy.
+	  (BipFile.readBands): Converted to numpy - Using dtype instead of typecode.
+	  (BipFile.readPixel): Converted to numpy.
+	  (BipFile.readSubRegion): Converted to numpy - Using dtype instead of typecode.
+	  (BipFile.readSubImage): Converted to numpy - Using dtype instead of typecode.
+	* Io/BdsqFile.py: Updated copyright.
+	  (BsqFile.readBand): Converted to numpy.
+	  (BsqFile.readBands): Converted to numpy - Using dtype instead of typecode.
+	  (BsqFile.readPixel): Converted to numpy.
+	  (BsqFile.readSubRegion): Converted to numpy - Using dtype instead of typecode.
+	  (BsqFile.readSubImage): Converted to numpy - Using dtype instead of typecode.
+	* Io/Erdas.py: Updated copyright.
+	  (ErdasLan): Converted to numpy - Using dtype instead of typecode.
+	  (ReadErdasLanHeader): Converted to numpy - Using dtype instead of typecode.
+	* Io/Envi.py: Updated copyright.
+	  (EnviHdr): Converted to numpy - Using dtype instead of typecode.
+	* Io/SpyFile.py: Updated copyright.
+	  (TransformedImage.__init__): Converted to numpy.
+	  (TransformedImage.__getitem__): Converted to numpy.
+	  (TransformedImage.readPixel): Converted to numpy.
+	  (TransformedImage.readSubRegion): Converted to numpy.
+	  (TransformedImage.readSubImage): Converted to numpy.
+	  (TransformedImage.readDatum): Converted to numpy.
+	  (TransformedImage.readBands): New function.
+
+
+
+
 2006-07-16	tboggs <tboggs@users.sourceforge.net>
 
     Documentation:
