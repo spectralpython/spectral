@@ -2,7 +2,7 @@
 #
 #   Spectral.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001-2006 Thomas Boggs
+#   Copyright (C) 2001-2008 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -31,6 +31,8 @@
 '''
 Classes and functions for classification with neural networks.
 '''
+
+import numpy
 
 class Neuron:
     '''A neuron with a logistic sigmoid activation function.'''
@@ -81,7 +83,6 @@ class Perceptron:
             weights             initial weights with which to begin training
             rate                initial rate adjustment parameter.
         '''
-        import Numeric
         import random
 
         self.rate = rate
@@ -97,7 +98,7 @@ class Perceptron:
                 raise 'Shape of weight matrix does not match Perceptron shape.'
             self.weights = weights
         else:
-            self.weights = Numeric.array([1 - 2 * random.random() for i in range((numInputs) * numNeurons)])
+            self.weights = numpy.array([1 - 2 * random.random() for i in range((numInputs) * numNeurons)])
             self.weights.shape = (numNeurons, numInputs)
         self.shape = [numNeurons, numInputs]
         self.neurons = [self.neuron.clone() for i in range(numNeurons)]
@@ -112,13 +113,12 @@ class Perceptron:
 
         For classifying samples, call classify instead of input.
         '''
-        from Numeric import array, concatenate, matrixmultiply
         if self.bias:
-            self.x = concatenate(([1.0], x))
+            self.x = numpy.concatenate(([1.0], x))
         else:
             self.x = x
-        self.z = matrixmultiply(self.weights, self.x)
-        self.y = array([neuron.input(a) for (neuron, a) in zip(self.neurons, self.z)])
+        self.z = numpy.dot(self.weights, self.x)
+        self.y = numpy.array([neuron.input(a) for (neuron, a) in zip(self.neurons, self.z)])
         return self.y
 
     def classify(self, x):
@@ -145,8 +145,7 @@ class Perceptron:
             accuracy            The accuracy at which to terminate training (if
                                 maxIterations isn't reached first).
         '''
-        from Numeric import array, NewAxis, Float, matrixmultiply,\
-             concatenate, zeros, transpose, repeat
+        from numpy import array, zeros, dot, transpose, repeat
         from Spectral import status
         
         numSamples = len(samples)
@@ -156,7 +155,7 @@ class Perceptron:
 
             numCorrect = 0
           
-            self.dW = zeros(self.weights.shape, Float)
+            self.dW = zeros(self.weights.shape, float)
             E = 0
 
             for (x, t) in samples:
@@ -181,7 +180,7 @@ class Perceptron:
                 dz_dW = array(self.x)
                 dz_dW.shape = (1, len(dz_dW))
                 repeat(dz_dW, K)
-                dW = - self.rate * matrixmultiply(transpose(dy_dz * dE_dy), dz_dW)
+                dW = - self.rate * dot(transpose(dy_dz * dE_dy), dz_dW)
                 self.dW = self.dW + dW
 
             # If E increased, then the previous adjustment was too big.
@@ -240,12 +239,11 @@ class MultiLayerPerceptron:
 
         For classifying samples, call classify instead of input.
         '''
-        import Numeric
         self.x = x
         x = [self.inputScale * xx for xx in x]
         for layer in self.layers:
             x = layer.input(x)
-        self.y = Numeric.array(x)
+        self.y = numpy.array(x)
         return x
 
     def classify(self, x):
@@ -272,8 +270,7 @@ class MultiLayerPerceptron:
             accuracy            The accuracy at which to terminate training (if
                                 maxIterations isn't reached first).
         '''
-        from Numeric import array, NewAxis, Float, matrixmultiply,\
-             concatenate, zeros, transpose, repeat
+        from numpy import array, dot, transpose, zeros, repeat
         from Spectral import status
 
         self.oldE = 1.e200
@@ -316,12 +313,12 @@ class MultiLayerPerceptron:
                 dz_dW = array(layerK.x)
                 dz_dW.shape = (1, len(dz_dW))
                 repeat(dz_dW, K)
-                dW = - self.rate * matrixmultiply(transpose(dy_dz * dE_dy), dz_dW)
+                dW = - self.rate * dot(transpose(dy_dz * dE_dy), dz_dW)
                 layerK.dW = layerK.dW + dW
 
                 # Hidden layer
                 I = self.inputSize
-                dW = zeros(layerJ.weights.shape, Float)
+                dW = zeros(layerJ.weights.shape, float)
                 for j in range(J):
                     b = 0.0
                     for k in range(K):
@@ -356,9 +353,8 @@ class MultiLayerPerceptron:
         status.write('Terminating network training after %d iterations.\n' % iteration)
                     
     def resetCorrections(self):
-        import Numeric
         for layer in self.layers:
-            layer.dW = Numeric.zeros(layer.weights.shape, Numeric.Float)
+            layer.dW = numpy.zeros(layer.weights.shape, numpy.float)
 
 
 from Spectral.Algorithms.Classifiers import SupervisedClassifier
@@ -413,9 +409,8 @@ class PerceptronClassifier(MultiLayerPerceptron, SupervisedClassifier):
         
     def classifySpectrum(self, x):
         '''Determine in which class the sample belongs.'''
-        from Numeric import argmax
         y = self.input(x)
-        maxNodeIndex = argmax(y)
+        maxNodeIndex = numpy.argmax(y)
         val = int(round(y[maxNodeIndex]))
         # If val is zero, then no node was above threshold
         if val == 0:
@@ -429,12 +424,11 @@ class PerceptronClassifier(MultiLayerPerceptron, SupervisedClassifier):
         prevent overflow when evaluating activation function.
         '''
         from Spectral.Algorithms.Algorithms import SampleIterator
-        from Numeric import absolute
         from random import random
 
         maxVal = 0
         for sample in SampleIterator(trainingClassData):
-            maxVal = max(max(absolute(sample.flat)), maxVal)
+            maxVal = max(max(numpy.absolute(sample.ravel())), maxVal)
 
         layer = self.layers[-2]
         for i in range(layer.shape[0]):

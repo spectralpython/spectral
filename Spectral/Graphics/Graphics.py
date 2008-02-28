@@ -2,7 +2,7 @@
 #
 #   Graphics.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001 Thomas Boggs
+#   Copyright (C) 2001-2008  Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -54,7 +54,7 @@ def getImageDisplayData(source, bands = None, **kwargs):
     . Any values outside of the range (lower, upper) will be clipped.
     '''
 
-    from Numeric import take, zeros, repeat, ravel, minimum, maximum, clip, \
+    from numpy.oldnumeric import take, zeros, repeat, ravel, minimum, maximum, clip, \
          Float, Int, NewAxis
     from Spectral.Io.SpyFile import SpyFile
     from exceptions import TypeError
@@ -81,7 +81,6 @@ def getImageDisplayData(source, bands = None, **kwargs):
             n = source.nBands
             bands = [0, n / 2, n - 1]
         rgb = source.readBands(bands).astype(Float)
-#    elif isinstance(args[0], array):
     else:
         # It should be a Numeric array
         s = source.shape
@@ -126,7 +125,7 @@ def getImageDisplayData(source, bands = None, **kwargs):
             rgb = rgb[:,:,0]
             scale = kwargs["colorScale"]
             if kwargs.has_key("autoScale") and kwargs["autoScale"]:
-                scale.setRange(min(rgb.flat), max(rgb.flat))
+                scale.setRange(min(rgb.ravel()), max(rgb.ravel()))
             rgb3 = zeros((s[0], s[1], 3), Int)
             for i in range(s[0]):
                 for j in range(s[1]):

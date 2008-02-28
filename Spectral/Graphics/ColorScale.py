@@ -2,7 +2,7 @@
 #
 #   ColorScale.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001-2006 Thomas Boggs
+#   Copyright (C) 2001-2008 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -52,7 +52,7 @@ class ColorScale:
                             includes the colors given in the arguement,
                             as well as interpolated color values.
         '''        
-        from Numeric import array, zeros, Float, Int, ArrayType
+        from numpy.oldnumeric import array, zeros, Float, Int, ArrayType
         if len(colors.shape) != 2 or colors.shape[1] != 3:
             raise 'colors array has invalid shape.'
         if len(levels) != colors.shape[0]:
@@ -116,7 +116,7 @@ class ColorScale:
 
 def createDefaultColorScale():
     '''Returns a black-blue-green-red-white color scale.'''
-    from Numeric import array
+    from numpy.oldnumeric import array
     mycolors = array([[  0,   0,   0],
                       [  0,   0, 255],
                       [  0, 255,   0],
