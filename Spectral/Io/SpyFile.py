@@ -2,7 +2,7 @@
 #
 #   SpyFile.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001-2006 Thomas Boggs
+#   Copyright (C) 2001-2008 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -31,7 +31,7 @@
 Common code for accessing hyperspectral image files.
 '''
 
-from Numeric import *
+import numpy
 
 def findFilePath(filename):
     '''
@@ -281,7 +281,7 @@ class TransformedImage(SpyFile):
     '''
     
     def __init__(self, matrix, img):
-        import Numeric
+        import numpy.oldnumeric as Numeric
 
         if not isinstance(img, SpyFile):
             raise 'Invalid image argument to to TransformedImage constructor.'
@@ -318,6 +318,8 @@ class TransformedImage(SpyFile):
         '''
         Get data from the image and apply the transform.
         '''
+        from numpy import zeros, dot, take
+        from numpy.oldnumeric import NewAxis
         if len(args) < 2:
             raise 'Must pass at least two subscript arguments'
 
@@ -334,7 +336,7 @@ class TransformedImage(SpyFile):
             if zstep == None:
                 zstep = 1
             bands = range(zstart, zstop, zstep)
-        elif type(args[2]) == int:
+        elif isinstance(args[2], int):
             bands = [args[2]]
         else:
             # Band indices should be in a list
@@ -345,10 +347,10 @@ class TransformedImage(SpyFile):
             orig = orig[NewAxis, NewAxis, :]
         elif len(orig.shape) == 2:
             orig = orig[NewAxis, :]
-        transformed_xy = zeros([orig.shape[0], orig.shape[1], self.shape[2]], Float)
+        transformed_xy = zeros([orig.shape[0], orig.shape[1], self.shape[2]], float)
         for i in range(transformed_xy.shape[0]):
             for j in range(transformed_xy.shape[1]):
-                transformed_xy[i, j] = matrixmultiply(self.matrix, orig[i, j])
+                transformed_xy[i, j] = dot(self.matrix, orig[i, j])
         # Remove unnecessary dimensions
 
         transformed = take(transformed_xy, bands, 2)
@@ -362,7 +364,7 @@ class TransformedImage(SpyFile):
 
 
     def readPixel(self, row, col):
-        return matrixmultiply(self.matrix, self.image.readPixel(row, col))                       
+        return numpy.dot(self.matrix, self.image.readPixel(row, col))                       
                    
     
     def readSubRegion(self, rowBounds, colBounds, bands = None):
@@ -372,14 +374,14 @@ class TransformedImage(SpyFile):
         specifies column min and max.  If third argument containing list
         of band indices is not given, all bands are read.
         '''
-
+        from numpy import zeros, dot
         orig = self.image.readSubRegion(rowBounds, colBounds)
-        transformed = zeros([orig.shape[0], orig.shape[1], self.shape[2]], Float)
+        transformed = zeros([orig.shape[0], orig.shape[1], self.shape[2]], float)
         for i in range(transformed.shape[0]):
             for j in range(transformed.shape[1]):
-                transformed[i, j] = matrixmultiply(self.matrix, orig[i, j])
+                transformed[i, j] = dot(self.matrix, orig[i, j])
         if bands:
-            return take(transformed, bands, 2)
+            return numpy.take(transformed, bands, 2)
         else:
             return transformed
 
@@ -391,18 +393,25 @@ class TransformedImage(SpyFile):
         Second arg specifies column min and max. If third argument
         containing list of band indices is not given, all bands are read.
         '''
-
+        from numpy import zeros, dot
         orig = self.image.readSubImage(rows, cols)
-        transformed = zeros([orig.shape[0], orig.shape[1], self.shape[2]], Float)
+        transformed = zeros([orig.shape[0], orig.shape[1], self.shape[2]], float)
         for i in range(transformed.shape[0]):
             for j in range(transformed.shape[1]):
-                transformed[i, j] = matrixmultiply(self.matrix, orig[i, j])
+                transformed[i, j] = dot(self.matrix, orig[i, j])
         if bands:
-            return take(transformed, bands, 2)
+            return numpy.take(transformed, bands, 2)
         else:
             return transformed
 
     def readDatum(self, i, j, k):
-        return take(self.readPixel(i, j), k)
+        return numpy.take(self.readPixel(i, j), k)
 
+    def readBands(self, bands):
+        shape = (self.image.nRows, self.image.nCols, self.nBands)
+        data = numpy.zeros(shape, float)
+        for i in range(shape[0]):
+            for j in range(shape[1]):
+                data[i, j] = numpy.take(self.readPixel(i, j), bands)
+        return data
         
