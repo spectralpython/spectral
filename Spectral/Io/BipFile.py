@@ -2,7 +2,7 @@
 #
 #   BipFile.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001 Thomas Boggs
+#   Copyright (C) 2001-2008 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -51,7 +51,7 @@ class BipFile(SpyFile):
         '''Read a single band from the image.'''
 
         from array import array
-        import Numeric
+        import numpy.oldnumeric as Numeric
 
         vals = array(self.format)
         delta = self.sampleSize * (self.nBands - 1) 
@@ -78,7 +78,7 @@ class BipFile(SpyFile):
         '''Read specified bands from the image.'''
 
         from array import array
-        import Numeric
+        import numpy.oldnumeric as Numeric
 
         vals = array(self.format)
         offset = self.offset
@@ -110,7 +110,7 @@ class BipFile(SpyFile):
         '''Read the pixel at position (row,col) from the file.'''
 
         from array import array
-        import Numeric
+        import numpy.oldnumeric as Numeric
 
         vals = array(self.format)
 
@@ -135,7 +135,7 @@ class BipFile(SpyFile):
         '''
 
         import array
-        import Numeric
+        import numpy.oldnumeric as Numeric
 
         offset = self.offset
         nBands = self.nBands
@@ -192,7 +192,7 @@ class BipFile(SpyFile):
         containing list of band indices is not given, all bands are read.
         '''
         import array
-        import Numeric
+        import numpy.oldnumeric as Numeric
 
         offset = self.offset
         nBands = self.nBands

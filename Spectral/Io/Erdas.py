@@ -2,7 +2,7 @@
 #
 #   Erdas.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001 Thomas Boggs
+#   Copyright (C) 2001-2008 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -54,11 +54,11 @@ def ErdasLan(file):
     if lh["packing"] == 2:
 	lh["typeCode"] = 'h'
         p.format = 'h'
-        p.typecode = 's'
+        p.typecode = 'h'
     else:
 	lh["typeCode"] = 'b'
         p.format = 'b'
-        p.typecode = '1'
+        p.typecode = 'b'
     
     return BilFile(p, lh)    
 
@@ -88,7 +88,7 @@ def ReadErdasLanHeader(fileName):
     if h["packing"] == 2:
 	h["typeCode"] = 'h'
     else:
-	h["typeCode"] = 'c'
+	h["typeCode"] = 'b'
 
     word.fromfile(f, 1)
     h["nBands"] = word.pop()

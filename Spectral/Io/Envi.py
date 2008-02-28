@@ -122,11 +122,11 @@ def EnviHdr(file, image = None):
     if h["data type"] == '2':
         #  Int16
         p.format = 'h'
-        p.typecode = 's'
+        p.typecode = 'h'
     elif h["data type"] == '1':
         #  char
         p.format = 'b'
-        p.typecode = '1'
+        p.typecode = 'b'
     elif h["data type"] == '3':
         #  float32
         p.format = 'f'
@@ -138,7 +138,7 @@ def EnviHdr(file, image = None):
     elif h["data type"] == '12':
         #  Int16
         p.format = 'H'
-        p.typecode = 's'
+        p.typecode = 'H'
     else:
         #  Don't recognize this type code
         raise TypeError, 'Unrecognized data type code in header ' + \

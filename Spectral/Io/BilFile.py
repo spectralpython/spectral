@@ -51,7 +51,7 @@ class BilFile(SpyFile):
         '''Read a single band from the image.'''
 
         from array import array
-        import Numeric
+        import numpy.oldnumeric as Numeric
 
         vals = array(self.format)
         offset = self.offset + band * self.sampleSize * self.nCols
@@ -75,7 +75,7 @@ class BilFile(SpyFile):
         '''Read specified bands from the image.'''
 
         from array import array
-        import Numeric
+        import numpy.oldnumeric as Numeric
 
         f = self.fid
 
@@ -84,7 +84,7 @@ class BilFile(SpyFile):
         f.seek(self.offset, 0)
         ta.fromfile(f, 1)
         na = Numeric.array(ta.tolist())
-        arrType = na.typecode()
+        arrType = na.dtype.char
 
         arr = Numeric.zeros((self.nRows, self.nCols, len(bands)), arrType)
 
@@ -112,7 +112,7 @@ class BilFile(SpyFile):
         '''Read the pixel at position (row,col) from the file.'''
 
         from array import array
-        import Numeric
+        import numpy.oldnumeric as Numeric
 
         vals = array(self.format)
         delta = self.sampleSize * (self.nBands - 1)
@@ -143,7 +143,7 @@ class BilFile(SpyFile):
         '''
 
         from array import array
-        import Numeric
+        import numpy.oldnumeric as Numeric
 
         nSubRows = rowBounds[1] - rowBounds[0]  # Rows in sub-image
         nSubCols = colBounds[1] - colBounds[0]  # Cols in sub-image
@@ -157,7 +157,7 @@ class BilFile(SpyFile):
         ta = array(self.format)
         ta.fromfile(f, 1)
         na = Numeric.array(ta.tolist())
-        arrType = na.typecode()
+        arrType = na.dtype.char
 
         # Increments between bands
         if bands == None:
@@ -196,9 +196,8 @@ class BilFile(SpyFile):
         all bands are read.
         '''
 
-#        import array
         from array import array
-        import Numeric
+        import numpy.oldnumeric as Numeric
 
         nSubRows = len(rows)                        # Rows in sub-image
         nSubCols = len(cols)                        # Cols in sub-image
@@ -213,7 +212,7 @@ class BilFile(SpyFile):
         ta = array(self.format)
         ta.fromfile(f, 1)
         na = Numeric.array(ta.tolist())
-        arrType = na.typecode()
+        arrType = na.dtype.char
 
         # Increments between bands
         if bands == None:
