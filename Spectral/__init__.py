@@ -3,7 +3,7 @@
 #   Spectral/__init__.py - This file is part of the Spectral Python (SPy)
 #   package.
 #
-#   Copyright (C) 2001 Thomas Boggs
+#   Copyright (C) 2001-2008 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -29,7 +29,7 @@
 # Thomas Boggs, tboggs@users.sourceforge.net
 #
 
-__version__ = '0.3'
+__version__ = '0.4'
 byteOrder = 0   # little endian
 
 BSQ = 0
