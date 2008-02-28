@@ -2,7 +2,7 @@
 #
 #   SpyGnuplot.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001 Thomas Boggs
+#   Copyright (C) 2001-2008 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -34,7 +34,6 @@ A module to use Gnuplot for creating x-y plots of pixel spectra.
 '''
 
 import Gnuplot
-from Numeric import *
 
 xyPlot = Gnuplot.Gnuplot()
 
@@ -49,6 +48,7 @@ def plot(data):
     be drawn as a separate series.
     '''
 
+    from numpy import shape
     global xyPlot
 
     g = Gnuplot.Gnuplot()
