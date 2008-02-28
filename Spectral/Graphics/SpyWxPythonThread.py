@@ -3,7 +3,7 @@
 #   SpyWxPythonThread.py - This file is part of the Spectral Python (SPy)
 #   package.
 #
-#   Copyright (C) 2001-2006 Thomas Boggs
+#   Copyright (C) 2001-2008 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -38,8 +38,8 @@ of execution. This module handles disply of images and related events.
 DEFAULT_X_SIZE = 600
 DEFAULT_Y_SIZE = 600
 
-from wxPython.wx import *
-from Numeric import *
+from wx import *
+#from Numeric import *
 from Spectral.Graphics import *
 
 
@@ -50,15 +50,15 @@ wxEVT_VIEW_IMAGE = 50002
 def EVT_VIEW_IMAGE(win, func):
     win.Connect(-1, -1, wxEVT_VIEW_IMAGE, func)
 
-class ViewImageRequest(wxPyEvent):
+class ViewImageRequest(wx.PyEvent):
     '''A request for a new image.'''
     def __init__(self, rgb, **kwargs):
-        wxPyEvent.__init__(self)
+        wx.PyEvent.__init__(self)
         self.SetEventType(wxEVT_VIEW_IMAGE)
         self.rgb = rgb
         self.kwargs = kwargs
 
-class HiddenCatcher(wxFrame):
+class HiddenCatcher(wx.Frame):
     '''
         The "catcher" frame in the second thread.
         It is invisible.  It's only job is to receive
@@ -66,7 +66,7 @@ class HiddenCatcher(wxFrame):
         the appropriate windows.
     ''' 
     def __init__(self):
-        wxFrame.__init__(self, NULL,-1,'')
+        wx.Frame.__init__(self, None,-1,'')
         
         EVT_VIEW_IMAGE(self, self.viewImage)
 #        self.bmp = wxBitmap("/dos/myphotos/roll2/can.bmp",
@@ -75,16 +75,16 @@ class HiddenCatcher(wxFrame):
     def viewImage(self, evt):
         if evt.kwargs.has_key('function'):
             frame = evt.kwargs['function']()
-            frame.Show(TRUE)
+            frame.Show(True)
             self.app.SetTopWindow(frame)
             frame.Raise()
         else:
-            frame = WxImageFrame(NULL, -1, evt.rgb, **evt.kwargs)
-            frame.Show(TRUE)
+            frame = WxImageFrame(None, -1, evt.rgb, **evt.kwargs)
+            frame.Show(True)
             self.app.SetTopWindow(frame)
 
 
-class WxImageFrame(wxFrame):
+class WxImageFrame(wx.Frame):
     '''
     WxImageFrame is the primary wxWindows object for displaying SPy
     images.  The frames also handle left double-click events by
@@ -98,20 +98,20 @@ class WxImageFrame(wxFrame):
 #        wxFrame.__init__(self, parent, index, "SPy Frame")
 #        wxScrolledWindow.__init__(self, parent, index, style = wxSUNKEN_BORDER)
 
-        img = wxEmptyImage(rgb.shape[0], rgb.shape[1])
-        img = wxEmptyImage(rgb.shape[1], rgb.shape[0])
+        img = wx.EmptyImage(rgb.shape[0], rgb.shape[1])
+        img = wx.EmptyImage(rgb.shape[1], rgb.shape[0])
         img.SetData(rgb.tostring())
         self.bmp = img.ConvertToBitmap()
         self.kwargs = kwargs
-        wxFrame.__init__(self, parent, index, title,
-                         wxPyDefaultPosition)
+        wx.Frame.__init__(self, parent, index, title,
+                          wx.DefaultPosition)
         self.SetClientSizeWH(self.bmp.GetWidth(), self.bmp.GetHeight())
         EVT_PAINT(self, self.OnPaint)
         EVT_LEFT_DCLICK(self, self.leftDoubleClick)
 
 
     def OnPaint(self, e):
-        dc = wxPaintDC(self)
+        dc = wx.PaintDC(self)
         self.Paint(dc)
 
     def Paint(self, dc):
@@ -133,7 +133,7 @@ class WxImageFrame(wxFrame):
         
 
 
-class WxImageServer(wxApp):
+class WxImageServer(wx.App):
     '''
     An image server built on wxPython.  This image server runs in a
     separate thread, displaying raster images and handling events
@@ -142,12 +142,12 @@ class WxImageServer(wxApp):
     '''
 
     def OnInit(self):
-        wxInitAllImageHandlers()
+        wx.InitAllImageHandlers()
         catcher = HiddenCatcher()
         catcher.app = self
         #self.SetTopWindow(catcher)
         self.catcher = catcher
-        return true
+        return True
 
 
     
