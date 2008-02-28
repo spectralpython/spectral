@@ -3,7 +3,7 @@
 #   Hypercube.py - This file is part of the Spectral Python (SPy)
 #   package.
 #
-#   Copyright (C) 2001-2006 Thomas Boggs
+#   Copyright (C) 2001-2008 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -56,23 +56,62 @@
 # ported to wxPython by greg Landrum
 # modified by Y. Wong
 #------------------------------------------------------------------------
-''' Code for rendering and manipulating hypercubes.'''
 
-from wxPython.wx import *
-from wxPython.glcanvas import *
+'''
+Code for rendering and manipulating hypercubes. Most users will only need to
+call the function "hypercube".
+'''
 
-from OpenGL.GL import *
-from OpenGL.GLUT import *
-from OpenGL.GLU import *
+try:
+    import wx
+    from wx import glcanvas
+except ImportError:
+    raise ImportError, "Required dependency wx.glcanvas not present"
 
-class WxHypercubeWindow(wxGLCanvas):
-    ''' A wxWindow that displays an interactive hypercube.'''
-    def __init__(self, hsi, parent, *args, **kwargs):
-        apply(wxGLCanvas.__init__,(self, parent)+args)
-        self.parent = parent
+try:
+    from OpenGL.GL import *
+    from OpenGL.GLUT import *
+    from OpenGL.GLU import *
+except ImportError:
+    raise ImportError, "Required dependency OpenGL not present"
+
+DEFAULT_WIN_SIZE = (500, 500)                   # Default dimensions of image frame
+DEFAULT_TEXTURE_SIZE = (256, 256)               # Default size of textures on cube faces
+
+
+class WxHypercubeFrame(wx.Frame):
+    """A simple class for using OpenGL with wxPython."""
+    
+    def __init__(self, data, parent, id, *args, **kwargs):
+        global DEFAULT_WIN_SIZE
 
         self.kwargs = kwargs
-        self.hsi = hsi
+        if kwargs.has_key('size'):
+            size = wx.Size(*kwargs['size'])
+        else:
+            size = wx.Size(*DEFAULT_WIN_SIZE)
+        if kwargs.has_key('title'):
+            title = kwargs['title']
+        else:
+            title = 'Hypercube'
+
+        #
+        # Forcing a specific style on the window.
+        #   Should this include styles passed?
+        style = wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE
+        
+        super(WxHypercubeFrame, self).__init__(parent, id, title, wx.DefaultPosition, size, wx.DEFAULT_FRAME_STYLE, name)
+        
+        self.GLinitialized = False
+        attribList = (glcanvas.WX_GL_RGBA, # RGBA
+                      glcanvas.WX_GL_DOUBLEBUFFER, # Double Buffered
+                      glcanvas.WX_GL_DEPTH_SIZE, 32) # 32 bit
+        
+        #
+        # Create the canvas
+        self.canvas = glcanvas.GLCanvas(self, attribList=attribList)
+
+        self.hsi = data
         self.cubeHeight = 1.0
         self.rotation = [-60, 0, -30]
         self.distance = -5
@@ -80,58 +119,35 @@ class WxHypercubeWindow(wxGLCanvas):
 
         self.texturesLoaded = False
         
-        EVT_SIZE(self,self.wxSize)
-        EVT_PAINT(self,self.wxPaint)
-        EVT_ERASE_BACKGROUND(self, self.wxEraseBackground)
-        EVT_CHAR(self,self.OnChar)
-
-        self.w, self.h = self.GetClientSizeTuple()
-
-        self.InitGL()
-
-        print 'Press "h" for keybind help'
-
-    def __del__(self):
-        self.FinishGL()
-
-    def InitGL(self):				# We call this right after our OpenGL window is created.
-        
-##        self.LoadTextures()
-
-        glEnable(GL_TEXTURE_2D)
-        glClearColor(0.0, 0.0, 0.0, 0.0)	# This Will Clear The Background Color To Black
-        glClearDepth(1.0)					# Enables Clearing Of The Depth Buffer
-        glDepthFunc(GL_LESS)				# The Type Of Depth Test To Do
-        glEnable(GL_DEPTH_TEST)				# Enables Depth Testing
-        glShadeModel(GL_SMOOTH)				# Enables Smooth Color Shading
-        
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()					# Reset The Projection Matrix
-                                                                                # Calculate The Aspect Ratio Of The Window
-        gluPerspective(45.0, float(self.w)/float(self.h), 0.1, 100.0)
-
-        glMatrixMode(GL_MODELVIEW)
-
-        glLightfv(GL_LIGHT0, GL_AMBIENT, (0.5, 0.5, 0.5, 1.0))		# Setup The Ambient Light 
-        glLightfv(GL_LIGHT0, GL_DIFFUSE, (1.0, 1.0, 1.0, 1.0))		# Setup The Diffuse Light 
-        glLightfv(GL_LIGHT0, GL_POSITION, (0.0, 0.0, 2.0, 1.0))	# Position The Light 
-        glEnable(GL_LIGHT0)					# Enable Light One 
-
-    def FinishGL(self):
-        """OpenGL closing routine (to be overridden).
-
-        This routine should be overridden if necessary by any OpenGL commands need to be specified when deleting the GLWindow (e.g. deleting Display Lists)."""
-        pass
+        #
+        # Set the event handlers.
+        self.canvas.Bind(wx.EVT_ERASE_BACKGROUND, self.processEraseBackgroundEvent)
+        self.canvas.Bind(wx.EVT_SIZE, self.processSizeEvent)
+        self.canvas.Bind(wx.EVT_PAINT, self.onPaint)
+        self.canvas.Bind(wx.EVT_CHAR, self.onChar)
 
     def LoadTextures(self):
+        #global texture
+        from Image import open
         import Spectral
-        import Image
-        from ColorScale import defaultColorScale
+        from Spectral.Graphics.ColorScale import defaultColorScale
 
-        # Create raster image for top of cube
+        global DEFAULT_TEXTURE_SIZE
+
+        if self.kwargs.has_key('textureSize'):
+            (dimX, dimY) = self.kwargs['textureSize']
+        else:
+            (dimX, dimY) = DEFAULT_TEXTURE_SIZE
+
+        if self.kwargs.has_key('scale'):
+            scale = self.kwargs['scale']
+        else:
+            scale = defaultColorScale
+
         data = self.hsi
         s = data.shape
-        images = []
+
+        # Create image for top of cube
         if self.kwargs.has_key('top'):
             image = self.kwargs['top']
         else:
@@ -142,183 +158,205 @@ class WxHypercubeWindow(wxGLCanvas):
             else:
                 bands = range(3)
             image = Spectral.makePilImage(data, bands, format='bmp')
-        images.append(image)
 
-        if self.kwargs.has_key('scale'):
-            scale = self.kwargs['scale']
-        else:
-            scale = defaultColorScale
+        # Read data for sides of cube
+        sides = [data[s[0] - 1, :, :].squeeze()]		# front face
+        sides.append(data[:, s[1] - 1, :].squeeze())		# right face
+        sides.append(data[0, :, :].squeeze())			# back face
+        sides.append(data[:, 0, :].squeeze())			# left face
 
-        # Now the sides of the cube:
+        # Create images for sides of cube
+        scaleMin = min([min(side.ravel()) for side in sides])
+        scaleMax = max([max(side.ravel()) for side in sides])
+        scale = defaultColorScale
+        scale.setRange(scaleMin, scaleMax)
+        sideImages = [Spectral.makePilImage(side, colorScale=scale, autoScale=1, format='bmp') for side in sides]
+        images = [image] + sideImages + [image]
 
-        # TO DO:  flip data.
-        tmp = data[s[0] - 1, :, :]			# front face
-        Spectral.saveImage('front.bmp', tmp[0,:,:], 'bmp', colorScale=scale, autoScale=1)
-        images.append(Spectral.makePilImage(tmp[0, :, :], colorScale=scale, autScale=1, format='bmp'))
-        tmp = data[:, s[1] - 1, :]			# right face
-        images.append(Spectral.makePilImage(tmp[:, 0, :], colorScale=scale, autScale=1, format='bmp'))
-        tmp = data[0, :, :]				# back face
-        images.append(Spectral.makePilImage(tmp[0, :, :], colorScale=scale, autScale=1, format='bmp'))
-        tmp = data[:, 0, :]				# left face
-        images.append(Spectral.makePilImage(tmp[:, 0, :], colorScale=scale, autScale=1, format='bmp'))
-        tmp = 0
-        images.append(image)				# bottom
-        
         self.textures = glGenTextures(6)
-        print 'self.textures =', self.textures
-
         texImages = []
         (a, b, c) = data.shape
         texSizes = [(b, a), (b, c), (a, c), (b, c), (a, c), (b, a)]
-        (DIMX, DIMY) = (256, 256)
         for i in range(len(images)):
-##            (DIMX, DIMY) = texSizes[i]
-            img = images[i].resize((DIMX, DIMY))
+            img = images[i].resize((dimX, dimY))
             img = img.tostring("raw", "RGBX", 0, -1)
             texImages.append(img)
             
             # Create Linear Filtered Texture 
-            glBindTexture(GL_TEXTURE_2D, self.textures[i])
+            glBindTexture(GL_TEXTURE_2D, long(self.textures[i]))
             glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR)
             glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR)
-            glTexImage2D(GL_TEXTURE_2D, 0, 3, DIMX, DIMY, 0, GL_RGBA, GL_UNSIGNED_BYTE, texImages[i])
+            glTexImage2D(GL_TEXTURE_2D, 0, 3, dimX, dimY, 0, GL_RGBA, GL_UNSIGNED_BYTE, texImages[i])
+            
+##        # Create Texture	
+##        glBindTexture(GL_TEXTURE_2D, glGenTextures(1))   # 2d texture (x and y size)
+##            
+##        glPixelStorei(GL_UNPACK_ALIGNMENT,1)
+##        glTexImage2D(GL_TEXTURE_2D, 0, 3, ix, iy, 0, GL_RGBA, GL_UNSIGNED_BYTE, image)
+##        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+##        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+##        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+##        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+##        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+##        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+##        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
 
-    def DrawGL(self):
-        """OpenGL drawing routine (to be overridden).
-        This routine, containing purely OpenGL commands, should be overridden by the user to draw the GL scene. If it is not overridden, it defaults to drawing a colour cube."""
+    def GetGLExtents(self):
+        """Get the extents of the OpenGL canvas."""
+        return 
+    
+    def SwapBuffers(self):
+        """Swap the OpenGL buffers."""
+        self.canvas.SwapBuffers()
+    
+    #
+    # wxPython Window Handlers
+    
+    def processEraseBackgroundEvent(self, event):
+        """Process the erase background event."""
+        pass # Do nothing, to avoid flashing on MSWin
+    
+    def processSizeEvent(self, event):
+        """Process the resize event."""
+        if self.canvas.GetContext():
+            # Make sure the frame is shown before calling SetCurrent.
+            self.Show()
+            self.canvas.SetCurrent()
 
-
-        self.SetCurrent()
-
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)	# Clear The Screen And The Depth Buffer
-        glLoadIdentity()					# Reset The View
-        glTranslatef(0.0,0.0,self.distance)			# Move Into The Screen
-        glRotatef(self.rotation[0],1.0,0.0,0.0)			# Rotate The Cube On It's X Axis
-        glRotatef(self.rotation[1],0.0,1.0,0.0)			# Rotate The Cube On It's Y Axis
-        glRotatef(self.rotation[2],0.0,0.0,1.0)			# Rotate The Cube On It's Z Axis
+            size = self.canvas.GetClientSize()
+            self.OnReshape(size.width, size.height)
+            self.canvas.Refresh(False)
+        event.Skip()
+    
+    def onPaint(self, event):
+        """Process the drawing event."""
+        self.canvas.SetCurrent()
+        
+        # This is a 'perfect' time to initialize OpenGL ... only if we need to
+        if not self.GLinitialized:
+            self.OnInitGL()
+            self.GLinitialized = True
+            self.printHelp()
         
         if self.light:
             glEnable(GL_LIGHTING)
         else:
             glDisable(GL_LIGHTING)
 
-        self.DrawCube()
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)	# Clear The Screen And The Depth Buffer
+        glLoadIdentity()					# Reset The View
+        self.OnDraw()
 
-        #  since this is double buffered, swap the buffers to display what just got drawn. 
-        self.SwapBuffers()
+        event.Skip()
+    
+    #
+    # GLFrame OpenGL Event Handlers
+    
+    def OnInitGL(self):
+        """Initialize OpenGL for use in the window."""
+        self.LoadTextures()
+        glEnable(GL_TEXTURE_2D)
+        glClearColor(0.0, 0.0, 0.0, 0.0)	# This Will Clear The Background Color To Black
+        glClearDepth(1.0)			# Enables Clearing Of The Depth Buffer
+        glDepthFunc(GL_LESS)			# The Type Of Depth Test To Do
+        glEnable(GL_DEPTH_TEST)			# Enables Depth Testing
+        glShadeModel(GL_SMOOTH)			# Enables Smooth Color Shading
+            
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()			# Reset The Projection Matrix
+        # Calculate The Aspect Ratio Of The Window
+        (width, height) = self.canvas.GetClientSize()
+        gluPerspective(45.0, float(width)/float(height), 0.1, 100.0)
 
-    def DrawCube(self):
+        glMatrixMode(GL_MODELVIEW)
 
-        if not self.texturesLoaded:
-            self.LoadTextures()
-            self.texturesLoaded = True
+        glLightfv(GL_LIGHT0, GL_AMBIENT, (0.5, 0.5, 0.5, 1.0))	# Setup The Ambient Light 
+        glLightfv(GL_LIGHT0, GL_DIFFUSE, (1.0, 1.0, 1.0, 1.0))	# Setup The Diffuse Light 
+        glLightfv(GL_LIGHT0, GL_POSITION, (0.0, 0.0, 2.0, 1.0))	# Position The Light 
+        glEnable(GL_LIGHT0)					# Enable Light One 
 
+    
+    def OnReshape(self, width, height):
+        """Reshape the OpenGL viewport based on the dimensions of the window."""
+        glViewport(0, 0, width, height)
+        
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        gluPerspective(45.0, float(width)/float(height), 0.1, 100.0)
+        
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+    
+    def OnDraw(self, *args, **kwargs):
+
+        # Determine cube proportions
         divisor = max(self.hsi.shape[:2])
         hh, hw = [float(x) / divisor for x in self.hsi.shape[:2]]
         hz = self.cubeHeight
-        
-        # Front Face (note that the texture's corners have to match the quad's corners)
-        glBindTexture(GL_TEXTURE_2D, self.textures[0])
-        glBegin(GL_QUADS)				# Start Drawing The Cube
+
+        # Cube orientation
+        glTranslatef(0.0, 0.0, self.distance)			# Move Into The Screen
+        glRotatef(self.rotation[0],1.0,0.0,0.0)			# Rotate The Cube On It's X Axis
+        glRotatef(self.rotation[1],0.0,1.0,0.0)			# Rotate The Cube On It's Y Axis
+        glRotatef(self.rotation[2],0.0,0.0,1.0)			# Rotate The Cube On It's Z Axis
+
+        # Top Face (note that the texture's corners have to match the quad's corners)
+        glBindTexture(GL_TEXTURE_2D, long(self.textures[0]))
+        glBegin(GL_QUADS)
         glTexCoord2f(0.0, 0.0); glVertex3f(-hw, -hh,  hz)	# Bottom Left Of The Texture and Quad
         glTexCoord2f(1.0, 0.0); glVertex3f( hw, -hh,  hz)	# Bottom Right Of The Texture and Quad
         glTexCoord2f(1.0, 1.0); glVertex3f( hw,  hh,  hz)	# Top Right Of The Texture and Quad
         glTexCoord2f(0.0, 1.0); glVertex3f(-hw,  hh,  hz)	# Top Left Of The Texture and Quad
-        glEnd();						# Done Drawing The face
-        
-        # Back Face
-        ##	glBindTexture(GL_TEXTURE_2D, self.textures[0])
-        ##	glBegin(GL_QUADS)				# Start Drawing The Cube
-        ##	glTexCoord2f(0.0, 0.0); glVertex3f(-1.0, -1.0, -1.0)	# Bottom Right Of The Texture and Quad
-        ##	glTexCoord2f(0.0, 1.0); glVertex3f(-1.0,  1.0, -1.0)	# Top Right Of The Texture and Quad
-        ##	glTexCoord2f(1.0, 1.0); glVertex3f( 1.0,  1.0, -1.0)	# Top Left Of The Texture and Quad
-        ##	glTexCoord2f(1.0, 0.0); glVertex3f( 1.0, -1.0, -1.0)	# Bottom Left Of The Texture and Quad
-        ##	glEnd();						# Done Drawing The face
-        
-        # Top Face
-        glBindTexture(GL_TEXTURE_2D, self.textures[3])
-        glBegin(GL_QUADS)				# Start Drawing The Cube
+        glEnd();
+
+        # Bottom Face
+        glBindTexture(GL_TEXTURE_2D, long(self.textures[5]))
+        glBegin(GL_QUADS)
+        glTexCoord2f(0.0, 0.0); glVertex3f(-hw, -hh, -hz)	# Bottom Left Of The Texture and Quad
+        glTexCoord2f(1.0, 0.0); glVertex3f( hw, -hh, -hz)	# Bottom Right Of The Texture and Quad
+        glTexCoord2f(1.0, 1.0); glVertex3f( hw,  hh, -hz)	# Top Right Of The Texture and Quad
+        glTexCoord2f(0.0, 1.0); glVertex3f(-hw,  hh, -hz)	# Top Left Of The Texture and Quad
+        glEnd();
+
+        # Far Face
+        glBindTexture(GL_TEXTURE_2D, long(self.textures[3]))
+        glBegin(GL_QUADS)
         glTexCoord2f(1.0, 1.0); glVertex3f(-hw,  hh, -hz)	# Top Left Of The Texture and Quad
         glTexCoord2f(0.0, 1.0); glVertex3f(-hw,  hh,  hz)	# Bottom Left Of The Texture and Quad
         glTexCoord2f(0.0, 0.0); glVertex3f( hw,  hh,  hz)	# Bottom Right Of The Texture and Quad
         glTexCoord2f(1.0, 0.0); glVertex3f( hw,  hh, -hz)	# Top Right Of The Texture and Quad
-        glEnd();						# Done Drawing The face
-        
-        # Bottom Face	   
-        glBindTexture(GL_TEXTURE_2D, self.textures[1])
-        glBegin(GL_QUADS)				# Start Drawing The Cube
+        glEnd();
+
+        # Near Face       
+        glBindTexture(GL_TEXTURE_2D, long(self.textures[1]))
+        glBegin(GL_QUADS)
         glTexCoord2f(1.0, 1.0); glVertex3f(-hw, -hh, -hz)	# Top Right Of The Texture and Quad
         glTexCoord2f(1.0, 0.0); glVertex3f( hw, -hh, -hz)	# Top Left Of The Texture and Quad
         glTexCoord2f(0.0, 0.0); glVertex3f( hw, -hh,  hz)	# Bottom Left Of The Texture and Quad
         glTexCoord2f(0.0, 1.0); glVertex3f(-hw, -hh,  hz)	# Bottom Right Of The Texture and Quad
-        glEnd();						# Done Drawing The face
-        
+        glEnd();
+
         # Right face
-        glBindTexture(GL_TEXTURE_2D, self.textures[2])
-        glBegin(GL_QUADS)				# Start Drawing The Cube
+        glBindTexture(GL_TEXTURE_2D, long(self.textures[2]))
+        glBegin(GL_QUADS)
         glTexCoord2f(1.0, 0.0); glVertex3f( hw, -hh, -hz)	# Bottom Right Of The Texture and Quad
         glTexCoord2f(1.0, 1.0); glVertex3f( hw,  hh, -hz)	# Top Right Of The Texture and Quad
         glTexCoord2f(0.0, 1.0); glVertex3f( hw,  hh,  hz)	# Top Left Of The Texture and Quad
         glTexCoord2f(0.0, 0.0); glVertex3f( hw, -hh,  hz)	# Bottom Left Of The Texture and Quad
-        glEnd();						# Done Drawing The face
-        
+        glEnd();
+
         # Left Face
-        glBindTexture(GL_TEXTURE_2D, self.textures[4])
-        glBegin(GL_QUADS)				# Start Drawing The Cube
+        glBindTexture(GL_TEXTURE_2D, long(self.textures[4]))
+        glBegin(GL_QUADS)
         glTexCoord2f(1.0, 0.0); glVertex3f(-hw, -hh, -hz)	# Bottom Left Of The Texture and Quad
         glTexCoord2f(0.0, 0.0); glVertex3f(-hw, -hh,  hz)	# Bottom Right Of The Texture and Quad
         glTexCoord2f(0.0, 1.0); glVertex3f(-hw,  hh,  hz)	# Top Right Of The Texture and Quad
         glTexCoord2f(1.0, 1.0); glVertex3f(-hw,  hh, -hz)	# Top Left Of The Texture and Quad
-        glEnd();						# Done Drawing The face
+        glEnd();
 
-    def wxSize(self, event = None):
-        """Called when the window is resized"""
-        self.w,self.h = self.GetClientSizeTuple()
-        glViewport(0, 0, self.w, self.h)		# Reset The Current Viewport And Perspective Transformation
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        gluPerspective(45.0, float(self.w)/float(self.h), 0.1, 100.0)
-        glMatrixMode(GL_MODELVIEW)
+        self.SwapBuffers()
 
-    def wxEraseBackground(self, event):
-        """Routine does nothing, but prevents flashing"""
-        pass
-
-    def wxPaint(self, event=None):
-        """Called on a paint event.
-
-        This sets the painting drawing context, then calls the base routine wxRedrawGL()"""
-        dc = wxPaintDC(self)
-        self.wxRedrawGL(event)
-
-    def wxRedraw(self, event=None):
-        """Called on a redraw request
-
-        This sets the drawing context, then calls the base routine wxRedrawGL(). It can be called by the user when a refresh is needed"""
-        dc = wxClientDC(self)
-        self.wxRedrawGL(event)
-
-    def wxRedrawGL(self, event=None):
-        """This is the routine called when drawing actually takes place.
-
-        It needs to be separate so that it can be called by both paint events and by other events. It should not be called directly"""
-
-        self.SetCurrent()
-
-        glClear(GL_COLOR_BUFFER_BIT)
-        glClear(GL_DEPTH_BUFFER_BIT)
-        glLoadIdentity()
-        glMatrixMode(GL_MODELVIEW)
-
-        glPushMatrix()
-        self.DrawGL()               # Actually draw here
-        glPopMatrix()
-        glFlush()                   # Flush
-        self.SwapBuffers()  # Swap buffers
-
-        if event: event.Skip()  # Pass event up
-
-    def OnChar(self,event):
+    def onChar(self,event):
         key = event.GetKeyCode()
         if key == ord('w'):
             self.rotation[0] -= 1
@@ -340,10 +378,11 @@ class WxHypercubeWindow(wxGLCanvas):
             self.light = not self.light
         elif key == ord('h'):
             self.printHelp()
-        self.wxRedraw()
+        self.OnDraw()
+        self.onPaint()
 
         if key == ord('q'):
-            self.parent.Destroy()
+            self.Destroy()
 
     def printHelp(self):
         print
@@ -364,22 +403,9 @@ class HypercubeFunctor:
         self.args = args
         self.kwargs = kwargs
     def __call__(self):
-        if self.kwargs.has_key('title'):
-            title = self.kwargs['title']
-        else:
-            title = 'Hypercube'
-        frame = wxFrame(NULL, -1, title, wxDefaultPosition, wxSize(400,400))
-        win = WxHypercubeWindow(*([self.data] + [frame, -1, wxPoint(5,5), wxSize(190,190)]), **self.kwargs)
+        frame = WxHypercubeFrame(self.data, None, -1, *self.args, **self.kwargs)
         return frame
 
-#-----------------------------------------------------
-
-def go():
-    import Spectral
-##    hsi = Spectral.image('torr/torr_1.img')
-    hsi = Spectral.image('92AV3C')
-    hypercube(hsi, bands = [10, 20, 30])
-    
 def hypercube(data, *args, **kwargs):
     '''
     Renders an interactive hypercube in a new window.
@@ -404,5 +430,3 @@ def hypercube(data, *args, **kwargs):
     from Spectral.Graphics.SpyWxPython import viewer
     cubeFunctor = HypercubeFunctor(data, *args, **kwargs)
     viewer.view(None, function = cubeFunctor)
-    
-
