@@ -36,7 +36,7 @@ BSQ = 0
 BIL = 1
 BIP = 2
 
-from Numeric import *
+from numpy import *
 from Spectral import *
 from Io.SpyFile import SubImage, TransformedImage
 from Graphics.SpyGnuplot import *
