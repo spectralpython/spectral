@@ -3,7 +3,7 @@
 #   Algorithms.py - This file is part of the Spectral Python (SPy)
 #   package.
 #
-#   Copyright (C) 2001-2006 Thomas Boggs
+#   Copyright (C) 2001-2008 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -32,9 +32,7 @@
 '''
 Various functions and algorithms for processing spectral data.
 '''
-
-from Numeric import *
-#from LinearAlgebra import *
+import numpy
 
 class Iterator:
     '''
@@ -62,7 +60,6 @@ class ImageIterator(Iterator):
         return self.image.shape[2]
     def __iter__(self):
         from Spectral import status
-        typecode = self.image.typecode()
         (M, N) = self.image.shape[:2]
         count = 0
         for i in range(M):
@@ -80,23 +77,24 @@ class ImageMaskIterator(Iterator):
         self.index = index
         # Get the proper mask for the training set
         if index:
-            self.mask = equal(mask, index)
+            self.mask = numpy.equal(mask, index)
         else:
             self.mask = not_equal(mask, 0)
-        self.numElements = sum(self.mask.flat)
+        self.numElements = sum(self.mask.ravel())
     def getNumElements(self):
         return self.numElements
     def getNumBands(self):
         return self.image.shape[2]
     def __iter__(self):
         from Spectral import status
+        from numpy import transpose, indices, reshape, compress, not_equal
         typecode = self.image.typecode()
         (nRows, nCols, nBands) = self.image.shape
 
         # Translate the mask into indices into the data source
         inds = transpose(indices((nRows, nCols)), (1, 2, 0))
         inds = reshape(inds, (nRows * nCols, 2))
-        inds = compress(not_equal(self.mask.flat, 0), inds, 0).astype('s')
+        inds = compress(not_equal(self.mask.ravel(), 0), inds, 0).astype('h')
 
         for i in range(inds.shape[0]):
             sample = self.image[inds[i][0], inds[i][1]].astype(typecode)
@@ -112,7 +110,7 @@ def iterator(image, mask = None, index = None):
 
     if isinstance(image, Iterator):
         return image
-    elif mask:
+    elif mask != None:
         return ImageMaskIterator(image, mask, index)
     else:
         return ImageIterator(image)
@@ -136,6 +134,8 @@ def mean_cov(image, mask = None, index = None):
     '''
     import Spectral
     from Spectral import status
+    from numpy import zeros, transpose, dot
+    from numpy.oldnumeric import NewAxis
     
     if not isinstance(image, Iterator):
         it = iterator(image, mask, index)
@@ -145,8 +145,8 @@ def mean_cov(image, mask = None, index = None):
     nSamples = it.getNumElements()
     B = it.getNumBands()
     
-    sumX = zeros((B,), Float)
-    sumX2 = zeros((B, B), Float)
+    sumX = zeros((B,), float)
+    sumX2 = zeros((B, B), float)
     count = 0
     
     statusInterval = max(1, nSamples / 100)
@@ -156,11 +156,11 @@ def mean_cov(image, mask = None, index = None):
             status.updatePercentage(float(count) / nSamples * 100.)
         count += 1
         sumX += x
-        x = x[:, NewAxis].astype(Float)
-        sumX2 += matrixmultiply(x, transpose(x))
+        x = x[:, NewAxis].astype(float)
+        sumX2 += dot(x, transpose(x))
     mean = sumX / count
     sumX = sumX[:, NewAxis]
-    cov = (sumX2 - matrixmultiply(sumX, transpose(sumX)) / float(count)) / float(count - 1)
+    cov = (sumX2 - dot(sumX, transpose(sumX)) / float(count)) / float(count - 1)
     status.endPercentage()
     return (mean, cov, count)
 
@@ -183,15 +183,18 @@ def principalComponents(image):
         C      -         The BxB covariance matrix of the image\n
     '''
     
-    from LinearAlgebra import eigenvectors
+    from numpy import sqrt, sum
     
     (M, N, B) = image.shape
     
     (mean, cov, count) = mean_cov(image)
-    (L, V) = eigenvectors(cov)
+    (L, V) = numpy.linalg.eig(cov)
 
     #  Normalize eigenvectors
-    V = V / sqrt(sum(V * V))
+    V = V / sqrt(sum(V * V, 0))
+
+    # numpy stores eigenvectors in columns
+    V = V.transpose()
 
     return (L, V, mean, cov)
 
@@ -215,7 +218,9 @@ def linearDiscriminant(classes):
     covariance matrix, and the within-class covariance matrix.
     '''
 
-    from LinearAlgebra import inverse, eigenvectors
+    from numpy import zeros, dot, transpose, diagonal
+    from numpy.linalg import inv, eig
+    from numpy.oldnumeric import NewAxis
     import math
 
     C = len(classes)		# Number of training sets
@@ -226,31 +231,33 @@ def linearDiscriminant(classes):
     B = None            # Don't know number of bands yet
     mean = None
     for s in classes:
-        if not mean:
+        if mean == None:
             B = s.numBands
-            mean = zeros(B, Float)
+            mean = zeros(B, float)
 	N += s.size()
+        if not hasattr(s, 'stats'):
+            s.calcStatistics()
 	mean += s.size() * s.stats.mean
     mean /= float(N)
 
-    cov_b = zeros((B, B), Float)            # cov between classes
-    cov_w = zeros((B, B), Float)            # cov within classes
+    cov_b = zeros((B, B), float)            # cov between classes
+    cov_w = zeros((B, B), float)            # cov within classes
 
     for s in classes:
 	cov_w += (s.size() - 1) * s.stats.cov
 	m = (s.stats.mean - mean)[:, NewAxis]
-	cov_b += s.size() * matrixmultiply(m, transpose(m))
+	cov_b += s.size() * dot(m, transpose(m))
     cov_w /= float(N)
     cov_b /= float(N)
 
-    cwInv = inverse(cov_w)
-    (vals, vecs) = eigenvectors(matrixmultiply(cwInv, cov_b))
+    cwInv = inv(cov_w)
+    (vals, vecs) = eig(dot(cwInv, cov_b))
 
     vals = vals[:rank]
-    vecs = vecs[:rank, :]
+    vecs = transpose(vecs)[:rank, :]
 
     # Diagonalize cov_within in the new space
-    v = matrixmultiply(vecs, matrixmultiply(cov_w, transpose(vecs)))
+    v = dot(vecs, dot(cov_w, transpose(vecs)))
     d = diagonal(v)
     for i in range(vecs.shape[0]):
     	vecs[i, :] /= math.sqrt(d[i].real)
@@ -282,8 +289,7 @@ def reduceEigenvectors(L, V, fraction = 0.99):
     the default value of 0.99 is used.
     '''
 
-    import Numeric
-    from LinearAlgebra import eigenvalues
+    import numpy.oldnumeric as Numeric
 
     cumEig = Numeric.cumsum(L)
     sum = cumEig[-1]
@@ -302,8 +308,8 @@ def reduceEigenvectors(L, V, fraction = 0.99):
     return (L, V)
 
 def logDeterminant(x):
-    from LinearAlgebra import eigenvalues
-    return sum(log(eigenvalues(x)))
+    from numpy.oldnumeric.linear_algebra import eigenvalues
+    return sum(numpy.log(eigenvalues(x)))
 
 class GaussianStats:
     def __init__(self):
@@ -356,6 +362,7 @@ class TrainingClass:
 
     def size(self):
         '''Return the number of pixels in the training set.'''
+        from numpy import sum, equal
 
         # If the stats are invalid, the number of pixels in the
         # training set may have changed.
@@ -363,18 +370,22 @@ class TrainingClass:
             return self._size
 
         if self.index:
-            return sum(equal(self.mask, self.index).flat)
+            return sum(equal(self.mask, self.index).ravel())
         else:
-            return sum(not_equal(self.mask, 0).flat)        
+            return sum(not_equal(self.mask, 0).ravel())        
 
     def calcStatistics(self):
         '''
         Calculates statistic for the class.
         '''
+        import math
+        from numpy.linalg import inv, det
 
         self.stats = GaussianStats()
         (self.stats.mean, self.stats.cov, self.stats.numSamples) = \
                           mean_cov(self.image, self.mask, self.index)
+        self.stats.invCov = inv(self.stats.cov)
+        self.stats.logDetCov = logDeterminant(self.stats.cov)
         self._size = self.stats.numSamples
         self._statsValid = 1
 
@@ -386,15 +397,18 @@ class TrainingClass:
         USAGE: set.transform(m)
         '''
 
-        from LinearAlgebra import inverse, determinant, eigenvalues
+        from numpy import dot, transpose
+        from numpy.linalg import det, inv
+        from numpy.oldnumeric import NewAxis
+        import math
         from Spectral.Io.SpyFile import TransformedImage
 
         self.stats.mean = dot(m, self.stats.mean[:, NewAxis])[:, 0]
         self.stats.cov = dot(m, dot(self.stats.cov, transpose(m)))
-        self.stats.invCov = inverse(self.stats.cov)
+        self.stats.invCov = inv(self.stats.cov)
         
         try:
-            self.stats.logDetCov = log(determinant(self.stats.cov))
+            self.stats.logDetCov = math.log(det(self.stats.cov))
         except OverflowError:
             self.stats.logDetCov = logDeterminant(self.stats.cov)
 
@@ -455,7 +469,7 @@ class TrainingClassSet:
     def __init__(self):
         self.classes = {}
         self.numBands = None
-    def __item__(self, i):
+    def __getitem__(self, i):
         '''Returns the class having index i.'''
         return self.classes[i]
     def __len__(self):
@@ -504,7 +518,7 @@ def createTrainingClasses(image, classMask, calcStats = 0, indices = None):
     '''
 
     from sets import Set
-    classIndices = Set(classMask.flat)
+    classIndices = Set(classMask.ravel())
     classes = TrainingClassSet()
     for i in classIndices:
         if i == 0:
@@ -536,10 +550,10 @@ def ndvi(data, red, nir):
         of data in the range [0.0, 1.0].
     '''
 
-    r = data[:, :, red].astype(Float)
+    r = data[:, :, red].astype(float)
     if len(r.shape) == 3 and r.shape[2] > 1:
         r = sum(r, 2) / r.shape[2]
-    n = data[:, :, nir].astype(Float)
+    n = data[:, :, nir].astype(float)
     if len(n.shape) == 3 and n.shape[2] > 1:
         n = sum(n, 2) / n.shape[2]
 
@@ -578,16 +592,18 @@ def bDistanceTerms(a, b):
                             A 2-tuple of the linear and quadratic terms
     '''
     from math import exp
+    from numpy import dot, transpose
+    from numpy.linalg import inv
 
-    m = a.mean - b.mean
-    avgCov = (a.cov + b.cov) / 2
+    m = a.stats.mean - b.stats.mean
+    avgCov = (a.stats.cov + b.stats.cov) / 2
 
-    linTerm = (1/8.) * matrixmultiply(transpose(m), \
-        matrixmultiply(inverse(avgCov), m))
+    linTerm = (1/8.) * dot(transpose(m), \
+        dot(inv(avgCov), m))
 
     quadTerm = 0.5 * (logDeterminant(avgCov) \
-                      - 0.5 * a.logDetCov \
-                      - 0.5 * b.logDetCov)
+                      - 0.5 * a.stats.logDetCov \
+                      - 0.5 * b.stats.logDetCov)
 
     return (linTerm, float(quadTerm))
 
@@ -608,19 +624,19 @@ def transformImage(matrix, image):
     is returned.  If image is a Numeric array, an array with all pixels
     transformed is returned.
     '''
-    from Numeric import ArrayType
+    from Spectral.Io.SpyFile import TransformedImage
+    from numpy.oldnumeric import ArrayType
     from Spectral.Io.SpyFile import SpyFile
 
     if isinstance(image, SpyFile):
         return TransformedImage(matrix, image)
     elif isinstance(image, ArrayType):
         (M, N, B) = image.shape
-        xImage = zeros((M, N, matrix.shape[0]), matrix.typecode())
+        xImage = numpy.zeros((M, N, matrix.shape[0]), float)
         
         for i in range(M):
             for j in range(N):
-                xImage[i, j] = matrixmultiply(matrix, image[i, j]  \
-                                            .astype(matrix.typecode()))
+                xImage[i, j] = numpy.dot(matrix, image[i, j].astype(float))
         return xImage
     else:
         raise 'Unrecognized image type passed to transformImage.'
@@ -638,12 +654,13 @@ def orthogonalize(vecs, start = 0):
     orthonormal.
     '''
 
-    from LinearAlgebra import transpose, inverse
+    from numpy import transpose, dot, identity
+    from numpy.linalg import inv
     from math import sqrt
     
     (M, N) = vecs.shape
-    basis = array(transpose(vecs))
-    eye = identity(N).astype(Float)
+    basis = numpy.array(transpose(vecs))
+    eye = identity(N).astype(float)
     if start == 0:
 	basis[:, 0] /= sqrt(dot(basis[:, 0], basis[:, 0]))
 	start = 1
@@ -651,7 +668,7 @@ def orthogonalize(vecs, start = 0):
     for i in range(start, M):
 	v = basis[:, i] / sqrt(dot(basis[:, i], basis[:, i]))
     	U = basis[:, :i]
-	P = eye - dot(U, dot(inverse(dot(transpose(U), U)), transpose(U)))
+	P = eye - dot(U, dot(inv(dot(transpose(U), U)), transpose(U)))
 	basis[:, i] = dot(P, v)
 	basis[:, i] /= sqrt(dot(basis[:, i], basis[:, i]))
 
@@ -680,20 +697,22 @@ def unmix(data, members):
     endmembers may be negative.
     '''
 
-    from LinearAlgebra import inverse
+    from numpy import transpose, dot, zeros
+    from numpy.linag import inv
 
     assert members.shape[1] == data.shape[2], \
            'Matrix dimensions are not aligned.'
 
+    members = members.astype(float)
     # Calculate the pseudo inverse
     pi = dot(members, transpose(members))
-    pi = dot(inverse(pi), members)
+    pi = dot(inv(pi), members)
 
     (M, N, B) = data.shape
-    unmixed = zeros((M, N, members.shape[0]), Float)
+    unmixed = zeros((M, N, members.shape[0]), float)
     for i in range(M):
         for j in range(N):
-            unmixed[i, j] = dot(pi, data[i,j])
+            unmixed[i, j] = dot(pi, data[i,j].astype(float))
     return unmixed
 
 
@@ -715,23 +734,24 @@ def spectralAngles(data, members):
     to classify the data by minimum spectral angle by calling argmin(angles).
     This function currently does not use second order statistics.
     '''
+    from numpy import dot, zeros, arccos
 
     assert members.shape[1] == data.shape[2], \
            'Matrix dimensions are not aligned.'    
 
     (M, N, B) = data.shape
-    m = array(members)
+    m = array(members, float)
     C = m.shape[0]
 
     # Normalize endmembers
     for i in range(C):
         m[i] /= sqrt(dot(m[i], m[i]))
     
-    angles = zeros((M, N, C), Float)
+    angles = zeros((M, N, C), float)
     
     for i in range(M):
         for j in range(N):
-            v = data[i, j].astype(Float)
+            v = data[i, j].astype(float)
             v = v / sqrt(dot(v, v))
             for k in range(C):
                 angles[i, j, k] = dot(v, m[k])
