@@ -2,7 +2,7 @@
 #
 #   Cluster.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001-2006 Thomas Boggs
+#   Copyright (C) 2001-2008 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -31,18 +31,18 @@
 Unsupervised clustering algorithms.
 '''
 
-from Numeric import *
+import numpy
 from Classifiers import Classifier
 
 def L1(v1, v2):
     'Returns L1 distance between 2 rank-1 arrays.'
-    return sum(abs((v1 - v2)))
+    return numpy.sum(abs((v1 - v2)))
 
 
 def L2(v1, v2):
     'Returns Euclidean distance between 2 rank-1 arrays.'
-    delta = (v1 - v2)
-    return dot(delta, delta)
+    delta = numpy.array(v1 - v2, float)
+    return numpy.sqrt(numpy.dot(delta, delta))
 
 
 class IsoClusterer(Classifier):
@@ -130,18 +130,18 @@ def isoCluster(image, nClusters = 8, maxIter = 20, startClusters = None,
     if not isinstance(iterations, list):
         iterations = None
     (nRows, nCols, nBands) = image.shape
-    clusters = zeros((nRows, nCols))
+    clusters = numpy.zeros((nRows, nCols), int)
     oldClusters = None
-    if startClusters:
+    if startClusters != None:
         assert (startClusters.shape[0] == nClusters), 'There must be \
         nClusters clusters in the startCenters array.'
-        centers = array(startClusters)
+        centers = numpy.array(startClusters)
     else:
         maxVal = 5000.0
         centers = []
         for i in range(nClusters):
-            centers.append((((ones(nBands) * i) * maxVal) / nClusters))
-        centers = array(centers)
+            centers.append((((numpy.ones(nBands) * i) * maxVal) / nClusters))
+        centers = numpy.array(centers)
 
     iter = 1
     while (iter <= maxIter):
@@ -157,7 +157,7 @@ def isoCluster(image, nClusters = 8, maxIter = 20, startClusters = None,
                         minDist = dist
         status.endPercentage()
 
-        sums = zeros((nClusters, nBands), Float)
+        sums = numpy.zeros((nClusters, nBands), float)
         counts = ([0] * nClusters)
         for i in range(nRows):
             for j in range(nCols):
@@ -169,7 +169,7 @@ def isoCluster(image, nClusters = 8, maxIter = 20, startClusters = None,
         for i in range(nClusters):
             if (counts[i] > 0):
                 centers.append((sums[i] / counts[i]))
-        centers = array(centers)
+        centers = numpy.array(centers)
 
         nClusters = centers.shape[0]
         if compare:
@@ -177,8 +177,8 @@ def isoCluster(image, nClusters = 8, maxIter = 20, startClusters = None,
                 print >>status, '\tisoCluster converged with', centers.shape[0], \
                       'clusters in', iter, 'iterations.'
                 return (clusters, centers)
-        elif oldClusters:
-            nChanged = abs(sum((clusters - oldClusters).flat))
+        elif oldClusters != None:
+            nChanged = abs(sum((clusters - oldClusters).ravel()))
             if nChanged == 0:
                 print >>status, '\tisoCluster converged with', centers.shape[0], \
                       'clusters in', iter, 'iterations.'
@@ -189,7 +189,7 @@ def isoCluster(image, nClusters = 8, maxIter = 20, startClusters = None,
         oldClusters = clusters
         if iterations != None:
             iterations.append(oldClusters)
-        clusters = zeros((nRows, nCols))
+        clusters = numpy.zeros((nRows, nCols), int)
         iter += 1
 
     print >>status, '\tisoCluster terminated with', centers.shape[0], \
@@ -226,7 +226,7 @@ def clusterOnePass(image, maxDist, nClusters = 10):
     import warnings
     warnings.warn('This function has been deprecated.')
     (nRows, nCols, nBands,) = (image.nRows, image.nCols, image.nBands)
-    clusters = zeros((nRows, nCols))
+    clusters = numpy.zeros((nRows, nCols), int)
     centers = [image[0, 0]]
     
     for i in range(nRows):
@@ -257,8 +257,8 @@ class OnePassClusterer(Classifier):
 
     def addCluster(self, pixel):
         'Adds a new cluster center or replaces an existing one.'
-        self.clusterMap = choose(equal(self.clusterMap, self.clusterToGo),
-                                 (self.clusterMap, self.clusterToGoTo))
+        self.clusterMap = numpy.choose(numpy.equal(self.clusterMap, self.clusterToGo),
+                                       (self.clusterMap, self.clusterToGoTo))
         self.clusters[self.clusterToGo] = pixel
         self.calcDistances()
         self.calcMinHalfDistances()
@@ -291,12 +291,12 @@ class OnePassClusterer(Classifier):
         pass
 
     def calcDistances(self):
-        self.distances = zeros((self.nClusters, self.nClusters))
+        self.distances = numpy.zeros((self.nClusters, self.nClusters))
         for i in range(self.nClusters):
             for j in range((i + 1), self.nClusters):
                 self.distances[i, j] = self.dist(self.clusters[i],
                                                  self.clusters[j])
-        self.distances += transpose(self.distances)
+        self.distances += numpy.transpose(self.distances)
 
     def calcMaxDistance(self):
         'Determine greatest inter-cluster distance.'
@@ -317,9 +317,9 @@ class OnePassClusterer(Classifier):
             count += 1
 
         self.nClusters = self.maxClusters
-        self.minHalfDistance = zeros(self.nClusters, Float)
+        self.minHalfDistance = numpy.zeros(self.nClusters, float)
         self.calcMinHalfDistances()
-        self.distances = zeros((self.nClusters, self.nClusters), Float)
+        self.distances = numpy.zeros((self.nClusters, self.nClusters), numpy.float)
         for i in range((self.nClusters - 1)):
             for j in range((i + 1), self.nClusters):
                 self.distances[i, j] = self.dist(self.clusters[i],
@@ -333,9 +333,10 @@ class OnePassClusterer(Classifier):
         clusters are closest and eliminate the one of those 2 which is
         nearest to any other cluster.
         '''
+        from numpy import argmin, argsort, zeros
         mins = zeros(self.nClusters)
         for i in range(self.nClusters):
-            mins[i] = argsort(self.distances[i])[1]
+            mins[i] = numpy.argsort(self.distances[i])[1]
 
         a = argmin(mins)
         b = argsort(self.distances[a])[1]
@@ -352,9 +353,14 @@ class OnePassClusterer(Classifier):
 
     def classifyImage(self, image):
         from Spectral import status
+        from Spectral.Io.SpyFile import SpyFile
         self.image = image
-        self.clusterMap = zeros(self.image.shape[:2], Int)
-        self.clusters = zeros((self.maxClusters, self.image.shape[2]), image.typecode())
+        self.clusterMap = numpy.zeros(self.image.shape[:2], int)
+        if isinstance(image, SpyFile):
+            typecode = image.typecode()
+        else:
+            typecode = 'f'
+        self.clusters = numpy.zeros((self.maxClusters, self.image.shape[2]), typecode)
         self.nClusters = 0
         clusters = self.clusters
         self.initClusters()
