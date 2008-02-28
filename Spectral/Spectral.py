@@ -2,7 +2,7 @@
 #
 #   Spectral.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001-2006 Thomas Boggs
+#   Copyright (C) 2001-2008 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -32,10 +32,10 @@
 Generic functions for handling spectral image files.
 '''
 
-from Numeric import *
+import numpy
 
 # Default color table
-spyColors = array([[  0,   0,   0],
+spyColors = numpy.array([[  0,   0,   0],
                    [255,   0,   0],
                    [  0, 255,   0],
                    [  0,   0, 255],
@@ -64,7 +64,7 @@ spyColors = array([[  0,   0,   0],
                    [255, 255, 255],
                    [255, 255, 255],
                    [255, 255, 255],
-                   [255, 255, 255]], Int)
+                   [255, 255, 255]], numpy.int)
 
 
 def image(file):
@@ -196,16 +196,16 @@ def makePilImage(*args, **kwargs):
     '''
 
     import Graphics
-    from Numeric import transpose
+    from numpy.oldnumeric import transpose
     import StringIO
     import Image, ImageDraw
 
     rgb = apply(Graphics.getImageDisplayData, args, kwargs)
 
     if not kwargs.has_key("colors"):
-        rgb = (rgb * 255).astype(UnsignedInt8)
+        rgb = (rgb * 255).astype(numpy.ubyte)
     else:
-        rgb = rgb.astype(UnsignedInt8)
+        rgb = rgb.astype(numpy.ubyte)
     rgb = transpose(rgb, (1, 0, 2))
     im = Image.new("RGB", rgb.shape[:2])
     draw = ImageDraw.ImageDraw(im)
@@ -265,7 +265,7 @@ def tileImage(im, nRows, nCols):
                         nCols SubImage objects.
     '''
 
-    from Numeric import array, Int
+    from numpy.oldnumeric import array, Int
     from Io.SpyFile import SubImage
     x = (array(range(nRows + 1)) * float(im.nRows) / nRows).astype(Int)
     y = (array(range(nCols + 1)) * float(im.nCols) / nCols).astype(Int)
