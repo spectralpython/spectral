@@ -34,19 +34,19 @@
 	  (orthogonalize): Converted to numpy.
 	  (unmix): Converted to numpy.
 	  (spectralAngles): Converted to numpy.
-	* Classifiers.py: Updated copyright.
+	* Algorithms/Classifiers.py: Updated copyright.
 	  (Classifier.classifyImage): Converted to numpy.
 	  (GaussianClassifier.train): Converted to numpy.
 	  (GaussianClassifier.classifySpectrum): Converted to numpy.
 	  (MahalanobisDistanceClassifier.train): Converted to numpy.
 	  (MahalanobisDistanceClassifier.classifySpectrum): Converted to numpy.
-	* Cluster.py: Updated copyright.
+	* Algorithms/Cluster.py: Updated copyright.
 	  (L1): Converted to numpy.
 	  (L2): Converted to numpy. Return distance instead of distance^2.
 	  (isoCluster): Converted to numpy.
 	  (clusterOnePass): Converted to numpy.
 	  (OnePassClusterer): Converted to numpy.
-	* Perceptron.py: Updated copyright.
+	* Algorithms/Perceptron.py: Updated copyright.
 	  (Perceptron.__init__): Converted to numpy.
 	  (Perceptron.input): Converted to numpy.
 	  (Perceptron.train): Converted to numpy.
@@ -105,6 +105,7 @@
 	* Io/Envi.py: Updated copyright.
 	  (EnviHdr): Converted to numpy - Using dtype instead of typecode.
 	* Io/SpyFile.py: Updated copyright.
+	  (SpyFile.__str__): Fixed bug incorrectly accessing typecode.
 	  (TransformedImage.__init__): Converted to numpy.
 	  (TransformedImage.__getitem__): Converted to numpy.
 	  (TransformedImage.readPixel): Converted to numpy.

@@ -111,7 +111,7 @@ class SpyFile:
         elif tc == 'd':
             tcs = 'Float64'
         else:
-            tcs = _typecode
+            tcs = self._typecode
             
         s += '\tData format:  %8s' % tcs
         return s
