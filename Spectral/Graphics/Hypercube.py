@@ -379,7 +379,7 @@ class WxHypercubeFrame(wx.Frame):
         elif key == ord('h'):
             self.printHelp()
         self.OnDraw()
-        self.onPaint()
+        self.onPaint(event)
 
         if key == ord('q'):
             self.Destroy()
