@@ -59,13 +59,16 @@ def plot(data):
     if len(s) == 1:
         # plot a vector
         g('set xrange [0: %d]' % s[0])
-        g.plot(Gnuplot.Data(range(s[0]), data, with='lines'))
+#        g.plot(Gnuplot.Data(range(s[0]), data, with='lines'))
+        g.plot(Gnuplot.Data(range(s[0]), data))
     elif len(s) == 2:
         xvals = range(s[1])
         g('set xrange [0: %d]' % s[1])
-        g.plot(Gnuplot.Data(xvals, data[0,:], with='lines'))
+#        g.plot(Gnuplot.Data(xvals, data[0,:], with='lines'))
+        g.plot(Gnuplot.Data(xvals, data[0,:]))
         for i in range(1, s[0]):
-            g.replot(Gnuplot.Data(xvals, data[i,:], with='lines'))
+#            g.replot(Gnuplot.Data(xvals, data[i,:], with='lines'))
+            g.replot(Gnuplot.Data(xvals, data[i,:]))
     xyPlot = g
     return g
 #    raw_input('Please press return to continue...\n')
@@ -86,7 +89,8 @@ if __name__ == '__main__':
     x = array(range(100)) * 0.1
     y = sin(x)
     z = cos(x)
-    ds = Gnuplot.Data(x, y, title = 'sin(x)', with = 'lines')
+#    ds = Gnuplot.Data(x, y, title = 'sin(x)', with = 'lines')
+    ds = Gnuplot.Data(x, y, title = 'sin(x)')
     dc = Gnuplot.Data(x, z, title = 'cos(x)')
     g.xlabel('Channel')
     g.ylabel('Intensity')
