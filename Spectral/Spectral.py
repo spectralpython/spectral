@@ -34,6 +34,8 @@ Generic functions for handling spectral image files.
 
 import numpy
 
+viewer = None
+
 # Default color table
 spyColors = numpy.array([[  0,   0,   0],
                    [255,   0,   0],
@@ -120,7 +122,9 @@ def initNumTut():
 
 def initGraphics():
     '''Initialize default graphics handlers.'''
-
+    if viewer:
+	print "Graphics driver already initialized"
+	return
     try:
         initWxPython()
     except:
