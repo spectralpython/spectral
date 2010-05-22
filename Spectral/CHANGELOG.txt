@@ -2,6 +2,21 @@
 # Spectral package change log
 ################################################################################
 
+2010-05-21	tboggs <tboggs@users.sourceforge.net>
+
+    Changes to handle migration of Set to built-in type and Numeric-NumPy changes.
+
+	* Spectral.py (initGraphics): prevent multiple initializations of graphics handlers
+	* Io/SpyFile (typecode): Return appropriate typecode for NumPy arrays.
+	* Algorithms/Algorithms.py:
+	  Set correct numpy array typecodes
+	  (createTrainingClasses): Handle migration of Set to built-in type.
+	* Algorithms/Classifiers (MahalanobisDistanceClassifier.train):
+	  numpy.Float changed to numpy.float
+
+	* Algorithms/Perceptron.py: Major rewrite to fix bug in perceptron bias
+	   and to support arbitrary number of hidden layers.
+
 2009-12-12	tboggs <tboggs@users.sourceforge.net>
 
     Changed SpyGnuplot.py for python 2.6 compatibility.
