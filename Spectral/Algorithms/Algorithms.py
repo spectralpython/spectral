@@ -87,8 +87,9 @@ class ImageMaskIterator(Iterator):
         return self.image.shape[2]
     def __iter__(self):
         from Spectral import status
+	from Spectral.Io import typecode
         from numpy import transpose, indices, reshape, compress, not_equal
-        typecode = self.image.typecode()
+        typechar = typecode(self.image)
         (nRows, nCols, nBands) = self.image.shape
 
         # Translate the mask into indices into the data source
@@ -97,7 +98,7 @@ class ImageMaskIterator(Iterator):
         inds = compress(not_equal(self.mask.ravel(), 0), inds, 0).astype('h')
 
         for i in range(inds.shape[0]):
-            sample = self.image[inds[i][0], inds[i][1]].astype(typecode)
+            sample = self.image[inds[i][0], inds[i][1]].astype(typechar)
             if len(sample.shape) == 3:
                 sample.shape = (sample.shape[2],)
             (self.row, self.col) = inds[i][:2]
@@ -517,8 +518,7 @@ def createTrainingClasses(image, classMask, calcStats = 0, indices = None):
     are considered unlabeled and are not added to a training set.
     '''
 
-    from sets import Set
-    classIndices = Set(classMask.ravel())
+    classIndices = set(classMask.ravel())
     classes = TrainingClassSet()
     for i in classIndices:
         if i == 0:
