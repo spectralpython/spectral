@@ -132,7 +132,7 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
         '''
         GaussianClassifier.train(self, trainingData)
 
-        covariance = numpy.zeros(self.classes[0].stats.cov.shape, numpy.Float)
+        covariance = numpy.zeros(self.classes[0].stats.cov.shape, numpy.float)
         numSamples = 0
         for cl in self.classes:
             covariance += cl.stats.numSamples * cl.stats.cov
