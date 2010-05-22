@@ -415,3 +415,14 @@ class TransformedImage(SpyFile):
                 data[i, j] = numpy.take(self.readPixel(i, j), bands)
         return data
         
+def typecode(obj):
+    '''
+    The typecode method was removed from arrays in the transition from Numeric/Numarray
+    to NumPy.  This function returns the appropriate typecode for numpy arrays or
+    any object with a typecode() method.
+    '''
+    import numpy
+    if isinstance(obj, numpy.ndarray):
+	return obj.dtype.char
+    else:
+	return obj.typecode()
