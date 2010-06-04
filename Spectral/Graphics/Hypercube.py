@@ -100,7 +100,7 @@ class WxHypercubeFrame(wx.Frame):
         #   Should this include styles passed?
         style = wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE
         
-        super(WxHypercubeFrame, self).__init__(parent, id, title, wx.DefaultPosition, size, wx.DEFAULT_FRAME_STYLE, name)
+        super(WxHypercubeFrame, self).__init__(parent, id, title, wx.DefaultPosition, size, wx.DEFAULT_FRAME_STYLE, kwargs.get('name', 'Hypercube'))
         
         self.GLinitialized = False
         attribList = (glcanvas.WX_GL_RGBA, # RGBA

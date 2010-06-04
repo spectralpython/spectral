@@ -1,6 +1,6 @@
 #########################################################################
 #
-#   SpyGnuplot.py - This file is part of the Spectral Python (SPy) package.
+#   SpyPylab.py - This file is part of the Spectral Python (SPy) package.
 #
 #   Copyright (C) 2001-2008 Thomas Boggs
 #
@@ -33,9 +33,10 @@
 A module to use Gnuplot for creating x-y plots of pixel spectra.
 '''
 
-import Gnuplot
+#import pylab
 
-xyPlot = Gnuplot.Gnuplot()
+#xyPlot = Gnuplot.Gnuplot()
+#xyPlot = None
 
 def plot(data):
     '''
@@ -47,24 +48,26 @@ def plot(data):
     single series. If data is a 2D array, each column of data will
     be drawn as a separate series.
     '''
-
+    import pylab
     from numpy import shape
-    global xyPlot
+    import Spectral
+#    global xyPlot
 
-    g = Gnuplot.Gnuplot()
-    g('set style data lines')
-    g('set grid')
     s = shape(data)
 
     if len(s) == 1:
-        # plot a vector
-        g('set xrange [0: %d]' % s[0])
-        g.plot(Gnuplot.Data(range(s[0]), data))
+        p = pylab.plot(data)
     elif len(s) == 2:
         xvals = range(s[1])
-        g('set xrange [0: %d]' % s[1])
-        g.plot(Gnuplot.Data(xvals, data[0,:]))
+        p =  pylab.plot(xvals, data[0,:])
+        pylab.hold(1)
         for i in range(1, s[0]):
-            g.replot(Gnuplot.Data(xvals, data[i,:]))
-    xyPlot = g
-    return g
+            p = pylab.plot(xvals, data[i, :])
+#    xyPlot = p
+    Spectral.xyPlot = p
+    pylab.grid(1)
+    return p
+
+
+#qp = plot
+        

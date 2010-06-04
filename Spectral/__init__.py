@@ -39,8 +39,11 @@ BIP = 2
 from numpy import *
 from Spectral import *
 from Io.SpyFile import SubImage, TransformedImage
-from Graphics.SpyGnuplot import *
 from Algorithms import *
 
 import Utilities.Status
 status = Utilities.Status.StatusDisplay()
+
+#xyPlot = None
+#from Graphics.SpyPylab import plot
+#qp = plot

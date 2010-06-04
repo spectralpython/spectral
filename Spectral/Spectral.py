@@ -34,7 +34,14 @@ Generic functions for handling spectral image files.
 
 import numpy
 
-viewer = None
+class SpySettings:
+    def __init__(self):
+	self.viewer = None
+	self.plotter = None
+
+settings = SpySettings()
+
+#viewer = None
 
 # Default color table
 spyColors = numpy.array([[  0,   0,   0],
@@ -108,24 +115,41 @@ def image(file):
 
 def initWxPython():
     '''Use wxPython for image display.'''
-    global viewer
+#    global viewer
     import Graphics.SpyWxPython
     viewer = Graphics.SpyWxPython
     viewer.init()
+    settings.viewer = viewer
 
 
 def initNumTut():
     '''Use NumTut for image display.'''
-    global viewer
+#    global viewer
     import Graphics.SpyNumTut
-    viewer = Graphics.SpyNumTut
+    settings.viewer = Graphics.SpyNumTut
 
 def initGraphics():
     '''Initialize default graphics handlers.'''
-    if viewer:
-	print "Graphics driver already initialized"
-	return
+
     try:
+	import Spectral
+        import pylab
+	import Graphics.SpyPylab
+        pylab.ion()
+#	Spectral.plot = plot
+	settings.plotter = Graphics.SpyPylab
+    except:
+        print "Unable to initialize Pylab for plotting."
+	try:
+	    print "Trying Gnuplot..."
+	    import Graphics.SpyGnuplot
+	    settings.plotter = Graphics.SpyGnuplot
+	    print "Gnuplot initialized."
+	except:
+	    print "Unable to initialize Gnuplot for plotting."
+	    print "No plotters initialized."
+    try:
+	pass
         initWxPython()
     except:
         print 'Unable to initialize wxWindows.'
@@ -155,7 +179,8 @@ def view(*args, **kwargs):
     be scaled so that lower and upper correspond to 0 and 1, respectively
     . Any values outside of the range (lower, upper) will be clipped.
     '''
-    apply(viewer.view, args, kwargs)
+#    apply(viewer.view, args, kwargs)
+    settings.viewer.view(*args, **kwargs)
 
 
 def viewIndexed(*args, **kwargs):
@@ -172,11 +197,13 @@ def viewIndexed(*args, **kwargs):
     default color table is used.
     '''
 
-    from Spectral import viewer, spyColors
+#    from Spectral import viewer, spyColors
+    from Spectral import settings, spyColors
 
     if not kwargs.has_key('colors'):
         kwargs['colors'] = spyColors
-    apply(viewer.view, args, kwargs)
+#    apply(viewer.view, args, kwargs)
+    settings.viewer(*args, **kwargs)
     
 
 def makePilImage(*args, **kwargs):

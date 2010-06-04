@@ -2,6 +2,21 @@
 # Spectral package change log
 ################################################################################
 
+2010-06-03	tboggs <tboggs@users.sourceforge.net>
+
+    Migrating from Gnuplot to Pylab (Matplotlib)
+
+	* Spectral.py (initWxPython, initNumTut, initGraphics, view, viewIndexed):
+	  Use package-level settings object to specify viewer and plotter.
+	* Graphics/Hypercube.py (WxHypercubeFrame.__init__): Handle case when
+	  window name is not passed as kwarg.
+	* Graphics/SpyGnuplot.py (plot) Updated line style for new Gnuplot syntax.
+	* Graphics/SpyPylab.py: New file for Pylab interface.
+	* Graphics/SpyWxPythonThread.py:
+	  (WxImageFrame.leftDoubleClick): Import generic plotter
+	* __init__.py: Do not set "qp" or "plot" variable.  Instead, use "settings"
+	  object that is imported from Spectral.py.
+
 2010-05-21	tboggs <tboggs@users.sourceforge.net>
 
     Changes to handle migration of Set to built-in type and Numeric-NumPy changes.

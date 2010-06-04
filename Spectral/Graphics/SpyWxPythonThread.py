@@ -127,10 +127,9 @@ class WxImageFrame(wx.Frame):
 
     def leftDoubleClick(self, evt):
         print (evt.m_y, evt.m_x)
-        from Spectral.Graphics.SpyGnuplot import qp
+        from Spectral import settings
         if self.kwargs.has_key("data source"):
-            qp(self.kwargs["data source"][evt.m_y, evt.m_x])
-        
+            settings.plotter.plot(self.kwargs["data source"][evt.m_y, evt.m_x])
 
 
 class WxImageServer(wx.App):
@@ -148,16 +147,3 @@ class WxImageServer(wx.App):
         #self.SetTopWindow(catcher)
         self.catcher = catcher
         return True
-
-
-    
-##def _ViewImage(rgb, kwargs):
-##        
-###    frame = apply(WxImageFrame2, (NULL, -1) + args, kwargs)
-##    frame = WxImageFrame(NULL, -1, rgb, kwargs)
-##    frame.Show(TRUE)
-###        frame.Centre()
-###        self.SetTopWindow(frame)
-    
-        
-        
