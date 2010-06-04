@@ -33,11 +33,6 @@
 A module to use Gnuplot for creating x-y plots of pixel spectra.
 '''
 
-#import pylab
-
-#xyPlot = Gnuplot.Gnuplot()
-#xyPlot = None
-
 def plot(data):
     '''
     Creates an x-y plot.
@@ -51,7 +46,6 @@ def plot(data):
     import pylab
     from numpy import shape
     import Spectral
-#    global xyPlot
 
     s = shape(data)
 
@@ -63,11 +57,7 @@ def plot(data):
         pylab.hold(1)
         for i in range(1, s[0]):
             p = pylab.plot(xvals, data[i, :])
-#    xyPlot = p
     Spectral.xyPlot = p
     pylab.grid(1)
     return p
-
-
-#qp = plot
-        
+       

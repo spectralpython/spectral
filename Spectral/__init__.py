@@ -44,6 +44,3 @@ from Algorithms import *
 import Utilities.Status
 status = Utilities.Status.StatusDisplay()
 
-#xyPlot = None
-#from Graphics.SpyPylab import plot
-#qp = plot

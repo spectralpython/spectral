@@ -41,8 +41,6 @@ class SpySettings:
 
 settings = SpySettings()
 
-#viewer = None
-
 # Default color table
 spyColors = numpy.array([[  0,   0,   0],
                    [255,   0,   0],
@@ -115,7 +113,6 @@ def image(file):
 
 def initWxPython():
     '''Use wxPython for image display.'''
-#    global viewer
     import Graphics.SpyWxPython
     viewer = Graphics.SpyWxPython
     viewer.init()
@@ -124,7 +121,6 @@ def initWxPython():
 
 def initNumTut():
     '''Use NumTut for image display.'''
-#    global viewer
     import Graphics.SpyNumTut
     settings.viewer = Graphics.SpyNumTut
 
@@ -136,7 +132,6 @@ def initGraphics():
         import pylab
 	import Graphics.SpyPylab
         pylab.ion()
-#	Spectral.plot = plot
 	settings.plotter = Graphics.SpyPylab
     except:
         print "Unable to initialize Pylab for plotting."
@@ -179,7 +174,6 @@ def view(*args, **kwargs):
     be scaled so that lower and upper correspond to 0 and 1, respectively
     . Any values outside of the range (lower, upper) will be clipped.
     '''
-#    apply(viewer.view, args, kwargs)
     settings.viewer.view(*args, **kwargs)
 
 
@@ -197,12 +191,10 @@ def viewIndexed(*args, **kwargs):
     default color table is used.
     '''
 
-#    from Spectral import viewer, spyColors
     from Spectral import settings, spyColors
 
     if not kwargs.has_key('colors'):
         kwargs['colors'] = spyColors
-#    apply(viewer.view, args, kwargs)
     settings.viewer(*args, **kwargs)
     
 
