@@ -16,6 +16,9 @@
 	  (WxImageFrame.leftDoubleClick): Import generic plotter
 	* __init__.py: Do not set "qp" or "plot" variable.  Instead, use "settings"
 	  object that is imported from Spectral.py.
+	  
+    Removing CVSROOT directory since we are now using Subversion
+        * CVSROOT/*: Deleted
 
 2010-05-21	tboggs <tboggs@users.sourceforge.net>
 
