@@ -195,7 +195,7 @@ def viewIndexed(*args, **kwargs):
 
     if not kwargs.has_key('colors'):
         kwargs['colors'] = spyColors
-    settings.viewer(*args, **kwargs)
+    settings.viewer.view(*args, **kwargs)
     
 
 def makePilImage(*args, **kwargs):

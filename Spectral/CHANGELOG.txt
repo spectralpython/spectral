@@ -2,6 +2,13 @@
 # Spectral package change log
 ################################################################################
 
+2010-06-21	tboggs <tboggs@users.sourceforge.net>
+
+    Migrating from Gnuplot to Pylab (Matplotlib)
+
+	* Spectral.py (viewIndexed): Updated for new viewer interface introduced
+	  with previous commit.
+
 2010-06-03	tboggs <tboggs@users.sourceforge.net>
 
     Migrating from Gnuplot to Pylab (Matplotlib)
