@@ -32,6 +32,7 @@ Common code for accessing hyperspectral image files.
 '''
 
 import numpy
+from Spectral import Image
 
 def findFilePath(filename):
     '''
@@ -51,24 +52,22 @@ def findFilePath(filename):
         raise IOError('Unable to locate file ' % filename)
     return pathname
 
-class SpyFile:
+class SpyFile(Image):
     '''A base class for accessing spectral image files'''
 
     def __init__(self, params, metadata = None):
-
-        self.setParams(params, metadata)
+        from Spectral import Image
+        Image.__init__(self, params, metadata)
 
     def setParams(self, params, metadata):
         import Spectral
         import array
         from exceptions import Exception
 
+        Spectral.Image.setParams(self, params, metadata)
+
         try:
-        
             self.fileName = params.fileName
-            self.nBands = params.nBands
-            self.nRows = params.nRows
-            self.nCols = params.nCols
             self.format = params.format
             self._typecode = params.typecode         # for Numeric module
             self.offset = params.offset
@@ -78,11 +77,6 @@ class SpyFile:
             else:
                 self.swap = 0
             self.sampleSize = array.array(self.format).itemsize
-
-            if not metadata:
-                self.metadata = {}
-            else:
-                self.metadata = metadata
 
             self.fid = open(findFilePath(self.fileName), "rb")
 
@@ -116,8 +110,6 @@ class SpyFile:
         s += '\tData format:  %8s' % tcs
         return s
 
-    def __repr__(self):
-        return self.__str__()
 
     def typecode(self):
         '''Returns the typecode of the Numeric array type for this
@@ -125,6 +117,24 @@ class SpyFile:
         '''
         return self._typecode
     
+    def load(self):
+        import Spectral
+        from Spectral.Spectral import ImageArray
+        from array import array
+        
+        data = array(self.typecode())
+        self.fid.seek(self.offset)
+        data.fromfile(self.fid, self.nRows * self.nCols * self.nBands)
+        if self.swap:
+            data.byteswap()
+        npArray = numpy.array(data, 'f')
+        if self.interleave == Spectral.BIL:
+            npArray.shape = (self.nRows, self.nBands, self.nCols)
+            npArray = npArray.transpose([0, 2, 1])
+        elif self.interleave == Spectral.BSQ:
+            npArray.shape = (self.nBands, self.nRows, self.nCols)
+            npArray = npArray.transpose([1, 2, 0])
+        return ImageArray(npArray, self)
 
     def __getitem__(self, args):
 

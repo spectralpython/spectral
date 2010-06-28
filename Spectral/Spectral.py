@@ -73,6 +73,68 @@ spyColors = numpy.array([[  0,   0,   0],
                    [255, 255, 255],
                    [255, 255, 255]], numpy.int)
 
+class Image:
+
+    def __init__(self, params, metadata = None):
+        self.setParams(params, metadata)
+
+    def setParams(self, params, metadata):
+        import Spectral
+        import array
+        from exceptions import Exception
+        
+        try:
+            self.nBands = params.nBands
+            self.nRows = params.nRows
+            self.nCols = params.nCols
+            self._typecode = params.typecode         # for Numeric module
+
+            if not metadata:
+                self.metadata = {}
+            else:
+                self.metadata = metadata    
+        except:
+            raise
+
+    def __repr__(self):
+        return self.__str__()
+       
+class ImageArray(numpy.ndarray, Image):
+    def __new__(subclass, data, spyFile):
+        from Io.SpyFile import SpyFile
+        
+        obj = numpy.asarray(data).view(ImageArray)
+        # Add param data to Image initializer
+        Image.__init__(obj, spyFile.params(), spyFile.metadata)
+        return obj
+
+    def typecode(self):
+        return self.dtype.char
+
+    def __repr__(self):
+        return self.__str__()
+    
+    def __str__(self):
+        s = '\t# Rows:         %6d\n' % (self.nRows)
+        s += '\t# Samples:      %6d\n' % (self.nCols)
+        s += '\t# Bands:        %6d\n' % (self.shape[2])
+
+        tc = self.typecode()
+        if tc == '1':
+            tcs = 'char'
+        elif tc == 's':
+            tcs = 'Int16'
+        elif tc == 'i':
+            tcs = Int32
+        elif tc == 'f':
+            tcs = 'Float32'
+        elif tc == 'd':
+            tcs = 'Float64'
+        else:
+            tcs = 'unknown'
+            
+        s += '\tData format:  %8s' % tcs
+        return s
 
 def image(file):
     '''

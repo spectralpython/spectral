@@ -53,7 +53,7 @@ def ReadEnviHdr(file):
     f.close()
 
     dict = {}
-    i = 1
+    i = 0
     try:
         while i < len(lines):
             if find(lines[i], '=') == -1:

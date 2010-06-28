@@ -2,6 +2,21 @@
 # Spectral package change log
 ################################################################################
 
+2010-06-28	tboggs <tboggs@users.sourceforge.net>
+
+    Added ImageArray class to handle data loaded from SpyFile objects.
+
+	* Spectral.py (Image, ImageArray): New classes.
+	* Io/SpyFile.py (SpyFile): Now derived from Spectral.Image class.
+	  (__init__): Call base class setParams before SpyFile.setParams.
+	  (setParams): Only initialize params not handled by base class.
+	  (load): New method to read all data into a Spectral.ImageArray object.
+	
+    * Io/Envi.py(ReadEnviHdr): Don't skip first parameter in file.
+    
+    * Io/BilFile.py(readBand, readBands, readSubRegion, readSubImage): Removed
+      unecessary code for Numeric compatibility.
+
 2010-06-21	tboggs <tboggs@users.sourceforge.net>
 
     Migrating from Gnuplot to Pylab (Matplotlib)

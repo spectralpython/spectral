@@ -51,8 +51,8 @@ class BilFile(SpyFile):
         '''Read a single band from the image.'''
 
         from array import array
-        import numpy.oldnumeric as Numeric
-
+        import numpy
+        
         vals = array(self.format)
         offset = self.offset + band * self.sampleSize * self.nCols
 
@@ -66,8 +66,8 @@ class BilFile(SpyFile):
 
         if self.swap:
             vals.byteswap()
-        arr = Numeric.array(vals.tolist())
-        arr = Numeric.reshape(arr, (self.nRows, self.nCols))
+        arr = numpy.array(vals.tolist())
+        arr = arr.reshape((self.nRows, self.nCols))
 
         return arr
 
@@ -75,18 +75,11 @@ class BilFile(SpyFile):
         '''Read specified bands from the image.'''
 
         from array import array
-        import numpy.oldnumeric as Numeric
+        import numpy
 
         f = self.fid
 
-        # Get the type of the Numeric array (must be a better way)
-        ta = array(self.format)
-        f.seek(self.offset, 0)
-        ta.fromfile(f, 1)
-        na = Numeric.array(ta.tolist())
-        arrType = na.dtype.char
-
-        arr = Numeric.zeros((self.nRows, self.nCols, len(bands)), arrType)
+        arr = numpy.empty((self.nRows, self.nCols, len(bands)), self.format)
 
         for j in range(len(bands)):
   
@@ -101,8 +94,8 @@ class BilFile(SpyFile):
 
             if self.swap:
                 vals.byteswap()
-            bandArr = Numeric.array(vals.tolist())
-            bandArr = Numeric.reshape(bandArr, (self.nRows, self.nCols))
+            bandArr = numpy.array(vals.tolist())
+            bandArr = bandArr.reshape((self.nRows, self.nCols))
             arr[:,:,j] = bandArr
 
         return arr
@@ -112,8 +105,8 @@ class BilFile(SpyFile):
         '''Read the pixel at position (row,col) from the file.'''
 
         from array import array
-        import numpy.oldnumeric as Numeric
-
+        import numpy
+        
         vals = array(self.format)
         delta = self.sampleSize * (self.nBands - 1)
         offset = self.offset + row * self.nBands * self.nCols \
@@ -130,7 +123,7 @@ class BilFile(SpyFile):
 
         if self.swap:
             vals.byteswap()
-        pixel = Numeric.array(vals.tolist(), self._typecode)
+        pixel = numpy.array(vals.tolist(), self._typecode)
 
         return pixel
 
@@ -143,7 +136,7 @@ class BilFile(SpyFile):
         '''
 
         from array import array
-        import numpy.oldnumeric as Numeric
+        import numpy
 
         nSubRows = rowBounds[1] - rowBounds[0]  # Rows in sub-image
         nSubCols = colBounds[1] - colBounds[0]  # Cols in sub-image
@@ -153,18 +146,12 @@ class BilFile(SpyFile):
         f = self.fid
         f.seek(self.offset, 0)
         
-        # Get the type of the Numeric array (must be a better way)
-        ta = array(self.format)
-        ta.fromfile(f, 1)
-        na = Numeric.array(ta.tolist())
-        arrType = na.dtype.char
-
         # Increments between bands
         if bands == None:
             # Read all bands.
             bands = range(self.nBands)
 
-        arr = Numeric.zeros((nSubRows, nSubCols, len(bands)), arrType)
+        arr = numpy.empty((nSubRows, nSubCols, len(bands)), self.typecode())
 
         offset = self.offset
         nCols = self.nCols
@@ -181,24 +168,23 @@ class BilFile(SpyFile):
                 vals.fromfile(f, nSubCols)
             if self.swap:
                 vals.byteswap()
-            subArray = Numeric.array(vals.tolist())
-            subArray = Numeric.reshape(subArray, (nSubBands, nSubCols))
-            arr[i - rowBounds[0],:,:] = Numeric.transpose(subArray)
-
+            subArray = numpy.array(vals.tolist())
+            subArray = subArray.reshape((nSubBands, nSubCols))
+            arr[i - rowBounds[0],:,:] = numpy.transpose(subArray)
 
         return arr
     
 
     def readSubImage(self, rows, cols, bands = None):
-        '''Reads a subset of the image. First arg is a 2-tuple specifying
-        min and max row indices.  Second arg specifies column min and max.
+        '''Reads a subset of the image. First arg is a tuple specifying
+        row indices.  Second arg specifies column indices.
         If third argument containing list of band indices is not given,
         all bands are read.
         '''
 
         from array import array
-        import numpy.oldnumeric as Numeric
-
+        import numpy
+        
         nSubRows = len(rows)                        # Rows in sub-image
         nSubCols = len(cols)                        # Cols in sub-image
         d_col = self.sampleSize
@@ -208,19 +194,13 @@ class BilFile(SpyFile):
         f = self.fid
         f.seek(self.offset, 0)
         
-        # Get the type of the Numeric array (must be a better way)
-        ta = array(self.format)
-        ta.fromfile(f, 1)
-        na = Numeric.array(ta.tolist())
-        arrType = na.dtype.char
-
         # Increments between bands
         if bands == None:
             # Read all bands.
             bands = range(self.nBands)
         nSubBands = len(bands)
 
-        arr = Numeric.zeros((nSubRows, nSubCols, nSubBands), arrType)
+        arr = numpy.empty((nSubRows, nSubCols, nSubBands), self.typecode())
 
         offset = self.offset
         vals = array(self.format)
@@ -236,8 +216,8 @@ class BilFile(SpyFile):
                     vals.fromfile(f, 1)
         if self.swap:
             vals.byteswap()
-        subArray = Numeric.array(vals.tolist())
-        subArray = Numeric.reshape(subArray, (nSubRows, nSubCols, nSubBands))
+        subArray = numpy.array(vals.tolist())
+        subArray = subArray.reshape((nSubRows, nSubCols, nSubBands))
 
         return subArray
 
@@ -258,15 +238,4 @@ class BilFile(SpyFile):
         vals = array.array(self.format)
         vals.fromfile(self.fid, 1)
         return vals.tolist()[0]
-
-        
-
-        
-
-        
-
-
-        
-        
-        
         
