@@ -11,6 +11,8 @@
 	  (__init__): Call base class setParams before SpyFile.setParams.
 	  (setParams): Only initialize params not handled by base class.
 	  (load): New method to read all data into a Spectral.ImageArray object.
+	  Graphics/SpyWxPython.py (view): Associate data source when requesting
+	  spectrum plot for an ImageArray object.
 	
     * Io/Envi.py(ReadEnviHdr): Don't skip first parameter in file.
     

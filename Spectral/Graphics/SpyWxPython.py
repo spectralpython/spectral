@@ -70,15 +70,14 @@ def view(*args, **kwargs):
     '''Displays an image in a wxWindows frame.'''
     
     import Graphics
-    from Spectral.Io.SpyFile import SpyFile
+    from Spectral import Image
     from numpy.oldnumeric import UnsignedInt8
 
     rgb = apply(Graphics.getImageDisplayData, args, kwargs)
 
     # To plot pixel spectrum on double-click, create a reference
     # back to the original SpyFile object.
-    if isinstance(args[0], SpyFile) and \
-       not kwargs.has_key("data source"):
+    if isinstance(args[0], Image):
         kwargs["data source"] = args[0]
 
     if not kwargs.has_key("colors"):
