@@ -40,6 +40,7 @@ from numpy import *
 from Spectral import *
 from Io.SpyFile import SubImage, TransformedImage
 from Algorithms import *
+from Io.Aviris import openAviris
 
 import Utilities.Status
 status = Utilities.Status.StatusDisplay()

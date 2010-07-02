@@ -2,6 +2,49 @@
 # Spectral package change log
 ################################################################################
 
+2010-07-02	tboggs <tboggs@users.sourceforge.net>
+
+    Added an Image base class from which SpyFile and the new ImageArray class are
+    derived.  ImageArray is also derived from numpy.ndarray - It is used when
+    loading an entire image and can be treated like a numpy array but also has
+    much of the additional info that was contained in the SpyFile class.
+    
+    SpyFile objects now have a scaleFactor member which represents a multiplier
+    for data in HSI files.  When data are read from a file, they are divided by
+    scale factor to return the actual reflectance (or other quantity).
+    
+	* Spectral/Spectral.py:
+	  (BandInfo): New class to characterize spectral bands for an image.
+	  (Image): A base class for hyperspectral image classes. Some of the
+	  image metadata formerly contained in the SpyFile class (now derived
+	  from Image) has been moved here.
+	  (ImageArray): A new class derived from Spectral.Image and Spectral.SpyFile.
+	  It contains data loaded from a file refered-to by a SpyFile object.
+	  (image): Aviris function was renamed to openAviris.
+	* __init__.py: import openAviris function.
+	* Io/BilFile.py (readBand, readBands, readPixel, readSubRegion, readSubImage, readDatum):
+	  Divide data by scaleFactor before returning.
+	* Io/BipFile.py: Ditto
+	* Io/BsqFile.py: Ditto
+	* Io/SpyFile: (__init__): initialize scaleFactor member
+	  (load): divide data by scaleFactor before returning.
+	* Io/Aviris.py (Aviris): Function renamed to openAviris.  Read band info if
+	  spectral calibration file is specified.
+	  (readAvirisBands): New function to read AVIRIS spectral calibration file.
+	* Io/Envi.py (EnviHdr): Set scale factor and add spectral band info if present.
+    
+    Updated graphics code to plot spectra for double-clicks on generic Image
+    objects and plot spectral bands along with data for pixel spectrum plots.
+
+	* Graphics/Graphics.py:
+	  (getImageDisplayData): Removed references to oldnumeric data types.
+	  Support generic Spectral.Image objects (not just SpyFile objects).
+	  (doubleClick): Unused method removed.
+	* Graphics/SpyPylab.py (plot): If available, plot data against spectral
+	  bands associated with the band and display band unit in x-label.
+	* Graphics/SpyWxPythonThread.py (WxImageFrame.leftDoubleClick): Support
+	  generic Spectral.Image objects (not just SpyFile objects).
+
 2010-06-28	tboggs <tboggs@users.sourceforge.net>
 
     Added ImageArray class to handle data loaded from SpyFile objects.

@@ -72,6 +72,8 @@ class BipFile(SpyFile):
         arr = Numeric.array(vals.tolist())
         arr = Numeric.reshape(arr, (self.nRows, self.nCols))
 
+	if self.scaleFactor != 1:
+	    return arr / float(self.scaleFactor)
         return arr
 
     def readBands(self, bands):
@@ -104,6 +106,8 @@ class BipFile(SpyFile):
         arr = Numeric.array(vals.tolist())
         arr = Numeric.reshape(arr, (self.nRows, self.nCols, len(bands)))
 
+	if self.scaleFactor != 1:
+	    return arr / float(self.scaleFactor)
         return arr
 
     def readPixel(self, row, col):
@@ -124,6 +128,8 @@ class BipFile(SpyFile):
             vals.byteswap()
         pixel = Numeric.array(vals.tolist())
 
+	if self.scaleFactor != 1:
+	    return pixel / float(self.scaleFactor)
         return pixel
 
     def readSubRegion(self, rowBounds, colBounds, bands = None):
@@ -181,6 +187,8 @@ class BipFile(SpyFile):
         arr = Numeric.array(vals.tolist())
         arr = Numeric.reshape(arr, (nSubRows, nSubCols, nSubBands))
 
+	if self.scaleFactor != 1:
+	    return arr / float(self.scaleFactor)
         return arr
 
 
@@ -234,6 +242,8 @@ class BipFile(SpyFile):
         arr = Numeric.array(vals.tolist())
         arr = Numeric.reshape(arr, (nSubRows, nSubCols, nSubBands))
 
+	if self.scaleFactor != 1:
+	    return arr / float(self.scaleFactor)
         return arr
 
         

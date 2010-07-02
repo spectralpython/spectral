@@ -54,9 +54,9 @@ def getImageDisplayData(source, bands = None, **kwargs):
     . Any values outside of the range (lower, upper) will be clipped.
     '''
 
-    from numpy.oldnumeric import take, zeros, repeat, ravel, minimum, maximum, clip, \
-         Float, Int, NewAxis
-    from Spectral.Io.SpyFile import SpyFile
+    from numpy import take, zeros, repeat, ravel, minimum, maximum, clip, \
+         float, int, newaxis
+    from Spectral import Image
     from exceptions import TypeError
 
     if not bands:
@@ -65,7 +65,7 @@ def getImageDisplayData(source, bands = None, **kwargs):
         raise "Invalid number of bands specified."
     monochrome = 0
 
-    if isinstance(source, SpyFile):
+    if isinstance(source, Image):
         # Figure out which bands to display
         if len(bands) == 0:
             # No bands specified. What should we show?
@@ -80,40 +80,38 @@ def getImageDisplayData(source, bands = None, **kwargs):
             # Pick the first, middle, and last bands
             n = source.nBands
             bands = [0, n / 2, n - 1]
-        rgb = source.readBands(bands).astype(Float)
+        rgb = source.readBands(bands).astype(float)
     else:
-        # It should be a Numeric array
+        # It should be a numpy array
         s = source.shape
         if len(s) == 2:
-            rgb = source[:, :, NewAxis]
+            rgb = source[:, :, newaxis]
         elif (len(s) == 3 and s[2] == 1):
             rgb = source            
         elif len(s) == 3:
             if s[2] == 3:
                 if len(bands) == 0:
                     # keep data as is.
-                    rgb = source.astype(Float)
+                    rgb = source.astype(float)
                 elif len(bands) == 3:
                     if bands[0] == 0 and bands[1] == 1 and bands[2] == 2:
                         # Same as first 'if', bands just explicit.
-                        rgb = source.astype(Float)
+                        rgb = source.astype(float)
                     else:
-                        rgb = take(source, bands, 2).astype(Float)
+                        rgb = take(source, bands, 2).astype(float)
             elif s[2] > 3 and (len(bands) == 1 or len(bands) == 3):
-                rgb = take(source, bands, 2).astype(Float)
+                rgb = take(source, bands, 2).astype(float)
             else:
-                rgb = take(source, [0, s[2] / 2, s[2] - 1], 2).astype(Float)
+                rgb = take(source, [0, s[2] / 2, s[2] - 1], 2).astype(float)
         else:
             raise 'Invalid array shape for image display'
-
-            
 
     # If it's either color-indexed or monochrome
     if rgb.shape[2] == 1:
         s = rgb.shape
         if kwargs.has_key("colors"):
-            rgb = rgb.astype(Int)
-            rgb3 = zeros((s[0], s[1], 3), Int)
+            rgb = rgb.astype(int)
+            rgb3 = zeros((s[0], s[1], 3), int)
             pal = kwargs["colors"]
             for i in range(s[0]):
                 for j in range(s[1]):
@@ -133,8 +131,7 @@ def getImageDisplayData(source, bands = None, **kwargs):
             rgb = rgb3.astype(Float) / 255.  
         else:
             monochrome = 1
-            rgb = repeat(rgb, 3, 2).astype(Float)
-            
+            rgb = repeat(rgb, 3, 2).astype(float)
 
     if not kwargs.has_key("colors"):
         # Perform any requested color enhancements.
@@ -159,17 +156,3 @@ def getImageDisplayData(source, bands = None, **kwargs):
             rgb = (rgb - mmin) / (mmax - mmin)
 
     return rgb
-
-
-    def doubleClick(data, pos, *args, **kwargs):
-        '''
-        Handler for a double-click on the image. The default action is
-        to plot the spectrum for the double-clicked pixel.
-        '''
-
-        global _xyPlotServer
-        _xyPlotServer.plot(data[pos[0], pos[1]], args, kwargs)
-
-        
-
-    

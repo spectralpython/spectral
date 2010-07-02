@@ -69,6 +69,8 @@ class BilFile(SpyFile):
         arr = numpy.array(vals.tolist())
         arr = arr.reshape((self.nRows, self.nCols))
 
+	if self.scaleFactor != 1:
+	    return arr / float(self.scaleFactor)
         return arr
 
     def readBands(self, bands):
@@ -98,6 +100,8 @@ class BilFile(SpyFile):
             bandArr = bandArr.reshape((self.nRows, self.nCols))
             arr[:,:,j] = bandArr
 
+	if self.scaleFactor != 1:
+	    return arr / float(self.scaleFactor)
         return arr
 
 
@@ -125,6 +129,8 @@ class BilFile(SpyFile):
             vals.byteswap()
         pixel = numpy.array(vals.tolist(), self._typecode)
 
+	if self.scaleFactor != 1:
+	    return pixel / float(self.scaleFactor)
         return pixel
 
     def readSubRegion(self, rowBounds, colBounds, bands = None):
@@ -172,6 +178,8 @@ class BilFile(SpyFile):
             subArray = subArray.reshape((nSubBands, nSubCols))
             arr[i - rowBounds[0],:,:] = numpy.transpose(subArray)
 
+	if self.scaleFactor != 1:
+	    return arr / float(self.scaleFactor)
         return arr
     
 
@@ -219,6 +227,8 @@ class BilFile(SpyFile):
         subArray = numpy.array(vals.tolist())
         subArray = subArray.reshape((nSubRows, nSubCols, nSubBands))
 
+	if self.scaleFactor != 1:
+	    return subArray / float(self.scaleFactor)
         return subArray
 
     def readDatum(self, i, j, k):
@@ -237,5 +247,6 @@ class BilFile(SpyFile):
         self.fid.seek(self.offset + i * d_row + j * d_col + k * d_band, 0)
         vals = array.array(self.format)
         vals.fromfile(self.fid, 1)
-        return vals.tolist()[0]
+
+	return vals.tolist()[0] / float(self.scaleFactor)
         

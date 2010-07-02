@@ -58,6 +58,7 @@ class SpyFile(Image):
     def __init__(self, params, metadata = None):
         from Spectral import Image
         Image.__init__(self, params, metadata)
+	self.scaleFactor = 1.0		# Number by which to divide values read from file.
 
     def setParams(self, params, metadata):
         import Spectral
@@ -134,6 +135,12 @@ class SpyFile(Image):
         elif self.interleave == Spectral.BSQ:
             npArray.shape = (self.nBands, self.nRows, self.nCols)
             npArray = npArray.transpose([1, 2, 0])
+	else:
+	    npArray.shape = (self.nRows, self.nCols, self.nBands)
+	    
+	if self.scaleFactor != 1:
+	    npArray /= self.scaleFactor
+	
         return ImageArray(npArray, self)
 
     def __getitem__(self, args):
@@ -376,7 +383,15 @@ class TransformedImage(SpyFile):
     def readPixel(self, row, col):
         return numpy.dot(self.matrix, self.image.readPixel(row, col))                       
                    
-    
+    def load(self):
+	'''Loads all the image data, transforms it, and returns it in a numpy array).'''
+	data = self.image.load()
+	xdata = numpy.empty(self.shape, 'f')
+	for i in xrange(self.shape[0]):
+	    for j in xrange(self.shape[1]):
+		xdata[i, j] = numpy.dot(self.matrix, data[i, j])
+	return xdata
+	
     def readSubRegion(self, rowBounds, colBounds, bands = None):
         '''
         Reads a contiguous rectangular sub-region from the image. First

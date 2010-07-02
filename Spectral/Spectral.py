@@ -73,9 +73,20 @@ spyColors = numpy.array([[  0,   0,   0],
                    [255, 255, 255],
                    [255, 255, 255]], numpy.int)
 
+class BandInfo:
+    '''Data characterizing the spectral bands associated with an image.'''
+    def __init__(self):
+	self.centers = None
+	self.bandwidths = None
+	self.centersStdDevs = None
+	self.bandwidthsStdDevs = None
+	self.bandQuantity = ""
+	self.bandUnit = ""
+
 class Image:
 
     def __init__(self, params, metadata = None):
+	self.bands = BandInfo()
         self.setParams(params, metadata)
 
     def setParams(self, params, metadata):
@@ -106,6 +117,7 @@ class ImageArray(numpy.ndarray, Image):
         obj = numpy.asarray(data).view(ImageArray)
         # Add param data to Image initializer
         Image.__init__(obj, spyFile.params(), spyFile.metadata)
+	obj.bands = spyFile.bands
         return obj
 
     def typecode(self):
@@ -114,7 +126,27 @@ class ImageArray(numpy.ndarray, Image):
     def __repr__(self):
         return self.__str__()
     
-    def __str__(self):
+    def readBand(self, i):
+	'''For compatibility with SpyFile objects. Returns arr[:,:,i]'''
+	return self[:, :, i]
+    
+    def readBands(self, bands):
+	'''For compatibility with SpyFile objects. Equivlalent to arr.take(bands, 2)'''
+	return self.take(bands, 2)    
+
+    def readPixel(self, row, col):
+	'''For compatibility with SpyFile objects. Equivlalent to arr[row, col]'''
+	return self[row, col]
+
+    def readDatum(self, i, j, k):
+	'''For compatibility with SpyFile objects. Equivlalent to arr[i, j, k]'''
+	return self[i, j, k]
+    
+    def load(self):
+	'''For compatibility with SpyFile objects. Returns self'''
+	return self
+    
+    def info(self):
         s = '\t# Rows:         %6d\n' % (self.nRows)
         s += '\t# Samples:      %6d\n' % (self.nCols)
         s += '\t# Bands:        %6d\n' % (self.shape[2])
@@ -164,9 +196,9 @@ def image(file):
         pass
 
     # See if the size is consistent with an Aviris file
-    from Io.Aviris import Aviris
+    from Io.Aviris import openAviris
     try:
-        return Aviris(pathname)
+        return openAviris(pathname)
     except:
         pass
 

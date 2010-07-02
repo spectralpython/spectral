@@ -145,15 +145,34 @@ def EnviHdr(file, image = None):
               'file.  If you believe the header to be correct, please' + \
               'submit a bug report to have the type coded added.'
 
-    #  Return the appropriate object type for the interleave format.
+    #  Create the appropriate object type for the interleave format.
     inter = h["interleave"]
     if inter == 'bil' or inter == 'BIL':
         from Spectral.Io.BilFile import BilFile
-        return BilFile(p, h)
+        img = BilFile(p, h)
     elif inter == 'bip' or inter == 'BIP':
         from Spectral.Io.BipFile import BipFile
-        return BipFile(p, h)
+        img = BipFile(p, h)
     else:
         from Spectral.Io.BsqFile import BsqFile
-        return BsqFile(p, h)
+        img = BsqFile(p, h)
+    
+    img.scaleFactor = float(h.get('reflectance scale factor', 1.0))
+    
+    # Add band info
+    
+    if h.has_key('wavelength'):
+	try:
+	    img.bands.centers = [float(b) for b in h['wavelength']]
+	except:
+	    pass
+    if h.has_key('fwhm'):
+	try:
+	    img.bands.centersFWHMs = [float(f) for f in h['fwhm']]
+	except:
+	    pass
+    img.bands.bandUnit = h.get('wavelength units', "")
+    img.bands.bandQuantity = "Wavelength"
+    
+    return img
 

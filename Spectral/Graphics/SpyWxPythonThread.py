@@ -129,7 +129,8 @@ class WxImageFrame(wx.Frame):
         print (evt.m_y, evt.m_x)
         from Spectral import settings
         if self.kwargs.has_key("data source"):
-            settings.plotter.plot(self.kwargs["data source"][evt.m_y, evt.m_x])
+            settings.plotter.plot(self.kwargs["data source"][evt.m_y, evt.m_x], \
+				  source = self.kwargs["data source"])
 
 
 class WxImageServer(wx.App):

@@ -66,6 +66,8 @@ class BsqFile(SpyFile):
         arr = Numeric.array(vals.tolist())
         arr = Numeric.reshape(arr, (self.nRows, self.nCols))
 
+	if self.scaleFactor != 1:
+	    return arr / float(self.scaleFactor)
         return arr
 
     def readBands(self, bands):
@@ -101,6 +103,8 @@ class BsqFile(SpyFile):
             bandArr = Numeric.reshape(bandArr, (self.nRows, self.nCols))
             arr[:,:,j] = bandArr
 
+	if self.scaleFactor != 1:
+	    return arr / float(self.scaleFactor)
         return arr
 
 
@@ -134,6 +138,8 @@ class BsqFile(SpyFile):
             vals.byteswap()
         pixel = Numeric.array(vals.tolist(), self._typecode)
 
+	if self.scaleFactor != 1:
+	    return pixel / float(self.scaleFactor)
         return pixel
 
     def readSubRegion(self, rowBounds, colBounds, bands = None):
@@ -194,6 +200,8 @@ class BsqFile(SpyFile):
             subArray = Numeric.reshape(subArray, (nSubRows, nSubCols))
             arr[:,:,i] = Numeric.transpose(subArray)
 
+	if self.scaleFactor != 1:
+	    return arr / float(self.scaleFactor)
         return arr
     
 
@@ -256,6 +264,8 @@ class BsqFile(SpyFile):
         subArray = Numeric.array(vals.tolist())
         subArray = Numeric.reshape(subArray, (nSubRows, nSubCols, nSubBands))
 
+	if self.scaleFactor != 1:
+	    return subArray / float(self.scaleFactor)
         return subArray
 
     def readDatum(self, i, j, k):
@@ -277,7 +287,7 @@ class BsqFile(SpyFile):
                          + j) * sampleSize, 0)
         vals = array.array(self.format)
         vals.fromfile(self.fid, 1)
-        return vals.tolist()[0]
+        return vals.tolist()[0] / float(self.scaleFactor)
 
         
 

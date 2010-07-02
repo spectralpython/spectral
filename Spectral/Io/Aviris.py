@@ -32,11 +32,19 @@
 Functions for handling AVIRIS image files.
 '''
 
-def Aviris(file):
-    '''Creates a SpyFile object for an AVIRIS image file.'''
+def openAviris(file, bandFile = None):
+    '''
+    Creates a SpyFile object for an AVIRIS image file.
+    
+    USAGE: img = Aviris(fileName [, bandFile])
+    
+    ARGS:
+        fileName		Name of the data cube file
+	bandFile		Name of the AVIRIS spectral calibration file
+    '''
 
     from Spectral.Io.BipFile import BipFile
-    import os
+    import os, glob
     from exceptions import IOError
     from SpyFile import findFilePath
 
@@ -46,14 +54,51 @@ def Aviris(file):
     p.fileName = findFilePath(file)
     p.nBands = 224
     p.nCols = 614
-    fileSize = os.stat(file)[6]
+    fileSize = os.stat(p.fileName)[6]
     if fileSize % 275072 != 0:
         raise IOError, 'File size not consitent with Aviris format.'
-    p.nRows = fileSize / 275072
+    p.nRows = int(fileSize / 275072)
     p.format = 'h'
     p.typecode = 'h'
     p.offset = 0
     p.byteOrder = 1
     metadata = {'default bands' : ['29', '18', '8']}
 
-    return BipFile(p, metadata)    
+    img = BipFile(p, metadata)
+    img.scaleFactor = 10000.0
+    
+    if bandFile:
+	img.bands = readAvirisBands(findFilePath(bandFile))
+    else:
+	# Let user know if band cal files are available
+	fileDir = os.path.split(p.fileName)[0]
+	calFiles = glob.glob(fileDir + '/*.spc')
+	if len(calFiles) > 0:
+	    print '\nThe following band calibration files are located in the same ' \
+	          'directory as the opened AVIRIS file:\n'
+	    for f in calFiles:
+		print "    " + os.path.split(f)[1]
+	    print '\nTo associate a band calibration file with an AVIRIS data file, ' \
+	          're-open the AVIRIS file with the following syntax:\n'
+	    print '    >>> img = openAviris(fileName, calFileName)\n'
+    return img
+
+def readAvirisBands(calFileName):
+    '''
+    Returns a pair of lists containing the center wavelengths and full widths
+    at half maximum (fwhm) for all AVIRIS bands, in microns (um).
+    '''
+    from Spectral import BandInfo
+    bands = BandInfo()
+    bands.bandQuantity = 'Wavelength'
+    bands.bandUnit = 'nm'
+    
+    fin = open(calFileName)
+    rows = [line.split() for line in fin]
+    rows = [[float(x) for x in row] for row in rows if len(row) == 5]
+    columns = zip(*rows)
+    bands.centers = columns[0]
+    bands.bandwidths = columns[1]
+    bands.centersStdDevs = columns[2]
+    bands.bandwidthsStdDevs = columns[3]
+    return bands
