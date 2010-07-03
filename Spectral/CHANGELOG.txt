@@ -2,6 +2,17 @@
 # Spectral package change log
 ################################################################################
 
+2010-07-03	tboggs <tboggs@users.sourceforge.net>
+
+    The isoCluster function has been re-named k-means, which is a more accurate
+    description of the algorithm.
+    
+	* Algorithms/__init__.py: Explicitly import functions from Clustering
+	* Algorithms/Cluster.py:
+	  (IsoClusterer): Class renamed KmeansClusterer
+	  (isoCluster): Function renamed kmeans. The isoCluster function is now
+	  a pass-through to the kmeans function and issues a deprecation warning.
+
 2010-07-02	tboggs <tboggs@users.sourceforge.net>
 
     Added an Image base class from which SpyFile and the new ImageArray class are

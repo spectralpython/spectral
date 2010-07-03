@@ -45,8 +45,8 @@ def L2(v1, v2):
     return numpy.sqrt(numpy.dot(delta, delta))
 
 
-class IsoClusterer(Classifier):
-    '''An unsupervised classifier using an interative clustering algorithm'''
+class KmeansClusterer(Classifier):
+    '''An unsupervised classifier using an iterative clustering algorithm'''
     def __init__(self, nClusters = 8, maxIter = 20, endCondition = None, distanceMeasure = L1):
         '''
         ARGUMENTS:
@@ -91,17 +91,17 @@ class IsoClusterer(Classifier):
                           self.endCondition, self.distanceMeasure, iterations)
                 
     
-def isoCluster(image, nClusters = 8, maxIter = 20, startClusters = None,
+def kmeans(image, nClusters = 8, maxIter = 20, startClusters = None,
            compare = None, distance = L1, iterations = None):
     '''
-    Performs iterative self-organizing clustering of image data.
+    Performs iterative clustering using the k-means algorithm.
 
-    USAGE: (clMap, centers) = isoCluster(image [, nClusters = 8]
-                                               [, maxIter = 20]
-                                               [, startClusters = None]
-                                               [, compare = None]
-                                               [, distance = L1]
-                                               [, iterations = None])
+    USAGE: (clMap, centers) = kmeans(image [, nClusters = 8]
+                                           [, maxIter = 20]
+                                           [, startClusters = None]
+                                           [, compare = None]
+                                           [, distance = L1]
+                                           [, iterations = None])
 
     ARGUMENTS:
         image           A SpyFile or an MxNxB NumPy array
@@ -192,10 +192,25 @@ def isoCluster(image, nClusters = 8, maxIter = 20, startClusters = None,
         clusters = numpy.zeros((nRows, nCols), int)
         iter += 1
 
-    print >>status, '\tisoCluster terminated with', centers.shape[0], \
+    print >>status, '\kmeans terminated with', centers.shape[0], \
           'clusters after', iter - 1, 'iterations.'
     return (oldClusters, centers)
 
+def isoCluster(*args, **kwargs):
+    '''
+    This is a deprecated function because it previously refered to a function that
+    implemented the k-means clustering algorithm.  For backward compatibilty, this
+    function will act as a pass through (with a warning issued) to the \"kmeans\"
+    function, which is the correct name for the algorithm.  This \"isoCluster\"
+    function will likely be dropped in a future version, unless an actual implementation
+    of the ISO-Cluster algorithm is added.
+    '''
+    import warnings
+    msg = "The function name \"isoCluster\" is deprecated since the function " \
+	  "to which it refered is actually an implementation of the k-means " \
+	  "clustering algorithm.  Please call \"kmeans\" instead."
+    warnings.warn(msg, DeprecationWarning)
+    return kmeans(*args, **kwargs)
 
 def clusterOnePass(image, maxDist, nClusters = 10):
     '''

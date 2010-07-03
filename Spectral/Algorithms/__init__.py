@@ -31,5 +31,5 @@
 
 from Algorithms import *
 from Classifiers import *
-from Cluster import *
+from Cluster import L1, L2, kmeans, cluster, isoCluster
 from Perceptron import PerceptronClassifier
