@@ -2,6 +2,23 @@
 # Spectral package change log
 ################################################################################
 
+2010-07-05	tboggs <tboggs@users.sourceforge.net>
+
+    Updated TransformedImage class to support being initialized from an
+    ImageArray object.
+    
+	* Spectral.py (Image.params): New method.  Some of the content of
+	  SpyFile.params has been moved here.
+	  (ImageArray.format): New static variable specifying the numpy array type.
+	* Io/SpyFile.py:
+	  (SpyFile.load): Use ImageArray.format to define array type.
+	  (SpyFile.params): Call Image.params and only add parameters not set there.
+	  (TransformedImage): Class now derived from Image instead of SpyFile.
+	  Added _typecode class varialble to specify type of returned numpy arrays.
+	  (TransformedImage.__getitem__): __getitem__, readSubImage, and readSubRegion
+	  now handle case when TransformedImage is defined relative to an ImageArray object.
+	  (TransformedImage.typecode): New method.
+
 2010-07-03	tboggs <tboggs@users.sourceforge.net>
 
     The isoCluster function has been re-named k-means, which is a more accurate

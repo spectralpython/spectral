@@ -84,6 +84,7 @@ class BandInfo:
 	self.bandUnit = ""
 
 class Image:
+    '''Spectral.Image is the common base class for Spectral image objects.'''
 
     def __init__(self, params, metadata = None):
 	self.bands = BandInfo()
@@ -107,10 +108,28 @@ class Image:
         except:
             raise
 
+    def params(self):
+        '''Return an object containing the SpyFile parameters.'''
+
+        class P: pass
+        p = P()
+
+        p.nBands = self.nBands
+        p.nRows = self.nRows
+        p.nCols = self.nCols
+        p.format = self.format
+        p.metadata = self.metadata
+        p.typecode = self._typecode
+
+        return p
+
     def __repr__(self):
         return self.__str__()
        
 class ImageArray(numpy.ndarray, Image):
+
+    format = 'f'	# Use 4-byte floats form data arrays
+    
     def __new__(subclass, data, spyFile):
         from Io.SpyFile import SpyFile
         

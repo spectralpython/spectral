@@ -128,7 +128,7 @@ class SpyFile(Image):
         data.fromfile(self.fid, self.nRows * self.nCols * self.nBands)
         if self.swap:
             data.byteswap()
-        npArray = numpy.array(data, 'f')
+        npArray = numpy.array(data, Spectral.ImageArray.format)
         if self.interleave == Spectral.BIL:
             npArray.shape = (self.nRows, self.nBands, self.nCols)
             npArray = npArray.transpose([0, 2, 1])
@@ -209,21 +209,14 @@ class SpyFile(Image):
 
     def params(self):
         '''Return an object containing the SpyFile parameters.'''
+	from Spectral import Image
 
-        class P: pass
-        p = P()
+        p = Image.params(self)
 
         p.fileName = self.fileName
-        p.nBands = self.nBands
-        p.nRows = self.nRows
-        p.nCols = self.nCols
-        p.format = self.format
         p.offset = self.offset
         p.byteOrder = self.byteOrder
-        p.swap = self.swap
         p.sampleSize = self.sampleSize
-        p.metadata = self.metadata
-        p.typecode = self._typecode
 
         return p
 
@@ -291,16 +284,17 @@ class SubImage(SpyFile):
                                         list(array(colBounds) + self.colOffset), \
                                         bands)
 
-class TransformedImage(SpyFile):
+class TransformedImage(Image):
     '''
     An image with a linear transformation applied to each pixel spectrum.
     The transformation is not applied until data is read from the image file.
     '''
+    _typecode = 'f'
     
     def __init__(self, matrix, img):
         import numpy.oldnumeric as Numeric
 
-        if not isinstance(img, SpyFile):
+        if not isinstance(img, Image):
             raise 'Invalid image argument to to TransformedImage constructor.'
 
         arrayType = type(Numeric.array([1]))
@@ -359,12 +353,12 @@ class TransformedImage(SpyFile):
             # Band indices should be in a list
             bands = args[2]
 
-        orig = SpyFile.__getitem__(self.image, args[:2])
+        orig = self.image.__getitem__(args[:2])
         if len(orig.shape) == 1:
             orig = orig[NewAxis, NewAxis, :]
         elif len(orig.shape) == 2:
             orig = orig[NewAxis, :]
-        transformed_xy = zeros([orig.shape[0], orig.shape[1], self.shape[2]], float)
+        transformed_xy = zeros([orig.shape[0], orig.shape[1], self.shape[2]], self._typecode)
         for i in range(transformed_xy.shape[0]):
             for j in range(transformed_xy.shape[1]):
                 transformed_xy[i, j] = dot(self.matrix, orig[i, j])
@@ -401,7 +395,7 @@ class TransformedImage(SpyFile):
         '''
         from numpy import zeros, dot
         orig = self.image.readSubRegion(rowBounds, colBounds)
-        transformed = zeros([orig.shape[0], orig.shape[1], self.shape[2]], float)
+        transformed = zeros([orig.shape[0], orig.shape[1], self.shape[2]], self._typecode)
         for i in range(transformed.shape[0]):
             for j in range(transformed.shape[1]):
                 transformed[i, j] = dot(self.matrix, orig[i, j])
@@ -420,7 +414,7 @@ class TransformedImage(SpyFile):
         '''
         from numpy import zeros, dot
         orig = self.image.readSubImage(rows, cols)
-        transformed = zeros([orig.shape[0], orig.shape[1], self.shape[2]], float)
+        transformed = zeros([orig.shape[0], orig.shape[1], self.shape[2]], self._typecode)
         for i in range(transformed.shape[0]):
             for j in range(transformed.shape[1]):
                 transformed[i, j] = dot(self.matrix, orig[i, j])
@@ -439,6 +433,9 @@ class TransformedImage(SpyFile):
             for j in range(shape[1]):
                 data[i, j] = numpy.take(self.readPixel(i, j), bands)
         return data
+    
+    def typecode(self):
+	return self._typecode
         
 def typecode(obj):
     '''
