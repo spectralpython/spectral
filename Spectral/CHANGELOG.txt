@@ -2,6 +2,10 @@
 # Spectral package change log
 ################################################################################
 
+2010-07-08	tboggs <tboggs@users.sourceforge.net>
+
+    * Io/Envi.py (EnviHdr): Added support for additional image data types.
+
 2010-07-05	tboggs <tboggs@users.sourceforge.net>
 
     Updated TransformedImage class to support being initialized from an

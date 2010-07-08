@@ -119,31 +119,55 @@ def EnviHdr(file, image = None):
     p.fileName = image
 
     #  Determine numeric data type
-    if h["data type"] == '2':
-        #  Int16
-        p.format = 'h'
-        p.typecode = 'h'
-    elif h["data type"] == '1':
-        #  char
+    if h["data type"] == '1':
+        # byte
         p.format = 'b'
         p.typecode = 'b'
+    elif h["data type"] == '2':
+        # 16-bit int
+        p.format = 'h'
+        p.typecode = 'h'
     elif h["data type"] == '3':
-        #  float32
+        # 32-bit int
         p.format = 'f'
         p.typecode = 'f'
     elif h["data type"] == '4':
-        #  float32
+        #  32-bit float
         p.format = 'f'
         p.typecode = 'f'
+    elif h["data type"] == '5':
+        #  64-bit float
+        p.format = 'd'
+        p.typecode = 'd'
+    elif h["data type"] == '6':
+        #  2x32-bit complex
+        p.format = 'F'
+        p.typecode = 'F'
+    elif h["data type"] == '9':
+        #  2x64-bit complex
+        p.format = 'D'
+        p.typecode = 'D'
     elif h["data type"] == '12':
-        #  Int16
+        #  16-bit unsigned int
         p.format = 'H'
         p.typecode = 'H'
+    elif h["data type"] == '13':
+        #  32-bit unsigned int
+        p.format = 'I'
+        p.typecode = 'I'
+    elif h["data type"] == '14':
+        #  64-bit int
+        p.format = 'q'
+        p.typecode = 'q'
+    elif h["data type"] == '15':
+        #  64-bit unsigned int
+        p.format = 'Q'
+        p.typecode = 'Q'
     else:
         #  Don't recognize this type code
         raise TypeError, 'Unrecognized data type code in header ' + \
               'file.  If you believe the header to be correct, please' + \
-              'submit a bug report to have the type coded added.'
+              'submit a bug report to have the type code added.'
 
     #  Create the appropriate object type for the interleave format.
     inter = h["interleave"]
