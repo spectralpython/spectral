@@ -124,11 +124,11 @@ def getImageDisplayData(source, bands = None, **kwargs):
             scale = kwargs["colorScale"]
             if kwargs.has_key("autoScale") and kwargs["autoScale"]:
                 scale.setRange(min(rgb.ravel()), max(rgb.ravel()))
-            rgb3 = zeros((s[0], s[1], 3), Int)
+            rgb3 = zeros((s[0], s[1], 3), int)
             for i in range(s[0]):
                 for j in range(s[1]):
                     rgb3[i, j] = scale(rgb[i, j])
-            rgb = rgb3.astype(Float) / 255.  
+            rgb = rgb3.astype(float) / 255.  
         else:
             monochrome = 1
             rgb = repeat(rgb, 3, 2).astype(float)

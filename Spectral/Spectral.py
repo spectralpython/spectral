@@ -196,28 +196,26 @@ def image(file):
 
     from exceptions import IOError
     import os
+    from Io import Aviris, Envi, Erdas, SpyFile
     from Io.SpyFile import findFilePath
 
     pathname = findFilePath(file)
         
     # Try to open it as an ENVI header file.
-    from Io.Envi import EnviHdr
     try:
-        return EnviHdr(pathname)
+        return Envi.open(pathname)
     except:
         pass
 
     # Maybe it's an Erdas Lan file
-    from Io.Erdas import ErdasLan
     try:
-        return ErdasLan(pathname)
+        return Erdas.open(pathname)
     except:
         pass
 
     # See if the size is consistent with an Aviris file
-    from Io.Aviris import openAviris
     try:
-        return openAviris(pathname)
+        return Aviris.open(pathname)
     except:
         pass
 
@@ -287,7 +285,21 @@ def view(*args, **kwargs):
     be scaled so that lower and upper correspond to 0 and 1, respectively
     . Any values outside of the range (lower, upper) will be clipped.
     '''
-    settings.viewer.view(*args, **kwargs)
+    
+    # Try to init the graphics thread, if it hasn't already been.
+    if not settings.viewer:
+	import time
+	initGraphics()
+	print "Initializing graphics handlers..."
+	time.sleep(3)
+	try:
+	    settings.viewer.view(*args, **kwargs)
+	except:
+	    print "Error: Failed to display image.  This may be due to the GUI " \
+		  "thread taking too long to initialize.  Try calling \"initGraphics()\" " \
+		  "to explicitly initialize the GUI thread, then repeat the display command."
+    else:
+	settings.viewer.view(*args, **kwargs)
 
 
 def viewIndexed(*args, **kwargs):
@@ -308,7 +320,21 @@ def viewIndexed(*args, **kwargs):
 
     if not kwargs.has_key('colors'):
         kwargs['colors'] = spyColors
-    settings.viewer.view(*args, **kwargs)
+
+    # Try to init the graphics thread, if it hasn't already been.
+    if not settings.viewer:
+	import time
+	initGraphics()
+	print "Initializing graphics handlers..."
+	time.sleep(3)
+	try:
+	    settings.viewer.view(*args, **kwargs)
+	except:
+	    print "Error: Failed to display image.  This may be due to the GUI " \
+		  "thread taking too long to initialize.  Try calling \"initGraphics()\" " \
+		  "to explicitly initialize the GUI thread, then repeat the display command."
+    else:
+	settings.viewer.view(*args, **kwargs)
     
 
 def makePilImage(*args, **kwargs):
@@ -331,12 +357,12 @@ def makePilImage(*args, **kwargs):
     . Any values outside of the range (lower, upper) will be clipped.
     '''
 
-    import Graphics
+    from Graphics import getImageDisplayData
     from numpy.oldnumeric import transpose
     import StringIO
     import Image, ImageDraw
 
-    rgb = apply(Graphics.getImageDisplayData, args, kwargs)
+    rgb = apply(getImageDisplayData, args, kwargs)
 
     if not kwargs.has_key("colors"):
         rgb = (rgb * 255).astype(numpy.ubyte)

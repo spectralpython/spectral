@@ -1,0 +1,196 @@
+#########################################################################
+#
+#   Resampling.py - This file is part of the Spectral Python (SPy) package.
+#
+#   Copyright (C) 2010 Thomas Boggs
+#
+#   Spectral Python is free software; you can redistribute it and/
+#   or modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   Spectral Python is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#     
+#   You should have received a copy of the GNU General Public License
+#   along with this software; if not, write to
+#
+#               Free Software Foundation, Inc.
+#               59 Temple Place, Suite 330
+#               Boston, MA 02111-1307
+#               USA
+#
+#########################################################################
+#
+# Send comments to:
+# Thomas Boggs, tboggs@users.sourceforge.net
+#
+
+'''
+Functions for resampling a spectrum from one band discretization to another.
+'''
+
+# The following function is taken from:
+#     http://www.cs.princeton.edu/introcs/21function/ErrorFunction.java.html
+# Implements the Gauss error function.
+#   erf(z) = 2 / sqrt(pi) * integral(exp(-t*t), t = 0..z)
+#
+# fractional error in math formula less than 1.2 * 10 ^ -7.
+# although subject to catastrophic cancellation when z in very close to 0
+# from Chebyshev fitting formula for erf(z) from Numerical Recipes, 6.2
+def erf(z):
+    '''The error function (used to calculate the gaussian integral).'''
+    import math
+    t = 1.0 / (1.0 + 0.5 * abs(z))
+    # use Horner's method
+    ans = 1 - t * math.exp( -z*z -  1.26551223 +
+				    t * ( 1.00002368 +
+				    t * ( 0.37409196 + 
+				    t * ( 0.09678418 + 
+				    t * (-0.18628806 + 
+				    t * ( 0.27886807 + 
+				    t * (-1.13520398 + 
+				    t * ( 1.48851587 + 
+				    t * (-0.82215223 + 
+				    t * ( 0.17087277))))))))))
+    if z >= 0.0:
+	return ans
+    else:
+	return -ans
+
+def erfc(z):
+    '''Complement of the error function.'''
+    return 1.0 - erf(z)
+
+def normalCDF(x):
+    '''CDF of the normal distribution.'''
+    sqrt2 = 1.4142135623730951
+    return 0.5 * erfc(-x / sqrt2)
+
+def normalIntegral(a, b):
+    '''Integral of the normal distribution from a to b.'''
+    return normalCDF(b) - normalCDF(a)
+
+def rangesOverlap(R1, R2):
+    '''Returns True if there is any overlap between the ranges specified by pairs R1 and R2.'''
+    if (R1[0] < R2[0] and R1[1] < R2[0]) or \
+       (R1[0] > R2[1] and R1[1] > R2[1]):
+        return False
+    return True
+
+def overlap(R1, R2):
+    '''Returns (min, max) of the overlap between the ranges specified by pairs R1 and R2.'''
+    return (max(R1[0], R2[0]), min(R1[1], R2[1]))
+
+def normal(mean, stdev, x):
+    from math import exp, pi
+    sqrt_2pi = 2.5066282746310002
+    return exp(-((x - mean) / stdev)**2 / 2.0) / (sqrt_2pi * stdev)
+
+def buildFwhm(centers):
+    '''
+    Builds list of FWHM values by assuming FWHM is midway between adjacent bands.
+    '''
+    fwhm = [0] * len(centers)
+    fwhm[0] = centers[1] - centers[0]
+    fwhm[-1] = centers[-1] - centers[-2]
+    for i in range(1, len(centers) - 1):
+	fwhm[i] = (centers[i + 1] - centers[i - 1]) / 2.0
+    return fwhm
+
+def createResamplingMatrix(centers1, fwhm1, centers2, fwhm2):
+    '''
+    Returns a resampling matrix to convert spectra from one band discretization
+    to another.  Arguments are the band centers and full-width half maximum spectral
+    response for the original and new band discretizations.
+    '''
+    import numpy
+    
+    sqrt_8log2 = 2.3548200450309493
+    
+    N1 = len(centers1)
+    N2 = len(centers2)
+    bounds1 = [[centers1[i] - fwhm1[i] / 2.0, centers1[i] + fwhm1[i] / 2.0] for i in range(N1)]
+    bounds2 = [[centers2[i] - fwhm2[i] / 2.0, centers2[i] + fwhm2[i] / 2.0] for i in range(N2)]
+    
+    M = numpy.zeros([N2, N1])
+    
+    jStart = 0
+    nan = float('nan')
+    for i in range(N2):
+	stdev = fwhm2[i] / sqrt_8log2
+        j = jStart
+        
+        # Find the first original band that overlaps the new band
+        while j < N1 and bounds1[j][1] < bounds2[i][0]:
+            j += 1
+        
+        if j == N1:
+            print('No overlap for target band %d (%f / %f)' % (i, centers2[i], fwhm2[i]))
+	    M[i, 0] = nan
+            continue
+            
+        matches = []
+        
+        # Get indices for all original bands that overlap the new band
+        while j < N1 and bounds1[j][0] < bounds2[i][1]:
+            if rangesOverlap(bounds1[j], bounds2[i]):
+                matches.append(j)
+            j += 1
+            
+	# Put NaN in first element of any row that doesn't produce a band in the new schema
+        if len(matches) == 0:
+            print('No overlap for target band %d (%f / %f)' % (i, centers2[i], fwhm2[i]))
+	    M[i, 0] = nan
+            continue
+
+	# Determine the weights for the original bands that overlap the new band.
+	# There may be multiple bands that overlap or even just a single band that
+	# only partially overlaps.  Weights are normoalized so either case can
+	# be handled.
+	
+        overlaps = [overlap(bounds1[k], bounds2[i]) for k in matches]
+        contribs = numpy.zeros(len(matches))
+        A = 0.
+        for k in range(len(matches)):
+	    #endNorms = [normal(centers2[i], stdev, x) for x in overlaps[k]]
+	    #dA = (overlaps[k][1] - overlaps[k][0]) * sum(endNorms) / 2.0
+	    (a, b) = [(x - centers2[i]) / stdev for x in overlaps[k]]
+	    dA = normalIntegral(a, b)
+            contribs[k] = dA
+            A += dA
+        contribs = contribs / A
+        for k in range(len(matches)):
+            M[i, matches[k]] = contribs[k]
+    return M
+
+class BandResampler:
+    '''
+    BandResampler is a class for resampling spectra from one band discretization to another.
+    
+    Constructor args:
+        centers1		list of center wavelengths for source spectrum
+	centers2		list of center wavelengths for target spectrum
+	fwhm1			list of full-width have maxima for source bands
+	fwhm2			list of full-width have maxima for target bands
+	
+    If fwhm1 or fwhm2 are not specified, the associated bands are assumed to have
+    FWHM values that span half the distance to the adjacent bands.
+    
+    BandResampler creates callable objects that take a source spectrum as an
+    argument and return a resampled spectrum. Any target bands that do not have
+    any overlapping source bands will contain NaN as the resampled band value.
+    '''
+    def __init__(self, centers1, centers2, fwhm1 = None, fwhm2 = None):
+	if not fwhm1:
+	    fwhm1 = buildFwhm(centers1)
+	if not fwhm2:
+	    fwhm2 = buildFwhm(centers2)
+	self.matrix = createResamplingMatrix(centers1, fwhm1, centers2, fwhm2)
+    def __call__(self, spectrum):
+	'''Takes a source spectrum as input and returns a resampled spectrum.'''
+	import numpy
+	return numpy.dot(self.matrix, spectrum)
+	

@@ -2,7 +2,7 @@
 #
 #   Erdas.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001-2008 Thomas Boggs
+#   Copyright (C) 2001-2010 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -32,7 +32,7 @@
 Functions for reading Erdas files.
 '''
 
-def ErdasLan(file):
+def open(file):
     '''
     Create a SpyFile object from an Erdas Lan file header.
     '''
@@ -40,7 +40,7 @@ def ErdasLan(file):
     from BilFile import BilFile
     from SpyFile import findFilePath
 
-    lh = ReadErdasLanHeader(findFilePath(file))
+    lh = readErdasLanHeader(findFilePath(file))
 
     class Params: pass
     p = Params()
@@ -63,16 +63,17 @@ def ErdasLan(file):
     return BilFile(p, lh)    
 
 
-def ReadErdasLanHeader(fileName):
+def readErdasLanHeader(fileName):
     '''Read parameters from a lan file header.'''
 
     from exceptions import IOError
     from array import array
+    import __builtin__
     word = array('h');  word.byteswap()
     dword = array('i'); dword.byteswap()
     float = array('f'); float.byteswap()
 
-    f = open(fileName, "rb")
+    f = __builtin__.open(fileName, "rb")
 
     h = {}
     h["format"] = "lan"

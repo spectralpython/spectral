@@ -47,7 +47,7 @@ def L2(v1, v2):
 
 class KmeansClusterer(Classifier):
     '''An unsupervised classifier using an iterative clustering algorithm'''
-    def __init__(self, nClusters = 8, maxIter = 20, endCondition = None, distanceMeasure = L1):
+    def __init__(self, nClusters = 10, maxIter = 20, endCondition = None, distanceMeasure = L1):
         '''
         ARGUMENTS:
             nClusters       Number of clusters to create. Default is 8
@@ -91,7 +91,7 @@ class KmeansClusterer(Classifier):
                           self.endCondition, self.distanceMeasure, iterations)
                 
     
-def kmeans(image, nClusters = 8, maxIter = 20, startClusters = None,
+def kmeans(image, nClusters = 10, maxIter = 20, startClusters = None,
            compare = None, distance = L1, iterations = None):
     '''
     Performs iterative clustering using the k-means algorithm.

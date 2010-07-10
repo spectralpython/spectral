@@ -29,19 +29,20 @@
 #
 
 '''
-Code for creating SpyFile objects from ENVI headers.
+Code for creating SpyFile objects from files with ENVI header files.
 '''
 
-def ReadEnviHdr(file):
+def readEnviHdr(file):
     '''
-    USAGE: hdr = ReadEnviHeader(file)
+    USAGE: hdr = readEnviHeader(file)
 
-    Reads a standard ENVI image file header and returns the parameters in
+    Reads an ENVI ".hdr" file header and returns the parameters in
     a dictionary as strings.
     '''
 
     from string import find, split, strip
     from exceptions import IOError
+    from __builtin__ import open
     
     f = open(file, 'r')
     
@@ -82,16 +83,17 @@ def ReadEnviHdr(file):
     except:
         raise IOError, "Error while reading ENVI file header."
 
-
-def EnviHdr(file, image = None):
-    '''Creates a SpyFile object from an ENVI HDR file.'''
+def open(file, image = None):
+    '''Creates a SpyFile object for a file with and ENVI HDR header file.'''
 
     import os
     from exceptions import IOError, TypeError
     from SpyFile import findFilePath
+    import numpy
+    import Spectral
 
     headerPath = findFilePath(file)
-    h = ReadEnviHdr(headerPath)
+    h = readEnviHdr(headerPath)
     h["header file"] = file
 
     class Params: pass
@@ -108,7 +110,7 @@ def EnviHdr(file, image = None):
         headerDir = os.path.split(headerPath)
         if headerPath[-4:].lower() == '.hdr':
             headerPathTitle = headerPath[:-4]
-            exts = ['', '.img', '.IMG', '.dat', '.DAT']
+            exts = ['', '.img', '.IMG', '.dat', '.DAT', '.sli', '.SLI']
             for ext in exts:
                 testname = headerPathTitle + ext
                 if os.path.isfile(testname):
@@ -169,6 +171,14 @@ def EnviHdr(file, image = None):
               'file.  If you believe the header to be correct, please' + \
               'submit a bug report to have the type code added.'
 
+    if h.get('file type') == 'ENVI Spectral Library':
+	# File is a spectral library
+	data = numpy.fromfile(p.fileName, p.format, p.nCols * p.nRows)
+	data.shape = (p.nRows, p.nCols)
+	if (p.byteOrder != Spectral.byteOrder):
+	    data = data.byteswap()
+	return SpectralLibrary(data, h, p)
+    
     #  Create the appropriate object type for the interleave format.
     inter = h["interleave"]
     if inter == 'bil' or inter == 'BIL':
@@ -192,7 +202,7 @@ def EnviHdr(file, image = None):
 	    pass
     if h.has_key('fwhm'):
 	try:
-	    img.bands.centersFWHMs = [float(f) for f in h['fwhm']]
+	    img.bands.bandwidths = [float(f) for f in h['fwhm']]
 	except:
 	    pass
     img.bands.bandUnit = h.get('wavelength units', "")
@@ -200,3 +210,36 @@ def EnviHdr(file, image = None):
     
     return img
 
+class SpectralLibrary:
+    '''
+    The Envi.SpectralLibrary class holds data contained in an HDR-formatted spectral
+    library file (.sli files), which stores data as specified by a corresponding .hdr
+    file.  The primary members of an Envi.SpectralLibrary object are:
+    
+	spectra			A subscriptable array of all spectra in the library.
+	names			A list of names corresponding to the spectra.
+	bands			A BandInfo object defining associated spectral bands.
+    '''
+    
+    def __init__(self, data, header, params):
+	from Spectral.Spectral import BandInfo
+	self.spectra = data
+	self.bands = BandInfo()
+	if header.has_key('wavelength'):
+	    try:
+		self.bands.centers = [float(b) for b in header['wavelength']]
+	    except:
+		pass
+	if header.has_key('fwhm'):
+	    try:
+		self.bands.bandwidths = [float(f) for f in header['fwhm']]
+	    except:
+		pass
+	if header.has_key('spectra names'):
+	    self.names = header['spectra names']
+	else:
+	    self.names = [''] * self.bands.shape[0]
+	self.bands.bandUnit = header.get('wavelength units', "")
+	self.bands.bandQuantity = "Wavelength"
+	self.params = params
+	self.metadata = header

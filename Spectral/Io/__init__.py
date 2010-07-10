@@ -30,3 +30,4 @@
 
 
 from SpyFile import *
+import Aviris, Erdas, Envi

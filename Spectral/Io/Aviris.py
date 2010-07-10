@@ -32,7 +32,7 @@
 Functions for handling AVIRIS image files.
 '''
 
-def openAviris(file, bandFile = None):
+def open(file, bandFile = None):
     '''
     Creates a SpyFile object for an AVIRIS image file.
     
@@ -88,12 +88,13 @@ def readAvirisBands(calFileName):
     Returns a pair of lists containing the center wavelengths and full widths
     at half maximum (fwhm) for all AVIRIS bands, in microns (um).
     '''
+    import __builtin__
     from Spectral import BandInfo
     bands = BandInfo()
     bands.bandQuantity = 'Wavelength'
     bands.bandUnit = 'nm'
     
-    fin = open(calFileName)
+    fin = __builtin__.open(calFileName)
     rows = [line.split() for line in fin]
     rows = [[float(x) for x in row] for row in rows if len(row) == 5]
     columns = zip(*rows)

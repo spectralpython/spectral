@@ -2,6 +2,46 @@
 # Spectral package change log
 ################################################################################
 
+2010-07-10	tboggs <tboggs@users.sourceforge.net>
+
+    * Io/Envi.py (SpectralLibrary): New class for handling spectra read from
+      spectral library files in ENVI .hdr./sli format.
+      
+    * Spectral.py:
+      (view, viewIndexed): If GUI thread hasn't been initialized yet,
+      try to initialize it.
+      (makePilImage): Changed how getImageDisplayData is imported from Graphics.
+    
+    * Algorithms/Resampling.py: New file for spectral band resampling functions.  
+
+    * Graphics/Graphics.py (getImageDisplayData): Fix data types that were missed
+      when removing old Numeric module references.
+      
+    * Io/SpyFile.py (load): read static member of ImageArray class to decide which
+      numeric type to use for loaded data arrays.
+      
+    * Algorithms/Clustering (kmeans, KmeansClusterer): Changed default number of
+      clusters to 10 (to be consistent with the cluster function).
+
+    Create common interface for opening files from different Io modules.
+    
+      * Spectral.py (image) Use "open" function in I/O modules.
+      * Io/__init__.py: Import Aviris, Erdas, and Envi sub-packages.
+      * Io/Avris.py (open): New name for the openAviris function.
+        (readAvirisBands): Explicitly use __builtin__.open for opening file.
+      * Io/Erdas.py (open): New name for the ErdasLan function.
+        (readErdasLanHeader): Changed name from ReadErdasLanHeader. Also, explicitly
+	use __builtin__.open for opening file.
+      * Io/Envi.py (readEnviHdr): Name changed from ReadEnviHdr.
+        (open): New name for EnviHdr function.   Now also handles opening spectral
+	libraries in ENVI .hdr/.sli format.
+	
+    Explicityly import names from sub-packages/modules to avoid polluting the
+    top-level namespace.
+    
+      * __init__.py: Explicitly import sub-package/module names.
+      * Algorithms/__init__.py: Explicitly import sub-package/module names.
+      
 2010-07-08	tboggs <tboggs@users.sourceforge.net>
 
     * Io/Envi.py (EnviHdr): Added support for additional image data types.

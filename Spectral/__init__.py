@@ -36,11 +36,12 @@ BSQ = 0
 BIL = 1
 BIP = 2
 
-from numpy import *
-from Spectral import *
-from Io.SpyFile import SubImage, TransformedImage
+#from numpy import *
+from Spectral import image, initGraphics, loadTrainingSets, saveImage, saveTrainingSets, \
+	      settings, tileImage, view, viewIndexed
+from Io import *
 from Algorithms import *
-from Io.Aviris import openAviris
+#from Io.Aviris import openAviris
 
 import Utilities.Status
 status = Utilities.Status.StatusDisplay()

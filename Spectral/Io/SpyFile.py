@@ -32,7 +32,7 @@ Common code for accessing hyperspectral image files.
 '''
 
 import numpy
-from Spectral import Image
+from Spectral.Spectral import Image
 
 def findFilePath(filename):
     '''
@@ -128,7 +128,7 @@ class SpyFile(Image):
         data.fromfile(self.fid, self.nRows * self.nCols * self.nBands)
         if self.swap:
             data.byteswap()
-        npArray = numpy.array(data, Spectral.ImageArray.format)
+        npArray = numpy.array(data, ImageArray.format)
         if self.interleave == Spectral.BIL:
             npArray.shape = (self.nRows, self.nBands, self.nCols)
             npArray = npArray.transpose([0, 2, 1])
