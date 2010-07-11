@@ -34,6 +34,187 @@ Common functions for extracting and manipulating data for graphical
 display.
 '''
 
+def initGraphics():
+    '''Initialize default graphics handlers.'''
+
+    try:
+	import Spectral
+        import pylab
+	import SpyPylab
+        pylab.ion()
+	Spectral.settings.plotter = SpyPylab
+    except:
+        print "Unable to initialize Pylab for plotting."
+	try:
+	    print "Trying Gnuplot..."
+	    import SpyGnuplot
+	    Spectral.settings.plotter = SpyGnuplot
+	    print "Gnuplot initialized."
+	except:
+	    print "Unable to initialize Gnuplot for plotting."
+	    print "No plotters initialized."
+
+    initWxPython()
+
+def initWxPython():
+    '''Use wxPython for image display.'''
+    import Spectral
+    import SpyWxPython
+    viewer = SpyWxPython
+    viewer.init()
+    Spectral.settings.viewer = viewer
+
+def initNumTut():
+    '''Use NumTut for image display.'''
+    import Spectral
+    import SpyNumTut
+    Spectral.settings.viewer = SpyNumTut
+
+def view(*args, **kwargs):
+    '''
+    Open a window and display an RGB image.
+
+    USAGE: view(source [, bands] [stretch = 1] [stretchAll = 1]
+                [bounds = (lower, upper)] )
+
+    source is the data source and can be either a SpyFile object or a
+    NumPy array.  bands is an optional list which specifies the RGB
+    channels to display. If bands is not present and source is a SpyFile
+    object, it's metadata dict will be checked if it contains a "default
+    bands" item.  Otherwise, the first, middle and last band will be
+    displayed. If stretch is defined, the image data will be scaled
+    so that the maximum value in the display data will be 1. If
+    stretchAll is defined, each color channel will be scaled separately
+    so that its maximum value is 1. If bounds is specified, the data will
+    be scaled so that lower and upper correspond to 0 and 1, respectively
+    . Any values outside of the range (lower, upper) will be clipped.
+    '''
+    from Spectral import settings
+    
+    # Try to init the graphics thread, if it hasn't already been.
+    if not settings.viewer:
+	import time
+	initGraphics()
+	print "Initializing graphics handlers..."
+	time.sleep(3)
+	try:
+	    settings.viewer.view(*args, **kwargs)
+	except:
+	    print "Error: Failed to display image.  This may be due to the GUI " \
+		  "thread taking too long to initialize.  Try calling \"initGraphics()\" " \
+		  "to explicitly initialize the GUI thread, then repeat the display command."
+    else:
+	settings.viewer.view(*args, **kwargs)
+
+
+def viewIndexed(*args, **kwargs):
+    '''
+    Open a window and display an indexed color image.
+
+    USAGE: viewIndexed(source [, colors])
+
+    source is the data source and can be either a SpyFile object or a
+    NumPy array. The optional argument colors is an Nx3 NumPy array
+    which specifies the RGB colors for the color indices in source.
+    Each column of colors specifies the red, green, and blue color
+    components in the range [0, 255]. If colors is not specified, the
+    default color table is used.
+    '''
+
+    from Spectral import settings, spyColors
+
+    if not kwargs.has_key('colors'):
+        kwargs['colors'] = spyColors
+
+    # Try to init the graphics thread, if it hasn't already been.
+    if not settings.viewer:
+	import time
+	initGraphics()
+	print "Initializing graphics handlers..."
+	time.sleep(3)
+	try:
+	    settings.viewer.view(*args, **kwargs)
+	except:
+	    print "Error: Failed to display image.  This may be due to the GUI " \
+		  "thread taking too long to initialize.  Try calling \"initGraphics()\" " \
+		  "to explicitly initialize the GUI thread, then repeat the display command."
+    else:
+	settings.viewer.view(*args, **kwargs)
+    
+
+def makePilImage(*args, **kwargs):
+    '''
+    Save data as a JPEG image file.
+
+    USAGE: view(source [, bands] [stretch = 1] [stretchAll = 1]
+                [bounds = (lower, upper)] )
+
+    source is the data source and can be either a SpyFile object or a
+    NumPy array.  bands is an optional list which specifies the RGB
+    channels to display. If bands is not present and source is a SpyFile
+    object, it's metadata dict will be checked if it contains a "default
+    bands" item.  Otherwise, the first, middle and last band will be
+    displayed. If stretch is defined, the image data will be scaled
+    so that the maximum value in the display data will be 1. If
+    stretchAll is defined, each color channel will be scaled separately
+    so that its maximum value is 1. If bounds is specified, the data will
+    be scaled so that lower and upper correspond to 0 and 1, respectively
+    . Any values outside of the range (lower, upper) will be clipped.
+    '''
+
+    from Graphics import getImageDisplayData
+    import numpy
+    from numpy.oldnumeric import transpose
+    import StringIO
+    import Image, ImageDraw
+
+    rgb = apply(getImageDisplayData, args, kwargs)
+
+    if not kwargs.has_key("colors"):
+        rgb = (rgb * 255).astype(numpy.ubyte)
+    else:
+        rgb = rgb.astype(numpy.ubyte)
+    rgb = transpose(rgb, (1, 0, 2))
+    im = Image.new("RGB", rgb.shape[:2])
+    draw = ImageDraw.ImageDraw(im)
+
+    # TO DO:
+    # Find a more efficient way to write data to the PIL image below.
+    for i in range(rgb.shape[0]):
+        for j in range(rgb.shape[1]):
+            draw.point((i, j), tuple(rgb[i, j]))
+
+    return im
+    
+def saveImage(*args, **kwargs):
+    '''
+    Save data as a JPEG image file.
+
+    USAGE: view(file, source [, bands] [stretch = 1] [stretchAll = 1]
+                [bounds = (lower, upper)] )
+
+    source is the data source and can be either a SpyFile object or a
+    NumPy array.  bands is an optional list which specifies the RGB
+    channels to display. If bands is not present and source is a SpyFile
+    object, it's metadata dict will be checked if it contains a "default
+    bands" item.  Otherwise, the first, middle and last band will be
+    displayed. If stretch is defined, the image data will be scaled
+    so that the maximum value in the display data will be 1. If
+    stretchAll is defined, each color channel will be scaled separately
+    so that its maximum value is 1. If bounds is specified, the data will
+    be scaled so that lower and upper correspond to 0 and 1, respectively
+    . Any values outside of the range (lower, upper) will be clipped.
+    '''
+
+    im = apply(makePilImage, args[1:], kwargs)
+
+    if kwargs.has_key("format"):
+        fmt = kwargs["format"]
+    else:
+        fmt = "JPEG"
+        
+    im.save(args[0], fmt, quality = 100)    
+
 def getImageDisplayData(source, bands = None, **kwargs):
     '''
     Extract RGB data to be displayed from a SpyImage or NumPy array.

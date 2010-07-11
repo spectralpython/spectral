@@ -130,7 +130,9 @@ class WxHypercubeFrame(wx.Frame):
         #global texture
         from Image import open
         import Spectral
+	import Graphics
         from Spectral.Graphics.ColorScale import defaultColorScale
+
 
         global DEFAULT_TEXTURE_SIZE
 
@@ -157,7 +159,7 @@ class WxHypercubeFrame(wx.Frame):
                 bands = map(int, data.metadata['default bands'])
             else:
                 bands = range(3)
-            image = Spectral.makePilImage(data, bands, format='bmp')
+            image = Graphics.makePilImage(data, bands, format='bmp')
 
         # Read data for sides of cube
         sides = [data[s[0] - 1, :, :].squeeze()]		# front face
@@ -170,7 +172,7 @@ class WxHypercubeFrame(wx.Frame):
         scaleMax = max([max(side.ravel()) for side in sides])
         scale = defaultColorScale
         scale.setRange(scaleMin, scaleMax)
-        sideImages = [Spectral.makePilImage(side, colorScale=scale, autoScale=1, format='bmp') for side in sides]
+        sideImages = [Graphics.makePilImage(side, colorScale=scale, autoScale=1, format='bmp') for side in sides]
         images = [image] + sideImages + [image]
 
         self.textures = glGenTextures(6)

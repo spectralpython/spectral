@@ -37,7 +37,7 @@ import Gnuplot
 
 xyPlot = Gnuplot.Gnuplot()
 
-def plot(data):
+def plot(data, source = None):
     '''
     Creates an x-y plot.
 

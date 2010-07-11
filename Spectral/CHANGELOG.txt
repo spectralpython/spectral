@@ -4,6 +4,23 @@
 
 2010-07-10	tboggs <tboggs@users.sourceforge.net>
 
+    Move GUI-related functions into the Graphics sub-package.  Also, no longer
+    attempt to initialize NumTut for image display if wx fails since NumTut no
+    longer exists.
+    
+      * __init__.py: Import GUI functions from Graphics instead of Spectral
+      * Spectral.py (initGraphics, initWxPython, initWxPython, initNumTut, view,
+        viewIndexed, makePilImage, saveImage): Moved functions from Spectral.py to Graphics.py
+      * Graphics/__init__.py: Explicitly import names from the Graphics module.
+      * Graphics/Graphics.py(initGraphics, initWxPython, initWxPython, initNumTut,
+        view, viewIndexed, makePilImage, saveImage): Moved functions from
+	Spectral.py to Graphics.py
+      * Graphics/SpyGnuplot.py (plot): Take "source" keyword as argument (although
+        it is unused because Gnuplot module is deprecated.)
+      * Graphics/Hypercube.py: Import GUI functions from Graphics insted of Spectral.
+      
+2010-07-10	tboggs <tboggs@users.sourceforge.net>
+
     * Io/Envi.py (SpectralLibrary): New class for handling spectra read from
       spectral library files in ENVI .hdr./sli format.
       

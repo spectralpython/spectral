@@ -37,10 +37,10 @@ BIL = 1
 BIP = 2
 
 #from numpy import *
-from Spectral import image, initGraphics, loadTrainingSets, saveImage, saveTrainingSets, \
-	      settings, tileImage, view, viewIndexed
+from Spectral import image, loadTrainingSets, saveTrainingSets, settings, tileImage
 from Io import *
 from Algorithms import *
+from Graphics import *
 #from Io.Aviris import openAviris
 
 import Utilities.Status
