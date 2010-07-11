@@ -192,7 +192,7 @@ def kmeans(image, nClusters = 10, maxIter = 20, startClusters = None,
         clusters = numpy.zeros((nRows, nCols), int)
         iter += 1
 
-    print >>status, '\kmeans terminated with', centers.shape[0], \
+    print >>status, 'kmeans terminated with', centers.shape[0], \
           'clusters after', iter - 1, 'iterations.'
     return (oldClusters, centers)
 

@@ -37,7 +37,7 @@ BIL = 1
 BIP = 2
 
 #from numpy import *
-from Spectral import image, loadTrainingSets, saveTrainingSets, settings, tileImage
+from Spectral import image, loadTrainingSets, saveTrainingSets, settings, tileImage, spyColors
 from Io import *
 from Algorithms import *
 from Graphics import *

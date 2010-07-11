@@ -165,6 +165,10 @@ class ImageArray(numpy.ndarray, Image):
 	'''For compatibility with SpyFile objects. Returns self'''
 	return self
     
+    def __getitem__(self, key):
+	import numpy
+	return numpy.array(numpy.ndarray.__getitem__(self, key))
+    
     def info(self):
         s = '\t# Rows:         %6d\n' % (self.nRows)
         s += '\t# Samples:      %6d\n' % (self.nCols)
