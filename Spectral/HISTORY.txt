@@ -6,6 +6,36 @@
 
 SPy 0.4
 ================================================================================
+Release date: 2010.07.11
+
+- New Features:
+
+  - Spectral plots with Pylab (Matplotlib)
+  
+  - Spectral band resampling
+  
+  - Support for spectral libraries in ENVI .hdr/.sli format.
+  
+  - Faster processing - Added a "load" method to the SpyFile object that loads
+    an entire image into an ImageArray object to avoid frequent disk reads.
+    
+  - PerceptronClassifier now accepts an arbitrary number of hidden layers.
+
+- Changes
+
+  - isoCluster renamed kmeans, which now creates 10 clusters by default.
+  
+  - Removed many classes/modules/functions from the top-level namespace.
+  
+  - Changed names of sub-package file input functions to create a common interface.
+  
+- Bug fixes
+
+  - Fixed a bug in the PerceptronClassifier that prevented neuron bias to be
+    considered properly.
+
+SPy 0.4
+================================================================================
 Release date: 2008.02.28
 
 - New Features: None
