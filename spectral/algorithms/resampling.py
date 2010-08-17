@@ -1,6 +1,6 @@
 #########################################################################
 #
-#   Resampling.py - This file is part of the Spectral Python (SPy) package.
+#   resampling.py - This file is part of the Spectral Python (SPy) package.
 #
 #   Copyright (C) 2010 Thomas Boggs
 #

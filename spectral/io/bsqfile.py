@@ -1,8 +1,8 @@
 #########################################################################
 #
-#   BsqFile.py - This file is part of the Spectral Python (SPy) package.
+#   bsqfile.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001 Thomas Boggs
+#   Copyright (C) 2001-2010 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -32,7 +32,7 @@
 Tools for handling files that are band sequential (BSQ).
 '''
 
-from SpyFile import SpyFile
+from spyfile import SpyFile
 
 class BsqFile(SpyFile):
     '''
@@ -40,8 +40,8 @@ class BsqFile(SpyFile):
     '''
 
     def __init__(self, params, metadata = None):
-        import Spectral
-        self.interleave = Spectral.BSQ
+        import spectral
+        self.interleave = spectral.BSQ
         if metadata == None:
             metadata = {}
         SpyFile.__init__(self, params, metadata)        

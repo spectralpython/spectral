@@ -1,8 +1,8 @@
 #########################################################################
 #
-#   Envi.py - This file is part of the Spectral Python (SPy) package.
+#   envi.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001-2006 Thomas Boggs
+#   Copyright (C) 2001-2010 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -88,9 +88,9 @@ def open(file, image = None):
 
     import os
     from exceptions import IOError, TypeError
-    from SpyFile import findFilePath
+    from spyfile import findFilePath
     import numpy
-    import Spectral
+    import spectral
 
     headerPath = findFilePath(file)
     h = readEnviHdr(headerPath)
@@ -175,20 +175,20 @@ def open(file, image = None):
 	# File is a spectral library
 	data = numpy.fromfile(p.fileName, p.format, p.nCols * p.nRows)
 	data.shape = (p.nRows, p.nCols)
-	if (p.byteOrder != Spectral.byteOrder):
+	if (p.byteOrder != spectral.byteOrder):
 	    data = data.byteswap()
 	return SpectralLibrary(data, h, p)
     
     #  Create the appropriate object type for the interleave format.
     inter = h["interleave"]
     if inter == 'bil' or inter == 'BIL':
-        from Spectral.Io.BilFile import BilFile
+        from spectral.io.bilFile import BilFile
         img = BilFile(p, h)
     elif inter == 'bip' or inter == 'BIP':
-        from Spectral.Io.BipFile import BipFile
+        from spectral.io.bipfile import BipFile
         img = BipFile(p, h)
     else:
-        from Spectral.Io.BsqFile import BsqFile
+        from spectral.io.bsqfile import BsqFile
         img = BsqFile(p, h)
     
     img.scaleFactor = float(h.get('reflectance scale factor', 1.0))
@@ -222,7 +222,7 @@ class SpectralLibrary:
     '''
     
     def __init__(self, data, header, params):
-	from Spectral.Spectral import BandInfo
+	from spectral.spectral import BandInfo
 	self.spectra = data
 	self.bands = BandInfo()
 	if header.has_key('wavelength'):

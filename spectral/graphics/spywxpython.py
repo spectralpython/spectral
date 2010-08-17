@@ -1,8 +1,8 @@
 #########################################################################
 #
-#   SpyWxPython.py - This file is part of the Spectral Python (SPy) package.
+#   spywxpython.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001-2008 Thomas Boggs
+#   Copyright (C) 2001-2010 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -48,16 +48,16 @@ class SpyWxPythonThreadStarter:
         This is the first function executed in the wxWindows thread.
         It creates the wxApp and starts the main event loop.
         '''    
-        from SpyWxPythonThread import WxImageServer
+        from spywxpythonthread import WxImageServer
         self.app = WxImageServer(0)
         self.app.MainLoop()
 
     def view(self, rgb, **kwargs):
         '''Sends a view request to the wxWindows thread.'''
         
-        import SpyWxPythonThread
-        evt = SpyWxPythonThread.ViewImageRequest(rgb, **kwargs)
-        SpyWxPythonThread.wx.PostEvent(self.app.catcher, evt)
+        import spywxpythonthread
+        evt = spywxpythonthread.ViewImageRequest(rgb, **kwargs)
+        spywxpythonthread.wx.PostEvent(self.app.catcher, evt)
 
 
 def init():
@@ -69,11 +69,11 @@ def init():
 def view(*args, **kwargs):
     '''Displays an image in a wxWindows frame.'''
     
-    import Graphics
-    from Spectral import Image
+    import graphics
+    from spectral import Image
     from numpy.oldnumeric import UnsignedInt8
 
-    rgb = apply(Graphics.getImageDisplayData, args, kwargs)
+    rgb = apply(graphics.getImageDisplayData, args, kwargs)
 
     # To plot pixel spectrum on double-click, create a reference
     # back to the original SpyFile object.

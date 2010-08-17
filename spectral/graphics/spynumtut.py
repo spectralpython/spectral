@@ -1,8 +1,8 @@
 #########################################################################
 #
-#   SpyNumTut.py - This file is part of the Spectral Python (SPy) package.
+#   spynumtut.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001-2008 Thomas Boggs
+#   Copyright (C) 2001-2010 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -33,7 +33,7 @@
 
 def view(*args, **kwargs):
     import NumTut
-    import Graphics
+    import graphics
     from numpy.oldnumeric import transpose
 
     rgb = apply(Graphics.getImageDisplayData, args, kwargs)

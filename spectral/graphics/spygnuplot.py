@@ -1,8 +1,8 @@
 #########################################################################
 #
-#   SpyGnuplot.py - This file is part of the Spectral Python (SPy) package.
+#   spygnuplot.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001-2008 Thomas Boggs
+#   Copyright (C) 2001-2010 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License

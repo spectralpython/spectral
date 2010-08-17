@@ -1,9 +1,9 @@
 #########################################################################
 #
-#   SpyWxPythonThread.py - This file is part of the Spectral Python (SPy)
+#   spywxpythonthread.py - This file is part of the Spectral Python (SPy)
 #   package.
 #
-#   Copyright (C) 2001-2008 Thomas Boggs
+#   Copyright (C) 2001-2010 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -40,7 +40,7 @@ DEFAULT_Y_SIZE = 600
 
 from wx import *
 #from Numeric import *
-from Spectral.Graphics import *
+from spectral.graphics import *
 
 
 #---------------------------------------------------------------------------
@@ -127,7 +127,7 @@ class WxImageFrame(wx.Frame):
 
     def leftDoubleClick(self, evt):
         print (evt.m_y, evt.m_x)
-        from Spectral import settings
+        from spectral import settings
         if self.kwargs.has_key("data source"):
             settings.plotter.plot(self.kwargs["data source"][evt.m_y, evt.m_x], \
 				  source = self.kwargs["data source"])

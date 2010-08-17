@@ -1,6 +1,6 @@
 #########################################################################
 #
-#   Io/__init__.py - This file is part of the Spectral Python (SPy) package.
+#   io/__init__.py - This file is part of the Spectral Python (SPy) package.
 #
 #   Copyright (C) 2001 Thomas Boggs
 #
@@ -29,5 +29,5 @@
 #
 
 
-from SpyFile import *
-import Aviris, Erdas, Envi
+from spyfile import *
+import aviris, erdas, envi

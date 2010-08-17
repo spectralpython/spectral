@@ -1,8 +1,8 @@
 #########################################################################
 #
-#   SpyFile.py - This file is part of the Spectral Python (SPy) package.
+#   spyfile.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001-2008 Thomas Boggs
+#   Copyright (C) 2001-2010 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -32,7 +32,7 @@ Common code for accessing hyperspectral image files.
 '''
 
 import numpy
-from Spectral.Spectral import Image
+from spectral.spectral import Image
 
 def findFilePath(filename):
     '''
@@ -56,16 +56,16 @@ class SpyFile(Image):
     '''A base class for accessing spectral image files'''
 
     def __init__(self, params, metadata = None):
-        from Spectral import Image
+        from spectral import Image
         Image.__init__(self, params, metadata)
 	self.scaleFactor = 1.0		# Number by which to divide values read from file.
 
     def setParams(self, params, metadata):
-        import Spectral
+        import spectral
         import array
         from exceptions import Exception
 
-        Spectral.Image.setParams(self, params, metadata)
+        spectral.Image.setParams(self, params, metadata)
 
         try:
             self.fileName = params.fileName
@@ -73,7 +73,7 @@ class SpyFile(Image):
             self._typecode = params.typecode         # for Numeric module
             self.offset = params.offset
             self.byteOrder = params.byteOrder
-            if Spectral.byteOrder != self.byteOrder:
+            if spectral.byteOrder != self.byteOrder:
                 self.swap = 1
             else:
                 self.swap = 0
@@ -119,8 +119,8 @@ class SpyFile(Image):
         return self._typecode
     
     def load(self):
-        import Spectral
-        from Spectral.Spectral import ImageArray
+        import spectral
+        from spectral.spectral import ImageArray
         from array import array
         
         data = array(self.typecode())
@@ -129,10 +129,10 @@ class SpyFile(Image):
         if self.swap:
             data.byteswap()
         npArray = numpy.array(data, ImageArray.format)
-        if self.interleave == Spectral.BIL:
+        if self.interleave == spectral.BIL:
             npArray.shape = (self.nRows, self.nBands, self.nCols)
             npArray = npArray.transpose([0, 2, 1])
-        elif self.interleave == Spectral.BSQ:
+        elif self.interleave == spectral.BSQ:
             npArray.shape = (self.nBands, self.nRows, self.nCols)
             npArray = npArray.transpose([1, 2, 0])
 	else:
@@ -209,7 +209,7 @@ class SpyFile(Image):
 
     def params(self):
         '''Return an object containing the SpyFile parameters.'''
-	from Spectral import Image
+	from spectral import Image
 
         p = Image.params(self)
 

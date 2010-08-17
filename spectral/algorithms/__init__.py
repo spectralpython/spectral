@@ -1,6 +1,6 @@
 #########################################################################
 #
-#   Algorithms/__init__.py - This file is part of the Spectral Python
+#   algorithms/__init__.py - This file is part of the Spectral Python
 #  (SPy) package.
 #
 #   Copyright (C) 2001-2006 Thomas Boggs
@@ -29,10 +29,10 @@
 # Thomas Boggs, tboggs@users.sourceforge.net
 #
 
-from Algorithms import mean_cov, covariance, principalComponents, linearDiscriminant, \
+from algorithms import mean_cov, covariance, principalComponents, linearDiscriminant, \
 		       reduceEigenvectors, bDistance, bhattacharyyaDistance, \
 		       createTrainingClasses, ndvi, orthogonalize, transformImage, \
 		       unmix, spectralAngles
-from Classifiers import GaussianClassifier, MahalanobisDistanceClassifier
-from Cluster import L1, L2, kmeans, cluster, isoCluster
-from Perceptron import PerceptronClassifier
+from classifiers import GaussianClassifier, MahalanobisDistanceClassifier
+from clustering import L1, L2, kmeans, cluster, isoCluster
+from perceptron import PerceptronClassifier

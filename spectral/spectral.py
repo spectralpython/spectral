@@ -1,6 +1,6 @@
 #########################################################################
 #
-#   Spectral.py - This file is part of the Spectral Python (SPy) package.
+#   spectral.py - This file is part of the Spectral Python (SPy) package.
 #
 #   Copyright (C) 2001-2008 Thomas Boggs
 #
@@ -84,14 +84,14 @@ class BandInfo:
 	self.bandUnit = ""
 
 class Image:
-    '''Spectral.Image is the common base class for Spectral image objects.'''
+    '''spectral.Image is the common base class for spectral image objects.'''
 
     def __init__(self, params, metadata = None):
 	self.bands = BandInfo()
         self.setParams(params, metadata)
 
     def setParams(self, params, metadata):
-        import Spectral
+        import spectral
         import array
         from exceptions import Exception
         
@@ -131,7 +131,7 @@ class ImageArray(numpy.ndarray, Image):
     format = 'f'	# Use 4-byte floats form data arrays
     
     def __new__(subclass, data, spyFile):
-        from Io.SpyFile import SpyFile
+        from io.spyfile import SpyFile
         
         obj = numpy.asarray(data).view(ImageArray)
         # Add param data to Image initializer
@@ -200,26 +200,26 @@ def image(file):
 
     from exceptions import IOError
     import os
-    from Io import Aviris, Envi, Erdas, SpyFile
-    from Io.SpyFile import findFilePath
+    from io import aviris, envi, erdas, spyfile
+    from io.spyfile import findFilePath
 
     pathname = findFilePath(file)
         
     # Try to open it as an ENVI header file.
     try:
-        return Envi.open(pathname)
+        return envi.open(pathname)
     except:
         pass
 
     # Maybe it's an Erdas Lan file
     try:
-        return Erdas.open(pathname)
+        return erdas.open(pathname)
     except:
         pass
 
     # See if the size is consistent with an Aviris file
     try:
-        return Aviris.open(pathname)
+        return aviris.open(pathname)
     except:
         pass
 
@@ -243,7 +243,7 @@ def tileImage(im, nRows, nCols):
     '''
 
     from numpy.oldnumeric import array, Int
-    from Io.SpyFile import SubImage
+    from io.spyfile import SubImage
     x = (array(range(nRows + 1)) * float(im.nRows) / nRows).astype(Int)
     y = (array(range(nCols + 1)) * float(im.nCols) / nCols).astype(Int)
     x[-1] = im.nRows
@@ -299,7 +299,7 @@ def loadTrainingSets(file, im = 0):
     that all the sets in the list refer to the same image and mask array.
     If that is not the case, this function should not be used.
     '''
-    from Spectral.Algorithms import TrainingSet
+    from spectral.algorithms import TrainingSet
     import pickle
     
     f = open(file)

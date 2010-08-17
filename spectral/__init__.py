@@ -1,9 +1,9 @@
 #########################################################################
 #
-#   Spectral/__init__.py - This file is part of the Spectral Python (SPy)
+#   spectral/__init__.py - This file is part of the Spectral Python (SPy)
 #   package.
 #
-#   Copyright (C) 2001-2008 Thomas Boggs
+#   Copyright (C) 2001-2010 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -37,12 +37,11 @@ BIL = 1
 BIP = 2
 
 #from numpy import *
-from Spectral import image, loadTrainingSets, saveTrainingSets, settings, tileImage, spyColors
-from Io import *
-from Algorithms import *
-from Graphics import *
-#from Io.Aviris import openAviris
+from spectral import image, loadTrainingSets, saveTrainingSets, settings, tileImage, spyColors
+from io import *
+from algorithms import *
+from graphics import *
 
-import Utilities.Status
-status = Utilities.Status.StatusDisplay()
+import utilities.status
+status = utilities.status.StatusDisplay()
 

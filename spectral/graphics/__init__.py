@@ -1,6 +1,6 @@
 #########################################################################
 #
-#   Graphics/__init__.py - This file is part of the Spectral Python (SPy)
+#   graphics/__init__.py - This file is part of the Spectral Python (SPy)
 #   package.
 #
 #   Copyright (C) 2001 Thomas Boggs
@@ -30,4 +30,4 @@
 #
 
 
-from Graphics import initGraphics, saveImage, view, viewIndexed
+from graphics import initGraphics, saveImage, view, viewIndexed

@@ -2,6 +2,13 @@
 # Spectral package change log
 ################################################################################
 
+2010-08-17	tboggs <tboggs@users.sourceforge.net>
+
+    * Changed package/module names.  Top-level package is now "spectral" instead
+      of "Spectral" (note capitalization).  Sub-packages/modules have also been
+      changed but that should be transparent to most users.  Almost all files
+      are affected.
+
 2010-07-10	tboggs <tboggs@users.sourceforge.net>
 
     * Spectral.py (ImageArray.__getitem__): Added method to ensure that data

@@ -1,8 +1,8 @@
 #########################################################################
 #
-#   Cluster.py - This file is part of the Spectral Python (SPy) package.
+#   clustering.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001-2008 Thomas Boggs
+#   Copyright (C) 2001-2010 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -32,7 +32,7 @@ Unsupervised clustering algorithms.
 '''
 
 import numpy
-from Classifiers import Classifier
+from classifiers import Classifier
 
 def L1(v1, v2):
     'Returns L1 distance between 2 rank-1 arrays.'
@@ -126,7 +126,7 @@ def kmeans(image, nClusters = 10, maxIter = 20, startClusters = None,
                         cluster for the corresponding element of image.
         centers         An nClusters x B array of cluster centers.
     '''
-    from Spectral import status
+    from spectral import status
     if not isinstance(iterations, list):
         iterations = None
     (nRows, nCols, nBands) = image.shape
@@ -367,8 +367,8 @@ class OnePassClusterer(Classifier):
             self.clusterToGoTo = b
 
     def classifyImage(self, image):
-        from Spectral import status
-        from Spectral.Io.SpyFile import SpyFile
+        from spectral import status
+        from spectral.io.spyFile import SpyFile
         self.image = image
         self.clusterMap = numpy.zeros(self.image.shape[:2], int)
         if isinstance(image, SpyFile):

@@ -1,8 +1,8 @@
 #########################################################################
 #
-#   Graphics.py - This file is part of the Spectral Python (SPy) package.
+#   graphics.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001-2008  Thomas Boggs
+#   Copyright (C) 2001-2010  Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -38,17 +38,17 @@ def initGraphics():
     '''Initialize default graphics handlers.'''
 
     try:
-	import Spectral
+	import spectral
         import pylab
-	import SpyPylab
+	import spypylab
         pylab.ion()
-	Spectral.settings.plotter = SpyPylab
+	spectral.settings.plotter = spypylab
     except:
         print "Unable to initialize Pylab for plotting."
 	try:
 	    print "Trying Gnuplot..."
-	    import SpyGnuplot
-	    Spectral.settings.plotter = SpyGnuplot
+	    import spygnuplot
+	    spectral.settings.plotter = SpyGnuplot
 	    print "Gnuplot initialized."
 	except:
 	    print "Unable to initialize Gnuplot for plotting."
@@ -58,17 +58,17 @@ def initGraphics():
 
 def initWxPython():
     '''Use wxPython for image display.'''
-    import Spectral
-    import SpyWxPython
-    viewer = SpyWxPython
+    import spectral
+    import spywxpython
+    viewer = spywxpython
     viewer.init()
-    Spectral.settings.viewer = viewer
+    spectral.settings.viewer = viewer
 
 def initNumTut():
     '''Use NumTut for image display.'''
-    import Spectral
-    import SpyNumTut
-    Spectral.settings.viewer = SpyNumTut
+    import spectral
+    import spynumyut
+    spectral.settings.viewer = spynumtut
 
 def view(*args, **kwargs):
     '''
@@ -89,7 +89,7 @@ def view(*args, **kwargs):
     be scaled so that lower and upper correspond to 0 and 1, respectively
     . Any values outside of the range (lower, upper) will be clipped.
     '''
-    from Spectral import settings
+    from spectral import settings
     
     # Try to init the graphics thread, if it hasn't already been.
     if not settings.viewer:
@@ -121,7 +121,7 @@ def viewIndexed(*args, **kwargs):
     default color table is used.
     '''
 
-    from Spectral import settings, spyColors
+    from spectral import settings, spyColors
 
     if not kwargs.has_key('colors'):
         kwargs['colors'] = spyColors
@@ -162,7 +162,7 @@ def makePilImage(*args, **kwargs):
     . Any values outside of the range (lower, upper) will be clipped.
     '''
 
-    from Graphics import getImageDisplayData
+    from graphics import getImageDisplayData
     import numpy
     from numpy.oldnumeric import transpose
     import StringIO
@@ -237,7 +237,7 @@ def getImageDisplayData(source, bands = None, **kwargs):
 
     from numpy import take, zeros, repeat, ravel, minimum, maximum, clip, \
          float, int, newaxis
-    from Spectral import Image
+    from spectral import Image
     from exceptions import TypeError
 
     if not bands:

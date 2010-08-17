@@ -1,6 +1,6 @@
 #########################################################################
 #
-#   Erdas.py - This file is part of the Spectral Python (SPy) package.
+#   erdas.py - This file is part of the Spectral Python (SPy) package.
 #
 #   Copyright (C) 2001-2010 Thomas Boggs
 #
@@ -37,8 +37,8 @@ def open(file):
     Create a SpyFile object from an Erdas Lan file header.
     '''
 
-    from BilFile import BilFile
-    from SpyFile import findFilePath
+    from bilfile import BilFile
+    from spyfile import findFilePath
 
     lh = readErdasLanHeader(findFilePath(file))
 

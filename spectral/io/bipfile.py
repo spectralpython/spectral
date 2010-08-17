@@ -1,8 +1,8 @@
 #########################################################################
 #
-#   BipFile.py - This file is part of the Spectral Python (SPy) package.
+#   bipfile.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001-2008 Thomas Boggs
+#   Copyright (C) 2001-2010 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -32,7 +32,7 @@
 Tools for handling files that are band interleaved by pixel (BIP).
 '''
 
-from SpyFile import SpyFile
+from spyfile import SpyFile
 
 class BipFile(SpyFile):
     '''
@@ -41,8 +41,8 @@ class BipFile(SpyFile):
     '''
 
     def __init__(self, params, metadata = None):
-        import Spectral
-        self.interleave = Spectral.BIP
+        import spectral
+        self.interleave = spectral.BIP
         if metadata == None:
             metadata = {}
         SpyFile.__init__(self, params, metadata)        

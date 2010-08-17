@@ -1,8 +1,8 @@
 #########################################################################
 #
-#   Aviris.py - This file is part of the Spectral Python (SPy) package.
+#   aviris.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001-2008 Thomas Boggs
+#   Copyright (C) 2001-2010 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -43,10 +43,10 @@ def open(file, bandFile = None):
 	bandFile		Name of the AVIRIS spectral calibration file
     '''
 
-    from Spectral.Io.BipFile import BipFile
+    from spectral.io.bipfile import BipFile
     import os, glob
     from exceptions import IOError
-    from SpyFile import findFilePath
+    from spyfile import findFilePath
 
     class Params: pass
     p = Params()
@@ -89,7 +89,7 @@ def readAvirisBands(calFileName):
     at half maximum (fwhm) for all AVIRIS bands, in microns (um).
     '''
     import __builtin__
-    from Spectral import BandInfo
+    from spectral import BandInfo
     bands = BandInfo()
     bands.bandQuantity = 'Wavelength'
     bands.bandUnit = 'nm'

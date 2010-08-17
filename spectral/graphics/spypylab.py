@@ -1,8 +1,8 @@
 #########################################################################
 #
-#   SpyPylab.py - This file is part of the Spectral Python (SPy) package.
+#   spypylab.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001-2008 Thomas Boggs
+#   Copyright (C) 2001-2010 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -45,7 +45,7 @@ def plot(data, source = None):
     '''
     import pylab
     from numpy import shape
-    import Spectral
+    import spectral
 
     s = shape(data)
 
@@ -65,7 +65,7 @@ def plot(data, source = None):
         pylab.hold(1)
         for i in range(1, s[0]):
             p = pylab.plot(xvals, data[i, :])
-    Spectral.xyPlot = p
+    spectral.xyPlot = p
     pylab.grid(1)
     if source != None:
 	xlabel = source.bands.bandQuantity

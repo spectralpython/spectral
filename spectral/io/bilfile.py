@@ -1,8 +1,8 @@
 #########################################################################
 #
-#   BilFile.py - This file is part of the Spectral Python (SPy) package.
+#   bilfile.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001 Thomas Boggs
+#   Copyright (C) 2001-2010 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -32,7 +32,7 @@
 Tools for handling files that are band interleaved by line (BIL).
 '''
 
-from SpyFile import SpyFile
+from spyfile import SpyFile
 
 class BilFile(SpyFile):
     '''
@@ -41,8 +41,8 @@ class BilFile(SpyFile):
     '''
 
     def __init__(self, params, metadata = None):
-        import Spectral
-        self.interleave = Spectral.BIL
+        import spectral
+        self.interleave = spectral.BIL
         if metadata == None:
             metadata = {}
         SpyFile.__init__(self, params, metadata)        

@@ -1,9 +1,9 @@
 #########################################################################
 #
-#   Algorithms.py - This file is part of the Spectral Python (SPy)
+#   algorithms.py - This file is part of the Spectral Python (SPy)
 #   package.
 #
-#   Copyright (C) 2001-2008 Thomas Boggs
+#   Copyright (C) 2001-2010 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -59,7 +59,7 @@ class ImageIterator(Iterator):
     def getNumBands(self):
         return self.image.shape[2]
     def __iter__(self):
-        from Spectral import status
+        from spectral import status
         (M, N) = self.image.shape[:2]
         count = 0
         for i in range(M):
@@ -86,8 +86,8 @@ class ImageMaskIterator(Iterator):
     def getNumBands(self):
         return self.image.shape[2]
     def __iter__(self):
-        from Spectral import status
-	from Spectral.Io import typecode
+        from spectral import status
+	from spectral.io import typecode
         from numpy import transpose, indices, reshape, compress, not_equal
         typechar = typecode(self.image)
         (nRows, nCols, nBands) = self.image.shape
@@ -133,8 +133,8 @@ def mean_cov(image, mask = None, index = None):
     Calculate the mean and covariance of of the given vectors. The argument
     can be an Iterator, a SpyFile object, or an MxNxB array.
     '''
-    import Spectral
-    from Spectral import status
+    import spectral
+    from spectral import status
     from numpy import zeros, transpose, dot
     from numpy.oldnumeric import NewAxis
     
@@ -402,7 +402,7 @@ class TrainingClass:
         from numpy.linalg import det, inv
         from numpy.oldnumeric import NewAxis
         import math
-        from Spectral.Io.SpyFile import TransformedImage
+        from spectral.io.spyfile import TransformedImage
 
         self.stats.mean = dot(m, self.stats.mean[:, NewAxis])[:, 0]
         self.stats.cov = dot(m, dot(self.stats.cov, transpose(m)))
@@ -624,9 +624,9 @@ def transformImage(matrix, image):
     is returned.  If image is a Numeric array, an array with all pixels
     transformed is returned.
     '''
-    from Spectral.Io.SpyFile import TransformedImage
+    from spectral.io.spyfile import TransformedImage
     from numpy.oldnumeric import ArrayType
-    from Spectral.Io.SpyFile import SpyFile
+    from spectral.io.spyfile import SpyFile
 
     if isinstance(image, SpyFile):
         return TransformedImage(matrix, image)

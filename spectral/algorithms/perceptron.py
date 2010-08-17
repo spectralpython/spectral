@@ -1,6 +1,6 @@
 #########################################################################
 #
-#   Spectral.py - This file is part of the Spectral Python (SPy) package.
+#   perceptron.py - This file is part of the Spectral Python (SPy) package.
 #
 #   Copyright (C) 2001-2008 Thomas Boggs
 #
@@ -177,7 +177,7 @@ class Perceptron:
                                 maxIterations isn't reached first).
         '''
         from numpy import array, dot, transpose, zeros, repeat
-        from Spectral import status
+        from spectral import status
 
         try:
                 
@@ -297,7 +297,7 @@ class Perceptron:
                 self.layers[i].weights[j, :] = vec
         self._haveWeights = True
             
-from Spectral.Algorithms.Classifiers import SupervisedClassifier
+from spectral.algorithms.classifiers import SupervisedClassifier
 
 class PerceptronSampleIterator:
     '''
@@ -363,7 +363,7 @@ class PerceptronClassifier(Perceptron, SupervisedClassifier):
         Randomize initial values of hidden layer weights and scale them to
         prevent overflow when evaluating activation function.
         '''
-        from Spectral.Algorithms.Algorithms import SampleIterator
+        from spectral.algorithms.algorithms import SampleIterator
         from random import random
 
         maxVal = 0

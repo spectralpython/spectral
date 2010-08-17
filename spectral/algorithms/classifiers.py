@@ -1,9 +1,9 @@
 #########################################################################
 #
-#   Classifiers.py - This file is part of the Spectral Python (SPy)
+#   classifiers.py - This file is part of the Spectral Python (SPy)
 #   package.
 #
-#   Copyright (C) 2001-2008 Thomas Boggs
+#   Copyright (C) 2001-2010 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -44,8 +44,8 @@ class Classifier:
     def classifySpectrum(self, *args, **kwargs):
         raise NotImplementedError('Classifier.classifySpectrum must be overridden by a child class.')
     def classifyImage(self, image):
-        from Spectral import status
-        from Algorithms import ImageIterator
+        from spectral import status
+        from algorithms import ImageIterator
         from numpy import zeros
         status.displayPercentage('Classifying image...')
         it = ImageIterator(image)
@@ -76,7 +76,7 @@ class GaussianClassifier(SupervisedClassifier):
         if trainingData:
             self.train(trainingData)
     def train(self, trainingData):
-        from Algorithms import logDeterminant
+        from algorithms import logDeterminant
         if not self.minSamples:
             # Set minimum number of samples to the number of bands in the image
             self.minSamples = trainingData.numBands

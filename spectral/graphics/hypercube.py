@@ -1,9 +1,9 @@
 #########################################################################
 #
-#   Hypercube.py - This file is part of the Spectral Python (SPy)
+#   hypercube.py - This file is part of the Spectral Python (SPy)
 #   package.
 #
-#   Copyright (C) 2001-2008 Thomas Boggs
+#   Copyright (C) 2001-2010 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -129,9 +129,9 @@ class WxHypercubeFrame(wx.Frame):
     def LoadTextures(self):
         #global texture
         from Image import open
-        import Spectral
-	import Graphics
-        from Spectral.Graphics.ColorScale import defaultColorScale
+        import spectral
+	import graphics
+        from spectral.graphics.colorscale import defaultColorScale
 
 
         global DEFAULT_TEXTURE_SIZE
@@ -155,11 +155,11 @@ class WxHypercubeFrame(wx.Frame):
         else:
             if self.kwargs.has_key('bands'):
                 bands = self.kwargs['bands']
-            elif isinstance(data, Spectral.Io.SpyFile) and data.metadata.has_key('default bands'):
+            elif isinstance(data, spectral.io.SpyFile) and data.metadata.has_key('default bands'):
                 bands = map(int, data.metadata['default bands'])
             else:
                 bands = range(3)
-            image = Graphics.makePilImage(data, bands, format='bmp')
+            image = graphics.makePilImage(data, bands, format='bmp')
 
         # Read data for sides of cube
         sides = [data[s[0] - 1, :, :].squeeze()]		# front face
@@ -429,6 +429,6 @@ def hypercube(data, *args, **kwargs):
         title               Title text to display in window frame.
     '''
     
-    from Spectral.Graphics.SpyWxPython import viewer
+    from spectral.graphics.spywxpython import viewer
     cubeFunctor = HypercubeFunctor(data, *args, **kwargs)
     viewer.view(None, function = cubeFunctor)
