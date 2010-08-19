@@ -2,6 +2,17 @@
 # Spectral package change log
 ################################################################################
 
+2010-08-19	tboggs <tboggs@users.sourceforge.net>
+
+    Added a sub-package for ASTER spectral library support. This enables parsing
+    ASTER data files & metadata and putting the data into an sqlite database.
+    
+    * database: New sub-package.
+    * database/__init__: New file.
+    * database/aster.py: New file for importing & managing ASTER data
+    
+    * __init__.py: Import BandInfo into top-level spectral namespace.
+    
 2010-08-17	tboggs <tboggs@users.sourceforge.net>
 
     * Changed package/module names.  Top-level package is now "spectral" instead
