@@ -172,7 +172,7 @@ class WxHypercubeFrame(wx.Frame):
         scaleMax = max([max(side.ravel()) for side in sides])
         scale = defaultColorScale
         scale.setRange(scaleMin, scaleMax)
-        sideImages = [Graphics.makePilImage(side, colorScale=scale, autoScale=1, format='bmp') for side in sides]
+        sideImages = [graphics.makePilImage(side, colorScale=scale, autoScale=1, format='bmp') for side in sides]
         images = [image] + sideImages + [image]
 
         self.textures = glGenTextures(6)

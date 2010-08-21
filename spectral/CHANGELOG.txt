@@ -1,6 +1,11 @@
 ################################################################################
-# Spectral package change log
+# Spectral Python (SPy) package change log
 ################################################################################
+
+2010-08-21	tboggs <tboggs@users.sourceforge.net>
+
+    * graphics/hypercube.py (WxHypercubeFrame.LoadTextures): Made name change
+      overlooked during package/module name migration.
 
 2010-08-19	tboggs <tboggs@users.sourceforge.net>
 
