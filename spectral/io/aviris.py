@@ -102,4 +102,5 @@ def readAvirisBands(calFileName):
     bands.bandwidths = columns[1]
     bands.centersStdDevs = columns[2]
     bands.bandwidthsStdDevs = columns[3]
+    bands.bandUnit = 'nm'
     return bands

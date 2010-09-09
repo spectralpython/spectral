@@ -172,7 +172,29 @@ class AsterDatabase:
 	
     @classmethod
     def create(cls, fileName, asterDataDir = None):
-	'''Creates a new (empty) database with the appropriate tables.'''
+	'''Creates and ASTER relational database by parsing ASTER data files.
+	
+	USAGE:
+	    db = AsterDatabase.create(fileName, asterDataDir)
+	ARGS:
+	    fileName		Name of the new sqlite database file to create.
+	    asterDataDir	Path to the directory containing ASTER data files.
+	RETURN:
+	    db			An AsterDatabase object for the new database.
+	EXAMPLE:
+	    >>> from spectral.database.aster import AsterDatabase
+	    >>> AsterDatabase.create("aster_lib.db", "/CDROM/ASTER2.0/data")
+	    
+	This is a class method (it does not require instantiating an AsterDatabase
+	object) that creates a new database by parsing all of the files in the
+	ASTER library data directory.  Normally, this should only need to be called
+	once.  Subsequently, a corresponding database object can be created by
+	instantiating a new AsterDatabase object with the path the database file
+	as its argument.  For example:
+	
+	    >>> from spectral.database.aster import AsterDatabase
+	    >>> db = AsterDatabase("aster_lib.db")
+	'''
         import os
         if os.path.isfile(fileName):
             raise Exception('Error: Specified file already exists.')
@@ -259,14 +281,24 @@ class AsterDatabase:
 	self.db = sqlite3.connect(sqliteFileName)
 	self.cursor = self.db.cursor()
 	
-    def getSpectrum(self, measurementID):
-	'''
+    def getSpectrum(self, spectrumID):
+	'''Returns a spectrum from the database.
+	
+	USAGE:
+	    (x, y) = aster.getSpectrum(spectrumID)
+	ARGS:
+	    spectrumID		SpectrumID from the Spectra database table
+	RETURN:
+	    x			Band centers for the spectrum
+	    y			Spectrum data values
+	    
 	Returns a pair of vectors containing the wavelengths and measured values
-	values of a measurment.
+	values of a measurment.  For additional metadata, call "getSignature"
+	instead.
 	'''
 	import array
 	query = '''SELECT XData, YData FROM Spectra WHERE SpectrumID = ?'''
-	result =  self.cursor.execute(query, (measurementID,))
+	result =  self.cursor.execute(query, (spectrumID,))
 	rows = result.fetchall()
 	if len(rows) < 1:
 	    raise 'Measurement record not found'
@@ -276,11 +308,22 @@ class AsterDatabase:
 	y.fromstring(rows[0][1])
 	return (list(x), list(y))
 
-    def getSignature(self, measurementID):
+    def getSignature(self, spectrumID):
 	'''
+	USAGE:
+	    sig = aster.getSignature(spectrumID)
+	ARGS:
+	    spectrumID		SpectrumID from the Spectra database table
+	RETURN:
+	    sig			An object with the following attributes:
+				    - measurementID (from Spectra table)
+				    - sampleName
+				    - sampleID
+				    - x (list of band center wavelengths)
+				    - y (list of spectrum values)
+	    
 	Returns an object containing the wavelengths, measured values, sampleID,
-	and sample name.  If calibrationID is specified then the spectrum returned
-	is for the band-resampled signature corresponding to the given calibration.
+	and sample name.
 	'''
         import array
 	
@@ -288,13 +331,13 @@ class AsterDatabase:
         query = '''SELECT Samples.Name, Samples.SampleID, XData, YData
                 FROM Samples, Spectra WHERE Samples.SampleID = Spectra.SampleID
                 AND Spectra.SpectrumID = ?'''
-        result = self.cursor.execute(query, (measurementID,))
+        result = self.cursor.execute(query, (spectrumID,))
         results = result.fetchall()
         if len(results) < 1:
             raise "Measurement record not found"
 
 	sig = Signature()
-	sig.measurementID = measurementID
+	sig.measurementID = spectrumID
 	sig.sampleName = results[0][0]
 	sig.sampleID = results[0][1]
 	x = array.array(arrayTypeCode)
@@ -311,14 +354,38 @@ class AsterDatabase:
 	lines = ["|".join([str(x) for x in row ]) for row in ret]
 	return '\n'.join(lines)
     
-    #def createEnviSpectralLibrary(spectrumIDs, bandInfo):
-    #    from spectral.algorithms import BandResampler
-    #    import numpy
-    #    spectra = numpy.empty((len(spectrumIDs), len(bandInfo.centers)))
-    #    names = []
-    #    for i in range(len(spectrumIDs)):
-    #        sig = self.getSignature(spectrumIDs[i])
-    #        resample = BandResampler(sig.x, bandInfo.centers, None, bandInfo.bandwidths)
-    #        spectra[i] = resample(sig.y)
-    #        names.append(sig.sampleName)
+    def createEnviSpectralLibrary(self, spectrumIDs, bandInfo):
+	'''Creates an ENVI-formatted spectral library for a list of spectra.
+	
+	USAGE:
+	    lib = aster.createEnviSpectralLibrary(spectrumIDs, bandInfo)
+	ARGS:
+	    spectrumIDs		A list of IDs of spectra in the "Spectra" table
+				of the ASTER database.
+	    bandInfo		A BandInfo object specifying the spectral bands
+				to which the original spectra will be resampled.
+	
+	This method returns a SpectralLibrary object as defined in the
+	spectral.io.envi module.  The IDs passed to the method should correspond
+	to the SpectrumID field of the ASTER database "Spectra" table.  All
+	specified spectra will be resampled to the same discretization specified
+	by the bandInfo parameter.  See BandResampler for details on the
+	resampling method used.				
+	'''
+        from spectral.algorithms.resampling import BandResampler
+	from spectral.io.envi import SpectralLibrary
+        import numpy
+        spectra = numpy.empty((len(spectrumIDs), len(bandInfo.centers)))
+        names = []
+        for i in range(len(spectrumIDs)):
+            sig = self.getSignature(spectrumIDs[i])
+            resample = BandResampler(sig.x, bandInfo.centers, None, bandInfo.bandwidths)
+            spectra[i] = resample(sig.y)
+            names.append(sig.sampleName)
+	header = {}
+	header['wavelength units'] = 'um'
+	header['spectra names'] = names
+	header['wavelength'] = bandInfo.centers
+	header['fwhm'] = bandInfo.bandwidths
+	return SpectralLibrary(spectra, header, {})
 

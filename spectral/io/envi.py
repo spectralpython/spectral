@@ -212,13 +212,14 @@ def open(file, image = None):
 
 class SpectralLibrary:
     '''
-    The Envi.SpectralLibrary class holds data contained in an HDR-formatted spectral
+    The envi.SpectralLibrary class holds data contained in an ENVI-formatted spectral
     library file (.sli files), which stores data as specified by a corresponding .hdr
-    file.  The primary members of an Envi.SpectralLibrary object are:
+    header file.  The primary members of an Envi.SpectralLibrary object are:
     
 	spectra			A subscriptable array of all spectra in the library.
 	names			A list of names corresponding to the spectra.
 	bands			A BandInfo object defining associated spectral bands.
+	
     '''
     
     def __init__(self, data, header, params):
@@ -242,4 +243,51 @@ class SpectralLibrary:
 	self.bands.bandUnit = header.get('wavelength units', "")
 	self.bands.bandQuantity = "Wavelength"
 	self.params = params
-	self.metadata = header
+	self.metadata = {}
+	self.metadata.update(header)
+	self.metadata['data ignore value'] = 'NaN'
+	
+    def save(self, fileBaseName, description = None):
+	import spectral
+	import __builtin__
+	meta = {}
+	meta.update(self.metadata)
+	if self.bands.centers:
+	    meta['samples'] = len(self.bands.centers)
+	else:
+	    meta['samples'] = len(self.spectra.shape[0])
+	meta['lines'] = self.spectra.shape[0]
+	meta['bands'] = 1
+	meta['header offset'] = 0
+	meta['data type'] = 4		# 32-bit float
+	meta['interleave'] = 'bsq'
+	meta['byte order'] = spectral.byteOrder
+	meta['wavelength units'] = self.bands.bandUnit
+	meta['spectra names'] = [str(n) for n in self.names]
+	meta['wavelength'] = self.bands.centers
+	meta['fwhm'] = self.bands.bandwidths
+	if (description):
+	    meta['description'] = description
+	_writeEnviHdr(fileBaseName + '.hdr', meta, True)
+	fout = __builtin__.open(fileBaseName + '.sli', 'wb')
+	self.spectra.astype('f').tofile(fout)
+	fout.close()
+
+def _writeHeaderParam(fout, paramName, paramVal):
+    if not isinstance(paramVal, str) and hasattr(paramVal, '__len__'):
+	valStr = '{ %s }' % (' , '.join([str(v) for v in paramVal]),)
+    else:
+	valStr = str(paramVal)
+    fout.write('%s = %s\n' % (paramName, valStr))
+	
+def writeEnviHdr(fileName, headerDict, isLibrary = False):
+    import __builtin__
+    fout = __builtin__.open(fileName, 'w')
+    d = {}
+    d.update(headerDict)
+    d['file type'] = 'ENVI Spectral Library'
+    fout.write('ENVI\n')
+    for k in d:
+	writeHeaderParam(fout, k, d[k])
+    fout.close()
+    

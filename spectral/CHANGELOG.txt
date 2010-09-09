@@ -2,6 +2,20 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2010-09-09	tboggs <tboggs@users.sourceforge.net>
+
+    Added creation of ENVI spectral libraries from the ASTER database and the
+    ability to save ENVI spectral libraries to files.
+    
+    * database/aster.py (AsterDatabase.create) New method to create an ENVI
+      spectral library from a list of ASTER spectrum IDs.
+    * io/aviris.py (readAvirisBands): Set band unit to "nm".
+    * io/envi.py
+      (SpectralLibrary.__init__): Import header vals and set ignored value to "NaN".
+      (SpectralLibrary.save): New method to save the library to a file.
+      (writeEnviHdr): New method to write an ENVI header file.
+      (_writeHeaderParam): New method to write an ENVI header file parameter.
+      
 2010-08-21	tboggs <tboggs@users.sourceforge.net>
 
     * graphics/hypercube.py (WxHypercubeFrame.LoadTextures): Made name change
