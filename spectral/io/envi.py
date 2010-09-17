@@ -60,7 +60,7 @@ def readEnviHdr(file):
             if find(lines[i], '=') == -1:
                 i += 1
                 continue
-            (key, val) = split(lines[i], '=')
+	    (key, sep, val) = lines[i].partition("=")
             key = strip(key)
             val = strip(val[:-1])
             if val[0] == '{':
@@ -104,15 +104,17 @@ def open(file, image = None):
     p.offset = int(h["header offset"])
     p.byteOrder = int(h["byte order"])
 
+    inter = h["interleave"]
+
     #  Validate image file name
     if not image:
         #  Try to determine the name of the image file
         headerDir = os.path.split(headerPath)
         if headerPath[-4:].lower() == '.hdr':
             headerPathTitle = headerPath[:-4]
-            exts = ['', '.img', '.IMG', '.dat', '.DAT', '.sli', '.SLI']
+            exts = ['', 'img', 'IMG', 'dat', 'DAT', 'sli', 'SLI'] + [inter.lower(), inter.upper()]
             for ext in exts:
-                testname = headerPathTitle + ext
+                testname = headerPathTitle + '.' + ext
                 if os.path.isfile(testname):
                     image = testname
                     break

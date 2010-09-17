@@ -2,6 +2,22 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2010-09-17	tboggs <tboggs@users.sourceforge.net>
+
+    Improved support for ENVI header parameters.  Added search for image file
+    names with interleave as extension (e.g., ".bsq").
+    
+    * io/envi.py
+      (readEnviHdr): Modified parsing code to handle text parameters with "=" in
+      the parameter value.  Thanks to Robin Wilson for a patch.
+      (open): Search for image files with interleave as extension (.bsq, .bil,
+      or .bip).
+      
+    Automatically recognize host byet order.
+
+    * __init__.py: Determine host byte order and set in SPy package.
+    
+    
 2010-09-09	tboggs <tboggs@users.sourceforge.net>
 
     Added creation of ENVI spectral libraries from the ASTER database and the

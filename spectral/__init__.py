@@ -30,7 +30,12 @@
 #
 
 __version__ = '0.5'
-byteOrder = 0   # little endian
+
+import sys
+if sys.byteorder == 'little':
+    byteOrder = 0   # little endian
+else:
+    byteOrder = 1   # big endian
 
 BSQ = 0
 BIL = 1
