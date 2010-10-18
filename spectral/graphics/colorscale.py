@@ -51,8 +51,8 @@ class ColorScale:
                             including the background color.  This
                             includes the colors given in the arguement,
                             as well as interpolated color values.
-        '''        
-        from numpy.oldnumeric import array, zeros, Float, Int, ArrayType
+        '''
+	import numpy as np
         if len(colors.shape) != 2 or colors.shape[1] != 3:
             raise 'colors array has invalid shape.'
         if len(levels) != colors.shape[0]:
@@ -61,16 +61,16 @@ class ColorScale:
         # Make sure scale levels are floats
         if type(levels) == list:
             levels = [float(x) for x in levels]
-        elif isinstance(levels, ArrayType):
-            levels = levels.astype(Float)
+        elif isinstance(levels, np.ndarray):
+            levels = levels.astype(np.float)
             
         self.span = levels[-1] - levels[0]
         self.max = levels[-1]
         self.min = levels[0]
-        self.tics = array(range(numTics), Float) * (self.span / numTics)
-        self.colorTics = zeros([self.tics.shape[0], 3], Int)
+        self.tics = np.array(range(numTics), np.float) * (self.span / numTics) + self.min
+        self.colorTics = np.zeros([self.tics.shape[0], 3], np.int)
         self.size = len(self.tics)
-        self.bgColor = array([0, 0, 0])
+        self.bgColor = np.array([0, 0, 0])
         
         j = 1
         dcolor = colors[1] - colors[0]
@@ -81,7 +81,7 @@ class ColorScale:
                 dcolor = colors[j] - colors[j - 1]
                 dlevel = levels[j] - levels[j - 1]
             self.colorTics[i] = (colors[j - 1] + (self.tics[i] - levels[j - 1]) \
-                                                 / dlevel * dcolor).astype(Int)
+                                                 / dlevel * dcolor).astype(np.int)
 
     def __call__(self, val):
         '''

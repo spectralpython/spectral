@@ -184,7 +184,7 @@ def open(file, image = None):
     #  Create the appropriate object type for the interleave format.
     inter = h["interleave"]
     if inter == 'bil' or inter == 'BIL':
-        from spectral.io.bilFile import BilFile
+        from spectral.io.bilfile import BilFile
         img = BilFile(p, h)
     elif inter == 'bip' or inter == 'BIP':
         from spectral.io.bipfile import BipFile

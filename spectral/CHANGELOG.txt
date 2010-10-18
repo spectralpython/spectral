@@ -2,6 +2,14 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2010-10-18	tboggs <tboggs@users.sourceforge.net>
+
+    Fixed typo in ENVI import and color scale bug.
+    
+    * graphics/colorscale.py (__init__): Fixed bug when color scale contains
+      negative values.
+    * io/envi.py (open): Fixed typo when importing bilfile modules.
+
 2010-09-17	tboggs <tboggs@users.sourceforge.net>
 
     Improved support for ENVI header parameters.  Added search for image file
