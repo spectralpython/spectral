@@ -368,7 +368,7 @@ class OnePassClusterer(Classifier):
 
     def classifyImage(self, image):
         from spectral import status
-        from spectral.io.spyFile import SpyFile
+        from spectral.io.spyfile import SpyFile
         self.image = image
         self.clusterMap = numpy.zeros(self.image.shape[:2], int)
         if isinstance(image, SpyFile):

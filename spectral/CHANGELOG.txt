@@ -2,6 +2,11 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2010-10-26	tboggs <tboggs@users.sourceforge.net>
+
+    * algorithms/clustering.py (OnePassClusterer.classifyImage): Fixed typo
+      in module import statement
+
 2010-10-18	tboggs <tboggs@users.sourceforge.net>
 
     Fixed typo in ENVI import and color scale bug.
