@@ -49,7 +49,7 @@ def findFilePath(filename):
             pathname = testpath
             break
     if not pathname:
-        raise IOError('Unable to locate file ' % filename)
+        raise IOError('Unable to locate file %s' % filename)
     return pathname
 
 class SpyFile(Image):

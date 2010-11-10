@@ -184,9 +184,9 @@ class BandResampler:
     any overlapping source bands will contain NaN as the resampled band value.
     '''
     def __init__(self, centers1, centers2, fwhm1 = None, fwhm2 = None):
-	if not fwhm1:
+	if fwhm1 == None:
 	    fwhm1 = buildFwhm(centers1)
-	if not fwhm2:
+	if fwhm2 == None:
 	    fwhm2 = buildFwhm(centers2)
 	self.matrix = createResamplingMatrix(centers1, fwhm1, centers2, fwhm2)
     def __call__(self, spectrum):

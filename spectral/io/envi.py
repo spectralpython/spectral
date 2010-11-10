@@ -270,14 +270,14 @@ class SpectralLibrary:
 	meta['fwhm'] = self.bands.bandwidths
 	if (description):
 	    meta['description'] = description
-	_writeEnviHdr(fileBaseName + '.hdr', meta, True)
+	writeEnviHdr(fileBaseName + '.hdr', meta, True)
 	fout = __builtin__.open(fileBaseName + '.sli', 'wb')
 	self.spectra.astype('f').tofile(fout)
 	fout.close()
 
 def _writeHeaderParam(fout, paramName, paramVal):
     if not isinstance(paramVal, str) and hasattr(paramVal, '__len__'):
-	valStr = '{ %s }' % (' , '.join([str(v) for v in paramVal]),)
+	valStr = '{ %s }' % (' , '.join([str(v).replace(',', '-') for v in paramVal]),)
     else:
 	valStr = str(paramVal)
     fout.write('%s = %s\n' % (paramName, valStr))
@@ -290,6 +290,6 @@ def writeEnviHdr(fileName, headerDict, isLibrary = False):
     d['file type'] = 'ENVI Spectral Library'
     fout.write('ENVI\n')
     for k in d:
-	writeHeaderParam(fout, k, d[k])
+	_writeHeaderParam(fout, k, d[k])
     fout.close()
     

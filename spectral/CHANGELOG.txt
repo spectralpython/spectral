@@ -2,6 +2,20 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2010-11-09	tboggs <tboggs@users.sourceforge.net>
+
+    Fixed several bugs revealed when producing ENVI spectral libraries from
+    the Aster database.
+
+    * algorithms/resampling.py (BandResampler.__init__): Compare args to None
+      to avoid errors with numpy arrays in logical expressions.
+    * io/envi.py
+      (SpectralLibrary.save): Fixed call to writeEnviHdr.
+      (_writeHeaderParam): Replace commas in parameter values with dashes to
+        prevent read errors.
+      (writeEnviHdr): Fixed call to _writeHeaderParam.
+    * io/spyfile.py (findFilePath): Add missing param to exception string.
+
 2010-10-26	tboggs <tboggs@users.sourceforge.net>
 
     * algorithms/clustering.py (OnePassClusterer.classifyImage): Fixed typo
