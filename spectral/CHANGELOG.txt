@@ -2,6 +2,23 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2010-11-14	tboggs <tboggs@users.sourceforge.net>
+
+    cluster algorithm modified to handle cases with only 2 clusters.  Fixed
+    reported number of reassigned pixels in kmeans.
+
+    * algorithms/clustering.py:
+      (kmeans)
+      - Use "cluster" function to initialize clusters if none supplied in args.
+      - Corrected calculation of number of reassigned pixels (note: the error
+        reported incorrect value to stdout but didn't affect stopping criteria).
+      - Fixed default param value in doc string.
+      (OnePassClusterer.calcDistances): Force distance matrix to be float type.
+      (OnePassClusterer.findNextToGo): Now handles cases with only 2 clusters.
+      
+    * graphics/graphics.py (getImageDisplayData): Raise Exception object instead
+      of string.
+
 2010-11-09	tboggs <tboggs@users.sourceforge.net>
 
     Fixed several bugs revealed when producing ENVI spectral libraries from

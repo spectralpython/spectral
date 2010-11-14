@@ -96,7 +96,7 @@ def kmeans(image, nClusters = 10, maxIter = 20, startClusters = None,
     '''
     Performs iterative clustering using the k-means algorithm.
 
-    USAGE: (clMap, centers) = kmeans(image [, nClusters = 8]
+    USAGE: (clMap, centers) = kmeans(image [, nClusters = 10]
                                            [, maxIter = 20]
                                            [, startClusters = None]
                                            [, compare = None]
@@ -137,12 +137,10 @@ def kmeans(image, nClusters = 10, maxIter = 20, startClusters = None,
         nClusters clusters in the startCenters array.'
         centers = numpy.array(startClusters)
     else:
-        maxVal = 5000.0
-        centers = []
-        for i in range(nClusters):
-            centers.append((((numpy.ones(nBands) * i) * maxVal) / nClusters))
-        centers = numpy.array(centers)
+	print 'Using single-pass cluster algorithm to initialize clusters.'
+	centers = cluster(image, nClusters)[1]
 
+    print 'Starting iterations.'
     iter = 1
     while (iter <= maxIter):
         status.displayPercentage('Iteration %d...' % iter)
@@ -178,7 +176,7 @@ def kmeans(image, nClusters = 10, maxIter = 20, startClusters = None,
                       'clusters in', iter, 'iterations.'
                 return (clusters, centers)
         elif oldClusters != None:
-            nChanged = abs(sum((clusters - oldClusters).ravel()))
+            nChanged = numpy.sum(clusters != oldClusters)
             if nChanged == 0:
                 print >>status, '\tisoCluster converged with', centers.shape[0], \
                       'clusters in', iter, 'iterations.'
@@ -306,7 +304,7 @@ class OnePassClusterer(Classifier):
         pass
 
     def calcDistances(self):
-        self.distances = numpy.zeros((self.nClusters, self.nClusters))
+        self.distances = numpy.zeros((self.nClusters, self.nClusters), 'f')
         for i in range(self.nClusters):
             for j in range((i + 1), self.nClusters):
                 self.distances[i, j] = self.dist(self.clusters[i],
@@ -334,6 +332,12 @@ class OnePassClusterer(Classifier):
         self.nClusters = self.maxClusters
         self.minHalfDistance = numpy.zeros(self.nClusters, float)
         self.calcMinHalfDistances()
+
+	########################################################################
+	# TO DO:  Need to see if there is a good reason why we're not just
+	# calling self.calcDistances instead of using the code below.
+	########################################################################
+
         self.distances = numpy.zeros((self.nClusters, self.nClusters), numpy.float)
         for i in range((self.nClusters - 1)):
             for j in range((i + 1), self.nClusters):
@@ -355,16 +359,21 @@ class OnePassClusterer(Classifier):
 
         a = argmin(mins)
         b = argsort(self.distances[a])[1]
-        aNext = argsort(self.distances[a])[2]
-        bNext = argsort(self.distances[b])[2]
-        aNextDist = self.dist(self.clusters[a], self.clusters[aNext])
-        bNextDist = self.dist(self.clusters[b], self.clusters[bNext])
-        if (aNextDist > bNextDist):
-            self.clusterToGo = b
-            self.clusterToGoTo = a
-        else:
-            self.clusterToGo = a
-            self.clusterToGoTo = b
+
+	if self.nClusters > 2:
+	    aNext = argsort(self.distances[a])[2]
+	    bNext = argsort(self.distances[b])[2]
+	    aNextDist = self.dist(self.clusters[a], self.clusters[aNext])
+	    bNextDist = self.dist(self.clusters[b], self.clusters[bNext])
+	    if (aNextDist > bNextDist):
+		self.clusterToGo = b
+		self.clusterToGoTo = a
+	    else:
+		self.clusterToGo = a
+		self.clusterToGoTo = b
+	else:
+	    self.clusterToGo = a
+	    self.clusterToGoTo = b
 
     def classifyImage(self, image):
         from spectral import status

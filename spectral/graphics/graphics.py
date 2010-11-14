@@ -243,7 +243,7 @@ def getImageDisplayData(source, bands = None, **kwargs):
     if not bands:
         bands = []
     if len(bands) != 0 and len(bands) != 1 and len(bands) != 3:
-        raise "Invalid number of bands specified."
+        raise Exception("Invalid number of bands specified.")
     monochrome = 0
 
     if isinstance(source, Image):
@@ -285,7 +285,7 @@ def getImageDisplayData(source, bands = None, **kwargs):
             else:
                 rgb = take(source, [0, s[2] / 2, s[2] - 1], 2).astype(float)
         else:
-            raise 'Invalid array shape for image display'
+            raise Exception('Invalid array shape for image display')
 
     # If it's either color-indexed or monochrome
     if rgb.shape[2] == 1:
