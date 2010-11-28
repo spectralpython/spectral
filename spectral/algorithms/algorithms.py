@@ -309,8 +309,7 @@ def reduceEigenvectors(L, V, fraction = 0.99):
     return (L, V)
 
 def logDeterminant(x):
-    from numpy.oldnumeric.linear_algebra import eigenvalues
-    return sum(numpy.log(eigenvalues(x)))
+    return sum(numpy.log([eigv for eigv in numpy.linalg.eigvals(x) if eigv > 0]))
 
 class GaussianStats:
     def __init__(self):
