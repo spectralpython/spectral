@@ -2,6 +2,10 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2010-11-28	tboggs <tboggs@users.sourceforge.net>
+
+    * algorithms/algorithms.py (logDeterminant): Don't sum negative values.
+
 2010-11-14	tboggs <tboggs@users.sourceforge.net>
 
     cluster algorithm modified to handle cases with only 2 clusters.  Fixed
