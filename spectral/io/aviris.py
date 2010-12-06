@@ -90,11 +90,12 @@ def readAvirisBands(calFileName):
     '''
     import __builtin__
     from spectral import BandInfo
+    from spyfile import findFilePath
     bands = BandInfo()
     bands.bandQuantity = 'Wavelength'
     bands.bandUnit = 'nm'
     
-    fin = __builtin__.open(calFileName)
+    fin = __builtin__.open(findFilePath(calFileName))
     rows = [line.split() for line in fin]
     rows = [[float(x) for x in row] for row in rows if len(row) == 5]
     columns = zip(*rows)

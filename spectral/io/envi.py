@@ -114,7 +114,10 @@ def open(file, image = None):
             headerPathTitle = headerPath[:-4]
             exts = ['', 'img', 'IMG', 'dat', 'DAT', 'sli', 'SLI'] + [inter.lower(), inter.upper()]
             for ext in exts:
-                testname = headerPathTitle + '.' + ext
+		if len(ext) == 0:
+		    testname = headerPathTitle
+		else:
+		    testname = headerPathTitle + '.' + ext
                 if os.path.isfile(testname):
                     image = testname
                     break

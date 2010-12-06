@@ -2,6 +2,12 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2010-12-05	tboggs <tboggs@users.sourceforge.net>
+
+    * spectral.py: Changed default colors in spyColors.
+    * io/envi.py (open): Fixed bug causing open to miss images with no extension.
+    * io/aviris.py (readAvirisBands) Use findFilePath to locate cal files.
+
 2010-11-28	tboggs <tboggs@users.sourceforge.net>
 
     * algorithms/algorithms.py (logDeterminant): Don't sum negative values.
