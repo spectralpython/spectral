@@ -2,6 +2,16 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2010-12-09	tboggs <tboggs@users.sourceforge.net>
+
+    * io/spyfile.py:
+      (transformImage): New function to apply a linear transform to either as
+        numpy.ndarray, ImageArray, or SpyFile object.
+      (TransformedImage.__init__): raise Exception objects instead of strings.
+    * algorithms/algorithms.py (TrainingClass.transform): Catch all exceptions
+      when calculating log of determinant of covariance.  Call transformImage
+      instead of creating a TransformedImage object.
+
 2010-12-05	tboggs <tboggs@users.sourceforge.net>
 
     * spectral.py: Changed default colors in spyColors.

@@ -284,6 +284,18 @@ class SubImage(SpyFile):
                                         list(array(colBounds) + self.colOffset), \
                                         bands)
 
+def transformImage(matrix, img):
+    import numpy as np
+    if isinstance(img, np.ndarray):
+	print 'It is an array'
+	ret = np.empty(img.shape[:2] + (matrix.shape[0],), img.dtype)
+	for i in range(img.shape[0]):
+	    for j in range(img.shape[1]):
+		ret[i, j] = np.dot(matrix, img[i, j])
+	return ret
+    else:
+	return TransformedImage(matrix, img)
+    
 class TransformedImage(Image):
     '''
     An image with a linear transformation applied to each pixel spectrum.
@@ -295,13 +307,13 @@ class TransformedImage(Image):
         import numpy.oldnumeric as Numeric
 
         if not isinstance(img, Image):
-            raise 'Invalid image argument to to TransformedImage constructor.'
+            raise Exception('Invalid image argument to to TransformedImage constructor.')
 
         arrayType = type(Numeric.array([1]))
         if type(matrix) != arrayType:
-            raise 'First argument must be a transformation matrix.'
+            raise Exception('First argument must be a transformation matrix.')
         if len(matrix.shape) != 2:
-            raise 'Transformation matrix has invalid shape.'
+            raise Exception('Transformation matrix has invalid shape.')
 
         params = img.params()
         self.setParams(params, params.metadata)

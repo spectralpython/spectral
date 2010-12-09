@@ -121,7 +121,7 @@ def mean_cov(image, mask = None, index = None):
     '''
     Return the mean and covariance of the set of vectors.
 
-    USAGE: (mean, cov) = mean_cov(vectors)
+    USAGE: (mean, cov, N) = mean_cov(vectors)
 
     ARGUMENTS:
         vectors         A SpyFile object or an MxNxB array
@@ -129,6 +129,7 @@ def mean_cov(image, mask = None, index = None):
         mean            The mean value of the vectors
         cov             The unbiased estimate (dividing by N-1) of
                         the covariance of the vectors.
+        N		Number of elements used to calculate mean & cov
 
     Calculate the mean and covariance of of the given vectors. The argument
     can be an Iterator, a SpyFile object, or an MxNxB array.
@@ -409,11 +410,11 @@ class TrainingClass:
         
         try:
             self.stats.logDetCov = math.log(det(self.stats.cov))
-        except OverflowError:
+        except:
             self.stats.logDetCov = logDeterminant(self.stats.cov)
 
         self.numBands = m.shape[0]
-        self.image = TransformedImage(m, self.image)
+        self.image = transformImage(m, self.image)
 
     def dump(self, fp):
         '''
