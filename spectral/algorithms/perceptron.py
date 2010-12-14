@@ -336,7 +336,7 @@ class PerceptronClassifier(Perceptron, SupervisedClassifier):
         # Number of Perceptron inputs must equal number of features in the
         # training data.
         if len(trainingClassData) != self.layers[-1].shape[0]:
-            raise 'Number of nodes in output layer must match number of training classes.'
+            raise Exception('Number of nodes in output layer must match number of training classes.')
         self.trainingClassData = trainingClassData
         
         # Map output nodes to class indices

@@ -136,8 +136,7 @@ def mean_cov(image, mask = None, index = None):
     '''
     import spectral
     from spectral import status
-    from numpy import zeros, transpose, dot
-    from numpy.oldnumeric import NewAxis
+    from numpy import zeros, transpose, dot, newaxis
     
     if not isinstance(image, Iterator):
         it = iterator(image, mask, index)
@@ -147,8 +146,8 @@ def mean_cov(image, mask = None, index = None):
     nSamples = it.getNumElements()
     B = it.getNumBands()
     
-    sumX = zeros((B,), float)
-    sumX2 = zeros((B, B), float)
+    sumX = zeros((B,), 'd')
+    sumX2 = zeros((B, B), 'd')
     count = 0
     
     statusInterval = max(1, nSamples / 100)
@@ -158,10 +157,10 @@ def mean_cov(image, mask = None, index = None):
             status.updatePercentage(float(count) / nSamples * 100.)
         count += 1
         sumX += x
-        x = x[:, NewAxis].astype(float)
+        x = x[:, newaxis]
         sumX2 += dot(x, transpose(x))
     mean = sumX / count
-    sumX = sumX[:, NewAxis]
+    sumX = sumX[:, newaxis]
     cov = (sumX2 - dot(sumX, transpose(sumX)) / float(count)) / float(count - 1)
     status.endPercentage()
     return (mean, cov, count)

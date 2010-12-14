@@ -2,6 +2,12 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2010-12-13	tboggs <tboggs@users.sourceforge.net>
+
+    * algorithms/algorithms.py (mean_cov): Use 64 bit float for covariance.
+    * algorithms/perceptron(PerceptronClassifier.train): Raise Exception, not
+      string.
+
 2010-12-09	tboggs <tboggs@users.sourceforge.net>
 
     * io/spyfile.py:
