@@ -2,6 +2,11 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2011-01-02	tboggs <tboggs@users.sourceforge.net>
+
+    * algorithms/clustering.py (kmeans): Allow keyboard interrupt (CTRL-c) to
+      terminate k-means algorithm.
+
 2010-12-13	tboggs <tboggs@users.sourceforge.net>
 
     * algorithms/algorithms.py (mean_cov): Use 64 bit float for covariance.

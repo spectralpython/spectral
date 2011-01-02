@@ -143,52 +143,59 @@ def kmeans(image, nClusters = 10, maxIter = 20, startClusters = None,
     print 'Starting iterations.'
     iter = 1
     while (iter <= maxIter):
-        status.displayPercentage('Iteration %d...' % iter)
-        for i in range(nRows):
-            status.updatePercentage(float(i) / nRows * 100.)
-            for j in range(nCols):
-                minDist = 10000000000000.0
-                for k in range(len(centers)):
-                    dist = distance(image[i, j], centers[k])
-                    if (dist < minDist):
-                        clusters[i, j] = k
-                        minDist = dist
-        status.endPercentage()
-
-        sums = numpy.zeros((nClusters, nBands), float)
-        counts = ([0] * nClusters)
-        for i in range(nRows):
-            for j in range(nCols):
-                counts[clusters[i, j]] += 1
-                sums[clusters[i, j]] += image[i, j]
-
-
-        centers = []
-        for i in range(nClusters):
-            if (counts[i] > 0):
-                centers.append((sums[i] / counts[i]))
-        centers = numpy.array(centers)
-
-        nClusters = centers.shape[0]
-        if compare:
-            if compare(oldClusters, clusters):
-                print >>status, '\tisoCluster converged with', centers.shape[0], \
-                      'clusters in', iter, 'iterations.'
-                return (clusters, centers)
-        elif oldClusters != None:
-            nChanged = numpy.sum(clusters != oldClusters)
-            if nChanged == 0:
-                print >>status, '\tisoCluster converged with', centers.shape[0], \
-                      'clusters in', iter, 'iterations.'
-                return (clusters, centers)
-            else:
-                print >>status, '\t%d pixels reassigned.' % (nChanged)
-
-        oldClusters = clusters
-        if iterations != None:
-            iterations.append(oldClusters)
-        clusters = numpy.zeros((nRows, nCols), int)
-        iter += 1
+	try:
+	    status.displayPercentage('Iteration %d...' % iter)
+	    for i in range(nRows):
+		status.updatePercentage(float(i) / nRows * 100.)
+		for j in range(nCols):
+		    minDist = 10000000000000.0
+		    for k in range(len(centers)):
+			dist = distance(image[i, j], centers[k])
+			if (dist < minDist):
+			    clusters[i, j] = k
+			    minDist = dist
+	    status.endPercentage()
+    
+	    sums = numpy.zeros((nClusters, nBands), float)
+	    counts = ([0] * nClusters)
+	    for i in range(nRows):
+		for j in range(nCols):
+		    counts[clusters[i, j]] += 1
+		    sums[clusters[i, j]] += image[i, j]
+    
+    
+	    oldCenters = centers
+	    centers = []
+	    for i in range(nClusters):
+		if (counts[i] > 0):
+		    centers.append((sums[i] / counts[i]))
+	    centers = numpy.array(centers)
+    
+	    nClusters = centers.shape[0]
+	    if compare:
+		if compare(oldClusters, clusters):
+		    print >>status, '\tisoCluster converged with', centers.shape[0], \
+			  'clusters in', iter, 'iterations.'
+		    return (clusters, centers)
+	    elif oldClusters != None:
+		nChanged = numpy.sum(clusters != oldClusters)
+		if nChanged == 0:
+		    print >>status, '\tisoCluster converged with', centers.shape[0], \
+			  'clusters in', iter, 'iterations.'
+		    return (clusters, centers)
+		else:
+		    print >>status, '\t%d pixels reassigned.' % (nChanged)
+    
+	    oldClusters = clusters
+	    oldCenters = centers
+	    if iterations != None:
+		iterations.append(oldClusters)
+	    clusters = numpy.zeros((nRows, nCols), int)
+	    iter += 1
+	    
+        except KeyboardInterrupt:
+            print "KeyboardInterrupt: Returning clusters from previous iteration"
+	    return (oldClusters, oldCenters)
 
     print >>status, 'kmeans terminated with', centers.shape[0], \
           'clusters after', iter - 1, 'iterations.'
