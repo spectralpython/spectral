@@ -2,6 +2,12 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2011-01-05	tboggs <tboggs@users.sourceforge.net>
+
+    * algorithms/__init__.py: import BandResampler.
+    * algorithms/resampling.py (BandResampler.__init__): Allow BandInfo objects
+      to be passed as arguments
+
 2011-01-02	tboggs <tboggs@users.sourceforge.net>
 
     * algorithms/clustering.py (kmeans): Allow keyboard interrupt (CTRL-c) to

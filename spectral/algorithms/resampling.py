@@ -168,29 +168,69 @@ def createResamplingMatrix(centers1, fwhm1, centers2, fwhm2):
 
 class BandResampler:
     '''
-    BandResampler is a class for resampling spectra from one band discretization to another.
+    A BandResampler is a callable object for resampling spectra from one band discretization to another.
     
-    Constructor args:
-        centers1		list of center wavelengths for source spectrum
-	centers2		list of center wavelengths for target spectrum
-	fwhm1			list of full-width have maxima for source bands
-	fwhm2			list of full-width have maxima for target bands
-	
-    If fwhm1 or fwhm2 are not specified, the associated bands are assumed to have
-    FWHM values that span half the distance to the adjacent bands.
-    
-    BandResampler creates callable objects that take a source spectrum as an
-    argument and return a resampled spectrum. Any target bands that do not have
-    any overlapping source bands will contain NaN as the resampled band value.
+    A source band will contribute to any destination band where there is overlap
+    between the FWHM of the two bands.  If there is an overlap, an integral is
+    performed over the region of overlap assuming the source band data value is
+    constant over its FWHM (since we do not know the true spectral load over the
+    source band) and the destination band has a Gaussian response function. Any
+    target bands that do not have any overlapping source bands will contain NaN
+    as the resampled band value.
+
+    If bandwidths are not specified for source or destination bands, the bands
+    are assumed to have FWHM values that span half the distance to the adjacent bands.
     '''
     def __init__(self, centers1, centers2, fwhm1 = None, fwhm2 = None):
+	'''BandResampler constructor.
+	
+	Usage:
+	
+	    resampler = BandResampler(bandInfo1, bandInfo2)
+	    
+	    resampler = BandResampler(centers1, centers2, [fwhm1 = None [, fwhm2 = None]])
+	    
+	Args:
+	
+	    bandInfo1 (BandInfo) : 	BandInfo object describing the source bands.
+	    
+	    bandInfo2 (BandInfo) :	BandInfo object describing the destination bands.
+	    
+	    centers1 (list) :		floats defining center values of source bands.
+
+	    centers2 (list) :		floats defining center values of destination bands.
+	    
+	    fwhm1 (list) :		Optional list defining FWHM values of source bands.
+
+	    fwhm2 (list) :		Optional list defining FWHM values of destination bands.
+	    
+	Returns:
+	
+	    A callable BandResampler object that takes a spectrum corresponding to
+	    the source bands and returns the spectrum resampled to the destination
+	    bands.    
+
+	If bandwidths are not specified, the associated bands are assumed to have
+	FWHM values that span half the distance to the adjacent bands.
+	'''
+	from spectral.spectral import BandInfo
+	if isinstance(centers1, BandInfo):
+	    fwhm1 = centers1.bandwidths
+	    centers1 = centers1.centers
+	if isinstance(centers2, BandInfo):
+	    fwhm2 = centers2.bandwidths
+	    centers2 = centers2.centers
 	if fwhm1 == None:
 	    fwhm1 = buildFwhm(centers1)
 	if fwhm2 == None:
 	    fwhm2 = buildFwhm(centers2)
 	self.matrix = createResamplingMatrix(centers1, fwhm1, centers2, fwhm2)
+
     def __call__(self, spectrum):
-	'''Takes a source spectrum as input and returns a resampled spectrum.'''
+	'''Takes a source spectrum as input and returns a resampled spectrum.
+	
+	Any target bands that do not have any overlapping source bands will
+	contain NaN as the resampled band value.'''
 	import numpy
 	return numpy.dot(self.matrix, spectrum)
 	

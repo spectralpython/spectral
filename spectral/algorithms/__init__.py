@@ -36,3 +36,4 @@ from algorithms import mean_cov, covariance, principalComponents, linearDiscrimi
 from classifiers import GaussianClassifier, MahalanobisDistanceClassifier
 from clustering import L1, L2, kmeans, cluster, isoCluster
 from perceptron import PerceptronClassifier
+from resampling import BandResampler
