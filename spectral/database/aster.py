@@ -172,7 +172,7 @@ class AsterDatabase:
 	
     @classmethod
     def create(cls, fileName, asterDataDir = None):
-	'''Creates and ASTER relational database by parsing ASTER data files.
+	'''Creates an ASTER relational database by parsing ASTER data files.
 	
 	USAGE:
 	    db = AsterDatabase.create(fileName, asterDataDir)
@@ -182,7 +182,6 @@ class AsterDatabase:
 	RETURN:
 	    db			An AsterDatabase object for the new database.
 	EXAMPLE:
-	    >>> from spectral.database.aster import AsterDatabase
 	    >>> AsterDatabase.create("aster_lib.db", "/CDROM/ASTER2.0/data")
 	    
 	This is a class method (it does not require instantiating an AsterDatabase
@@ -348,11 +347,18 @@ class AsterDatabase:
         sig.y = list(y)
 	return sig
     
-    def query(self, sqlQuery):
+    def query(self, sql, args=None):
 	'''Returns the text result of an arbitrary SQL statement.'''
-	ret = self.cursor.execute(sqlQuery)
-	lines = ["|".join([str(x) for x in row ]) for row in ret]
-	return '\n'.join(lines)
+	if args:
+	    return self.cursor.execute(sql, args)
+	else:
+	    return self.cursor.execute(sql)
+    
+    def printQuery(self, sql, args=None):
+	'''Returns the text result of an arbitrary SQL statement.'''
+	ret = self.query(sql, args)
+	for row in ret:
+	    print "|".join([str(x) for x in row ])
     
     def createEnviSpectralLibrary(self, spectrumIDs, bandInfo):
 	'''Creates an ENVI-formatted spectral library for a list of spectra.

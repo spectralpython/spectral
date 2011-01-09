@@ -2,6 +2,14 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2011-01-09	tboggs <tboggs@users.sourceforge.net>
+
+    * __init__.py: import AsterDatabase into main module namespace.
+    * database/aster.py
+      (AsterDatabase.query): Now returns result set instead of string
+      (AsterDatabase.printQuery): New method that prints results of a query
+       (what query used to do).
+
 2011-01-05	tboggs <tboggs@users.sourceforge.net>
 
     * algorithms/__init__.py: import BandResampler.
