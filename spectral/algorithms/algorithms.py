@@ -124,11 +124,16 @@ def mean_cov(image, mask = None, index = None):
     USAGE: (mean, cov, N) = mean_cov(vectors)
 
     ARGUMENTS:
+    
         vectors         A SpyFile object or an MxNxB array
+
     RETURN VALUES:
+
         mean            The mean value of the vectors
+
         cov             The unbiased estimate (dividing by N-1) of
                         the covariance of the vectors.
+
         N		Number of elements used to calculate mean & cov
 
     Calculate the mean and covariance of of the given vectors. The argument
@@ -166,6 +171,7 @@ def mean_cov(image, mask = None, index = None):
     return (mean, cov, count)
 
 def covariance(*args):
+    '''Returns the covariance of an image.  See mean_cov for description of arguments.'''
     return mean_cov(*args)[1]
 
 def principalComponents(image):
@@ -276,12 +282,17 @@ def reduceEigenvectors(L, V, fraction = 0.99):
     USAGE: (L2, V2) = reduceEigenvectors(L, V [, fraction])
 
     ARGUMENTS:
+    
         L               A vector of descending eigenvalues
+	
         V               The array of eigenvectors corresponding to L
+	
         fraction        The fraction of sum(L) to retain
+	
     RETURN VALUES:
         L2              A vector containing the first N eigenvalues of
                         L such that sum(L2) / sum(L) >= fraction
+			
         V2              The array of eigenvectors corresponding to L2
 
     Retains only the first N eigenvalues and eigenvectors such that the
@@ -344,13 +355,14 @@ class TrainingClass:
         self._size = 0
 
     def __iter__(self):
+	'''Returns an iterator over all samples for the class.'''
         it = ImageMaskIterator(self.image, self.mask, self.index)
         for i in it:
             yield i
 
     def statsValid(self, tf):
         '''
-        Set statistics for the TrainingClass to be valid or invalid.
+        Sets statistics for the TrainingClass to be valid or invalid.
 
         USAGE: tset.statsValid(bool)
 
@@ -361,7 +373,7 @@ class TrainingClass:
         self._statsValid = tf
 
     def size(self):
-        '''Return the number of pixels in the training set.'''
+        '''Returns the number of pixels in the training set.'''
         from numpy import sum, equal
 
         # If the stats are invalid, the number of pixels in the
@@ -376,7 +388,7 @@ class TrainingClass:
 
     def calcStatistics(self):
         '''
-        Calculates statistic for the class.
+        Calculates statistics for the class.
         '''
         import math
         from numpy.linalg import inv, det
@@ -470,18 +482,20 @@ class TrainingClassSet:
         self.classes = {}
         self.numBands = None
     def __getitem__(self, i):
-        '''Returns the class having index i.'''
+        '''Returns the class having ID i.'''
         return self.classes[i]
     def __len__(self):
+	'''Returns number of training classes in the set.'''
         return len(self.classes)
     def addClass(self, cl):
+	'''Adds a new class to the training set.'''
         if self.classes.has_key(cl.index):
             raise 'Attempting to add class with duplicate index.'
         self.classes[cl.index] = cl
         if not self.numBands:
             self.numBands = cl.numBands
     def transform(self, M):
-        '''Apply linear transform, M, to all training classes.'''
+        '''Applies linear transform, M, to all training classes.'''
         for cl in self.classes.values():
             cl.transform(M)
         self.numBands = M.shape[0]
@@ -493,6 +507,7 @@ class TrainingClassSet:
         for cl in self.classes.values():
             yield cl
     def allSamples(self):
+	'''Returns an iterator over all samples in all classes of the TrainingClassSet.'''
         return SampleIterator(self)
         
 def createTrainingClasses(image, classMask, calcStats = 0, indices = None):
@@ -540,11 +555,16 @@ def ndvi(data, red, nir):
     USAGE: vi = ndvi(data, red, nir)
 
     ARGUMENTS:
+
         data        The array or SpyFile for which to calc. the index
+
         red         An integer or range integers specifying the red bands.
+
         nir         An integer or range integers specifying the near
                         infrared bands.
+
     RETURN VALUE:
+
         An array containing NDVI values for each corresponding element
         of data in the range [0.0, 1.0].
     '''
@@ -697,7 +717,7 @@ def unmix(data, members):
     '''
 
     from numpy import transpose, dot, zeros
-    from numpy.linag import inv
+    from numpy.linalg import inv
 
     assert members.shape[1] == data.shape[2], \
            'Matrix dimensions are not aligned.'
@@ -733,7 +753,7 @@ def spectralAngles(data, members):
     to classify the data by minimum spectral angle by calling argmin(angles).
     This function currently does not use second order statistics.
     '''
-    from numpy import dot, zeros, arccos
+    from numpy import array, dot, zeros, arccos, sqrt
 
     assert members.shape[1] == data.shape[2], \
            'Matrix dimensions are not aligned.'    

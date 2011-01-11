@@ -2,6 +2,10 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2011-01-10	tboggs <tboggs@users.sourceforge.net>
+
+    * algorithms/algorithms.py (unmix, spectralAngles): Fixed import statements.
+
 2011-01-09	tboggs <tboggs@users.sourceforge.net>
 
     * __init__.py: import AsterDatabase into main module namespace.
