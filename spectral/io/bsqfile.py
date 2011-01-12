@@ -287,6 +287,8 @@ class BsqFile(SpyFile):
                          + j) * sampleSize, 0)
         vals = array.array(self.format)
         vals.fromfile(self.fid, 1)
+        if self.swap:
+            vals.byteswap()
         return vals.tolist()[0] / float(self.scaleFactor)
 
         

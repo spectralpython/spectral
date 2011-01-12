@@ -2,6 +2,11 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2011-01-11	tboggs <tboggs@users.sourceforge.net>
+
+    * io/bilfile.py (BilFile.readDatum): Add missing byte swap (if needed)
+    * io/bipfile.py (BipFile.readDatum): Add missing byte swap (if needed)
+
 2011-01-10	tboggs <tboggs@users.sourceforge.net>
 
     * algorithms/algorithms.py (unmix, spectralAngles): Fixed import statements.
