@@ -34,13 +34,25 @@ Functions for handling AVIRIS image files.
 
 def open(file, bandFile = None):
     '''
-    Creates a SpyFile object for an AVIRIS image file.
+    Returns a SpyFile object for an AVIRIS image file.
     
-    USAGE: img = Aviris(fileName [, bandFile])
+    Arguments:
     
-    ARGS:
-        fileName		Name of the data cube file
-	bandFile		Name of the AVIRIS spectral calibration file
+        `file` (str):
+	
+	    Name of the AVIRIS data file.
+	
+	`bandFile` (str):
+	
+	    Optional name of the AVIRIS spectral calibration file.
+	
+    Returns:
+    
+	A SpyFile object for the image file.
+	
+    Raises:
+    
+	IOError
     '''
 
     from spectral.io.bipfile import BipFile
@@ -85,8 +97,17 @@ def open(file, bandFile = None):
 
 def readAvirisBands(calFileName):
     '''
-    Returns a pair of lists containing the center wavelengths and full widths
-    at half maximum (fwhm) for all AVIRIS bands, in microns (um).
+    Returns a BandInfo object for an AVIRIS spectral calibration file.
+    
+    Arguments:
+    
+        `calFileName` (str):
+	
+	    Name of the AVIRIS spectral calibration file.
+
+    Returns:
+    
+	A :class:`spectral.BandInfo` object
     '''
     import __builtin__
     from spectral import BandInfo

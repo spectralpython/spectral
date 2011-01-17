@@ -47,8 +47,20 @@ class BsqFile(SpyFile):
         SpyFile.__init__(self, params, metadata)        
 
     def readBand(self, band):
-        '''Read a single band from the image.'''
-
+        '''Reads a single band from the image.
+	
+	Arguments:
+	
+	    `band` (int):
+	    
+		Index of band to read.
+	
+	Returns:
+	
+	   :class:`numpy.ndarray`
+	   
+		An `MxN` array of values for the specified band.
+	'''
         from array import array
         import numpy.oldnumeric as Numeric
 
@@ -71,7 +83,22 @@ class BsqFile(SpyFile):
         return arr
 
     def readBands(self, bands):
-        '''Read specified bands from the image.'''
+        '''Reads multiple bands from the image.
+	
+	Arguments:
+	
+	    `bands` (list of ints):
+	    
+		Indices of bands to read.
+	
+	Returns:
+	
+	   :class:`numpy.ndarray`
+	   
+		An `MxNxL` array of values for the specified bands. `M` and `N`
+		are the number of rows & columns in the image and `L` equals
+		len(`bands`).
+	'''
 
         from array import array
         import numpy.oldnumeric as Numeric
@@ -109,7 +136,20 @@ class BsqFile(SpyFile):
 
 
     def readPixel(self, row, col):
-        '''Read the pixel at position (row,col) from the file.'''
+        '''Reads the pixel at position (row,col) from the file.
+	
+	Arguments:
+	
+	    `row`, `col` (int):
+	    
+		Indices of the row & column for the pixel
+	
+	Returns:
+	
+	   :class:`numpy.ndarray`
+	   
+		A length-`B` array, where `B` is the number of bands in the image.
+	'''
 
         from array import array
         import numpy.oldnumeric as Numeric
@@ -144,10 +184,28 @@ class BsqFile(SpyFile):
 
     def readSubRegion(self, rowBounds, colBounds, bands = None):
         '''
-        Reads a contiguous rectangular sub-region from the image. First
-        arg is a 2-tuple specifying min and max row indices.  Second arg
-        specifies column min and max.  If third argument containing list
-        of bannd indices is not given, all bands are read.
+        Reads a contiguous rectangular sub-region from the image.
+	
+	Arguments:
+	
+	    `rowBounds` (2-tuple of ints):
+	    
+		(a, b) -> Rows a through b-1 will be read.
+	
+	    `colBounds` (2-tuple of ints):
+	    
+		(a, b) -> Columnss a through b-1 will be read.
+	    
+	    `bands` (list of ints):
+	    
+		Optional list of bands to read.  If not specified, all bands
+		are read.
+	
+	Returns:
+	
+	   :class:`numpy.ndarray`
+	   
+		An `MxNxL` array.
         '''
 
         from array import array
@@ -207,10 +265,29 @@ class BsqFile(SpyFile):
 
     def readSubImage(self, rows, cols, bands = None):
         '''
-        Reads a subset of the image. rows and cols are lists
-        specifying the row and col indices explicitly (not ranges).
-        If third argument containing list of band indices is not given,
-        all bands are read.
+	Reads arbitrary rows, columns, and bands from the image.
+	
+	Arguments:
+	
+	    `rows` (list of ints):
+	    
+		Indices of rows to read.
+	
+	    `cols` (list of ints):
+	    
+		Indices of columns to read.
+	    
+	    `bands` (list of ints):
+	    
+		Optional list of bands to read.  If not specified, all bands
+		are read.
+	
+	Returns:
+	
+	   :class:`numpy.ndarray`
+	   
+		An `MxNxL` array, where `M` = len(`rows`), `N` = len(`cols`),
+		and `L` = len(bands) (or # of image bands if `bands` == None).
         '''
 
         from array import array
@@ -269,12 +346,17 @@ class BsqFile(SpyFile):
         return subArray
 
     def readDatum(self, i, j, k):
-        '''
-        Return the kth band value for pixel (i, j). Using this function
-        is not an efficient way to iterate over bands or pixels. For
-        such cases, use readBands or readPixel instead.
-        '''
-
+        '''Reads the band `k` value for pixel at row `i` and column `j`.
+	
+	Arguments:
+	
+	    `i`, `j`, `k` (integer):
+	    
+		Row, column and band index, respectively.
+	
+	Using this function is not an efficient way to iterate over bands or
+	pixels. For such cases, use readBands or readPixel instead.	
+	'''
         import array
 
         nRows = self.nRows

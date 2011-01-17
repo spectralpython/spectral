@@ -190,19 +190,31 @@ class BandResampler:
 	    
 	    resampler = BandResampler(centers1, centers2, [fwhm1 = None [, fwhm2 = None]])
 	    
-	Args:
+	Arguments:
 	
-	    bandInfo1 (BandInfo) : 	BandInfo object describing the source bands.
+	    `bandInfo1` (:class:`~spectral.BandInfo`):
 	    
-	    bandInfo2 (BandInfo) :	BandInfo object describing the destination bands.
+		Discretization of the source bands.
 	    
-	    centers1 (list) :		floats defining center values of source bands.
+	    `bandInfo2` (:class:`~spectral.BandInfo`):
+	    
+		Discretization of the destination bands.
+	    
+	    `centers1` (list):
+	    
+		floats defining center values of source bands.
 
-	    centers2 (list) :		floats defining center values of destination bands.
+	    `centers2` (list):
 	    
-	    fwhm1 (list) :		Optional list defining FWHM values of source bands.
+		floats defining center values of destination bands.
+	    
+	    `fwhm1` (list):
+	    
+		Optional list defining FWHM values of source bands.
 
-	    fwhm2 (list) :		Optional list defining FWHM values of destination bands.
+	    `fwhm2` (list):
+	    
+		Optional list defining FWHM values of destination bands.
 	    
 	Returns:
 	
@@ -229,8 +241,20 @@ class BandResampler:
     def __call__(self, spectrum):
 	'''Takes a source spectrum as input and returns a resampled spectrum.
 	
-	Any target bands that do not have any overlapping source bands will
-	contain NaN as the resampled band value.'''
+	Arguments:
+	
+	    `spectrum` (list or :class:`numpy.ndarray`):
+	    
+		list or vector of values to be resampled.  Must have same length
+		as the source band discretiation used to created the resampler.
+	
+	Returns:
+	
+	    A resampled rank-1 :class:`numpy.ndarray` with length corresponding
+	    to the destination band discretization used to create the resampler.
+	
+	Any target bands that do not have at lease one overlapping source band
+	will contain `float('nan')` as the resampled band value.'''
 	import numpy
 	return numpy.dot(self.matrix, spectrum)
 	

@@ -34,7 +34,21 @@ Functions for reading Erdas files.
 
 def open(file):
     '''
-    Create a SpyFile object from an Erdas Lan file header.
+    Returns a SpyFile object for an ERDAS/Lan image file.
+    
+    Arguments:
+    
+        `file` (str):
+	
+	    Name of the ERDAS/Lan image data file.
+	
+    Returns:
+    
+	A SpyFile object for the image file.
+	
+    Raises:
+    
+	IOError
     '''
 
     from bilfile import BilFile

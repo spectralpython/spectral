@@ -331,7 +331,22 @@ class PerceptronSampleIterator:
 class PerceptronClassifier(Perceptron, SupervisedClassifier):
     def train(self, trainingClassData, maxIterations = 1000, accuracy = 100.0):
         '''
-        Trains the Perceptron to classify the training data.
+        Trains the Perceptron on the training data.
+	
+	Arguments:
+	
+	    `trainingClassData` (:class:`~spectral.algorithms.TrainingClassSet`):
+
+		Data for the training classes.
+	    
+	    `maxIterations` (int):
+	    
+		Maximum number of training iterations to perform.
+	    
+	    `accuracy` (float):
+	    
+		Training set classification accuracy to which the classifier
+		should be trained.
         '''
         # Number of Perceptron inputs must equal number of features in the
         # training data.
@@ -348,7 +363,22 @@ class PerceptronClassifier(Perceptron, SupervisedClassifier):
         Perceptron.train(self, it, maxIterations, accuracy)
         
     def classifySpectrum(self, x):
-        '''Determine in which class the sample belongs.'''
+        '''
+        Classifies a pixel into one of the trained classes.
+	
+	Arguments:
+	
+	    `x` (list or rank-1 ndarray):
+	    
+		The unclassified spectrum.
+	
+	Returns:
+	
+	    `classIndex` (int):
+	    
+		The index for the :class:`~spectral.algorithms.TrainingClass`
+		to which `x` is classified.
+        '''
         y = self.input(x)
         maxNodeIndex = numpy.argmax(y)
         val = int(round(y[maxNodeIndex]))
@@ -360,8 +390,14 @@ class PerceptronClassifier(Perceptron, SupervisedClassifier):
 
     def initializeWeights(self, trainingClassData):
         '''
-        Randomize initial values of hidden layer weights and scale them to
+        Randomizes initial values of hidden layer weights and scale them to
         prevent overflow when evaluating activation function.
+
+	Arguments:
+	
+	    `trainingClassData` (:class:`~spectral.algorithms.TrainingClassSet`):
+
+		Data for the training classes.
         '''
         from spectral.algorithms.algorithms import SampleIterator
         from random import random

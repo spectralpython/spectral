@@ -84,7 +84,21 @@ spyColors = numpy.array([[  0,   0,   0],
 
 
 class BandInfo:
-    '''Data characterizing the spectral bands associated with an image.'''
+    '''A BandInfo object characterizes the spectral bands associated with an image.
+    All BandInfo member variables are optional.  For *N* bands, all members of
+    type <list> will have length *N* and contain float values.
+    
+    =================	===================================== 	=======
+        Member			Description		    	Default
+    =================	===================================== 	=======
+    centers		List of band centers		    	None
+    bandwidths		List of band FWHM values	    	None
+    centersStdDevs	List of std devs of band centers    	None
+    bandwidthsStdDevs	List of std devs of bands FWHMs     	None
+    bandQuantity	Image data type (e.g., "reflectance")	""
+    bandUnit		Band unit (e.g., "nanometer")	    	""
+    =================	===================================== 	=======
+    '''
     def __init__(self):
 	self.centers = None
 	self.bandwidths = None
@@ -93,7 +107,7 @@ class BandInfo:
 	self.bandQuantity = ""
 	self.bandUnit = ""
 
-class Image:
+class Image():
     '''spectral.Image is the common base class for spectral image objects.'''
 
     def __init__(self, params, metadata = None):
@@ -137,6 +151,11 @@ class Image:
         return self.__str__()
        
 class ImageArray(numpy.ndarray, Image):
+    '''ImageArray is an interface to an image loaded entirely into memory.
+    ImageArray objects are returned by :meth:`spectral.SpyFile.load`.
+    This class inherits from both numpy.ndarray and SpyFile, providing the interfaces
+    of both classes.
+    '''
 
     format = 'f'	# Use 4-byte floats form data arrays
     
@@ -203,9 +222,26 @@ class ImageArray(numpy.ndarray, Image):
 
 def image(file):
     '''
-    Try to locate and determine the type of an image file and open it.
+    Locates & opens the specified hyperspectral image.
 
-    USAGE: im = image(file)
+    Arguments:
+    
+	file (str):N
+	    Name of the file to open.
+	
+    Returns:
+    
+	SpyFile object to access the file.
+    
+    Raises:
+    
+	IOError.
+	
+    This function attempts to determine the associated file type and open the file.
+    If the specified file is not found in the current directory, all directories
+    listed in the :const:`SPECTRAL_DATA` environment variable will be searched
+    until the file is found.  If the file being opened is an ENVI file, the
+    `file` argument should be the name of the header file.
     '''
 
     from exceptions import IOError

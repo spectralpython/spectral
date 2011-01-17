@@ -36,10 +36,8 @@ from spyfile import SpyFile
 
 class BipFile(SpyFile):
     '''
-    A class to represent image files stored with bands interleaved
-    by pixel.
+    A class to interface image files stored with bands interleaved by pixel.
     '''
-
     def __init__(self, params, metadata = None):
         import spectral
         self.interleave = spectral.BIP
@@ -48,7 +46,20 @@ class BipFile(SpyFile):
         SpyFile.__init__(self, params, metadata)        
 
     def readBand(self, band):
-        '''Read a single band from the image.'''
+        '''Reads a single band from the image.
+	
+	Arguments:
+	
+	    `band` (int):
+	    
+		Index of band to read.
+	
+	Returns:
+	
+	   :class:`numpy.ndarray`
+	   
+		An `MxN` array of values for the specified band.
+	'''
 
         from array import array
         import numpy.oldnumeric as Numeric
@@ -77,8 +88,22 @@ class BipFile(SpyFile):
         return arr
 
     def readBands(self, bands):
-        '''Read specified bands from the image.'''
-
+        '''Reads multiple bands from the image.
+	
+	Arguments:
+	
+	    `bands` (list of ints):
+	    
+		Indices of bands to read.
+	
+	Returns:
+	
+	   :class:`numpy.ndarray`
+	   
+		An `MxNxL` array of values for the specified bands. `M` and `N`
+		are the number of rows & columns in the image and `L` equals
+		len(`bands`).
+	'''
         from array import array
         import numpy.oldnumeric as Numeric
 
@@ -111,8 +136,20 @@ class BipFile(SpyFile):
         return arr
 
     def readPixel(self, row, col):
-        '''Read the pixel at position (row,col) from the file.'''
-
+        '''Reads the pixel at position (row,col) from the file.
+	
+	Arguments:
+	
+	    `row`, `col` (int):
+	    
+		Indices of the row & column for the pixel
+	
+	Returns:
+	
+	   :class:`numpy.ndarray`
+	   
+		A length-`B` array, where `B` is the number of bands in the image.
+	'''
         from array import array
         import numpy.oldnumeric as Numeric
 
@@ -134,12 +171,29 @@ class BipFile(SpyFile):
 
     def readSubRegion(self, rowBounds, colBounds, bands = None):
         '''
-        Reads a contiguous rectangular sub-region from the image. First
-        arg is a 2-tuple specifying min and max row indices.  Second arg
-        specifies column min and max.  If third argument containing list
-        of band indices is not given, all bands are read.
+        Reads a contiguous rectangular sub-region from the image.
+	
+	Arguments:
+	
+	    `rowBounds` (2-tuple of ints):
+	    
+		(a, b) -> Rows a through b-1 will be read.
+	
+	    `colBounds` (2-tuple of ints):
+	    
+		(a, b) -> Columnss a through b-1 will be read.
+	    
+	    `bands` (list of ints):
+	    
+		Optional list of bands to read.  If not specified, all bands
+		are read.
+	
+	Returns:
+	
+	   :class:`numpy.ndarray`
+	   
+		An `MxNxL` array.
         '''
-
         import array
         import numpy.oldnumeric as Numeric
 
@@ -194,10 +248,29 @@ class BipFile(SpyFile):
 
     def readSubImage(self, rows, cols, bands = None):
         '''
-        Reads a sub-image from a rectangular region within the image.
-        First arg is a 2-tuple specifying min and max row indices.
-        Second arg specifies column min and max. If third argument
-        containing list of band indices is not given, all bands are read.
+	Reads arbitrary rows, columns, and bands from the image.
+	
+	Arguments:
+	
+	    `rows` (list of ints):
+	    
+		Indices of rows to read.
+	
+	    `cols` (list of ints):
+	    
+		Indices of columns to read.
+	    
+	    `bands` (list of ints):
+	    
+		Optional list of bands to read.  If not specified, all bands
+		are read.
+	
+	Returns:
+	
+	   :class:`numpy.ndarray`
+	   
+		An `MxNxL` array, where `M` = len(`rows`), `N` = len(`cols`),
+		and `L` = len(bands) (or # of image bands if `bands` == None).
         '''
         import array
         import numpy.oldnumeric as Numeric
@@ -246,7 +319,30 @@ class BipFile(SpyFile):
 	    return arr / float(self.scaleFactor)
         return arr
 
-        
+    def readDatum(self, i, j, k):
+        '''Reads the band `k` value for pixel at row `i` and column `j`.
+	
+	Arguments:
+	
+	    `i`, `j`, `k` (integer):
+	    
+		Row, column and band index, respectively.
+	
+	Using this function is not an efficient way to iterate over bands or
+	pixels. For such cases, use readBands or readPixel instead.	
+	'''
+        from array import array
+
+        vals = array(self.format)
+        f = self.fid        
+        f.seek(self.offset + self.sampleSize \
+               * (self.nBands * (i * self.nCols + j) + k), 0)
+        # Pixel format is BIP so read entire pixel.
+        vals.fromfile(f, 1)
+        if self.swap:
+            vals.byteswap()
+	return vals.tolist()[0] / float(self.scaleFactor)
+
         
         
         

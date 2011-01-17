@@ -96,35 +96,62 @@ def kmeans(image, nClusters = 10, maxIter = 20, startClusters = None,
     '''
     Performs iterative clustering using the k-means algorithm.
 
-    USAGE: (clMap, centers) = kmeans(image [, nClusters = 10]
-                                           [, maxIter = 20]
-                                           [, startClusters = None]
-                                           [, compare = None]
-                                           [, distance = L1]
-                                           [, iterations = None])
-
-    ARGUMENTS:
-        image           A SpyFile or an MxNxB NumPy array
-        nClusters       Number of clusters to create. Default is 8
-        maxIter         Max number of iterations. Default is 20
-        startClusters   Initial cluster centers. This must be an
-                        nClusters x B array.
-        compare         Optional comparison function. compare must be a
-                        function which takes 2 MxN NumPy arrays as its
-                        arguments and returns non-zero when clustering
-                        is to be terminated. The two arguments are the
-                        cluster maps for the previous and current cluster
-                        cycle, respectively.
-        distance        The distance measure to use for comparison. The
-                        default is the L1 distance. For  Euclidean
-                        distance, specify L2 (no quotes).
-        iterations      If this argument is passed and is a list object,
-                        each intermediate cluster map is appended to
-                        the list.
-    RETURN VALUES:
-        clMap           An MxN array whos values are the indices of the
-                        cluster for the corresponding element of image.
-        centers         An nClusters x B array of cluster centers.
+    Arguments:
+    
+        `image` (:class:`numpy.ndarray` or :class:`spectral.Image`):
+	
+	    The `MxNxB` image on which to perform clustering.
+	
+        `nClusters` (int) [default 10]:
+	
+	    Number of clusters to create.  The number produced may be less than
+	    `nClusters`.
+	
+        `maxIter` (int) [default 20]:
+	
+	    Max number of iterations to perform.
+	
+        `startClusters` (:class:`numpy.ndarray`) [default None]:
+	
+	    `nClusters x B` array of initial cluster centers.  If not provided,
+	    :func:`~spectral.clustering.cluster` will be called to initialize
+	    the clusters.
+			
+        `compare` (callable object) [default None]:
+	
+	    Optional comparison function. `compare` must be a callable object
+	    that takes 2 `MxN` :class:`numpy.ndarray` objects as its arguments
+	    and returns non-zero when clustering is to be terminated. The two
+	    arguments are the cluster maps for the previous and current cluster
+	    cycle, respectively.
+			
+        `distance` (callable object) [default :func:`~spectral.clustering.L1`]:
+	
+	    The distance measure to use for comparison. The default is to use
+	    **L1** (Manhattan) distance. For  Euclidean distance, specify
+	    :func:`~spectral.clustering.L2`.
+			
+        `iterations` (list) [default None]:
+	
+	    If this argument is given and is a list object, each intermediate
+	    cluster map is appended to the list.
+			
+    Returns a 2-tuple containing:
+    
+        `clMap` (:class:`numpy.ndarray`):
+	
+	    An `MxN` array whos values are the indices of the cluster for the
+	    corresponding element of `image`.
+			
+        `centers` (:class:`numpy.ndarray`):
+	
+	    An `nClusters x B` array of cluster centers.
+    
+    Iterations are performed until clusters converge (no pixels reassigned
+    between iterations), `maxIter` is reached, or `compare` returns nonzero.
+    If **KeyboardInterrupt** is generated (i.e., CTRL-C pressed) while the
+    algorithm is executing, clusters are returned from the previously completed
+    iteration.
     '''
     from spectral import status
     if not isinstance(iterations, list):
@@ -418,28 +445,39 @@ class OnePassClusterer(Classifier):
 
 def cluster(data, nClusters = 10):
     '''
-    An efficient one-pass clustering algorithm with replacement.
+    An single-pass clustering algorithm with replacement.
 
-    USAGE: (clMap, centers) = cluster(data [, nClusters = 10])
+    Arguments:
 
-    ARGUMENTS:
-        data            A SpyFile or an MxNxB array
-        nClusters       Optional number of clusters to Create.
-                        The default is 10.
-    RETURN VALUES:
-        clMap           an MxN array of cluster indices
-        centers         An MxB array of cluster centers corresponding to
-                        the indices in clMap
+        `data` (:class:`numpy.ndarray` or :class:`spectral.Image`):
+	
+	    The `MxNxB` image on which to perform clustering.
 
-    This algorithm initializes the clusters with the first nClusters
+        `nClusters` (int) [default 10]:
+	
+	    Number of clusters to create.
+
+    Returns a 2-tuple containing:
+
+        `clMap` (:class:`numpy.ndarray`):
+	
+	    An `MxN` array of cluster indices.
+
+        `centers` (:class:`numpy.ndarray`):
+	
+	    A `nClusters x B` array of cluster centers corresponding to the
+	    indices in clMap
+
+    This algorithm initializes the clusters with the first `nClusters`
     pixels from data.  Successive pixels are then assigned to the nearest
-    cluster.  If the distance from a pixel to the nearest cluster is
-    greater than the greatest inter-cluster distance, the pixel is added
-    as a new cluster and the two clusters nearest to eachother are
-    combined into a single cluster.
+    cluster in `N`-space.  If the distance from a pixel to the nearest cluster
+    is greater than the greatest inter-cluster distance, the pixel is added
+    as a new cluster and the two clusters nearest to eachother are combined into
+    a single cluster.
 
     The advantages of this algorithm are that threshold distances need
-    not be specified and the number of clusters remains fixed.
+    not be specified and the number of clusters remains fixed; however, results
+    typically are not as accurate as iterative algorithms.
     '''
     opc = OnePassClusterer(nClusters)
     return opc.classifyImage(data)

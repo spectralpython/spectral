@@ -409,26 +409,51 @@ class HypercubeFunctor:
         return frame
 
 def hypercube(data, *args, **kwargs):
-    '''
-    Renders an interactive hypercube in a new window.
+    '''Renders an interactive 3D hypercube in a new window.
 
-    USAGE: hypercube(data [, **kwargs])
+    Arguments:
 
-    ARGUMENTS:
+	`data` (:class:`spectral.Image` or :class:`numpy.ndarray`):
+	
+	    Source image data to display.  `data` can be and instance of a
+	    :class:`spectral.Image` (e.g., :class:`spectral.SpyFile` or
+	    :class:`spectral.ImageArray`) or a :class:`numpy.ndarray`. `source`
+	    must have shape `MxN` or `MxNxB`.
 
-        data                A SpyFile object or rank 3 Numeric array
+    Keyword Arguments:
 
-    OPTIONAL KEYWORD ARGUMENTS:
+        `bands` (3-tuple of ints):
+	
+	    3-tuple specifying which bands from the image data should be
+	    displayed on top of the cube.
 
-        bands               3-tuple specifying which bands from the image
-                            data should be displayed on top of the cube.
-        top                 An alternate bitmap to display on the top of
-                            the cube.
-        scale               A color scale to be used for color in the
-                            sides of the cube.
-        title               Title text to display in window frame.
-    '''
+        `top` (:class:`PIL.Image`):
+	
+	    An alternate bitmap to display on top of the cube.
+
+        `scale` (:class:`spectral.ColorScale`)
+	
+	    A color scale to be used for color in the sides of the cube. If this
+	    keyword is not specified, :obj:`spectral.graphics.colorscale.defaultColorScale`
+	    is used.
+	
+	`size` (2-tuple of ints):
+	
+	    Width and height (in pixels) for initial size of the new window.
+
+        `title` (str):
+	
+	    Title text to display in the new window frame.
     
+    This function opens a new window, renders a 3D hypercube, and accepts
+    keyboard input to manipulate the view of the hypercube.  Accepted keyboard
+    inputs are printed to the console output.  Focus must be on the 3D window
+    to accept keyboard input.  To avoid unecessary :mod:`PyOpenGl` dependency,
+    `hypercube` is not imported into the main `spectral` namespace by default so
+    you must import it::
+    
+	from spectral.graphics.hypercube import hypercube
+    '''
     from spectral.graphics.spywxpython import viewer
     cubeFunctor = HypercubeFunctor(data, *args, **kwargs)
     viewer.view(None, function = cubeFunctor)

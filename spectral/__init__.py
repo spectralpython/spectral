@@ -47,6 +47,7 @@ from spectral import image, loadTrainingSets, saveTrainingSets, settings, \
 from io import *
 from algorithms import *
 from graphics import *
+from database import *
 
 import utilities.status
 status = utilities.status.StatusDisplay()

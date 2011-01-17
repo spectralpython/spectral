@@ -2,6 +2,32 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2011-01-17	tboggs <tboggs@users.sourceforge.net>
+
+    * __init__.py: Import names from database submodule.
+    * graphics/__init__.py: import ColorScale from colorscale.py
+    
+    * io/spyfile.py (findFilePath): SPECTRAL_DATA directory changed to ":".
+
+    * Changed doc strings to sphinx format:
+	* graphics/graphics.py
+	* graphics/colorscale.py
+	* graphics/hypercube.py
+	* database/aster.py
+	* spectral.py
+	* io/bipfile.py
+	* io/spyfile.py
+	* io/aviris.py
+	* io/erdas.py
+	* io/envi.py
+	* io/bsqfile.py
+	* io/bilfile.py
+	* algorithms/algorithms.py
+	* algorithms/clustering.py
+	* algorithms/perceptron.py
+	* algorithms/resampling.py
+	* algorithms/classifiers.py
+
 2011-01-11	tboggs <tboggs@users.sourceforge.net>
 
     * io/bilfile.py (BilFile.readDatum): Add missing byte swap (if needed)

@@ -29,7 +29,18 @@
 #
 
 '''
-Code for creating SpyFile objects from files with ENVI header files.
+ENVI [#envi-trademark]_ is a popular commercial software package for processing and analyzing
+geospatial imagery.  SPy supports reading imagery with associated ENVI header files
+and reading & writing spectral libraries with ENVI headers.  ENVI files are opened
+automatically by the SPy :func:`~spectral.image` function but can also be called
+explicitly.  It may be necessary to open an ENVI file explicitly if the data file
+is in a separate directory from the header or if the data file has an unusual file
+extension that SPy can not identify.
+
+    >>> import spectral.io.envi as envi
+    >>> img = envi.open('cup95eff.int.hdr', '/Users/thomas/spectral_data/cup95eff.int')
+
+.. [#envi-trademark] ENVI is a registered trademark of ITT Corporation.
 '''
 
 def readEnviHdr(file):
@@ -84,7 +95,33 @@ def readEnviHdr(file):
         raise IOError, "Error while reading ENVI file header."
 
 def open(file, image = None):
-    '''Creates a SpyFile object for a file with and ENVI HDR header file.'''
+    '''
+    Opens an image or spectral library with an associated ENVI HDR header file.
+
+    Arguments:
+    
+	`file` (str):
+	
+	    Name of the header file for the image.
+	
+	`image` (str):
+	
+	    Optional name of the associated image data file.
+	
+    Returns:
+	:class:`spectral.SpyFile` or :class:`spectral.io.envi.SpectralLibrary` object.
+    
+    Raises:
+	TypeError, IOError.
+	
+    If the specified file is not found in the current directory, all directories
+    listed in the SPECTRAL_DATA environment variable will be searched until the
+    file is found.  Based on the name of the header file, this function will
+    search for the image file in the same directory as the header, looking for a
+    file with the same name as the header but different extension. Extensions
+    recognized are .img, .dat, .sli, and no extension.  Capitalized versions of
+    the file extensions are also searched.
+    '''
 
     import os
     from exceptions import IOError, TypeError
@@ -221,9 +258,19 @@ class SpectralLibrary:
     library file (.sli files), which stores data as specified by a corresponding .hdr
     header file.  The primary members of an Envi.SpectralLibrary object are:
     
-	spectra			A subscriptable array of all spectra in the library.
-	names			A list of names corresponding to the spectra.
-	bands			A BandInfo object defining associated spectral bands.
+	`spectra` (:class:`numpy.ndarray`):
+	
+	    A subscriptable array of all spectra in the library. `spectra` will
+	    have shape `CxB`, where `C` is the number of spectra in the library
+	    and `B` is the number of bands for each spectrum.
+	
+	`names` (list of str):
+	
+	    A length-`C` list of names corresponding to the spectra.
+	    
+	`bands` (:class:`spectral.BandInfo`):
+	
+	    Spectral bands associated with the library spectra.
 	
     '''
     
@@ -253,6 +300,21 @@ class SpectralLibrary:
 	self.metadata['data ignore value'] = 'NaN'
 	
     def save(self, fileBaseName, description = None):
+	'''
+	Saves the spectral library to a library file.
+
+	Arguments:
+	
+	    `fileBaseName` (str):
+	    
+		Name of the file (without extension) to save.
+	    
+	    `description` (str):
+	    
+		Optional text description of the library.
+
+	This method creates two files: `fileBaseName`.hdr and `fileBaseName`.sli.
+	'''
 	import spectral
 	import __builtin__
 	meta = {}

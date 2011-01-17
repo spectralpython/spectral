@@ -44,6 +44,18 @@ class Classifier:
     def classifySpectrum(self, *args, **kwargs):
         raise NotImplementedError('Classifier.classifySpectrum must be overridden by a child class.')
     def classifyImage(self, image):
+	'''Classifies an entire image, returning a classification map.
+	
+	Arguments:
+	
+	    `image` (ndarray or :class:`spectral.Image`)
+	    
+		The `MxNxB` image to classify.
+	
+	Returns (ndarray):
+	
+	    An `MxN` ndarray of integers specifying the class for each pixel.
+	'''
         from spectral import status
         from algorithms import ImageIterator
         from numpy import zeros
@@ -69,13 +81,36 @@ class SupervisedClassifier(Classifier):
 class GaussianClassifier(SupervisedClassifier):
     '''A Gaussian Maximum Likelihood Classifier'''
     def __init__(self, trainingData = None, minSamples = None):
+	'''Creates the classifier and optionally trains it with training data.
+	
+	Arguments:
+	
+	    `trainingData` (:class:`~spectral.algorithms.TrainingClassSet`) [default None]:
+	    
+		 The training classes on which to train the classifier.
+	    
+	    `minSamples` (int) [default None]:
+	    
+		Minimum number of samples required from a training class to
+		include it in the classifier.
+	
+	'''
         if minSamples:
             self.minSamples = minSamples
         else:
             self.minSamples = None
         if trainingData:
             self.train(trainingData)
+
     def train(self, trainingData):
+	'''Trains the classifier on the given training data.
+	
+	Arguments:
+	
+	    `trainingData` (:class:`~spectral.algorithms.TrainingClassSet`):
+	    
+		Data for the training classes.
+	'''
         from algorithms import logDeterminant
         if not self.minSamples:
             # Set minimum number of samples to the number of bands in the image
@@ -95,15 +130,20 @@ class GaussianClassifier(SupervisedClassifier):
 
     def classifySpectrum(self, x):
         '''
-        Classify pixel into one of classes.
-
-        USAGE: classIndex = classifier.classifySpectrum(x)
-
-        ARGUMENTS:
-            x           The spectrum to classify
-        RETURN VALUE
-            classIndex  The 'index' property of the most likely class
-                        in classes.
+        Classifies a pixel into one of the trained classes.
+	
+	Arguments:
+	
+	    `x` (list or rank-1 ndarray):
+	    
+		The unclassified spectrum.
+	
+	Returns:
+	
+	    `classIndex` (int):
+	    
+		The index for the :class:`~spectral.algorithms.TrainingClass`
+		to which `x` is classified.
         '''
         from numpy import dot, transpose
         from numpy.oldnumeric import NewAxis
@@ -126,10 +166,14 @@ class GaussianClassifier(SupervisedClassifier):
 class MahalanobisDistanceClassifier(GaussianClassifier):
     '''A Classifier using Mahalanobis distance for class discrimination'''
     def train(self, trainingData):
-        '''
-        Calculate a single coveriance as a weighted average of the
-        individual training class covariances.
-        '''
+	'''Trains the classifier on the given training data.
+	
+	Arguments:
+	
+	    `trainingData` (:class:`~spectral.algorithms.TrainingClassSet`):
+	    
+		Data for the training classes.
+	'''
         GaussianClassifier.train(self, trainingData)
 
         covariance = numpy.zeros(self.classes[0].stats.cov.shape, numpy.float)
@@ -141,15 +185,20 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
 
     def classifySpectrum(self, x):
         '''
-        Classify pixel based on minimum Mahalanobis distance.
-
-        USAGE: classIndex = classifier.classifySpectrum(x)
-
-        ARGUMENTS:
-            x           The spectrum to classify
-        RETURN VALUE
-            classIndex  The 'index' property of the most likely class
-                        in classes.
+        Classifies a pixel into one of the trained classes.
+	
+	Arguments:
+	
+	    `x` (list or rank-1 ndarray):
+	    
+		The unclassified spectrum.
+	
+	Returns:
+	
+	    `classIndex` (int):
+	    
+		The index for the :class:`~spectral.algorithms.TrainingClass`
+		to which `x` is classified.
         '''
         from numpy import dot, transpose
         from numpy.oldnumeric import NewAxis

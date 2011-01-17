@@ -28,7 +28,72 @@
 # Thomas Boggs, tboggs@users.sourceforge.net
 #
 '''
-Common code for accessing hyperspectral image files.
+:class:`~spectral.SpyFile` is the base class for creating objects to read
+hyperspectral data files.  When a :class:`~spectral.SpyFile` object is created,
+it provides an interface to read data from a corresponding file.  When an image
+is opened, the actual object returned will be a subclass of :class:`~spectral.SpyFile`
+(BipFile, BilFile, or BsqFile) corresponding to the interleave of the data
+within the image file.
+
+Let's open our sample image.
+
+    >>> from spectral import *
+    >>> img = image('92AV3C')
+    >>> img.__class__
+    <class spectral.io.bilfile.BilFile at 0x1021ed3b0>
+    >>> print img
+	    Data Source:   '/Users/thomas/spectral_data/92AV3C'
+	    # Rows:            145
+	    # Samples:         145
+	    # Bands:           220
+	    Interleave:        BIL
+	    Quantization:  16 bits
+	    Data format:         h
+
+The image was not located in the working directory but it was still opened
+because it was in a directory specified by the *SPECTRAL_DATA* environment
+variable.  Because the image pixel data are interleaved by line, the *image* function returned
+a *BilFile* instance.
+
+Since hyperspectral image files can be quite large, only
+metadata are read from the file when the :class:`~spectral.SpyFile` object is
+first created. Image data values are only read when specifically requested via
+:class:`~spectral.SpyFile` methods.  The :class:`~spectral.SpyFile` class
+provides a subscript operator that behaves much like the numpy array subscript
+operator. The :class:`~spectral.SpyFile` object is subscripted as an *MxNxB*
+array where *M* is the number of rows in the image, *N* is the number of
+columns, and *B* is thenumber of bands.
+
+    >>> img.shape
+    (145, 145, 220)
+    >>> pixel = img[50,100]
+    >>> pixel.shape
+    (220,)
+    >>> band6 = img[:,:,5]
+    >>> band6.shape
+    (145, 145, 1)
+
+The image data values were not read from the file until the subscript operator
+calls were performed.  Note that since Python indices start at 0, ``img[50,100]``
+refers to the pixel at 51st row and 101st column of the image.  Similarly,
+``img[:,:,5]`` refers to all the rows and columns for the 6th band of the image.
+
+:class:`~spectral.SpyFile` subclass instances returned for particular image
+files will also provide the following methods:
+
+=============   ================================================================
+   Method				Description
+=============   ================================================================
+readBand	Reads a single band into an *MxN* array
+readBands	Reads multiple bands into an *MxNxC* array
+readPixel	Reads a single pixel into a length *B* array
+readSubRegion	Reads multiple bands from a rectangular sub-region of the image
+readSubImage	Reads specified rows, columns, and bands
+=============   ================================================================
+
+:class:`~spectral.SpyFile` objects have a ``bands`` member, which is an instance
+of a :class:`~spectral.BandInfo` object that contains optional information about
+the images spectral bands.
 '''
 
 import numpy
@@ -42,7 +107,7 @@ def findFilePath(filename):
     pathname = None
     dirs = ['.']
     if os.environ.has_key('SPECTRAL_DATA'):
-        dirs += os.environ['SPECTRAL_DATA'].split(';')
+        dirs += os.environ['SPECTRAL_DATA'].split(':')
     for d in dirs:
         testpath = os.path.join(d, filename)
         if os.path.isfile(testpath):
@@ -88,10 +153,19 @@ class SpyFile(Image):
             raise
 
     def __str__(self):
+	'''Prints basic parameters of the associated file.'''
+	import spectral as spy
         s =  '\tData Source:   \'%s\'\n' % self.fileName
         s += '\t# Rows:         %6d\n' % (self.nRows)
         s += '\t# Samples:      %6d\n' % (self.nCols)
         s += '\t# Bands:        %6d\n' % (self.shape[2])
+	if self.interleave == spy.BIL:
+	    interleave = 'BIL'
+	elif self.interleave == spy.BIP:
+	    interleave = 'BIP'
+	else:
+	    interleave = 'BSQ'
+	s += '\tInterleave:     %6s\n' % (interleave)
         s += '\tQuantization: %3d bits\n' % (self.sampleSize * 8)
 
         tc = self._typecode
@@ -113,12 +187,17 @@ class SpyFile(Image):
 
 
     def typecode(self):
-        '''Returns the typecode of the Numeric array type for this
-        image file.
-        '''
+        '''Returns the typecode of the Numeric array type for the image file.'''
         return self._typecode
     
     def load(self):
+	'''Loads the entire image into memory in a :class:`spectral.ImageArray` object.
+	
+	:class:`spectral.ImageArray` is derived from both :class:`spectral.Image`
+	and :class:`numpy.ndarray` so it supports the full :class:`numpy.ndarray`
+	interface.  The returns object will have shape `(M,N,B)`, where `M`, `N`,
+	and `B` are the numbers of rows, columns, and bands in the image.
+	'''
         import spectral
         from spectral.spectral import ImageArray
         from array import array
@@ -144,6 +223,40 @@ class SpyFile(Image):
         return ImageArray(npArray, self)
 
     def __getitem__(self, args):
+	'''Subscripting operator that provides a numpy-like interface.
+	Usage::
+	
+	    x = img[i, j]
+	    x = img[i, j, k]
+	    
+	Arguments:
+	
+	    `i`, `j`, `k` (int or :class:`slice` object)
+	    
+		Integer subscript indices or slice objects.
+	
+	The subscript operator emulates the :class:`numpy.ndarray` subscript
+	operator, except data are read from the corresponding image file instead
+	of an array object in memory.  For frequent access or when accessing
+	a large fraction of the image data, consider calling
+	:meth:`spectral.SpyFile.load` to load the data into an
+	:meth:`spectral.ImageArray` object and using its subscript operator
+	instead.
+	
+	Examples:
+	
+	    Read the pixel at the 30th row and 51st column of the image::
+	    
+		pixel = img[29, 50]
+		
+	    Read the 10th band::
+	    
+		band = img[:, :, 9]
+	    
+	    Read the first 30 bands for a square sub-region of the image::
+	    
+		region = img[50:100, 50:100, :30]
+	'''
 
         intType = type(1)
         sliceType = type(slice(0,0,0))
@@ -205,8 +318,6 @@ class SpyFile(Image):
             
         return self.readSubImage(rows, cols, bands)
 
-
-
     def params(self):
         '''Return an object containing the SpyFile parameters.'''
 	from spectral import Image
@@ -222,15 +333,41 @@ class SpyFile(Image):
 
     def __del__(self):
         self.fid.close()
-        
 
 
 class SubImage(SpyFile):
     '''
     Represents a rectangular sub-region of a larger SpyFile object.
     '''
-
     def __init__(self, image, rowRange, colRange):
+	'''Creates a :class:`Spectral.SubImage` object for a rectangular sub-region.
+	
+	Arguments:
+	
+	    `image` (SpyFile):
+	    
+		The image for which to define the sub-image.
+		
+	    `rowRange` (2-tuple):
+	    
+		Integers [i, j) defining the row limits of the sub-region.
+
+	    `colRange` (2-tuple):
+	    
+		Integers [i, j) defining the col limits of the sub-region.
+	
+	Returns:
+	
+	    A :class:`spectral.SubImage` object providing a :class:`spectral.SpyFile`
+	    interface to a sub-region of the image.
+	
+	Raises:
+	
+	    :class:`IndexError`
+	
+	Row and column ranges must be 2-tuples (i,j) where i >= 0 and i < j.
+
+	'''
 
         import exceptions
 
@@ -251,6 +388,20 @@ class SubImage(SpyFile):
         self.shape = (self.nRows, self.nCols, self.nBands)
 
     def readBand(self, band):
+        '''Reads a single band from the image.
+	
+	Arguments:
+	
+	    `band` (int):
+	    
+		Index of band to read.
+	
+	Returns:
+	
+	   :class:`numpy.ndarray`
+	   
+		An `MxN` array of values for the specified band.
+	'''
         return self.parent.readSubRegion([self.rowOffset, \
                                 self.rowOffset + self.nRows - 1], \
                                [self.colOffset, \
@@ -258,6 +409,22 @@ class SubImage(SpyFile):
                                [band])
 
     def readBands(self, bands):
+        '''Reads multiple bands from the image.
+	
+	Arguments:
+	
+	    `bands` (list of ints):
+	    
+		Indices of bands to read.
+	
+	Returns:
+	
+	   :class:`numpy.ndarray`
+	   
+		An `MxNxL` array of values for the specified bands. `M` and `N`
+		are the number of rows & columns in the image and `L` equals
+		len(`bands`).
+	'''
         return self.parent.readSubRegion([self.rowOffset, \
                                 self.rowOffset + self.nRows - 1], \
                                [self.colOffset, \
@@ -265,26 +432,106 @@ class SubImage(SpyFile):
                                bands)
 
     def readPixel(self, row, col):
+        '''Reads the pixel at position (row,col) from the file.
+	
+	Arguments:
+	
+	    `row`, `col` (int):
+	    
+		Indices of the row & column for the pixel
+	
+	Returns:
+	
+	   :class:`numpy.ndarray`
+	   
+		A length-`B` array, where `B` is the number of bands in the image.
+	'''
         return self.parent.readPixel(row + self.rowOffset, \
                                 col + self.colOffset)
 
     def readSubImage(self, rows, cols, bands = []):
+        '''
+	Reads arbitrary rows, columns, and bands from the image.
+	
+	Arguments:
+	
+	    `rows` (list of ints):
+	    
+		Indices of rows to read.
+	
+	    `cols` (list of ints):
+	    
+		Indices of columns to read.
+	    
+	    `bands` (list of ints):
+	    
+		Optional list of bands to read.  If not specified, all bands
+		are read.
+	
+	Returns:
+	
+	   :class:`numpy.ndarray`
+	   
+		An `MxNxL` array, where `M` = len(`rows`), `N` = len(`cols`),
+		and `L` = len(bands) (or # of image bands if `bands` == None).
+        '''
         return self.parent.readSubImage(list(array(rows) + self.rowOffset), \
                                         list(array(cols) + self.colOffset), \
                                         bands)
 
     def readSubRegion(self, rowBounds, colBounds, bands = None):
         '''
-        Reads a contiguous rectangular sub-region from the image. First
-        arg is a 2-tuple specifying min and max row indices.  Second arg
-        specifies column min and max.  If third argument containing list
-        of band indices is not given, all bands are read.
+        Reads a contiguous rectangular sub-region from the image.
+	
+	Arguments:
+	
+	    `rowBounds` (2-tuple of ints):
+	    
+		(a, b) -> Rows a through b-1 will be read.
+	
+	    `colBounds` (2-tuple of ints):
+	    
+		(a, b) -> Columnss a through b-1 will be read.
+	    
+	    `bands` (list of ints):
+	    
+		Optional list of bands to read.  If not specified, all bands
+		are read.
+	
+	Returns:
+	
+	   :class:`numpy.ndarray`
+	   
+		An `MxNxL` array.
         '''
         return self.parent.readSubImage(list(array(rowBounds) + self.rowOffset), \
                                         list(array(colBounds) + self.colOffset), \
                                         bands)
 
 def transformImage(matrix, img):
+    '''Applies a linear transform to an image.
+    
+    Arguments:
+    
+	`matrix` (ndarray):
+	
+	    The `CxB` linear transform to apply.
+	
+	`img` (ndarray or :class:`spectral.SpyFile`):
+	
+	    The `MxNxB` image to be transformed.
+    
+    Returns (ndarray or :class:spectral.spyfile.TransformedImage`):
+    
+	The transformed image.
+    
+    If `img` is an ndarray, then a `MxNxC` ndarray is returned.  If `img` is
+    a :class:`spectral.SpyFile`, then a :class:`spectral.spyfile.TransformedImage` is
+    returned.
+    
+    If `img` is an ndarr
+    
+    '''
     import numpy as np
     if isinstance(img, np.ndarray):
 	print 'It is an array'

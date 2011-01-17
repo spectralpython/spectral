@@ -30,8 +30,7 @@
 
 
 '''
-Common functions for extracting and manipulating data for graphical
-display.
+Common functions for extracting and manipulating data for graphical display.
 '''
 
 def initGraphics():
@@ -72,22 +71,53 @@ def initNumTut():
 
 def view(*args, **kwargs):
     '''
-    Open a window and display an RGB image.
+    Opens a window and displays a raster greyscale or color image.
 
-    USAGE: view(source [, bands] [stretch = 1] [stretchAll = 1]
-                [bounds = (lower, upper)] )
+    Usage::
+    
+	view(source, bands=None, **kwargs)
+    
+    Arguments:
+    
+	`source` (:class:`spectral.Image` or :class:`numpy.ndarray`):
+	
+	    Source image data to display.  `source` can be and instance of a
+	    :class:`spectral.Image` (e.g., :class:`spectral.SpyFile` or
+	    :class:`spectral.ImageArray`) or a :class:`numpy.ndarray`. `source`
+	    must have shape `MxN` or `MxNxB`.
+	
+	`bands` (3-tuple of ints):
+	
+	    Optional list of indices for bands to display in the red, green,
+	    and blue channels, respectively.
+    
+    Keyword Arguments:
 
-    source is the data source and can be either a SpyFile object or a
-    NumPy array.  bands is an optional list which specifies the RGB
-    channels to display. If bands is not present and source is a SpyFile
-    object, it's metadata dict will be checked if it contains a "default
-    bands" item.  Otherwise, the first, middle and last band will be
-    displayed. If stretch is defined, the image data will be scaled
-    so that the maximum value in the display data will be 1. If
-    stretchAll is defined, each color channel will be scaled separately
-    so that its maximum value is 1. If bounds is specified, the data will
-    be scaled so that lower and upper correspond to 0 and 1, respectively
-    . Any values outside of the range (lower, upper) will be clipped.
+	`stretch` (bool):
+	
+	    If `stretch` evaluates True, the highest value in the data source
+	    will be scaled to maximum color channel intensity.
+	
+	`stretchAll` (bool):
+	
+	    If `stretchAll` evaluates True, the highest value of the data source
+	    in each color channel will be set to maximum intensity.
+	
+	`bounds` (2-tuple of ints):
+	
+	    Clips the input data at (lower, upper) values.
+
+	`title` (str):
+	
+	    Text to display in the new window frame.
+
+    `source` is the data source and can be either a :class:`spectral.Image`
+    object or a numpy array. If `source` has shape `MxN`, the image will be
+    displayed in greyscale. If its shape is `MxNx3`, the three layers/bands will
+    be displayed as the red, green, and blue components of the displayed image,
+    respectively. If its shape is `MxNxB`, where `B > 3`, the first, middle, and
+    last bands will be displayed in the RGB channels, unless `bands` is
+    specified.
     '''
     from spectral import settings
     
@@ -109,18 +139,33 @@ def view(*args, **kwargs):
 
 def viewIndexed(*args, **kwargs):
     '''
-    Open a window and display an indexed color image.
+    Opens a window and displays a raster image for the provided color map data.
 
-    USAGE: viewIndexed(source [, colors])
+    Usage::
+    
+	viewIndexed(data, **kwargs)
+    
+    Arguments:
+    
+	`data` (:class:`numpy.ndarray`):
+	
+	    An `MxN` array of integer values that correspond to colors in a
+	    color palette.
+    
+    Keyword Arguments:
+    
+	`colors` (list of 3-tuples of ints):
+	
+	    This parameter provides an alternate color map to use for display.
+	    The parameter is a list of 3-tuples defining RGB values, where R, G,
+	    and B are in the range [0-255].
 
-    source is the data source and can be either a SpyFile object or a
-    NumPy array. The optional argument colors is an Nx3 NumPy array
-    which specifies the RGB colors for the color indices in source.
-    Each column of colors specifies the red, green, and blue color
-    components in the range [0, 255]. If colors is not specified, the
-    default color table is used.
+	`title` (str):
+	
+	    Text to display in the new window frame.
+
+    The default color palette used is defined by :obj:`spectral.spyColors`.
     '''
-
     from spectral import settings, spyColors
 
     if not kwargs.has_key('colors'):
@@ -188,22 +233,80 @@ def makePilImage(*args, **kwargs):
     
 def saveImage(*args, **kwargs):
     '''
-    Save data as a JPEG image file.
+    Saves a viewable image to a JPEG (or other format) file.
 
-    USAGE: view(file, source [, bands] [stretch = 1] [stretchAll = 1]
-                [bounds = (lower, upper)] )
+    Usage::
+    
+	saveImage(data, bands=None, **kwargs)
+    
+    Arguments:
+    
+	`data` (:class:`spectral.Image` or :class:`numpy.ndarray`):
+	
+	    Source image data to display.  `data` can be and instance of a
+	    :class:`spectral.Image` (e.g., :class:`spectral.SpyFile` or
+	    :class:`spectral.ImageArray`) or a :class:`numpy.ndarray`. `data`
+	    must have shape `MxN` or `MxNxB`.  If thes shape is `MxN`, the image
+	    will be saved as greyscale (unless keyword `colors` is specified).
+	    If the shape is `MxNx3`, it will be interpreted as three `MxN`
+	    images defining the R, G, and B channels respectively.  If `B > 3`,
+	    the first, middle, and last images in `data` will be used, unless
+	    `bands` is specified.
+	
+	`bands` (3-tuple of ints):
+	
+	    Optional list of indices for bands to use in the red, green,
+	    and blue channels, respectively.
+    
+    Keyword Arguments:
+    
+	`format` (str):
+	
+	    The image file format to create.  Must be a format recognized by
+	    :mod:`PIL` (e.g., 'png', 'tiff', 'bmp').  If `format` is not
+	    provided, 'jpg' is assumed.
 
-    source is the data source and can be either a SpyFile object or a
-    NumPy array.  bands is an optional list which specifies the RGB
-    channels to display. If bands is not present and source is a SpyFile
-    object, it's metadata dict will be checked if it contains a "default
-    bands" item.  Otherwise, the first, middle and last band will be
-    displayed. If stretch is defined, the image data will be scaled
-    so that the maximum value in the display data will be 1. If
-    stretchAll is defined, each color channel will be scaled separately
-    so that its maximum value is 1. If bounds is specified, the data will
-    be scaled so that lower and upper correspond to 0 and 1, respectively
-    . Any values outside of the range (lower, upper) will be clipped.
+	`colors` (list of 3-tuples of ints):
+	
+	    If this keyword is provided, `data` is interpeted to be a color map
+	    into the `colors` color palette. This is the same `colors` keyword
+	    used by the :func:`spectral.viewIndexed` function. The parameter
+	    is a list of 3-tuples defining RGB values, where R, G, and B are
+	    in the range [0-255].
+	    
+	`stretch` (bool):
+	
+	    If `stretch` evaluates True, the highest value in the data source
+	    will be scaled to maximum color channel intensity.
+	
+	`stretchAll` (bool):
+	
+	    If `stretchAll` evaluates True, the highest value of the data source
+	    in each color channel will be set to maximum intensity.
+	
+	`bounds` (2-tuple of ints):
+	
+	    Clips the input data at (lower, upper) values.
+
+    Examples:
+    
+	Save a color view of an image by specifying RGB band indices::
+	
+	    saveImage('rgb.jpg', img, [29, 19, 9]])
+	
+	Save the same image as **png**::
+	
+	    saveImage('rgb.jpg', img, [29, 19, 9]], format='png')
+	
+	Save classification results using the default color palette (note that
+	the color palette must be passed explicitly for `clMap` to be
+	interpreted as a color map)::
+	
+	    saveImage('results.jpg', clMap, colors=spectral.spyColors)
+
+	
+	
+	
     '''
 
     im = apply(makePilImage, args[1:], kwargs)

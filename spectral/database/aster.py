@@ -174,14 +174,23 @@ class AsterDatabase:
     def create(cls, fileName, asterDataDir = None):
 	'''Creates an ASTER relational database by parsing ASTER data files.
 	
-	USAGE:
-	    db = AsterDatabase.create(fileName, asterDataDir)
-	ARGS:
-	    fileName		Name of the new sqlite database file to create.
-	    asterDataDir	Path to the directory containing ASTER data files.
-	RETURN:
-	    db			An AsterDatabase object for the new database.
-	EXAMPLE:
+	Arguments:
+	
+	    `fileName` (str):
+	    
+		Name of the new sqlite database file to create.
+	    
+	    `asterDataDir` (str):
+	    
+		Path to the directory containing ASTER library data files. If
+		this argument is not provided, no data will be imported.
+		
+	Returns:
+	
+	    An :class:`~spectral.database.AsterDatabase` object.
+
+	Example::
+	
 	    >>> AsterDatabase.create("aster_lib.db", "/CDROM/ASTER2.0/data")
 	    
 	This is a class method (it does not require instantiating an AsterDatabase
@@ -189,7 +198,7 @@ class AsterDatabase:
 	ASTER library data directory.  Normally, this should only need to be called
 	once.  Subsequently, a corresponding database object can be created by
 	instantiating a new AsterDatabase object with the path the database file
-	as its argument.  For example:
+	as its argument.  For example::
 	
 	    >>> from spectral.database.aster import AsterDatabase
 	    >>> db = AsterDatabase("aster_lib.db")
@@ -205,6 +214,19 @@ class AsterDatabase:
 	return db
 	
     def __init__(self, sqliteFileName = None):
+	'''Creates a database object to interface an existing database.
+	
+	Arguments:
+	
+	    `sqliteFileName` (str):
+	    
+		Name of the database file.  If this argument is not provided,
+		an interface to a database file will not be established.
+	
+	Returns:
+	
+	    An :class:`~spectral.AsterDatabase` object connected to the database.
+	'''
 	if sqliteFileName:
 	    self._connect(sqliteFileName)
 	else:
@@ -283,13 +305,26 @@ class AsterDatabase:
     def getSpectrum(self, spectrumID):
 	'''Returns a spectrum from the database.
 	
-	USAGE:
+	Usage:
+	
 	    (x, y) = aster.getSpectrum(spectrumID)
-	ARGS:
-	    spectrumID		SpectrumID from the Spectra database table
-	RETURN:
-	    x			Band centers for the spectrum
-	    y			Spectrum data values
+	    
+	Arguments:
+	
+	    `spectrumID` (int):
+	    
+		The **SpectrumID** value for the desired spectrum from the
+		**Spectra** table in the database.
+		
+	Returns:
+	
+	    `x` (list):
+	    
+		Band centers for the spectrum.
+	    
+	    `y` (list):
+	    
+		Spectrum data values for each band.
 	    
 	Returns a pair of vectors containing the wavelengths and measured values
 	values of a measurment.  For additional metadata, call "getSignature"
@@ -308,21 +343,34 @@ class AsterDatabase:
 	return (list(x), list(y))
 
     def getSignature(self, spectrumID):
-	'''
-	USAGE:
+	'''Returns a spectrum with some additional metadata.
+	
+	Usage::
+	
 	    sig = aster.getSignature(spectrumID)
-	ARGS:
-	    spectrumID		SpectrumID from the Spectra database table
-	RETURN:
-	    sig			An object with the following attributes:
-				    - measurementID (from Spectra table)
-				    - sampleName
-				    - sampleID
-				    - x (list of band center wavelengths)
-				    - y (list of spectrum values)
 	    
-	Returns an object containing the wavelengths, measured values, sampleID,
-	and sample name.
+	Arguments:
+	
+	    `spectrumID` (int):
+	    
+		The **SpectrumID** value for the desired spectrum from the
+		**Spectra** table in the database.
+	
+	Returns:
+	
+	    `sig` (:class:`~spectral.database.aster.Signature`):
+	    
+		An object with the following attributes:
+		
+		=============	=====	========================================
+		Attribute	Type		Description
+		=============	=====	========================================
+		measurementID	int	SpectrumID value from Spectra table
+		sampleName	str	**Sample** from the **Samples** table
+		sampleID	int	**SampleID** from the **Samples** table
+		x		list	list of band center wavelengths
+		y		list	list of spectrum values for each band
+		=============	=====	========================================
 	'''
         import array
 	
@@ -348,14 +396,71 @@ class AsterDatabase:
 	return sig
     
     def query(self, sql, args=None):
-	'''Returns the text result of an arbitrary SQL statement.'''
+	'''Returns the result of an arbitrary SQL statement.
+	
+	Arguments:
+	
+	    `sql` (str):
+	    
+		An SQL statement to be passed to the database. Use "?" for
+		variables passed into the statement.
+	    
+	    `args` (tuple):
+	    
+		Optional arguments which will replace the "?" placeholders in
+		the `sql` argument.
+	
+	Returns:
+	
+	    An :class:`sqlite3.Cursor` object with the query results.
+	    
+	Example::
+	
+	    >>> sql = r'SELECT SpectrumID, Name FROM Samples, Spectra ' +
+	    ...        'WHERE Spectra.SampleID = Samples.SampleID ' +
+	    ...        'AND Name LIKE "%grass%" AND MinWavelength < ?'
+	    >>> args = (0.5,)
+	    >>> cur = db.query(sql, args)
+	    >>> for row in cur:
+	    ...     print row
+	    ... 
+	    (356, u'dry grass')
+	    (357, u'grass')
+	'''
 	if args:
 	    return self.cursor.execute(sql, args)
 	else:
 	    return self.cursor.execute(sql)
     
     def printQuery(self, sql, args=None):
-	'''Returns the text result of an arbitrary SQL statement.'''
+	'''Prints the text result of an arbitrary SQL statement.
+
+	Arguments:
+	
+	    `sql` (str):
+	    
+		An SQL statement to be passed to the database. Use "?" for
+		variables passed into the statement.
+	    
+	    `args` (tuple):
+	    
+		Optional arguments which will replace the "?" placeholders in
+		the `sql` argument.
+	
+	This function performs the same query function as
+	:meth:`spectral.database.Asterdatabase.query` except query results are
+	printed to **stdout** instead of returning a cursor object.
+	
+	Example:
+	
+	    >>> sql = r'SELECT SpectrumID, Name FROM Samples, Spectra ' +
+	    ...        'WHERE Spectra.SampleID = Samples.SampleID ' +
+	    ...        'AND Name LIKE "%grass%" AND MinWavelength < ?'
+	    >>> args = (0.5,)
+	    >>> db.printQuery(sql, args)
+	    356|dry grass
+	    357|grass
+	'''
 	ret = self.query(sql, args)
 	for row in ret:
 	    print "|".join([str(x) for x in row ])
@@ -363,20 +468,27 @@ class AsterDatabase:
     def createEnviSpectralLibrary(self, spectrumIDs, bandInfo):
 	'''Creates an ENVI-formatted spectral library for a list of spectra.
 	
-	USAGE:
-	    lib = aster.createEnviSpectralLibrary(spectrumIDs, bandInfo)
-	ARGS:
-	    spectrumIDs		A list of IDs of spectra in the "Spectra" table
-				of the ASTER database.
-	    bandInfo		A BandInfo object specifying the spectral bands
-				to which the original spectra will be resampled.
+	Arguments:
 	
-	This method returns a SpectralLibrary object as defined in the
-	spectral.io.envi module.  The IDs passed to the method should correspond
-	to the SpectrumID field of the ASTER database "Spectra" table.  All
-	specified spectra will be resampled to the same discretization specified
-	by the bandInfo parameter.  See BandResampler for details on the
-	resampling method used.				
+	    `spectrumIDs` (list of ints):
+	    
+		List of **SpectrumID** values for of spectra in the "Spectra"
+		table of the ASTER database.
+	    
+	    `bandInfo` (:class:`~spectral.BandInfo`):
+	    
+		The spectral bands to which the original ASTER library spectra
+		will be resampled.
+	
+	Returns:
+	
+	    A :class:`~spectral.io.envi.SpectralLibrary` object.
+	
+	The IDs passed to the method should correspond to the SpectrumID field
+	of the ASTER database "Spectra" table.  All specified spectra will be
+	resampled to the same discretization specified by the bandInfo parameter.
+	See :class:`spectral.BandResampler` for details on the resampling method
+	used.
 	'''
         from spectral.algorithms.resampling import BandResampler
 	from spectral.io.envi import SpectralLibrary

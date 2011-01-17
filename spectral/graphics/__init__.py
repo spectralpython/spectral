@@ -31,3 +31,4 @@
 
 
 from graphics import initGraphics, saveImage, view, viewIndexed
+from colorscale import ColorScale

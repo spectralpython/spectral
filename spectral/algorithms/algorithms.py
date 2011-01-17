@@ -106,7 +106,32 @@ class ImageMaskIterator(Iterator):
 
 def iterator(image, mask = None, index = None):
     '''
-    Function returning an iterator over pixels in the image.
+    Returns an iterator over pixels in the image.
+    
+    Arguments:
+    
+	`image` (ndarray or :class:`spectral.Image`):
+	
+	    An image over whose pixels will be iterated.
+	
+	`mask` (ndarray) [default None]:
+	
+	    An array of integers that specify over which pixels in `image`
+	    iteration should be performed.
+	
+	`index` (int) [default None]:
+	
+	    Specifies which value in `mask` should be used for iteration.
+    
+    Returns (:class:`spectral.Iterator`):
+    
+	An iterator over image pixels.
+    
+    If neither `mask` nor `index` are defined, iteration is performed over all
+    pixels.  If `mask` (but not `index`) is defined, iteration is performed over
+    all pixels for which `mask` is nonzero.  If both `mask` and `index` are
+    defined, iteration is performed over all pixels `image[i,j]` for which
+    `mask[i,j] == index`.
     '''
 
     if isinstance(image, Iterator):
@@ -121,23 +146,50 @@ def mean_cov(image, mask = None, index = None):
     '''
     Return the mean and covariance of the set of vectors.
 
-    USAGE: (mean, cov, N) = mean_cov(vectors)
-
-    ARGUMENTS:
+    Usage::
     
-        vectors         A SpyFile object or an MxNxB array
+	(mean, cov, S) = mean_cov(vectors [, mask=None [, index=None]])
 
-    RETURN VALUES:
+    Arguments:
+    
+        `vectors` (ndarrray, :class:`~spectral.Image`, or :class:`spectral.Iterator`):
+	
+	    If an ndarray, it should have shape `MxNxB` and the mean & covariance
+	    will be calculated for each band (third dimension).
+	
+	`mask` (ndarray):
+	
+	    If `mask` is specified, mean & covariance will be calculated for all
+	    pixels indicated in the mask array.  If `index` is specified, all
+	    pixels in `image` for which `mask == index` will be used; otherwise,
+	    all nonzero elements of `mask` will be used.
+	
+	`index` (int):
+	
+	    Specifies which value in `mask` to use to select pixels from `image`.
+	    If not specified but `mask` is, then all nonzero elements of `mask`
+	    will be used.
+	
+	If neither `mask` nor `index` are specified, all samples in `vectors`
+	will be used.
 
-        mean            The mean value of the vectors
+    Returns a 3-tuple containing:
 
-        cov             The unbiased estimate (dividing by N-1) of
-                        the covariance of the vectors.
+        `mean` (ndarray):
+	
+	    The length-`B` mean vectors
 
-        N		Number of elements used to calculate mean & cov
+        `cov` (ndarray):
+	
+	    The `BxB` unbiased estimate (dividing by N-1) of the covariance
+	    of the vectors.
+
+        `S` (int):
+	
+	    Number of samples used to calculate mean & cov
 
     Calculate the mean and covariance of of the given vectors. The argument
-    can be an Iterator, a SpyFile object, or an MxNxB array.
+    can be an Iterator, a SpyFile object, or an `MxNxB` array.
     '''
     import spectral
     from spectral import status
@@ -171,25 +223,81 @@ def mean_cov(image, mask = None, index = None):
     return (mean, cov, count)
 
 def covariance(*args):
-    '''Returns the covariance of an image.  See mean_cov for description of arguments.'''
+    '''
+    Returns the covariance of the set of vectors.
+
+    Usage::
+    
+	C = covariance(vectors [, mask=None [, index=None]])
+
+    Arguments:
+    
+        `vectors` (ndarrray, :class:`~spectral.Image`, or :class:`spectral.Iterator`):
+	
+	    If an ndarray, it should have shape `MxNxB` and the mean & covariance
+	    will be calculated for each band (third dimension).
+	
+	`mask` (ndarray):
+	
+	    If `mask` is specified, mean & covariance will be calculated for all
+	    pixels indicated in the mask array.  If `index` is specified, all
+	    pixels in `image` for which `mask == index` will be used; otherwise,
+	    all nonzero elements of `mask` will be used.
+	
+	`index` (int):
+	
+	    Specifies which value in `mask` to use to select pixels from `image`.
+	    If not specified but `mask` is, then all nonzero elements of `mask`
+	    will be used.
+	
+	If neither `mask` nor `index` are specified, all samples in `vectors`
+	will be used.
+
+    Returns:
+
+        `C` (ndarray):
+	
+	    The `BxB` unbiased estimate (dividing by N-1) of the covariance
+	    of the vectors.
+
+
+    To also return the mean vector and number of samples, call
+    :func:`~spectral.algorithms.algorithms.mean_cov` instead.
+    '''
     return mean_cov(*args)[1]
 
 def principalComponents(image):
     '''
-    Calculate Principal Component eigenvalues & eigenvectors 
-    for an image.
+    Calculate Principal Component eigenvalues & eigenvectors for an image.
 
-    USAGE:  (L, V, M, C) = principalComponents(image)
-
-    ARGUMENTS:\n
-        image -          A SpyFile object or an MxNxB array\n
-    RETURN VALUES:\n
-        L      -         A length B array of eigenvalues\n
-        V      -         A BxB array of normalized eigenvectors\n
-        M      -         The length B mean of the image pixels\n
-        C      -         The BxB covariance matrix of the image\n
-    '''
+    Usage::
     
+	(L, V, m, C) = principalComponents(image)
+
+    Arguments:
+    
+        `image` (ndarray or :class:`spectral.Image`):
+	
+	    An `MxNxB` image
+    
+    Returns a 4-tuple of :class:`numpy.ndarray` objects containing:
+    
+        `L`:
+	
+	    A length B array of eigenvalues
+	
+        `V`:
+	
+	    A `BxB` array of normalized eigenvectors
+	
+        `m`:
+	
+	    The length `B` mean vector of the image pixels
+	
+        `C`:
+	
+	    The `BxB` covariance matrix of the image
+    '''
     from numpy import sqrt, sum
     
     (M, N, B) = image.shape
@@ -210,19 +318,48 @@ def linearDiscriminant(classes):
     '''
     Solve Fisher's linear discriminant for eigenvalues and eigenvectors.
 
-    USAGE: (L, V, CB, CW) = linearDiscriminant(classes)
-
-    Determines the solution to the generalized eigenvalue problem
+    Usage: (L, V, Cb, Cw) = linearDiscriminant(classes)
     
-            cov_b * x = lambda * cov_w * x
+    Arguments:
+    
+	`classes` (:class:`~spectral.algorithms.TrainingClassSet`):
+	
+	    The set of `C` classes to discriminate.
+    
+    Returns a 4-tuple containing:
+    
+	`L` (ndarray):
+	
+	    The length `C-1` array of eigenvalues.
+	    
+	`V` (ndarray):
+	
+	    The `(C-1)xB` array of eigenvectors.
+	
+	`Cb` (ndarray):
+	
+	    The between-class covariance matrix.
+	
+	`Cw` (ndarray):
+	
+	    The within-class covariance matrix.
+
+    This function determines the solution to the generalized eigenvalue problem
+    
+            Cb * x = lambda * Cw * x
             
     Since cov_w is normally invertable, the reduces to
     
-            (inv(cov_w) * cov_b) * x = lambda * x
+            (inv(Cw) * Cb) * x = lambda * x
             
     The return value is a 4-tuple containing the vector of eigenvalues,
     a matrix of the corresponding eigenvectors, the between-class
     covariance matrix, and the within-class covariance matrix.
+
+    References:
+
+	Richards, J.A. & Jia, X. Remote Sensing Digital Image Analysis: An
+	Introduction. (Springer: Berlin, 1999).
     '''
 
     from numpy import zeros, dot, transpose, diagonal
@@ -279,21 +416,34 @@ def reduceEigenvectors(L, V, fraction = 0.99):
     '''
     Reduces number of eigenvalues and eigenvectors retained.
 
-    USAGE: (L2, V2) = reduceEigenvectors(L, V [, fraction])
-
-    ARGUMENTS:
+    Usage::
     
-        L               A vector of descending eigenvalues
+	(L2, V2) = reduceEigenvectors(L, V [, fraction])
+
+    Arguments:
+    
+        `L` (ndarray):
 	
-        V               The array of eigenvectors corresponding to L
+	    A vector of descending eigenvalues.
 	
-        fraction        The fraction of sum(L) to retain
+        `V` (ndarray):
 	
-    RETURN VALUES:
-        L2              A vector containing the first N eigenvalues of
-                        L such that sum(L2) / sum(L) >= fraction
+	    The array of eigenvectors corresponding to `L`.
+	
+        `fraction` (float) [default 0.99]:
+	
+	    The fraction of sum(L) (total image variance) to retain.
+	
+    Returns a 2-tuple containing:
+    
+        `L2` (ndarray):
+	
+	    A vector containing the first N eigenvalues in L such that
+	    sum(`L2`) / sum(`L`) >= `fraction`.
 			
-        V2              The array of eigenvectors corresponding to L2
+        `V2` (ndarray):
+	
+	    The array of retained eigenvectors corresponding to L2.
 
     Retains only the first N eigenvalues and eigenvectors such that the
     sum of the retained eigenvalues divided by the sum of all eigenvalues
@@ -328,22 +478,31 @@ class GaussianStats:
 
 class TrainingClass:
     def __init__(self, image, mask, index = 0, classProb = 1.0):
-        '''
-        Define a Training Class by selecting a set of vectors from image
-        by applying the given mask.
-
-        USAGE: ts = TrainingClass(image, mask [, index] [classProb = 1.0)
-
-        image specifies the data source for which the training set is
-        being defined. If index is not specified, the training set is
-        defined by all elements of image for which the corresponding
-        element if mask is non-zero. If index is non-zero, the training
-        set is defined by all elements of image for which mask equals
-        index. classProb represents the fractional abundance of the
-        spectral class in the entire image. If this value is not
-        specified, the default of 1 is used (Note that if all training
-        sets use a fractional abundance of 1, they will all have equal
-        weighting during classification).
+        '''Creates a new training class defined by applying `mask` to `image`.
+	
+	Arguments:
+	
+	    `image` (:class:`spectral.Image` or :class:`numpy.ndarray`):
+	    
+		The `MxNxB` image over which the training class is defined.
+	    
+	    `mask` (:class:`numpy.ndarray`):
+	    
+		An `MxN` array of integers that specifies which pixels in `image`
+		are associated with the class.
+	    
+	    `index` (int) [default 0]:
+	    
+		if `index` == 0, all nonzero elements of `mask` are associated
+		with the class.  If `index` is nonzero, all elements of `mask`
+		equal to `index` are associated with the class.
+	    
+	    `classProb` (float) [default 1.0]:
+	    
+		Defines the prior probability associated with the class, which
+		is used in maximum likelihood classification.  If `classProb` is
+		1.0, prior probabilities are ignored by classifiers, giving all
+		class equal weighting.
         '''
         self.image = image
         self.numBands = image.shape[2]
@@ -364,16 +523,17 @@ class TrainingClass:
         '''
         Sets statistics for the TrainingClass to be valid or invalid.
 
-        USAGE: tset.statsValid(bool)
-
-        This function is intended to be called with a zero argument
-        when the set's statistics become invalid (e.g., the data
-        source or mask changes).
+	Arguments:
+	
+	    `tf` (bool):
+	    
+		A value evaluating to True indicates that statistics should be
+		recalculated prior to being used.
         '''
         self._statsValid = tf
 
     def size(self):
-        '''Returns the number of pixels in the training set.'''
+        '''Returns the number of pixels/samples in the training set.'''
         from numpy import sum, equal
 
         # If the stats are invalid, the number of pixels in the
@@ -389,6 +549,18 @@ class TrainingClass:
     def calcStatistics(self):
         '''
         Calculates statistics for the class.
+	
+	This function causes the :attr:`stats` attribute of the class to be
+	updated, where `stats` will have the following attributes:
+	
+	===========  ======================   ===================================
+	Attribute    Type                          Description
+	===========  ======================   ===================================
+	`mean`	     :class:`numpy.ndarray`   length-`B` mean vector
+	`cov`	     :class:`numpy.ndarray`   `BxB` covariance matrix
+	`invCov`     :class:`numpy.ndarray`   Inverse of `cov`
+	`logDetCov`  float		      Natural log of determinant of `cov`
+	===========  ======================   ===================================
         '''
         import math
         from numpy.linalg import inv, det
@@ -401,22 +573,27 @@ class TrainingClass:
         self._size = self.stats.numSamples
         self._statsValid = 1
 
-    def transform(self, m):
+    def transform(self, X):
         '''
-        Perform a linear transformation, m, on the statistics of the
-        training set.
+        Perform a linear transformation on the statistics of the training set.
+	
+	Arguments:
+	
+	    `X` (:class:numpy.ndarray):
 
-        USAGE: set.transform(m)
+		The linear transform array.  If the class has `B` bands, then
+		`X` must have shape `(C,B)`.
+		
+	After the transform is applied,	the class statistics will have `C` bands.
         '''
 
-        from numpy import dot, transpose
+        from numpy import dot, transpose, newaxis
         from numpy.linalg import det, inv
-        from numpy.oldnumeric import NewAxis
         import math
         from spectral.io.spyfile import TransformedImage
 
-        self.stats.mean = dot(m, self.stats.mean[:, NewAxis])[:, 0]
-        self.stats.cov = dot(m, dot(self.stats.cov, transpose(m)))
+        self.stats.mean = dot(X, self.stats.mean[:, newaxis])[:, 0]
+        self.stats.cov = dot(X, dot(self.stats.cov, transpose(X)))
         self.stats.invCov = inv(self.stats.cov)
         
         try:
@@ -424,8 +601,8 @@ class TrainingClass:
         except:
             self.stats.logDetCov = logDeterminant(self.stats.cov)
 
-        self.numBands = m.shape[0]
-        self.image = transformImage(m, self.image)
+        self.numBands = X.shape[0]
+        self.image = transformImage(X, self.image)
 
     def dump(self, fp):
         '''
@@ -469,7 +646,7 @@ class TrainingClass:
         self.stats.numSamples = self._size
 
 class SampleIterator:
-    '''An iterator over all samples of all classes in a TrainingData object.'''
+    '''An iterator over all samples of all classes in a TrainingClassSet object.'''
     def __init__(self, trainingData):
         self.classes = trainingData
     def __iter__(self):
@@ -478,31 +655,50 @@ class SampleIterator:
                 yield sample
             
 class TrainingClassSet:
+    '''A class to manage a set of :class:`spectral.algorithms.TrainingClass` objects.'''
     def __init__(self):
         self.classes = {}
         self.numBands = None
     def __getitem__(self, i):
-        '''Returns the class having ID i.'''
+        '''Returns the training class having ID i.'''
         return self.classes[i]
     def __len__(self):
 	'''Returns number of training classes in the set.'''
         return len(self.classes)
     def addClass(self, cl):
-	'''Adds a new class to the training set.'''
+	'''Adds a new class to the training set.
+	
+	Arguments:
+	
+	    `cl` (:class:`spectral.TrainingClass`):
+	    
+		`cl.index` must not duplicate a class already in the set.
+	'''
         if self.classes.has_key(cl.index):
-            raise 'Attempting to add class with duplicate index.'
+            raise Exception('Attempting to add class with duplicate index.')
         self.classes[cl.index] = cl
         if not self.numBands:
             self.numBands = cl.numBands
-    def transform(self, M):
-        '''Applies linear transform, M, to all training classes.'''
+	    
+    def transform(self, X):
+        '''Applies linear transform, M, to all training classes.
+	
+	Arguments:
+	
+	    `X` (:class:numpy.ndarray):
+	    
+		The linear transform array.  If the classes have `B` bands, then
+		`X` must have shape `(C,B)`.
+		
+	After the transform is applied,	all classes will have `C` bands.
+	'''
         for cl in self.classes.values():
-            cl.transform(M)
-        self.numBands = M.shape[0]
+            cl.transform(X)
+        self.numBands = X.shape[0]
         
     def __iter__(self):
         '''
-        Returns an iterator over all TrainingClass objects.
+        Returns an iterator over all :class:`spectral.TrainingClass` objects in the set.
         '''
         for cl in self.classes.values():
             yield cl
@@ -512,24 +708,35 @@ class TrainingClassSet:
         
 def createTrainingClasses(image, classMask, calcStats = 0, indices = None):
     '''
-    Create a list of TrainingClass objects from an indexed array.
+    Creates a :class:spectral.algorithms.TrainingClassSet: from an indexed array.
 
     USAGE:  sets = createTrainingClasses(classMask)
 
-    ARGUMENTS:
-        image               The image (MxNxB array or SpyFile) for
-                            which the training sets are being defined.
-        classMask           A rank-2 array whose elements are indices
-                            of various spectral classes.
-        calcStats           An optional parameter which, if non-zero,
-                            causes statistics to be calculated for the
-                            list of training sets.
-    RETURN VALUE:
-        sets                A list of TrainingClass objects
+    Arguments:
+    
+        `image` (:class:`spectral.Image` or :class:`numpy.ndarray`):
+	
+	    The image data for which the training classes will be defined.
+	    `image` has shape `MxNxB`.
+	    
+        `classMask` (:class:`numpy.ndarray`):
+	
+	    A rank-2 array whose elements are indices of various spectral
+	    classes.  if `classMask[i,j]` == `k`, then `image[i,j]` is
+	    assumed to belong to class `k`.
+	
+        `calcStats`:
+	
+	    An optional parameter which, if True, causes statistics to be
+	    calculated for all training classes.
+    
+    Returns:
+    
+        A :class:`spectral.algorithms.TrainingClassSet` object.
 
-    The dimensions of classMask should be the same as the first two
-    dimensions of the corresponding image. Values of zero in classMask
-    are considered unlabeled and are not added to a training set.
+    The dimensions of classMask should be the same as the first two dimensions
+    of the corresponding image. Values of zero in classMask are considered
+    unlabeled and are not added to a training set.
     '''
 
     classIndices = set(classMask.ravel())
@@ -549,24 +756,27 @@ def createTrainingClasses(image, classMask, calcStats = 0, indices = None):
 
 def ndvi(data, red, nir):
     '''
-    Calculate the Normalized Difference Vegetation Index (NDVI) for the
-    given data.
+    Calculates the Normalized Difference Vegetation Index (NDVI) for the given data.
 
-    USAGE: vi = ndvi(data, red, nir)
+    Arguments:
 
-    ARGUMENTS:
+        `data` (ndarray or :class:`spectral.Image`):
+	
+	    The array or SpyFile for which to calculate the index.
 
-        data        The array or SpyFile for which to calc. the index
+        `red` (int or int range):
+	
+	    An integer index of the red band or an index range for multiple bands.
 
-        red         An integer or range integers specifying the red bands.
+        `nir` (int or int range):
+	
+	    An integer index of the near infrared band or an index range for
+	    multiple bands.
 
-        nir         An integer or range integers specifying the near
-                        infrared bands.
+    Returns an ndarray:
 
-    RETURN VALUE:
-
-        An array containing NDVI values for each corresponding element
-        of data in the range [0.0, 1.0].
+        An array containing NDVI values in the range [-1.0, 1.0] for each
+	corresponding element of data.
     '''
 
     r = data[:, :, red].astype(float)
@@ -579,20 +789,27 @@ def ndvi(data, red, nir):
     return (n - r) / (n + r)
 
 
-def bhattacharyyaDistance(a, b):
+def bhattacharyyaDistance(class1, class2):
     '''
-    Calulate the Bhattacharyya distance between two classes.
+    Calulates the Bhattacharyya distance between two classes.
 
-    USAGE:  bd = bhattacharyyaDistance(a, b)
+    USAGE:  bd = bhattacharyyaDistance(class1, class2)
 
-    ARGUMENTS:
-        (a, b)              The classes for which to determine the
-                            B-distance.
-    RETURN VALUE:
-        bd                  The B-distance between a and b.
-    '''
+    Arguments:
     
-    terms = bDistanceTerms(a, b)
+	`class1`, `class2` (:class:`~spectral.algorithms.algorithms.TrainingClass`)
+	
+    Returns:
+    
+	A float value for the Bhattacharyya Distance between the classes.  This
+	function is also aliased to :func:`~spectral.algorithms.algorithms.bDistance`.
+	
+    References:
+
+	Richards, J.A. & Jia, X. Remote Sensing Digital Image Analysis: An
+	Introduction. (Springer: Berlin, 1999).
+    '''
+    terms = bDistanceTerms(class1, class2)
     return terms[0] + terms[1]
 
 bDistance = bhattacharyyaDistance
@@ -629,19 +846,25 @@ def bDistanceTerms(a, b):
 
 def transformImage(matrix, image):
     '''
-    Perform linear transformation on all pixels in an image.
+    Performs linear transformation on all pixels in an image.
 
-    USAGE: trData = transformImage(im, matrix)
+    Arguments:
 
-    ARGUMENTS:
-        matrix          The linear transform to apply
-        im              Image data to transform
-    RETURN VALUE:
-        trData          The transformed image
+        matrix (:class:`numpy.ndarray`):
+	
+	    A `CxB` linear transform to apply.
+	    
+        image  (:class:`numpy.ndarray` or :class:`spectral.Image`):
+	
+	    Image data to transform
 
-    If the image argument is a SpyFile object, a TransformedImage object
-    is returned.  If image is a Numeric array, an array with all pixels
-    transformed is returned.
+    Returns:
+    
+	If `image` is an `MxNxB` :class:`numpy.ndarray`, the return will be a
+	transformed :class:`numpy.ndarray` with shape `MxNxC`.  If `image` is
+	:class:`spectral.Image`, the returned object will be a
+	:class:`spectral.TransformedImage` object and no transformation of data
+	will occur until elements of the object are accessed.
     '''
     from spectral.io.spyfile import TransformedImage
     from numpy.oldnumeric import ArrayType
@@ -662,15 +885,23 @@ def transformImage(matrix, image):
 
 def orthogonalize(vecs, start = 0):
     '''
-    Perform Gram-Schmidt Orthogonalization on a set of vectors.
+    Performs Gram-Schmidt Orthogonalization on a set of vectors.
 
-    USAGE:  basis = orthogonalize(vecs [, start = 0])
-
-    RETURN VALUE:
-        basis           An orthonormal basis spanning vecs.
-        
-    If start is specified, it is assumed that vecs[:start] are already
-    orthonormal.
+    Arguments:
+    
+	`vecs` (:class:`numpy.ndarray`):
+	
+	    The set of vectors for which an orthonormal basis will be created.
+	    If there are `C` vectors of length `B`, then `vecs` should be `CxB`.
+	
+	`start` (int) [default 0]:
+	
+	    If `start` > 0, then `vecs[start]` will be assumed to already be
+	    orthonormal.
+	
+    Returns:
+    
+	A new `CxB` containing an orthonormal basis for the given vectors.
     '''
 
     from numpy import transpose, dot, identity
@@ -737,21 +968,26 @@ def unmix(data, members):
 
 def spectralAngles(data, members):
     '''
-    Perform spectral angle mapping of data.
+    Calculates spectral angles of an image with respect to a given set of spectra.
 
-    USAGE: angles = spectralAngles(data, members)
-
-    ARGUMENTS:
-        data            MxNxB image data
-        members         CxB array of spectral endmembers
-    RETURN VALUE:
-        angles          An MxNxC array of spectral angles.
+    Arguments:
+    
+        `data` (:class:`numpy.ndarray` or :class:`spectral.Image`):
+	
+	    An `MxNxB` image for which spectral angles will be calculated.
+	
+        `members` (:class:`numpy.ndarray`):
+	
+	    `CxB` array of spectral endmembers.
+	    
+    Returns:
+    
+        `MxNxC` array of spectral angles.
 
     
-    Calculates the spectral angles between each vector in data and each
-    of the endmembers.  The output of this function (angles) can be used
-    to classify the data by minimum spectral angle by calling argmin(angles).
-    This function currently does not use second order statistics.
+    Calculates the spectral angles between each vector in data and each of the
+    endmembers.  The output of this function (angles) can be used to classify
+    the data by minimum spectral angle by calling argmin(angles).
     '''
     from numpy import array, dot, zeros, arccos, sqrt
 
