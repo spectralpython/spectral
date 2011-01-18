@@ -4,6 +4,61 @@
 # This file contains release notes for various SPy releases
 ################################################################################
 
+SPy 0.6
+================================================================================
+Release date: 2011.01.18
+
+- New Features:
+
+  - Support for parsing & loading spectra from the ASTER Spectral Library.
+  
+  - Ability to save ENVI spectral library files.
+
+  - :meth:`spectral.kmeans` will accept a :exc:`KeyboardInterrupt` exception
+    (i.e., CTRL-C) and return the results as of the previous iteration.
+
+  - Documention is now online via Sphinx.
+
+- Changes
+
+  - Major changes to module/sub-module layout. Biggest change is that the top-
+    level module is now "spectral" instead of "Spectra" (capitalization). Many
+    functions/classes have moved between files and sub-modules but that should
+    be transparent to most users since the most obvious names are automatically
+    imported into the top-level module namespace.
+
+  - Additional ENVI data file extensions are now searched (.bil, .bsq, .bip,)
+
+  - Changed default colors in :obj:`spectral.spyColors`, which is the default
+    color palette used by :meth:`spectral.viewIndexed`.
+
+  - :meth:`spectral.transformImage` is now the means to apply a linear transform
+    to an image (rather than creating a :class:`spectral.TransformedImage`
+    directly) because it handles both :class:`spectral.SpyFile` and
+    :class:`numpy.ndarray` objects.
+
+  - 64-bit floats are now used for covariance matrices.
+
+  - Changed SPECTRAL_DATA path delimiter from semi-colon to colon.
+    
+- Bug fixes
+
+  - Fixed a bug preventing successful reading of ENVI header files where an
+    equal ("=") symbol appears in a parameter value.
+
+  - Fixed bug where a ColorScale might return an incorrect color if the scale
+    contained negative values.
+
+  - :meth:`cluster` would fail if only 2 clusters were requested.
+  
+  - :meth:`kmeans` was reporting an incorrect number of pixels reassigned
+    between iterations (did not affect final convergence).
+
+  - :meth:`logDeterminant` was crashing when receiving negative values.
+  
+  - Missing a potential byte swap in :meth:`spectral.io.bilfileBilFile.readDatum`.
+
+
 SPy 0.5
 ================================================================================
 Release date: 2010.07.11
