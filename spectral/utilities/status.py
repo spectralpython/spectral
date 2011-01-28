@@ -51,6 +51,7 @@ class StatusDisplay:
         self.textLength = len(text)
         if not self.silent:
             sys.stdout.write(text)
+	    sys.stdout.flush()
     def updatePercentage(self, percent):
         '''Called whenever an update of the displayed status is desired.'''
         import sys
@@ -59,6 +60,7 @@ class StatusDisplay:
         self.textLength = len(text)
         if not self.silent:
             sys.stdout.write(text)
+	    sys.stdout.flush()
     def endPercentage(self, text='done'):
         '''Prints a final status and resumes normal text display.'''
         import sys
@@ -68,6 +70,7 @@ class StatusDisplay:
         self.textLength = len(text)
         if not self.silent:
             sys.stdout.write(fmt % text)
+	    sys.stdout.flush()
         self.overwriteLine = False
     def write(self, text):
         '''
@@ -78,5 +81,6 @@ class StatusDisplay:
         if self.overwriteLine and text != '\n':
             sys.stdout.write('\n')
         sys.stdout.write(text)
+	sys.stdout.flush()
             
     

@@ -2,6 +2,44 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2011-01-28	tboggs <tboggs@users.sourceforge.net>
+
+    Updated ERDAS/LAN file interface to handle either endian, regardless of host
+    byte order.  The handler previously assumed little endian header parameters
+    and big endian image data because the sample image previously used was a
+    mixed endian file.  The handler will no longer work as expected with that
+    image (`92AV3C`) because it is considered a badly formatted file.  To use
+    that file, open it as normal, then toggle the value of ``img.swap`` (change
+    from 0 to 1 or 1 to 0).
+
+    * io/erdas.py:
+      (open): Read header as little endian.  If that fails, try big endian.
+      (readErdasLanHeader): Accept parameter specifying byte order of file.
+      Assume header and image data have same byte order.
+    
+    A specialized version of the kmeans function was created for numpy ndarrays
+    (kmeans_ndarray).  For in-memory images, this function is about 10 times
+    faster than the original function (about 100 times faster than using SpyFile
+    objects). The specialized version of the function is automatically called by
+    kmeans if the image argument is an instance of a numpy.ndarray. Several
+    positional arguments of kmeans are now keyword arguments and the default
+    distance measure is L2 (Euclidean) distance.  If initial cluster centers are
+    not passed as a keyword argument, they will be initialized evenly along the
+    diagonal of the image data bounding box.
+    
+    * algorithms/clustering.py:
+      (L2): Don't force type of difference operator.
+      (kmeans): Several arguments changed to keywords.  Default distance is L2.
+      Default for initial cluster centers is along diagonal of image data
+      bounding box.  If image argument is an ndarray, call kmeans_ndarray.
+      (kmeans_ndarray): New function - a version of kmeans specialized for
+    
+    Improved status display output.
+    
+    * utilities/status.py (StatusDisplay): Call sys.stdout.flush() after
+      printing status output.
+      
+
 2011-01-17	tboggs <tboggs@users.sourceforge.net>
 
     * __init__.py: Import names from database submodule.

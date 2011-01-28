@@ -2,7 +2,7 @@
 #
 #   clustering.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001-2010 Thomas Boggs
+#   Copyright (C) 2001-2011 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -41,7 +41,7 @@ def L1(v1, v2):
 
 def L2(v1, v2):
     'Returns Euclidean distance between 2 rank-1 arrays.'
-    delta = numpy.array(v1 - v2, float)
+    delta = v1 - v2
     return numpy.sqrt(numpy.dot(delta, delta))
 
 
@@ -91,8 +91,7 @@ class KmeansClusterer(Classifier):
                           self.endCondition, self.distanceMeasure, iterations)
                 
     
-def kmeans(image, nClusters = 10, maxIter = 20, startClusters = None,
-           compare = None, distance = L1, iterations = None):
+def kmeans(image, nClusters = 10, maxIterations = 20, **kwargs):
     '''
     Performs iterative clustering using the k-means algorithm.
 
@@ -107,15 +106,17 @@ def kmeans(image, nClusters = 10, maxIter = 20, startClusters = None,
 	    Number of clusters to create.  The number produced may be less than
 	    `nClusters`.
 	
-        `maxIter` (int) [default 20]:
+        `maxIterations` (int) [default 20]:
 	
 	    Max number of iterations to perform.
+    
+    Keyword Arguments:
 	
         `startClusters` (:class:`numpy.ndarray`) [default None]:
 	
 	    `nClusters x B` array of initial cluster centers.  If not provided,
-	    :func:`~spectral.clustering.cluster` will be called to initialize
-	    the clusters.
+	    initial cluster centers will be spaced evenly along the diagonal of
+	    the N-dimensional bounding box of the image data.
 			
         `compare` (callable object) [default None]:
 	
@@ -125,13 +126,13 @@ def kmeans(image, nClusters = 10, maxIter = 20, startClusters = None,
 	    arguments are the cluster maps for the previous and current cluster
 	    cycle, respectively.
 			
-        `distance` (callable object) [default :func:`~spectral.clustering.L1`]:
+        `distance` (callable object) [default :func:`~spectral.clustering.L2`]:
 	
 	    The distance measure to use for comparison. The default is to use
-	    **L1** (Manhattan) distance. For  Euclidean distance, specify
-	    :func:`~spectral.clustering.L2`.
+	    **L2** (Euclidean) distance. For Manhattan distance, specify
+	    :func:`~spectral.clustering.L1`.
 			
-        `iterations` (list) [default None]:
+        `frames` (list) [default None]:
 	
 	    If this argument is given and is a list object, each intermediate
 	    cluster map is appended to the list.
@@ -148,75 +149,112 @@ def kmeans(image, nClusters = 10, maxIter = 20, startClusters = None,
 	    An `nClusters x B` array of cluster centers.
     
     Iterations are performed until clusters converge (no pixels reassigned
-    between iterations), `maxIter` is reached, or `compare` returns nonzero.
-    If **KeyboardInterrupt** is generated (i.e., CTRL-C pressed) while the
+    between iterations), `maxIterations` is reached, or `compare` returns nonzero.
+    If :exc:`KeyboardInterrupt` is generated (i.e., CTRL-C pressed) while the
     algorithm is executing, clusters are returned from the previously completed
     iteration.
     '''
     from spectral import status
-    if not isinstance(iterations, list):
-        iterations = None
+    import numpy
+    
+    if isinstance(image, numpy.ndarray):
+	return kmeans_ndarray(*(image, nClusters, maxIterations), **kwargs)
+    
+    # defaults for kwargs
+    startClusters = None
+    compare = None
+    distance = L2
+    iterations = None
+    
+    for (key, val) in kwargs.items():
+	if key == 'startClusters':
+	    startClusters = val
+	elif key == 'compare':
+	    compare = val
+	elif key == 'distance':
+	    if val in (L1, 'L1'):
+		distance = L1
+	    elif val in (L2, 'L2'):
+		distance = L2
+	    else:
+		raise ValueError('Unrecognized keyword argument.')
+	elif key == 'frames':
+	    if not hasattr(val, 'append'):
+		raise TypeError('"frames" keyword argument must have "append" attribute.')
+	    iterations = frames
+	else:
+	    raise NameError('Unsupported keyword argument.')
+	    
     (nRows, nCols, nBands) = image.shape
     clusters = numpy.zeros((nRows, nCols), int)
-    oldClusters = None
+    oldClusters = numpy.copy(clusters)
     if startClusters != None:
         assert (startClusters.shape[0] == nClusters), 'There must be \
         nClusters clusters in the startCenters array.'
         centers = numpy.array(startClusters)
     else:
-	print 'Using single-pass cluster algorithm to initialize clusters.'
-	centers = cluster(image, nClusters)[1]
+	print 'Initializing clusters along diagonal of N-dimensional bounding box.'
+	centers = numpy.empty((nClusters, nBands), float)
+	boxMin = image[0,0]
+	boxMax = image[0,0]
+	for i in range(nRows):
+	    for j in range(nCols):
+		x = image[i,j]
+		boxMin = numpy.where(boxMin < x, boxMin, x)
+		boxMax = numpy.where(boxMax > x, boxMax, x)
+	boxMin = boxMin.astype(float)
+	boxMax = boxMax.astype(float)
+	delta = (boxMax - boxMin) / (nClusters - 1)
+	for i in range(nClusters):
+	    centers[i] = boxMin.astype(float) + i * delta
 
     print 'Starting iterations.'
+
     iter = 1
-    while (iter <= maxIter):
+    while (iter <= maxIterations):
 	try:
 	    status.displayPercentage('Iteration %d...' % iter)
+	    
+	    # Assign all pixels
 	    for i in range(nRows):
 		status.updatePercentage(float(i) / nRows * 100.)
 		for j in range(nCols):
-		    minDist = 10000000000000.0
-		    for k in range(len(centers)):
+		    minDist = 1.e30
+		    for k in range(nClusters):
 			dist = distance(image[i, j], centers[k])
 			if (dist < minDist):
 			    clusters[i, j] = k
 			    minDist = dist
 	    status.endPercentage()
-    
-	    sums = numpy.zeros((nClusters, nBands), float)
+
+	    # Update cluster centers
+	    sums = numpy.zeros((nClusters, nBands), 'd')
 	    counts = ([0] * nClusters)
 	    for i in range(nRows):
 		for j in range(nCols):
 		    counts[clusters[i, j]] += 1
 		    sums[clusters[i, j]] += image[i, j]
     
-    
-	    oldCenters = centers
-	    centers = []
+	    oldCenters = centers[:]
 	    for i in range(nClusters):
 		if (counts[i] > 0):
-		    centers.append((sums[i] / counts[i]))
+		    centers[i] = sums[i] / counts[i]
 	    centers = numpy.array(centers)
     
-	    nClusters = centers.shape[0]
-	    if compare:
-		if compare(oldClusters, clusters):
-		    print >>status, '\tisoCluster converged with', centers.shape[0], \
-			  'clusters in', iter, 'iterations.'
-		    return (clusters, centers)
-	    elif oldClusters != None:
+	    if iterations != None:
+		iterations.append(clusters)
+
+	    if compare and compare(oldClusters, clusters):
+		break
+	    else:
 		nChanged = numpy.sum(clusters != oldClusters)
 		if nChanged == 0:
-		    print >>status, '\tisoCluster converged with', centers.shape[0], \
-			  'clusters in', iter, 'iterations.'
-		    return (clusters, centers)
+		    break
 		else:
 		    print >>status, '\t%d pixels reassigned.' % (nChanged)
     
 	    oldClusters = clusters
 	    oldCenters = centers
-	    if iterations != None:
-		iterations.append(oldClusters)
 	    clusters = numpy.zeros((nRows, nCols), int)
 	    iter += 1
 	    
@@ -224,9 +262,170 @@ def kmeans(image, nClusters = 10, maxIter = 20, startClusters = None,
             print "KeyboardInterrupt: Returning clusters from previous iteration"
 	    return (oldClusters, oldCenters)
 
-    print >>status, 'kmeans terminated with', centers.shape[0], \
+    print >>status, 'kmeans terminated with', len(set(oldClusters.ravel())), \
           'clusters after', iter - 1, 'iterations.'
     return (oldClusters, centers)
+
+def kmeans_ndarray(image, nClusters = 10, maxIterations = 20, **kwargs):
+    '''
+    Performs iterative clustering using the k-means algorithm.
+
+    Arguments:
+    
+        `image` (:class:`numpy.ndarray` or :class:`spectral.Image`):
+	
+	    The `MxNxB` image on which to perform clustering.
+	
+        `nClusters` (int) [default 10]:
+	
+	    Number of clusters to create.  The number produced may be less than
+	    `nClusters`.
+	
+        `maxIterations` (int) [default 20]:
+	
+	    Max number of iterations to perform.
+    
+    Keyword Arguments:
+	
+        `startClusters` (:class:`numpy.ndarray`) [default None]:
+	
+	    `nClusters x B` array of initial cluster centers.  If not provided,
+	    initial cluster centers will be spaced evenly along the diagonal of
+	    the N-dimensional bounding box of the image data.
+			
+        `compare` (callable object) [default None]:
+	
+	    Optional comparison function. `compare` must be a callable object
+	    that takes 2 `MxN` :class:`numpy.ndarray` objects as its arguments
+	    and returns non-zero when clustering is to be terminated. The two
+	    arguments are the cluster maps for the previous and current cluster
+	    cycle, respectively.
+			
+        `distance` (callable object) [default :func:`~spectral.clustering.L2`]:
+	
+	    The distance measure to use for comparison. The default is to use
+	    **L2** (Euclidean) distance. For Manhattan distance, specify
+	    :func:`~spectral.clustering.L1`.
+			
+        `frames` (list) [default None]:
+	
+	    If this argument is given and is a list object, each intermediate
+	    cluster map is appended to the list.
+			
+    Returns a 2-tuple containing:
+    
+        `clMap` (:class:`numpy.ndarray`):
+	
+	    An `MxN` array whos values are the indices of the cluster for the
+	    corresponding element of `image`.
+			
+        `centers` (:class:`numpy.ndarray`):
+	
+	    An `nClusters x B` array of cluster centers.
+    
+    Iterations are performed until clusters converge (no pixels reassigned
+    between iterations), `maxIterations` is reached, or `compare` returns nonzero.
+    If :exc:`KeyboardInterrupt` is generated (i.e., CTRL-C pressed) while the
+    algorithm is executing, clusters are returned from the previously completed
+    iteration.
+    '''
+    from spectral import status
+    import numpy as np
+    
+    # defaults for kwargs
+    startClusters = None
+    compare = None
+    distance = L2
+    iterations = None
+    
+    for (key, val) in kwargs.items():
+	if key == 'startClusters':
+	    startClusters = val
+	elif key == 'compare':
+	    compare = val
+	elif key == 'distance':
+	    if val in (L1, 'L1'):
+		distance = L1
+	    elif val in (L2, 'L2'):
+		distance = L2
+	    else:
+		raise ValueError('Unrecognized keyword argument.')
+	elif key == 'frames':
+	    if not hasattr(val, 'append'):
+		raise TypeError('"frames" keyword argument must have "append" attribute.')
+	    iterations = val
+	else:
+	    raise NameError('Unsupported keyword argument.')
+	    
+    (nRows, nCols, nBands) = image.shape
+    N = nRows * nCols
+    image = image.reshape((N, nBands))
+    clusters = numpy.zeros((N,), int)
+    if startClusters != None:
+        assert (startClusters.shape[0] == nClusters), 'There must be \
+        nClusters clusters in the startCenters array.'
+        centers = numpy.array(startClusters)
+    else:
+	print 'Initializing clusters along diagonal of N-dimensional bounding box.'
+	boxMin = np.amin(image, 0)
+	boxMax = np.amax(image, 0)
+	delta = (boxMax - boxMin) / (nClusters - 1)
+	centers = np.empty((nClusters, nBands), float)
+	for i in range(nClusters):
+	    centers[i] = boxMin + i * delta
+
+    print 'Starting iterations.'
+
+    distances = np.empty((N, nClusters), float)
+    oldCenters = np.array(centers)
+    clusters = np.zeros((N,), int)
+    oldClusters = np.copy(clusters)
+    iter = 1
+    while (iter <= maxIterations):
+	try:
+	    status.displayPercentage('Iteration %d...' % iter)
+
+	    # Assign all pixels
+	    for i in range(nClusters):
+		diffs = np.subtract(image, centers[i])
+		if distance == L2:
+		    distances[:,i] = np.sum(np.square(diffs), 1)
+		else:
+		    distances[:,i] = np.sum(np.abs(diffs), 1)
+	    clusters[:] = np.argmin(distances, 1)
+
+	    status.endPercentage()
+
+	    # Update cluster centers
+	    oldCenters[:] = centers
+	    for i in range(nClusters):
+		inds = np.argwhere(clusters == i)[:,0]
+		if len(inds) > 0:
+		    centers[i] = np.mean(image[inds], 0, float)
+		    
+	    if iterations != None:
+		iterations.append(clusters.reshape(nRows, nCols))
+
+	    if compare and compare(oldClusters, clusters):
+		break
+	    else:
+		nChanged = numpy.sum(clusters != oldClusters)
+		if nChanged == 0:
+		    break
+		else:
+		    print >>status, '\t%d pixels reassigned.' % (nChanged)
+    
+	    oldClusters[:] = clusters
+	    oldCenters[:] = centers
+	    iter += 1
+
+        except KeyboardInterrupt:
+            print "KeyboardInterrupt: Returning clusters from previous iteration."
+	    return (oldClusters.reshape(nRows, nCols), oldCenters)
+
+    print >>status, 'kmeans terminated with', len(set(oldClusters.ravel())), \
+          'clusters after', iter - 1, 'iterations.'
+    return (oldClusters.reshape(nRows, nCols), centers)
 
 def isoCluster(*args, **kwargs):
     '''
