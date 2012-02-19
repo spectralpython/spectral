@@ -4,6 +4,31 @@
 # This file contains release notes for various SPy releases
 ################################################################################
 
+SPy 0.7
+================================================================================
+Release date: 2012.02.19
+
+Changes
+-------
+
+* Changed many function/method names to be more consistent with external
+  packages.  Use of most old names will generate a deprecation warning but some
+  while require immediate changes to client code.
+
+* :func:`spectral.kmeans` runs about 10 times faster now for loaded images.
+
+Bug Fixes
+---------
+
+* The Erdas LAN file interface was modified because the previous reference file
+  had mixed endian between header and data sections.  If you are using the old
+  sample file *92AV3C*, then start using :download:`92AV3C.lan <data/92AV3C.lan>`,
+  which has consistent endian-ness.
+
+* Fixed a few bugs that potentially caused problems with the BIP and BSQ file
+  interfaces.
+
+
 SPy 0.6
 ================================================================================
 Release date: 2011.01.17

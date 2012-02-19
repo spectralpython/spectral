@@ -4,6 +4,10 @@
 
 2012-02-19	tboggs <tboggs@users.sourceforge.net>
 
+    Updated version number to '0.7' in __init__.py
+
+2012-02-19	tboggs <tboggs@users.sourceforge.net>
+
     Changed many method and function names to be consitent with external
     modules (this affects almost every file so I won't list them here). Fixed
     several bugs affecting file reading for several formats.
