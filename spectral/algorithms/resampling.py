@@ -64,16 +64,16 @@ def erfc(z):
     '''Complement of the error function.'''
     return 1.0 - erf(z)
 
-def normalCDF(x):
+def normal_cdf(x):
     '''CDF of the normal distribution.'''
     sqrt2 = 1.4142135623730951
     return 0.5 * erfc(-x / sqrt2)
 
-def normalIntegral(a, b):
+def normal_integral(a, b):
     '''Integral of the normal distribution from a to b.'''
-    return normalCDF(b) - normalCDF(a)
+    return normal_cdf(b) - normal_cdf(a)
 
-def rangesOverlap(R1, R2):
+def ranges_overlap(R1, R2):
     '''Returns True if there is any overlap between the ranges specified by pairs R1 and R2.'''
     if (R1[0] < R2[0] and R1[1] < R2[0]) or \
        (R1[0] > R2[1] and R1[1] > R2[1]):
@@ -89,7 +89,7 @@ def normal(mean, stdev, x):
     sqrt_2pi = 2.5066282746310002
     return exp(-((x - mean) / stdev)**2 / 2.0) / (sqrt_2pi * stdev)
 
-def buildFwhm(centers):
+def build_fwhm(centers):
     '''
     Builds list of FWHM values by assuming FWHM is midway between adjacent bands.
     '''
@@ -100,7 +100,7 @@ def buildFwhm(centers):
 	fwhm[i] = (centers[i + 1] - centers[i - 1]) / 2.0
     return fwhm
 
-def createResamplingMatrix(centers1, fwhm1, centers2, fwhm2):
+def create_resampling_matrix(centers1, fwhm1, centers2, fwhm2):
     '''
     Returns a resampling matrix to convert spectra from one band discretization
     to another.  Arguments are the band centers and full-width half maximum spectral
@@ -136,7 +136,7 @@ def createResamplingMatrix(centers1, fwhm1, centers2, fwhm2):
         
         # Get indices for all original bands that overlap the new band
         while j < N1 and bounds1[j][0] < bounds2[i][1]:
-            if rangesOverlap(bounds1[j], bounds2[i]):
+            if ranges_overlap(bounds1[j], bounds2[i]):
                 matches.append(j)
             j += 1
             
@@ -158,7 +158,7 @@ def createResamplingMatrix(centers1, fwhm1, centers2, fwhm2):
 	    #endNorms = [normal(centers2[i], stdev, x) for x in overlaps[k]]
 	    #dA = (overlaps[k][1] - overlaps[k][0]) * sum(endNorms) / 2.0
 	    (a, b) = [(x - centers2[i]) / stdev for x in overlaps[k]]
-	    dA = normalIntegral(a, b)
+	    dA = normal_integral(a, b)
             contribs[k] = dA
             A += dA
         contribs = contribs / A
@@ -233,10 +233,10 @@ class BandResampler:
 	    fwhm2 = centers2.bandwidths
 	    centers2 = centers2.centers
 	if fwhm1 == None:
-	    fwhm1 = buildFwhm(centers1)
+	    fwhm1 = build_fwhm(centers1)
 	if fwhm2 == None:
-	    fwhm2 = buildFwhm(centers2)
-	self.matrix = createResamplingMatrix(centers1, fwhm1, centers2, fwhm2)
+	    fwhm2 = build_fwhm(centers2)
+	self.matrix = create_resampling_matrix(centers1, fwhm1, centers2, fwhm2)
 
     def __call__(self, spectrum):
 	'''Takes a source spectrum as input and returns a resampled spectrum.

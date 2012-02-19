@@ -40,7 +40,7 @@ class StatusDisplay:
         self.silent = False
         self.percentFormat = '% 5.1f'
         self.textLength = 0
-    def displayPercentage(self, text, percent = 0.0, format = '% 5.1f'):
+    def display_percentage(self, text, percent = 0.0, format = '% 5.1f'):
         '''Called when initializing display of a process status.'''
         import sys
         self.overwriteLine = True
@@ -52,7 +52,7 @@ class StatusDisplay:
         if not self.silent:
             sys.stdout.write(text)
 	    sys.stdout.flush()
-    def updatePercentage(self, percent):
+    def update_percentage(self, percent):
         '''Called whenever an update of the displayed status is desired.'''
         import sys
         text = self.preText + self.percentFormat % percent + '%'
@@ -61,7 +61,7 @@ class StatusDisplay:
         if not self.silent:
             sys.stdout.write(text)
 	    sys.stdout.flush()
-    def endPercentage(self, text='done'):
+    def end_percentage(self, text='done'):
         '''Prints a final status and resumes normal text display.'''
         import sys
         text = self.preText + text

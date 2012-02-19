@@ -81,15 +81,15 @@ refers to the pixel at 51st row and 101st column of the image.  Similarly,
 :class:`~spectral.SpyFile` subclass instances returned for particular image
 files will also provide the following methods:
 
-=============   ================================================================
+==============   ===============================================================
    Method				Description
-=============   ================================================================
-readBand	Reads a single band into an *MxN* array
-readBands	Reads multiple bands into an *MxNxC* array
-readPixel	Reads a single pixel into a length *B* array
-readSubRegion	Reads multiple bands from a rectangular sub-region of the image
-readSubImage	Reads specified rows, columns, and bands
-=============   ================================================================
+==============   ===============================================================
+read_band	 Reads a single band into an *MxN* array
+read_bands	 Reads multiple bands into an *MxNxC* array
+read_pixel	 Reads a single pixel into a length *B* array
+read_subregion	 Reads multiple bands from a rectangular sub-region of the image
+read_subimage	 Reads specified rows, columns, and bands
+==============   ===============================================================
 
 :class:`~spectral.SpyFile` objects have a ``bands`` member, which is an instance
 of a :class:`~spectral.BandInfo` object that contains optional information about
@@ -99,7 +99,10 @@ the images spectral bands.
 import numpy
 from spectral.spectral import Image
 
-def findFilePath(filename):
+from exceptions import DeprecationWarning
+from warnings import warn
+
+def find_file_path(filename):
     '''
     Search cwd and SPECTRAL_DATA directories for the given file.
     '''
@@ -123,31 +126,31 @@ class SpyFile(Image):
     def __init__(self, params, metadata = None):
         from spectral import Image
         Image.__init__(self, params, metadata)
-	self.scaleFactor = 1.0		# Number by which to divide values read from file.
+	self.scale_factor = 1.0		# Number by which to divide values read from file.
 
-    def setParams(self, params, metadata):
+    def set_params(self, params, metadata):
         import spectral
         import array
         from exceptions import Exception
 
-        spectral.Image.setParams(self, params, metadata)
+        spectral.Image.set_params(self, params, metadata)
 
         try:
-            self.fileName = params.fileName
+            self.filename = params.filename
             self.format = params.format
             self._typecode = params.typecode         # for Numeric module
             self.offset = params.offset
-            self.byteOrder = params.byteOrder
-            if spectral.byteOrder != self.byteOrder:
+            self.byte_order = params.byte_order
+            if spectral.byte_order != self.byte_order:
                 self.swap = 1
             else:
                 self.swap = 0
-            self.sampleSize = array.array(self.format).itemsize
+            self.sample_size = array.array(self.format).itemsize
 
-            self.fid = open(findFilePath(self.fileName), "rb")
+            self.fid = open(find_file_path(self.filename), "rb")
 
             # So that we can use this more like a Numeric array
-            self.shape = (self.nRows, self.nCols, self.nBands)
+            self.shape = (self.nrows, self.ncols, self.nbands)
         
         except:
             raise
@@ -155,9 +158,9 @@ class SpyFile(Image):
     def __str__(self):
 	'''Prints basic parameters of the associated file.'''
 	import spectral as spy
-        s =  '\tData Source:   \'%s\'\n' % self.fileName
-        s += '\t# Rows:         %6d\n' % (self.nRows)
-        s += '\t# Samples:      %6d\n' % (self.nCols)
+        s =  '\tData Source:   \'%s\'\n' % self.filename
+        s += '\t# Rows:         %6d\n' % (self.nrows)
+        s += '\t# Samples:      %6d\n' % (self.ncols)
         s += '\t# Bands:        %6d\n' % (self.shape[2])
 	if self.interleave == spy.BIL:
 	    interleave = 'BIL'
@@ -166,7 +169,7 @@ class SpyFile(Image):
 	else:
 	    interleave = 'BSQ'
 	s += '\tInterleave:     %6s\n' % (interleave)
-        s += '\tQuantization: %3d bits\n' % (self.sampleSize * 8)
+        s += '\tQuantization: %3d bits\n' % (self.sample_size * 8)
 
         tc = self._typecode
         if tc == '1':
@@ -204,21 +207,21 @@ class SpyFile(Image):
         
         data = array(self.typecode())
         self.fid.seek(self.offset)
-        data.fromfile(self.fid, self.nRows * self.nCols * self.nBands)
+        data.fromfile(self.fid, self.nrows * self.ncols * self.nbands)
         if self.swap:
             data.byteswap()
         npArray = numpy.array(data, ImageArray.format)
         if self.interleave == spectral.BIL:
-            npArray.shape = (self.nRows, self.nBands, self.nCols)
+            npArray.shape = (self.nrows, self.nbands, self.ncols)
             npArray = npArray.transpose([0, 2, 1])
         elif self.interleave == spectral.BSQ:
-            npArray.shape = (self.nBands, self.nRows, self.nCols)
+            npArray.shape = (self.nbands, self.nrows, self.ncols)
             npArray = npArray.transpose([1, 2, 0])
 	else:
-	    npArray.shape = (self.nRows, self.nCols, self.nBands)
+	    npArray.shape = (self.nrows, self.ncols, self.nbands)
 	    
-	if self.scaleFactor != 1:
-	    npArray /= self.scaleFactor
+	if self.scale_factor != 1:
+	    npArray /= self.scale_factor
 	
         return ImageArray(npArray, self)
 
@@ -266,11 +269,11 @@ class SpyFile(Image):
 
         if type(args[0]) == intType and type(args[1]) == intType \
            and len(args) == 2:
-            return self.readPixel(args[0], args[1])
+            return self.read_pixel(args[0], args[1])
         elif len(args) == 3 and (type(args[0]) == intType \
                                  and type(args[1]) == intType \
                                  and type(args[2]) == intType):
-            return self.readDatum(args[0], args[1], args[2])
+            return self.read_datum(args[0], args[1], args[2])
         else:
             #  At least one arg should be a slice
             if type(args[0]) == sliceType:
@@ -279,7 +282,7 @@ class SpyFile(Image):
                 if xstart == None:
                     xstart = 0;
                 if xstop == None:
-                    xstop = self.nRows
+                    xstop = self.nrows
                 if xstep == None:
                     xstep = 1
                 rows = range(xstart, xstop, xstep)
@@ -291,7 +294,7 @@ class SpyFile(Image):
                 if ystart == None:
                     ystart = 0;
                 if ystop == None:
-                    ystop = self.nCols
+                    ystop = self.ncols
                 if ystep == None:
                     ystep = 1
                 cols = range(ystart, ystop, ystep)
@@ -299,14 +302,14 @@ class SpyFile(Image):
                 cols = [args[1]]
 
         if len(args) == 2 or args[2] == None:
-            bands = range(self.nBands)
+            bands = range(self.nbands)
         elif type(args[2]) == sliceType:
             (zstart, zstop, zstep) = (args[2].start, args[2].stop, \
                                       args[2].step)
             if zstart == None:
                 zstart = 0
             if zstop == None:
-                zstop = self.nBands
+                zstop = self.nbands
             if zstep == None:
                 zstep = 1
             bands = range(zstart, zstop, zstep)
@@ -316,7 +319,7 @@ class SpyFile(Image):
             # Band indices should be in a list
             bands = args[2]
             
-        return self.readSubImage(rows, cols, bands)
+        return self.read_subimage(rows, cols, bands)
 
     def params(self):
         '''Return an object containing the SpyFile parameters.'''
@@ -324,10 +327,10 @@ class SpyFile(Image):
 
         p = Image.params(self)
 
-        p.fileName = self.fileName
+        p.filename = self.filename
         p.offset = self.offset
-        p.byteOrder = self.byteOrder
-        p.sampleSize = self.sampleSize
+        p.byte_order = self.byte_order
+        p.sample_size = self.sample_size
 
         return p
 
@@ -339,7 +342,7 @@ class SubImage(SpyFile):
     '''
     Represents a rectangular sub-region of a larger SpyFile object.
     '''
-    def __init__(self, image, rowRange, colRange):
+    def __init__(self, image, row_range, col_range):
 	'''Creates a :class:`Spectral.SubImage` object for a rectangular sub-region.
 	
 	Arguments:
@@ -348,11 +351,11 @@ class SubImage(SpyFile):
 	    
 		The image for which to define the sub-image.
 		
-	    `rowRange` (2-tuple):
+	    `row_range` (2-tuple):
 	    
 		Integers [i, j) defining the row limits of the sub-region.
 
-	    `colRange` (2-tuple):
+	    `col_range` (2-tuple):
 	    
 		Integers [i, j) defining the col limits of the sub-region.
 	
@@ -371,23 +374,23 @@ class SubImage(SpyFile):
 
         import exceptions
 
-        if rowRange[0] < 0 or \
-           rowRange[1] > image.nRows or \
-           colRange[0] < 0 or \
-           colRange[1] > image.nCols:
+        if row_range[0] < 0 or \
+           row_range[1] > image.nrows or \
+           col_range[0] < 0 or \
+           col_range[1] > image.ncols:
             raise IndexError, 'SubImage index out of range.'
 
         p = image.params()
 
         SpyFile.__init__(self, p, image.metadata)
         self.parent = image
-        self.rowOffset = rowRange[0]
-        self.colOffset = colRange[0]
-        self.nRows = rowRange[1] - rowRange[0]
-        self.nCols = colRange[1] - colRange[0]
-        self.shape = (self.nRows, self.nCols, self.nBands)
+        self.row_offset = row_range[0]
+        self.col_offset = col_range[0]
+        self.nrows = row_range[1] - row_range[0]
+        self.ncols = col_range[1] - col_range[0]
+        self.shape = (self.nrows, self.ncols, self.nbands)
 
-    def readBand(self, band):
+    def read_band(self, band):
         '''Reads a single band from the image.
 	
 	Arguments:
@@ -402,13 +405,13 @@ class SubImage(SpyFile):
 	   
 		An `MxN` array of values for the specified band.
 	'''
-        return self.parent.readSubRegion([self.rowOffset, \
-                                self.rowOffset + self.nRows - 1], \
-                               [self.colOffset, \
-                                self.colOffset + self.nCols - 1], \
+        return self.parent.read_subregion([self.row_offset, \
+                                self.row_offset + self.nrows - 1], \
+                               [self.col_offset, \
+                                self.col_offset + self.ncols - 1], \
                                [band])
 
-    def readBands(self, bands):
+    def read_bands(self, bands):
         '''Reads multiple bands from the image.
 	
 	Arguments:
@@ -425,13 +428,13 @@ class SubImage(SpyFile):
 		are the number of rows & columns in the image and `L` equals
 		len(`bands`).
 	'''
-        return self.parent.readSubRegion([self.rowOffset, \
-                                self.rowOffset + self.nRows - 1], \
-                               [self.colOffset, \
-                                self.colOffset + self.nCols - 1], \
+        return self.parent.read_subregion([self.row_offset, \
+                                self.row_offset + self.nrows - 1], \
+                               [self.col_offset, \
+                                self.col_offset + self.ncols - 1], \
                                bands)
 
-    def readPixel(self, row, col):
+    def read_pixel(self, row, col):
         '''Reads the pixel at position (row,col) from the file.
 	
 	Arguments:
@@ -446,10 +449,10 @@ class SubImage(SpyFile):
 	   
 		A length-`B` array, where `B` is the number of bands in the image.
 	'''
-        return self.parent.readPixel(row + self.rowOffset, \
-                                col + self.colOffset)
+        return self.parent.read_pixel(row + self.row_offset, \
+                                col + self.col_offset)
 
-    def readSubImage(self, rows, cols, bands = []):
+    def read_subimage(self, rows, cols, bands = []):
         '''
 	Reads arbitrary rows, columns, and bands from the image.
 	
@@ -475,21 +478,21 @@ class SubImage(SpyFile):
 		An `MxNxL` array, where `M` = len(`rows`), `N` = len(`cols`),
 		and `L` = len(bands) (or # of image bands if `bands` == None).
         '''
-        return self.parent.readSubImage(list(array(rows) + self.rowOffset), \
-                                        list(array(cols) + self.colOffset), \
+        return self.parent.read_subimage(list(array(rows) + self.row_offset), \
+                                        list(array(cols) + self.col_offset), \
                                         bands)
 
-    def readSubRegion(self, rowBounds, colBounds, bands = None):
+    def read_subregion(self, row_bounds, col_bounds, bands = None):
         '''
         Reads a contiguous rectangular sub-region from the image.
 	
 	Arguments:
 	
-	    `rowBounds` (2-tuple of ints):
+	    `row_bounds` (2-tuple of ints):
 	    
 		(a, b) -> Rows a through b-1 will be read.
 	
-	    `colBounds` (2-tuple of ints):
+	    `col_bounds` (2-tuple of ints):
 	    
 		(a, b) -> Columnss a through b-1 will be read.
 	    
@@ -504,11 +507,11 @@ class SubImage(SpyFile):
 	   
 		An `MxNxL` array.
         '''
-        return self.parent.readSubImage(list(array(rowBounds) + self.rowOffset), \
-                                        list(array(colBounds) + self.colOffset), \
+        return self.parent.read_subimage(list(array(row_bounds) + self.row_offset), \
+                                        list(array(col_bounds) + self.col_offset), \
                                         bands)
 
-def transformImage(matrix, img):
+def transform_image(matrix, img):
     '''Applies a linear transform to an image.
     
     Arguments:
@@ -563,7 +566,7 @@ class TransformedImage(Image):
             raise Exception('Transformation matrix has invalid shape.')
 
         params = img.params()
-        self.setParams(params, params.metadata)
+        self.set_params(params, params.metadata)
 
 
         # If img is also a TransformedImage, then just modify the transform
@@ -577,12 +580,12 @@ class TransformedImage(Image):
         else:
             self.matrix = matrix
             self.image = img
-            if matrix.shape[1] != img.nBands:
+            if matrix.shape[1] != img.nbands:
                 raise 'Invalid shape for transformation matrix.'
             # Set shape to what it will be after linear transformation
             self.shape = [img.shape[0], img.shape[1], matrix.shape[0]]
 
-        self.nBands = matrix.shape[0]
+        self.nbands = matrix.shape[0]
 
     def __getitem__(self, args):
         '''
@@ -595,14 +598,14 @@ class TransformedImage(Image):
 
         # Note that band indices are wrt transformed features
         if len(args) == 2 or args[2] == None:
-            bands = range(self.nBands)
+            bands = range(self.nbands)
         elif type(args[2]) == slice:
             (zstart, zstop, zstep) = (args[2].start, args[2].stop, \
                                       args[2].step)
             if zstart == None:
                 zstart = 0
             if zstop == None:
-                zstop = self.nBands
+                zstop = self.nbands
             if zstep == None:
                 zstep = 1
             bands = range(zstart, zstop, zstep)
@@ -633,8 +636,8 @@ class TransformedImage(Image):
         return transformed
 
 
-    def readPixel(self, row, col):
-        return numpy.dot(self.matrix, self.image.readPixel(row, col))                       
+    def read_pixel(self, row, col):
+        return numpy.dot(self.matrix, self.image.read_pixel(row, col))                       
                    
     def load(self):
 	'''Loads all the image data, transforms it, and returns it in a numpy array).'''
@@ -645,7 +648,7 @@ class TransformedImage(Image):
 		xdata[i, j] = numpy.dot(self.matrix, data[i, j])
 	return xdata
 	
-    def readSubRegion(self, rowBounds, colBounds, bands = None):
+    def read_subregion(self, row_bounds, col_bounds, bands = None):
         '''
         Reads a contiguous rectangular sub-region from the image. First
         arg is a 2-tuple specifying min and max row indices.  Second arg
@@ -653,7 +656,7 @@ class TransformedImage(Image):
         of band indices is not given, all bands are read.
         '''
         from numpy import zeros, dot
-        orig = self.image.readSubRegion(rowBounds, colBounds)
+        orig = self.image.read_subregion(row_bounds, col_bounds)
         transformed = zeros([orig.shape[0], orig.shape[1], self.shape[2]], self._typecode)
         for i in range(transformed.shape[0]):
             for j in range(transformed.shape[1]):
@@ -664,7 +667,7 @@ class TransformedImage(Image):
             return transformed
 
 
-    def readSubImage(self, rows, cols, bands = None):
+    def read_subimage(self, rows, cols, bands = None):
         '''
         Reads a sub-image from a rectangular region within the image.
         First arg is a 2-tuple specifying min and max row indices.
@@ -672,7 +675,7 @@ class TransformedImage(Image):
         containing list of band indices is not given, all bands are read.
         '''
         from numpy import zeros, dot
-        orig = self.image.readSubImage(rows, cols)
+        orig = self.image.read_subimage(rows, cols)
         transformed = zeros([orig.shape[0], orig.shape[1], self.shape[2]], self._typecode)
         for i in range(transformed.shape[0]):
             for j in range(transformed.shape[1]):
@@ -682,15 +685,15 @@ class TransformedImage(Image):
         else:
             return transformed
 
-    def readDatum(self, i, j, k):
-        return numpy.take(self.readPixel(i, j), k)
+    def read_datum(self, i, j, k):
+        return numpy.take(self.read_pixel(i, j), k)
 
-    def readBands(self, bands):
-        shape = (self.image.nRows, self.image.nCols, self.nBands)
+    def read_bands(self, bands):
+        shape = (self.image.nrows, self.image.ncols, self.nbands)
         data = numpy.zeros(shape, float)
         for i in range(shape[0]):
             for j in range(shape[1]):
-                data[i, j] = numpy.take(self.readPixel(i, j), bands)
+                data[i, j] = numpy.take(self.read_pixel(i, j), bands)
         return data
     
     def typecode(self):
@@ -707,3 +710,12 @@ def typecode(obj):
 	return obj.dtype.char
     else:
 	return obj.typecode()
+
+# Deprecated Functions
+
+def transformImage(matrix, img):
+    warn('transformImage has been deprecated.  Use transform_image.',
+	 DeprecationWarning)
+    return transform_image(matrix, img)
+
+

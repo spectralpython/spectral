@@ -107,40 +107,40 @@ def open(file):
     '''
 
     from bilfile import BilFile
-    from spyfile import findFilePath
+    from spyfile import find_file_path
 
     # ERDAS 7.5 headers do not specify byte order so we'll guess little endian.
     # If any of the parameters look weird, we'll try again with big endian.
     
     class Params: pass
     p = Params()
-    p.byteOrder = 0
+    p.byte_order = 0
 
-    lh = readErdasLanHeader(findFilePath(file))
-    if lh["nBands"] < 0 or lh["nBands"] > 512 or \
-       lh["nCols"] < 0 or lh["nCols"] > 10000 or \
-       lh["nRows"] < 0 or lh["nRows"] > 10000:
-	  p.byteOrder = 1
-	  lh = readErdasLanHeader(findFilePath(file), 1)
+    lh = read_erdas_lan_header(find_file_path(file))
+    if lh["nbands"] < 0 or lh["nbands"] > 512 or \
+       lh["ncols"] < 0 or lh["ncols"] > 10000 or \
+       lh["nrows"] < 0 or lh["nrows"] > 10000:
+	  p.byte_order = 1
+	  lh = read_erdas_lan_header(find_file_path(file), 1)
 
-    p.fileName = file
-    p.nBands = lh["nBands"]
-    p.nCols = lh["nCols"]
-    p.nRows = lh["nRows"]
+    p.filename = file
+    p.nbands = lh["nbands"]
+    p.ncols = lh["ncols"]
+    p.nrows = lh["nrows"]
     p.offset = 128
     if lh["packing"] == 2:
-	lh["typeCode"] = 'h'
+	lh["typecode"] = 'h'
         p.format = 'h'
         p.typecode = 'h'
     else:
-	lh["typeCode"] = 'b'
+	lh["typecode"] = 'b'
         p.format = 'b'
         p.typecode = 'b'
     
     return BilFile(p, lh)    
 
 
-def readErdasLanHeader(fileName, byteOrder=0):
+def read_erdas_lan_header(fileName, byte_order=0):
     '''Read parameters from a lan file header.
     
     Arguments:
@@ -149,7 +149,7 @@ def readErdasLanHeader(fileName, byteOrder=0):
 	
 	    File to open.
 	
-	byteOrder (int) [default 0]:
+	byte_order (int) [default 0]:
 	
 	    Specifies whether to read as little (0) or big (1) endian.
     '''
@@ -185,7 +185,7 @@ def readErdasLanHeader(fileName, byteOrder=0):
     word.fromfile(f, 1)
     float.fromfile(f, 5)
     
-    if byteOrder != spectral.byteOrder:
+    if byte_order != spectral.byte_order:
 	word.byteswap()
 	dword.byteswap()
 	float.byteswap()
@@ -193,35 +193,41 @@ def readErdasLanHeader(fileName, byteOrder=0):
     # Unpack all header data
     h["packing"] = word.pop(0)
     if h["packing"] == 2:
-	h["typeCode"] = 'h'
+	h["typecode"] = 'h'
     elif h["packing"] == 1:
 	raise Exception('4-bit data type not supported in SPy ERDAS/Lan format handler.')
     elif h["packing"] == 0:
-	h["typeCode"] = 'b'
+	h["typecode"] = 'b'
     else:
 	raise Exception('Unexpected data type specified in ERDAS/Lan header.')
-    h["nBands"] = word.pop(0)
+    h["nbands"] = word.pop(0)
 
     if h["type"] == 'HEAD74':
-	h["nCols"] = dword.pop(0)
-	h["nRows"] = dword.pop(0)
-	h["pixelXCoord"] = dword.pop(0)
-	h["pixelYCoord"] = dword.pop(0)
+	h["ncols"] = dword.pop(0)
+	h["nrows"] = dword.pop(0)
+	h["pixel_xcoord"] = dword.pop(0)
+	h["pixel_ycoord"] = dword.pop(0)
     else:
-	h["nCols"] = int(float.pop(0))
-	h["nRows"] = int(float.pop(0))
-	h["pixelXCoord"] = float.pop(0)
-	h["pixelYCoord"] = float.pop(0)
+	h["ncols"] = int(float.pop(0))
+	h["nrows"] = int(float.pop(0))
+	h["pixel_xcoord"] = float.pop(0)
+	h["pixel_ycoord"] = float.pop(0)
 
-    h["mapType"] = word.pop(0)
-    h["nClasses"] = word.pop(0)
-    h["areaUnit"] = word.pop(0)
-    h["yPixelSize"] = float.pop()
-    h["xPixelSize"] = float.pop()
-    h["mapYCoord"] = float.pop()
-    h["mapXCoord"] = float.pop()
-    h["nAreaUnits"] = float.pop()
+    h["map_type"] = word.pop(0)
+    h["nclasses"] = word.pop(0)
+    h["area_unit"] = word.pop(0)
+    h["ypixel_size"] = float.pop()
+    h["xpixel_size"] = float.pop()
+    h["map_ycoord"] = float.pop()
+    h["map_xcoord"] = float.pop()
+    h["narea_units"] = float.pop()
 
     f.close()
 
     return h
+
+def readErdasLanHeader(fileName, byte_order=0):
+    warn('readErdasLanHeader has been deprecated.  Use read_erdas_lan_header.',
+	 DeprecationWarning)
+    return read_erdas_lan_header(fileName, byte_order)
+

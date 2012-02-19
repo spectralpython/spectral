@@ -46,7 +46,7 @@ class BsqFile(SpyFile):
             metadata = {}
         SpyFile.__init__(self, params, metadata)        
 
-    def readBand(self, band):
+    def read_band(self, band):
         '''Reads a single band from the image.
 	
 	Arguments:
@@ -65,24 +65,24 @@ class BsqFile(SpyFile):
         import numpy.oldnumeric as Numeric
 
         vals = array(self.format)
-        offset = self.offset + band * self.sampleSize * self.nRows *self.nCols
+        offset = self.offset + band * self.sample_size * self.nrows *self.ncols
 
         f = self.fid
         
         # Pixel format is BSQ, so read the whole band at once.
         f.seek(offset, 0)
-        vals.fromfile(f, self.nRows * self.nCols)
+        vals.fromfile(f, self.nrows * self.ncols)
 
         if self.swap:
             vals.byteswap()
         arr = Numeric.array(vals.tolist())
-        arr = Numeric.reshape(arr, (self.nRows, self.nCols))
+        arr = Numeric.reshape(arr, (self.nrows, self.ncols))
 
-	if self.scaleFactor != 1:
-	    return arr / float(self.scaleFactor)
+	if self.scale_factor != 1:
+	    return arr / float(self.scale_factor)
         return arr
 
-    def readBands(self, bands):
+    def read_bands(self, bands):
         '''Reads multiple bands from the image.
 	
 	Arguments:
@@ -112,30 +112,30 @@ class BsqFile(SpyFile):
         na = Numeric.array(ta.tolist())
         arrType = na.dtype.char
 
-        arr = Numeric.zeros((self.nRows, self.nCols, len(bands)), arrType)
+        arr = Numeric.zeros((self.nrows, self.ncols, len(bands)), arrType)
 
         for j in range(len(bands)):
   
             vals = array(self.format)
-            offset = self.offset + (bands[j]) * self.sampleSize \
-                     * self.nRows * self.nCols
+            offset = self.offset + (bands[j]) * self.sample_size \
+                     * self.nrows * self.ncols
 
             # Pixel format is BSQ, so read an entire band at time.
             f.seek(offset, 0)
-            vals.fromfile(f, self.nRows * self.nCols)
+            vals.fromfile(f, self.nrows * self.ncols)
 
             if self.swap:
                 vals.byteswap()
             bandArr = Numeric.array(vals.tolist())
-            bandArr = Numeric.reshape(bandArr, (self.nRows, self.nCols))
+            bandArr = Numeric.reshape(bandArr, (self.nrows, self.ncols))
             arr[:,:,j] = bandArr
 
-	if self.scaleFactor != 1:
-	    return arr / float(self.scaleFactor)
+	if self.scale_factor != 1:
+	    return arr / float(self.scale_factor)
         return arr
 
 
-    def readPixel(self, row, col):
+    def read_pixel(self, row, col):
         '''Reads the pixel at position (row,col) from the file.
 	
 	Arguments:
@@ -155,19 +155,19 @@ class BsqFile(SpyFile):
         import numpy.oldnumeric as Numeric
 
         vals = array(self.format)
-        delta = self.sampleSize * (self.nBands - 1)
-        offset = self.offset + row * self.nBands * self.nCols \
-                 * self.sampleSize + col * self.sampleSize
+        delta = self.sample_size * (self.nbands - 1)
+        offset = self.offset + row * self.nbands * self.ncols \
+                 * self.sample_size + col * self.sample_size
 
         f = self.fid
-        nPixels = self.nRows * self.nCols
+        nPixels = self.nrows * self.ncols
 
-        nCols = self.nCols
-        sampleSize = self.sampleSize
+        ncols = self.ncols
+        sampleSize = self.sample_size
         bandSize = sampleSize * nPixels
-        rowSize = sampleSize * self.nCols
+        rowSize = sampleSize * self.ncols
 
-        for i in range(self.nBands):
+        for i in range(self.nbands):
             f.seek(self.offset \
                    + i * bandSize\
                    + row * rowSize \
@@ -178,21 +178,21 @@ class BsqFile(SpyFile):
             vals.byteswap()
         pixel = Numeric.array(vals.tolist(), self._typecode)
 
-	if self.scaleFactor != 1:
-	    return pixel / float(self.scaleFactor)
+	if self.scale_factor != 1:
+	    return pixel / float(self.scale_factor)
         return pixel
 
-    def readSubRegion(self, rowBounds, colBounds, bands = None):
+    def read_subregion(self, row_bounds, col_bounds, bands = None):
         '''
         Reads a contiguous rectangular sub-region from the image.
 	
 	Arguments:
 	
-	    `rowBounds` (2-tuple of ints):
+	    `row_bounds` (2-tuple of ints):
 	    
 		(a, b) -> Rows a through b-1 will be read.
 	
-	    `colBounds` (2-tuple of ints):
+	    `col_bounds` (2-tuple of ints):
 	    
 		(a, b) -> Columnss a through b-1 will be read.
 	    
@@ -209,12 +209,10 @@ class BsqFile(SpyFile):
         '''
 
         from array import array
-        import numpy.oldnumeric as Numeric
+	import numpy as np
 
-        nSubRows = rowBounds[1] - rowBounds[0]  # Rows in sub-image
-        nSubCols = colBounds[1] - colBounds[0]  # Cols in sub-image
-        d_row = self.sampleSize * self.nCols * self.nBands
-        colStartPos = colBounds[0] * self.sampleSize
+        nSubRows = row_bounds[1] - row_bounds[0]  # Rows in sub-image
+        nSubCols = col_bounds[1] - col_bounds[0]  # Cols in sub-image
 
         f = self.fid
         f.seek(self.offset, 0)
@@ -222,48 +220,46 @@ class BsqFile(SpyFile):
         # Get the type of the Numeric array (must be a better way)
         ta = array(self.format)
         ta.fromfile(f, 1)
-        na = Numeric.array(ta.tolist())
+        na = np.array(ta.tolist())
         arrType = na.dtype.char
 
         # Increments between bands
         if bands == None:
             # Read all bands.
-            bands = range(self.nBands)
+            bands = range(self.nbands)
 
-        arr = Numeric.zeros((nSubRows, nSubCols, len(bands)), arrType)
+        arr = np.zeros((nSubRows, nSubCols, len(bands)), arrType)
 
-        nRows = self.nRows
-        nCols = self.nCols
-        sampleSize = self.sampleSize
-        bandSize = nRows * nCols * sampleSize
-        sampleSize = self.sampleSize
-        colStartOffset = colBounds[0] * sampleSize
-        rowSize = nCols * sampleSize
-        rowStartOffset = rowBounds[0] * nCols * sampleSize
+        nrows = self.nrows
+        ncols = self.ncols
+        sampleSize = self.sample_size
+        bandSize = nrows * ncols * sampleSize
+        colStartOffset = col_bounds[0] * sampleSize
+        rowSize = ncols * sampleSize
+        rowStartOffset = row_bounds[0] * rowSize
         nSubBands = len(bands)
 
         # Pixel format is BSQ
         for i in bands:
             vals = array(self.format)
             bandOffset = i * bandSize
-            for j in range(rowBounds[0], rowBounds[1]):
+            for j in range(row_bounds[0], row_bounds[1]):
                 f.seek(self.offset \
                        + bandOffset \
-                       + rowStartOffset + j * rowSize \
+                       + j * rowSize \
                        + colStartOffset, 0)
                 vals.fromfile(f, nSubCols)
             if self.swap:
                 vals.byteswap()
-            subArray = Numeric.array(vals.tolist())
-            subArray = Numeric.reshape(subArray, (nSubRows, nSubCols))
-            arr[:,:,i] = Numeric.transpose(subArray)
+            subArray = np.array(vals.tolist()).reshape((nSubRows, nSubCols))
+            arr[:,:,i] = subArray
 
-	if self.scaleFactor != 1:
-	    return arr / float(self.scaleFactor)
+	if self.scale_factor != 1:
+	    return arr / float(self.scale_factor)
         return arr
     
 
-    def readSubImage(self, rows, cols, bands = None):
+    def read_subimage(self, rows, cols, bands = None):
         '''
 	Reads arbitrary rows, columns, and bands from the image.
 	
@@ -295,9 +291,9 @@ class BsqFile(SpyFile):
 
         nSubRows = len(rows)                        # Rows in sub-image
         nSubCols = len(cols)                        # Cols in sub-image
-        d_col = self.sampleSize
-        d_band = d_col * self.nCols
-        d_row = d_band * self.nBands
+        d_col = self.sample_size
+        d_band = d_col * self.ncols
+        d_row = d_band * self.nbands
 
         f = self.fid
         f.seek(self.offset, 0)
@@ -311,7 +307,7 @@ class BsqFile(SpyFile):
         # Increments between bands
         if bands == None:
             # Read all bands.
-            bands = range(self.nBands)
+            bands = range(self.nbands)
         nSubBands = len(bands)
 
         arr = Numeric.zeros((nSubRows, nSubCols, nSubBands), arrType)
@@ -319,12 +315,12 @@ class BsqFile(SpyFile):
         offset = self.offset
         vals = array(self.format)
 
-        nRows = self.nRows
-        nCols = self.nCols
-        sampleSize = self.sampleSize
-        bandSize = nRows * nCols * sampleSize
-        sampleSize = self.sampleSize
-        rowSize = nCols * sampleSize
+        nrows = self.nrows
+        ncols = self.ncols
+        sampleSize = self.sample_size
+        bandSize = nrows * ncols * sampleSize
+        sampleSize = self.sample_size
+        rowSize = ncols * sampleSize
 
         # Pixel format is BSQ
         for i in bands:
@@ -339,13 +335,14 @@ class BsqFile(SpyFile):
         if self.swap:
             vals.byteswap()
         subArray = Numeric.array(vals.tolist())
-        subArray = Numeric.reshape(subArray, (nSubRows, nSubCols, nSubBands))
+        subArray = Numeric.reshape(subArray, (nSubBands, nSubRows, nSubCols))
+	subArray = Numeric.transpose(subArray, (1, 2, 0))
 
-	if self.scaleFactor != 1:
-	    return subArray / float(self.scaleFactor)
+	if self.scale_factor != 1:
+	    return subArray / float(self.scale_factor)
         return subArray
 
-    def readDatum(self, i, j, k):
+    def read_datum(self, i, j, k):
         '''Reads the band `k` value for pixel at row `i` and column `j`.
 	
 	Arguments:
@@ -359,19 +356,19 @@ class BsqFile(SpyFile):
 	'''
         import array
 
-        nRows = self.nRows
-        nCols = self.nCols
-        sampleSize = self.sampleSize
+        nrows = self.nrows
+        ncols = self.ncols
+        sampleSize = self.sample_size
 
         self.fid.seek(self.offset \
-                      + (k * nRows * nCols \
-                         + i * nCols \
+                      + (k * nrows * ncols \
+                         + i * ncols \
                          + j) * sampleSize, 0)
         vals = array.array(self.format)
         vals.fromfile(self.fid, 1)
         if self.swap:
             vals.byteswap()
-        return vals.tolist()[0] / float(self.scaleFactor)
+        return vals.tolist()[0] / float(self.scale_factor)
 
         
 

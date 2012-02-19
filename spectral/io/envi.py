@@ -43,7 +43,7 @@ extension that SPy can not identify.
 .. [#envi-trademark] ENVI is a registered trademark of ITT Corporation.
 '''
 
-def readEnviHdr(file):
+def read_envi_header(file):
     '''
     USAGE: hdr = readEnviHeader(file)
 
@@ -125,21 +125,21 @@ def open(file, image = None):
 
     import os
     from exceptions import IOError, TypeError
-    from spyfile import findFilePath
+    from spyfile import find_file_path
     import numpy
     import spectral
 
-    headerPath = findFilePath(file)
-    h = readEnviHdr(headerPath)
+    headerPath = find_file_path(file)
+    h = read_envi_header(headerPath)
     h["header file"] = file
 
     class Params: pass
     p = Params()
-    p.nBands = int(h["bands"])
-    p.nRows = int(h["lines"])
-    p.nCols = int(h["samples"])
+    p.nbands = int(h["bands"])
+    p.nrows = int(h["lines"])
+    p.ncols = int(h["samples"])
     p.offset = int(h["header offset"])
-    p.byteOrder = int(h["byte order"])
+    p.byte_order = int(h["byte order"])
 
     inter = h["interleave"]
 
@@ -160,7 +160,7 @@ def open(file, image = None):
                     break
         if not image:
             raise IOError, 'Unable to determine image file name.'
-    p.fileName = image
+    p.filename = image
 
     #  Determine numeric data type
     if h["data type"] == '1':
@@ -215,9 +215,9 @@ def open(file, image = None):
 
     if h.get('file type') == 'ENVI Spectral Library':
 	# File is a spectral library
-	data = numpy.fromfile(p.fileName, p.format, p.nCols * p.nRows)
-	data.shape = (p.nRows, p.nCols)
-	if (p.byteOrder != spectral.byteOrder):
+	data = numpy.fromfile(p.filename, p.format, p.ncols * p.nrows)
+	data.shape = (p.nrows, p.ncols)
+	if (p.byte_order != spectral.byte_order):
 	    data = data.byteswap()
 	return SpectralLibrary(data, h, p)
     
@@ -233,7 +233,7 @@ def open(file, image = None):
         from spectral.io.bsqfile import BsqFile
         img = BsqFile(p, h)
     
-    img.scaleFactor = float(h.get('reflectance scale factor', 1.0))
+    img.scale_factor = float(h.get('reflectance scale factor', 1.0))
     
     # Add band info
     
@@ -247,7 +247,7 @@ def open(file, image = None):
 	    img.bands.bandwidths = [float(f) for f in h['fwhm']]
 	except:
 	    pass
-    img.bands.bandUnit = h.get('wavelength units', "")
+    img.bands.band_unit = h.get('wavelength units', "")
     img.bands.bandQuantity = "Wavelength"
     
     return img
@@ -292,7 +292,7 @@ class SpectralLibrary:
 	    self.names = header['spectra names']
 	else:
 	    self.names = [''] * self.bands.shape[0]
-	self.bands.bandUnit = header.get('wavelength units', "")
+	self.bands.band_unit = header.get('wavelength units', "")
 	self.bands.bandQuantity = "Wavelength"
 	self.params = params
 	self.metadata = {}
@@ -328,33 +328,42 @@ class SpectralLibrary:
 	meta['header offset'] = 0
 	meta['data type'] = 4		# 32-bit float
 	meta['interleave'] = 'bsq'
-	meta['byte order'] = spectral.byteOrder
-	meta['wavelength units'] = self.bands.bandUnit
+	meta['byte order'] = spectral.byte_order
+	meta['wavelength units'] = self.bands.band_unit
 	meta['spectra names'] = [str(n) for n in self.names]
 	meta['wavelength'] = self.bands.centers
 	meta['fwhm'] = self.bands.bandwidths
 	if (description):
 	    meta['description'] = description
-	writeEnviHdr(fileBaseName + '.hdr', meta, True)
+	write_envi_header(fileBaseName + '.hdr', meta, True)
 	fout = __builtin__.open(fileBaseName + '.sli', 'wb')
 	self.spectra.astype('f').tofile(fout)
 	fout.close()
 
-def _writeHeaderParam(fout, paramName, paramVal):
+def _write_header_param(fout, paramName, paramVal):
     if not isinstance(paramVal, str) and hasattr(paramVal, '__len__'):
 	valStr = '{ %s }' % (' , '.join([str(v).replace(',', '-') for v in paramVal]),)
     else:
 	valStr = str(paramVal)
     fout.write('%s = %s\n' % (paramName, valStr))
 	
-def writeEnviHdr(fileName, headerDict, isLibrary = False):
+def write_envi_header(fileName, header_dict, is_library = False):
     import __builtin__
     fout = __builtin__.open(fileName, 'w')
     d = {}
-    d.update(headerDict)
+    d.update(header_dict)
     d['file type'] = 'ENVI Spectral Library'
     fout.write('ENVI\n')
     for k in d:
-	_writeHeaderParam(fout, k, d[k])
+	_write_header_param(fout, k, d[k])
     fout.close()
     
+def readEnviHdr(file):
+    warn('readEnviHdr has been deprecated.  Use read_envi_header.',
+	 DeprecationWarning)
+    return read_envi_header(file)
+
+def writeEnviHdr(fileName, header_dict, is_library = False):
+    warn('writeEnviHdr has been deprecated.  Use write_envi_header.',
+	 DeprecationWarning)
+    return write_envi_header(fileName, header_dict, is_library)

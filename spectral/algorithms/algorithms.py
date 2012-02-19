@@ -34,6 +34,9 @@ Various functions and algorithms for processing spectral data.
 '''
 import numpy
 
+from exceptions import DeprecationWarning
+from warnings import warn
+
 class Iterator:
     '''
     Base class for iterators over pixels (spectra).
@@ -42,10 +45,10 @@ class Iterator:
         pass
     def __iter__(self):
         raise NotImplementedError('Must override __iter__ in child class.')
-    def getNumElements(self):
-        raise NotImplementedError('Must override getNumElements in child class.')
-    def getNumBands(self):
-        raise NotImplementedError('Must override getNumBands in child class.')
+    def get_num_elements(self):
+        raise NotImplementedError('Must override get_num_elements in child class.')
+    def get_num_bands(self):
+        raise NotImplementedError('Must override get_num_bands in child class.')
 
 class ImageIterator(Iterator):
     '''
@@ -54,9 +57,9 @@ class ImageIterator(Iterator):
     def __init__(self, im):
         self.image = im
         self.numElements = im.shape[0] * im.shape[1]
-    def getNumElements(self):
+    def get_num_elements(self):
         return self.numElements
-    def getNumBands(self):
+    def get_num_bands(self):
         return self.image.shape[2]
     def __iter__(self):
         from spectral import status
@@ -81,20 +84,20 @@ class ImageMaskIterator(Iterator):
         else:
             self.mask = not_equal(mask, 0)
         self.numElements = sum(self.mask.ravel())
-    def getNumElements(self):
+    def get_num_elements(self):
         return self.numElements
-    def getNumBands(self):
+    def get_num_bands(self):
         return self.image.shape[2]
     def __iter__(self):
         from spectral import status
 	from spectral.io import typecode
         from numpy import transpose, indices, reshape, compress, not_equal
         typechar = typecode(self.image)
-        (nRows, nCols, nBands) = self.image.shape
+        (nrows, ncols, nbands) = self.image.shape
 
         # Translate the mask into indices into the data source
-        inds = transpose(indices((nRows, nCols)), (1, 2, 0))
-        inds = reshape(inds, (nRows * nCols, 2))
+        inds = transpose(indices((nrows, ncols)), (1, 2, 0))
+        inds = reshape(inds, (nrows * ncols, 2))
         inds = compress(not_equal(self.mask.ravel(), 0), inds, 0).astype('h')
 
         for i in range(inds.shape[0]):
@@ -200,18 +203,18 @@ def mean_cov(image, mask = None, index = None):
     else:
         it = image
 
-    nSamples = it.getNumElements()
-    B = it.getNumBands()
+    nSamples = it.get_num_elements()
+    B = it.get_num_bands()
     
     sumX = zeros((B,), 'd')
     sumX2 = zeros((B, B), 'd')
     count = 0
     
     statusInterval = max(1, nSamples / 100)
-    status.displayPercentage('Covariance.....')
+    status.display_percentage('Covariance.....')
     for x in it:
         if not count % statusInterval:
-            status.updatePercentage(float(count) / nSamples * 100.)
+            status.update_percentage(float(count) / nSamples * 100.)
         count += 1
         sumX += x
         x = x[:, newaxis]
@@ -219,7 +222,7 @@ def mean_cov(image, mask = None, index = None):
     mean = sumX / count
     sumX = sumX[:, newaxis]
     cov = (sumX2 - dot(sumX, transpose(sumX)) / float(count)) / float(count - 1)
-    status.endPercentage()
+    status.end_percentage()
     return (mean, cov, count)
 
 def covariance(*args):
@@ -266,13 +269,13 @@ def covariance(*args):
     '''
     return mean_cov(*args)[1]
 
-def principalComponents(image):
+def principal_components(image):
     '''
     Calculate Principal Component eigenvalues & eigenvectors for an image.
 
     Usage::
     
-	(L, V, m, C) = principalComponents(image)
+	(L, V, m, C) = principal_components(image)
 
     Arguments:
     
@@ -314,11 +317,11 @@ def principalComponents(image):
     return (L, V, mean, cov)
 
 
-def linearDiscriminant(classes):
+def linear_discriminant(classes):
     '''
     Solve Fisher's linear discriminant for eigenvalues and eigenvectors.
 
-    Usage: (L, V, Cb, Cw) = linearDiscriminant(classes)
+    Usage: (L, V, Cb, Cw) = linear_discriminant(classes)
     
     Arguments:
     
@@ -376,11 +379,11 @@ def linearDiscriminant(classes):
     mean = None
     for s in classes:
         if mean == None:
-            B = s.numBands
+            B = s.nbands
             mean = zeros(B, float)
 	N += s.size()
         if not hasattr(s, 'stats'):
-            s.calcStatistics()
+            s.calc_stats()
 	mean += s.size() * s.stats.mean
     mean /= float(N)
 
@@ -402,23 +405,24 @@ def linearDiscriminant(classes):
 
     # Diagonalize cov_within in the new space
     v = dot(vecs, dot(cov_w, transpose(vecs)))
-    d = diagonal(v)
+#    d = diagonal(v)
+    d = numpy.sqrt(diagonal(v) * diagonal(v).conj())
     for i in range(vecs.shape[0]):
     	vecs[i, :] /= math.sqrt(d[i].real)
     	
     return (vals.real, vecs.real, cov_b, cov_w)
 
 # Alias for Linear Discriminant Analysis (LDA)
-lda = linearDiscriminant
+lda = linear_discriminant
 
 
-def reduceEigenvectors(L, V, fraction = 0.99):
+def reduce_eigenvectors(L, V, fraction = 0.99):
     '''
     Reduces number of eigenvalues and eigenvectors retained.
 
     Usage::
     
-	(L2, V2) = reduceEigenvectors(L, V [, fraction])
+	(L2, V2) = reduce_eigenvectors(L, V [, fraction])
 
     Arguments:
     
@@ -469,15 +473,15 @@ def reduceEigenvectors(L, V, fraction = 0.99):
     V = V[:i + 1, :]
     return (L, V)
 
-def logDeterminant(x):
+def log_det(x):
     return sum(numpy.log([eigv for eigv in numpy.linalg.eigvals(x) if eigv > 0]))
 
 class GaussianStats:
     def __init__(self):
-        self.numSamples = 0
+        self.nsamples = 0
 
 class TrainingClass:
-    def __init__(self, image, mask, index = 0, classProb = 1.0):
+    def __init__(self, image, mask, index = 0, class_prob = 1.0):
         '''Creates a new training class defined by applying `mask` to `image`.
 	
 	Arguments:
@@ -505,12 +509,12 @@ class TrainingClass:
 		class equal weighting.
         '''
         self.image = image
-        self.numBands = image.shape[2]
+        self.nbands = image.shape[2]
         self.mask = mask
         self.index = index
-        self.classProb = classProb
+        self.class_prob = class_prob
 
-        self._statsValid = 0
+        self._stats_valid = 0
         self._size = 0
 
     def __iter__(self):
@@ -519,7 +523,7 @@ class TrainingClass:
         for i in it:
             yield i
 
-    def statsValid(self, tf):
+    def stats_valid(self, tf):
         '''
         Sets statistics for the TrainingClass to be valid or invalid.
 
@@ -530,7 +534,7 @@ class TrainingClass:
 		A value evaluating to True indicates that statistics should be
 		recalculated prior to being used.
         '''
-        self._statsValid = tf
+        self._stats_valid = tf
 
     def size(self):
         '''Returns the number of pixels/samples in the training set.'''
@@ -538,7 +542,7 @@ class TrainingClass:
 
         # If the stats are invalid, the number of pixels in the
         # training set may have changed.
-        if self._statsValid:
+        if self._stats_valid:
             return self._size
 
         if self.index:
@@ -546,32 +550,32 @@ class TrainingClass:
         else:
             return sum(not_equal(self.mask, 0).ravel())        
 
-    def calcStatistics(self):
+    def calc_stats(self):
         '''
         Calculates statistics for the class.
 	
 	This function causes the :attr:`stats` attribute of the class to be
 	updated, where `stats` will have the following attributes:
 	
-	===========  ======================   ===================================
-	Attribute    Type                          Description
-	===========  ======================   ===================================
-	`mean`	     :class:`numpy.ndarray`   length-`B` mean vector
-	`cov`	     :class:`numpy.ndarray`   `BxB` covariance matrix
-	`invCov`     :class:`numpy.ndarray`   Inverse of `cov`
-	`logDetCov`  float		      Natural log of determinant of `cov`
-	===========  ======================   ===================================
+	=============  ======================   ===================================
+	Attribute      Type                          Description
+	=============  ======================   ===================================
+	`mean`	       :class:`numpy.ndarray`   length-`B` mean vector
+	`cov`	       :class:`numpy.ndarray`   `BxB` covariance matrix
+	`inv_cov`      :class:`numpy.ndarray`   Inverse of `cov`
+	`log_det_cov`  float		        Natural log of determinant of `cov`
+	=============  ======================   ===================================
         '''
         import math
         from numpy.linalg import inv, det
 
         self.stats = GaussianStats()
-        (self.stats.mean, self.stats.cov, self.stats.numSamples) = \
+        (self.stats.mean, self.stats.cov, self.stats.nsamples) = \
                           mean_cov(self.image, self.mask, self.index)
         self.stats.invCov = inv(self.stats.cov)
-        self.stats.logDetCov = logDeterminant(self.stats.cov)
-        self._size = self.stats.numSamples
-        self._statsValid = 1
+        self.stats.log_det_cov = log_det(self.stats.cov)
+        self._size = self.stats.nsamples
+        self._stats_valid = 1
 
     def transform(self, X):
         '''
@@ -594,15 +598,15 @@ class TrainingClass:
 
         self.stats.mean = dot(X, self.stats.mean[:, newaxis])[:, 0]
         self.stats.cov = dot(X, dot(self.stats.cov, transpose(X)))
-        self.stats.invCov = inv(self.stats.cov)
+        self.stats.inv_cov = inv(self.stats.cov)
         
         try:
-            self.stats.logDetCov = math.log(det(self.stats.cov))
+            self.stats.log_det_cov = math.log(det(self.stats.cov))
         except:
-            self.stats.logDetCov = logDeterminant(self.stats.cov)
+            self.stats.log_det_cov = log_det(self.stats.cov)
 
-        self.numBands = X.shape[0]
-        self.image = transformImage(X, self.image)
+        self.nbands = X.shape[0]
+        self.image = transform_image(X, self.image)
 
     def dump(self, fp):
         '''
@@ -613,15 +617,15 @@ class TrainingClass:
         '''
         import pickle
 
-        pickle.dump(self.image.fileName, fp)
+        pickle.dump(self.image.file_name, fp)
         pickle.dump(self.index, fp)
         pickle.dump(self._size, fp)
         pickle.dump(self.classProb, fp)
         DumpArray(self.mask, fp)
         DumpArray(self.stats.mean, fp)
         DumpArray(self.stats.cov, fp)
-        DumpArray(self.stats.invCov, fp)
-        pickle.dump(self.stats.logDetCov, fp)
+        DumpArray(self.stats.inv_cov, fp)
+        pickle.dump(self.stats.log_det_cov, fp)
         
     def load(self, fp):
         '''
@@ -637,13 +641,19 @@ class TrainingClass:
         self.image = pickle.load(fp)
         self.index = pickle.load(fp)
         self._size = pickle.load(fp)
-        self.classProb = pickle.load(fp)
+        self.class_prob = pickle.load(fp)
         self.mask = LoadArray(fp)
         self.stats.mean = LoadArray(fp)
         self.stats.cov = LoadArray(fp)
-        self.stats.invCov = LoadArray(fp)
-        self.stats.logDetCov = pickle.load(fp)
-        self.stats.numSamples = self._size
+        self.stats.inv_cov = LoadArray(fp)
+        self.stats.log_det_cov = pickle.load(fp)
+        self.stats.num_samples = self._size
+
+    # Deprecated methods
+    def calcStatistics(self):
+	warn('TrainingClass.calcStatistics has been deprecated. ' \
+	     + 'Use TrainingClass.calc_stats.', DeprecationWarning)
+	return self.calc_stats()
 
 class SampleIterator:
     '''An iterator over all samples of all classes in a TrainingClassSet object.'''
@@ -658,14 +668,14 @@ class TrainingClassSet:
     '''A class to manage a set of :class:`spectral.algorithms.TrainingClass` objects.'''
     def __init__(self):
         self.classes = {}
-        self.numBands = None
+        self.nbands = None
     def __getitem__(self, i):
         '''Returns the training class having ID i.'''
         return self.classes[i]
     def __len__(self):
 	'''Returns number of training classes in the set.'''
         return len(self.classes)
-    def addClass(self, cl):
+    def add_class(self, cl):
 	'''Adds a new class to the training set.
 	
 	Arguments:
@@ -677,8 +687,8 @@ class TrainingClassSet:
         if self.classes.has_key(cl.index):
             raise Exception('Attempting to add class with duplicate index.')
         self.classes[cl.index] = cl
-        if not self.numBands:
-            self.numBands = cl.numBands
+        if not self.nbands:
+            self.nbands = cl.nbands
 	    
     def transform(self, X):
         '''Applies linear transform, M, to all training classes.
@@ -694,7 +704,7 @@ class TrainingClassSet:
 	'''
         for cl in self.classes.values():
             cl.transform(X)
-        self.numBands = X.shape[0]
+        self.nbands = X.shape[0]
         
     def __iter__(self):
         '''
@@ -702,11 +712,25 @@ class TrainingClassSet:
         '''
         for cl in self.classes.values():
             yield cl
-    def allSamples(self):
+    def all_samples(self):
 	'''Returns an iterator over all samples in all classes of the TrainingClassSet.'''
         return SampleIterator(self)
-        
-def createTrainingClasses(image, classMask, calcStats = 0, indices = None):
+
+    #-------------------
+    # Deprecated methods
+    #-------------------
+    def addClass(self, cl):
+	'''DEPRECATED METHOD'''
+	warn('TrainingClassSet.addClass has been deprecated. '\
+	     + 'Use TrainingClassSet.add_class.', DeprecationWarning)
+	return self.add_class(cl)
+    def allSamples(self):
+	'''DEPRECATED METHOD'''
+	warn('TrainingClassSet.calcStatistics has been deprecated. '\
+	     + 'Use TrainingClassSet.all_samples.', DeprecationWarning)
+	return self.all_samples()
+
+def create_training_classes(image, class_mask, calc_stats = 0, indices = None):
     '''
     Creates a :class:spectral.algorithms.TrainingClassSet: from an indexed array.
 
@@ -719,13 +743,13 @@ def createTrainingClasses(image, classMask, calcStats = 0, indices = None):
 	    The image data for which the training classes will be defined.
 	    `image` has shape `MxNxB`.
 	    
-        `classMask` (:class:`numpy.ndarray`):
+        `class_mask` (:class:`numpy.ndarray`):
 	
 	    A rank-2 array whose elements are indices of various spectral
-	    classes.  if `classMask[i,j]` == `k`, then `image[i,j]` is
+	    classes.  if `class_mask[i,j]` == `k`, then `image[i,j]` is
 	    assumed to belong to class `k`.
 	
-        `calcStats`:
+        `calc_stats`:
 	
 	    An optional parameter which, if True, causes statistics to be
 	    calculated for all training classes.
@@ -739,18 +763,18 @@ def createTrainingClasses(image, classMask, calcStats = 0, indices = None):
     unlabeled and are not added to a training set.
     '''
 
-    classIndices = set(classMask.ravel())
+    class_indices = set(class_mask.ravel())
     classes = TrainingClassSet()
-    for i in classIndices:
+    for i in class_indices:
         if i == 0:
             # Index 0 denotes unlabled pixel
             continue
         elif indices and not i in indices:
             continue
-        cl = TrainingClass(image, classMask, i)
-        if calcStats:
-            cl.calcStatistics()
-        classes.addClass(cl)
+        cl = TrainingClass(image, class_mask, i)
+        if calc_stats:
+            cl.calc_stats()
+        classes.add_class(cl)
     return classes
 
 
@@ -789,11 +813,11 @@ def ndvi(data, red, nir):
     return (n - r) / (n + r)
 
 
-def bhattacharyyaDistance(class1, class2):
+def bdist(class1, class2):
     '''
     Calulates the Bhattacharyya distance between two classes.
 
-    USAGE:  bd = bhattacharyyaDistance(class1, class2)
+    USAGE:  bd = bdist(class1, class2)
 
     Arguments:
     
@@ -809,12 +833,12 @@ def bhattacharyyaDistance(class1, class2):
 	Richards, J.A. & Jia, X. Remote Sensing Digital Image Analysis: An
 	Introduction. (Springer: Berlin, 1999).
     '''
-    terms = bDistanceTerms(class1, class2)
+    terms = bdist_terms(class1, class2)
     return terms[0] + terms[1]
 
-bDistance = bhattacharyyaDistance
+bDistance = bdist
 
-def bDistanceTerms(a, b):
+def bdist_terms(a, b):
     '''
     Calulate the linear and quadratic terms of the Bhattacharyya distance
     between two classes.
@@ -834,17 +858,17 @@ def bDistanceTerms(a, b):
     m = a.stats.mean - b.stats.mean
     avgCov = (a.stats.cov + b.stats.cov) / 2
 
-    linTerm = (1/8.) * dot(transpose(m), \
+    lin_term = (1/8.) * dot(transpose(m), \
         dot(inv(avgCov), m))
 
-    quadTerm = 0.5 * (logDeterminant(avgCov) \
-                      - 0.5 * a.stats.logDetCov \
-                      - 0.5 * b.stats.logDetCov)
+    quad_term = 0.5 * (log_det(avgCov) \
+                      - 0.5 * a.stats.log_det_cov \
+                      - 0.5 * b.stats.log_det_cov)
 
-    return (linTerm, float(quadTerm))
+    return (lin_term, float(quad_term))
 
 
-def transformImage(matrix, image):
+def transform_image(matrix, image):
     '''
     Performs linear transformation on all pixels in an image.
 
@@ -874,14 +898,14 @@ def transformImage(matrix, image):
         return TransformedImage(matrix, image)
     elif isinstance(image, ArrayType):
         (M, N, B) = image.shape
-        xImage = numpy.zeros((M, N, matrix.shape[0]), float)
+        ximage = numpy.zeros((M, N, matrix.shape[0]), float)
         
         for i in range(M):
             for j in range(N):
-                xImage[i, j] = numpy.dot(matrix, image[i, j].astype(float))
-        return xImage
+                ximage[i, j] = numpy.dot(matrix, image[i, j].astype(float))
+        return ximage
     else:
-        raise 'Unrecognized image type passed to transformImage.'
+        raise 'Unrecognized image type passed to transform_image.'
 
 def orthogonalize(vecs, start = 0):
     '''
@@ -966,7 +990,7 @@ def unmix(data, members):
     return unmixed
 
 
-def spectralAngles(data, members):
+def spectral_angles(data, members):
     '''
     Calculates spectral angles of an image with respect to a given set of spectra.
 
@@ -1012,4 +1036,52 @@ def spectralAngles(data, members):
                 angles[i, j, k] = dot(v, m[k])
 
     return arccos(angles)
-            
+
+#---------------------
+# Deprecated functions            
+#---------------------
+
+def principalComponents(image):
+    warn('principalComponents has been deprecated.  Use principal_components.',
+	 DeprecationWarning)
+    return principal_components(image)
+
+def linearDiscriminant(classes):
+    warn('linearDiscriminant has been deprecated.  Use linear_discriminant.',
+	 DeprecationWarning)
+    return linear_discriminant(classes)
+
+def reduceEigenvectors(L, V, fraction = 0.99):
+    warn('reduceEigenvectors has been deprecated.  Use reduce_eigenvectors.',
+	 DeprecationWarning)
+    return reduce_eigenvectors(L, V, fraction)
+
+def logDeterminant(x):
+    warn('logDeterminant has been deprecated.  Use log_det.',
+	 DeprecationWarning)
+    return log_det(x)
+
+def createTrainingClasses(image, class_mask, calc_stats = 0, indices = None):
+    warn('createTrainingClasses has been deprecated. ' \
+	 + 'Use create_training_classes.', DeprecationWarning)
+    return create_training_classes(image, class_mask, calc_stat, indices)
+
+def bhattacharyyaDistance(class1, class2):
+    warn('bhattacharyyaDistance has been deprecated.  Use bdist.',
+	 DeprecationWarning)
+    return bdist(class1, class2)
+
+def bDistanceTerms(a, b):
+    warn('bDistanceTerms has been deprecated.  Use bdist_terms.',
+	 DeprecationWarning)
+    return bdist_terms(image)
+
+def transformImage(matrix, image):
+    warn('transform_image has been deprecated.  Use transform_image.',
+	 DeprecationWarning)
+    return transform_image(matrix, image)
+
+def spectralAngles(data, members):
+    warn('spectralAngles has been deprecated.  Use spectral_angles.',
+	 DeprecationWarning)
+    return spectral_angles(data, members)

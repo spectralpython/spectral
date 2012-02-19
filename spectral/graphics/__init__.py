@@ -30,5 +30,5 @@
 #
 
 
-from graphics import initGraphics, saveImage, view, viewIndexed
+from graphics import init_graphics, save_image, view, view_indexed
 from colorscale import ColorScale

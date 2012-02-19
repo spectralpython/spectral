@@ -65,12 +65,12 @@ def plot(data, source = None):
         pylab.hold(1)
         for i in range(1, s[0]):
             p = pylab.plot(xvals, data[i, :])
-    spectral.xyPlot = p
+    spectral.xyplot = p
     pylab.grid(1)
     if source != None:
-	xlabel = source.bands.bandQuantity
-	if len(source.bands.bandUnit) > 0:
-	    xlabel = xlabel + ' (' + source.bands.bandUnit + ')'
+	xlabel = source.bands.band_quantity
+	if len(source.bands.band_unit) > 0:
+	    xlabel = xlabel + ' (' + source.bands.band_unit + ')'
 	pylab.xlabel(xlabel)  
     return p
        

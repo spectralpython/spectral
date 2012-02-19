@@ -33,7 +33,10 @@
 Common functions for extracting and manipulating data for graphical display.
 '''
 
-def initGraphics():
+from exceptions import DeprecationWarning
+from warnings import warn
+
+def init_graphics():
     '''Initialize default graphics handlers.'''
 
     try:
@@ -53,9 +56,9 @@ def initGraphics():
 	    print "Unable to initialize Gnuplot for plotting."
 	    print "No plotters initialized."
 
-    initWxPython()
+    init_wxpython()
 
-def initWxPython():
+def init_wxpython():
     '''Use wxPython for image display.'''
     import spectral
     import spywxpython
@@ -66,7 +69,7 @@ def initWxPython():
 def initNumTut():
     '''Use NumTut for image display.'''
     import spectral
-    import spynumyut
+    import spynumtut
     spectral.settings.viewer = spynumtut
 
 def view(*args, **kwargs):
@@ -98,9 +101,9 @@ def view(*args, **kwargs):
 	    If `stretch` evaluates True, the highest value in the data source
 	    will be scaled to maximum color channel intensity.
 	
-	`stretchAll` (bool):
+	`stretch_all` (bool):
 	
-	    If `stretchAll` evaluates True, the highest value of the data source
+	    If `stretch_all` evaluates True, the highest value of the data source
 	    in each color channel will be set to maximum intensity.
 	
 	`bounds` (2-tuple of ints):
@@ -124,26 +127,26 @@ def view(*args, **kwargs):
     # Try to init the graphics thread, if it hasn't already been.
     if not settings.viewer:
 	import time
-	initGraphics()
+	init_graphics()
 	print "Initializing graphics handlers..."
 	time.sleep(3)
 	try:
 	    settings.viewer.view(*args, **kwargs)
 	except:
 	    print "Error: Failed to display image.  This may be due to the GUI " \
-		  "thread taking too long to initialize.  Try calling \"initGraphics()\" " \
+		  "thread taking too long to initialize.  Try calling \"init_graphics()\" " \
 		  "to explicitly initialize the GUI thread, then repeat the display command."
     else:
 	settings.viewer.view(*args, **kwargs)
 
 
-def viewIndexed(*args, **kwargs):
+def view_indexed(*args, **kwargs):
     '''
     Opens a window and displays a raster image for the provided color map data.
 
     Usage::
     
-	viewIndexed(data, **kwargs)
+	view_indexed(data, **kwargs)
     
     Arguments:
     
@@ -164,34 +167,34 @@ def viewIndexed(*args, **kwargs):
 	
 	    Text to display in the new window frame.
 
-    The default color palette used is defined by :obj:`spectral.spyColors`.
+    The default color palette used is defined by :obj:`spectral.spy_colors`.
     '''
-    from spectral import settings, spyColors
+    from spectral import settings, spy_colors
 
     if not kwargs.has_key('colors'):
-        kwargs['colors'] = spyColors
+        kwargs['colors'] = spy_colors
 
     # Try to init the graphics thread, if it hasn't already been.
     if not settings.viewer:
 	import time
-	initGraphics()
+	init_graphics()
 	print "Initializing graphics handlers..."
 	time.sleep(3)
 	try:
 	    settings.viewer.view(*args, **kwargs)
 	except:
 	    print "Error: Failed to display image.  This may be due to the GUI " \
-		  "thread taking too long to initialize.  Try calling \"initGraphics()\" " \
+		  "thread taking too long to initialize.  Try calling \"init_graphics()\" " \
 		  "to explicitly initialize the GUI thread, then repeat the display command."
     else:
 	settings.viewer.view(*args, **kwargs)
     
 
-def makePilImage(*args, **kwargs):
+def make_pil_image(*args, **kwargs):
     '''
     Save data as a JPEG image file.
 
-    USAGE: view(source [, bands] [stretch = 1] [stretchAll = 1]
+    USAGE: view(source [, bands] [stretch = 1] [stretch_all = 1]
                 [bounds = (lower, upper)] )
 
     source is the data source and can be either a SpyFile object or a
@@ -201,19 +204,19 @@ def makePilImage(*args, **kwargs):
     bands" item.  Otherwise, the first, middle and last band will be
     displayed. If stretch is defined, the image data will be scaled
     so that the maximum value in the display data will be 1. If
-    stretchAll is defined, each color channel will be scaled separately
+    stretch_all is defined, each color channel will be scaled separately
     so that its maximum value is 1. If bounds is specified, the data will
     be scaled so that lower and upper correspond to 0 and 1, respectively
     . Any values outside of the range (lower, upper) will be clipped.
     '''
 
-    from graphics import getImageDisplayData
+    from graphics import get_image_display_data
     import numpy
     from numpy.oldnumeric import transpose
     import StringIO
     import Image, ImageDraw
 
-    rgb = apply(getImageDisplayData, args, kwargs)
+    rgb = apply(get_image_display_data, args, kwargs)
 
     if not kwargs.has_key("colors"):
         rgb = (rgb * 255).astype(numpy.ubyte)
@@ -231,13 +234,13 @@ def makePilImage(*args, **kwargs):
 
     return im
     
-def saveImage(*args, **kwargs):
+def save_image(*args, **kwargs):
     '''
     Saves a viewable image to a JPEG (or other format) file.
 
     Usage::
     
-	saveImage(data, bands=None, **kwargs)
+	save_image(data, bands=None, **kwargs)
     
     Arguments:
     
@@ -270,7 +273,7 @@ def saveImage(*args, **kwargs):
 	
 	    If this keyword is provided, `data` is interpeted to be a color map
 	    into the `colors` color palette. This is the same `colors` keyword
-	    used by the :func:`spectral.viewIndexed` function. The parameter
+	    used by the :func:`spectral.view_indexed` function. The parameter
 	    is a list of 3-tuples defining RGB values, where R, G, and B are
 	    in the range [0-255].
 	    
@@ -279,9 +282,9 @@ def saveImage(*args, **kwargs):
 	    If `stretch` evaluates True, the highest value in the data source
 	    will be scaled to maximum color channel intensity.
 	
-	`stretchAll` (bool):
+	`stretch_all` (bool):
 	
-	    If `stretchAll` evaluates True, the highest value of the data source
+	    If `stretch_all` evaluates True, the highest value of the data source
 	    in each color channel will be set to maximum intensity.
 	
 	`bounds` (2-tuple of ints):
@@ -292,24 +295,24 @@ def saveImage(*args, **kwargs):
     
 	Save a color view of an image by specifying RGB band indices::
 	
-	    saveImage('rgb.jpg', img, [29, 19, 9]])
+	    save_image('rgb.jpg', img, [29, 19, 9]])
 	
 	Save the same image as **png**::
 	
-	    saveImage('rgb.jpg', img, [29, 19, 9]], format='png')
+	    save_image('rgb.jpg', img, [29, 19, 9]], format='png')
 	
 	Save classification results using the default color palette (note that
 	the color palette must be passed explicitly for `clMap` to be
 	interpreted as a color map)::
 	
-	    saveImage('results.jpg', clMap, colors=spectral.spyColors)
+	    save_image('results.jpg', clMap, colors=spectral.spy_colors)
 
 	
 	
 	
     '''
 
-    im = apply(makePilImage, args[1:], kwargs)
+    im = apply(make_pil_image, args[1:], kwargs)
 
     if kwargs.has_key("format"):
         fmt = kwargs["format"]
@@ -318,12 +321,12 @@ def saveImage(*args, **kwargs):
         
     im.save(args[0], fmt, quality = 100)    
 
-def getImageDisplayData(source, bands = None, **kwargs):
+def get_image_display_data(source, bands = None, **kwargs):
     '''
     Extract RGB data to be displayed from a SpyImage or NumPy array.
 
-    USAGE: rgb = getImageDisplayData(source [, bands] [stretch = 1]
-                    [stretchAll = 1] [bounds = (lower, upper)] )
+    USAGE: rgb = get_image_display_data(source [, bands] [stretch = 1]
+                    [stretch_all = 1] [bounds = (lower, upper)] )
 
     source is the data source and can be either a SpyFile object or a
     NumPy array.  bands is an optional list which specifies the RGB
@@ -332,7 +335,7 @@ def getImageDisplayData(source, bands = None, **kwargs):
     bands" item.  Otherwise, the first, middle and last band will be
     displayed. If stretch is defined, the contents of rgb will be scaled
     so that the maximum value in the display data will be 1. If
-    stretchAll is defined, each color channel will be scaled separately
+    stretch_all is defined, each color channel will be scaled separately
     so that its maximum value is 1. If bounds is specified, the data will
     be scaled so that lower and upper correspond to 0 and 1, respectively
     . Any values outside of the range (lower, upper) will be clipped.
@@ -358,13 +361,13 @@ def getImageDisplayData(source, bands = None, **kwargs):
                     bands = map(int, source.metadata['default bands'])
                 except:
                     pass
-            elif source.nBands == 1:
+            elif source.nbands == 1:
                 bands = [0]
         if len(bands) == 0:
             # Pick the first, middle, and last bands
-            n = source.nBands
+            n = source.nbands
             bands = [0, n / 2, n - 1]
-        rgb = source.readBands(bands).astype(float)
+        rgb = source.read_bands(bands).astype(float)
     else:
         # It should be a numpy array
         s = source.shape
@@ -407,7 +410,7 @@ def getImageDisplayData(source, bands = None, **kwargs):
             rgb = rgb[:,:,0]
             scale = kwargs["colorScale"]
             if kwargs.has_key("autoScale") and kwargs["autoScale"]:
-                scale.setRange(min(rgb.ravel()), max(rgb.ravel()))
+                scale.set_range(min(rgb.ravel()), max(rgb.ravel()))
             rgb3 = zeros((s[0], s[1], 3), int)
             for i in range(s[0]):
                 for j in range(s[1]):
@@ -427,16 +430,29 @@ def getImageDisplayData(source, bands = None, **kwargs):
             (lower, upper) = kwargs["bounds"]
             rgb = (rgb - lower) / (upper - lower)
             rgb = clip(rgb, 0, 1)
-        elif kwargs.has_key("stretchAll"):
+        elif kwargs.has_key("stretch_all"):
             # Stretch each color over its full range
             for i in range(rgb.shape[2]):
                 mmin = minimum.reduce(ravel(rgb[:, :, i]))
                 mmax = maximum.reduce(ravel(rgb[:, :, i]))
                 rgb[:, :, i] = (rgb[:, :, i] - mmin) / (mmax - mmin)
-        elif stretch or (kwargs.has_key("stretchAll") and monochrome):
+        elif stretch or (kwargs.has_key("stretch_all") and monochrome):
             # Stretch so highest color channel value is 1
             mmin = minimum.reduce(ravel(rgb))
             mmax = maximum.reduce(ravel(rgb))
             rgb = (rgb - mmin) / (mmax - mmin)
 
     return rgb
+
+#Deprecated functions
+
+def viewIndexed(*args, **kwargs):
+    warn('viewIndexed has been deprecated.  Use view_indexed.',
+	 DeprecationWarning)
+    return view_indexed(*args, **kwargs)
+
+def saveImage(*args, **kwargs):
+    warn('saveImage has been deprecated.  Use save_image.',
+	 DeprecationWarning)
+    return save_image(*args, **kwargs)
+

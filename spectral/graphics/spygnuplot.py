@@ -35,7 +35,7 @@ A module to use Gnuplot for creating x-y plots of pixel spectra.
 
 import Gnuplot
 
-xyPlot = Gnuplot.Gnuplot()
+xyplot = Gnuplot.Gnuplot()
 
 def plot(data, source = None):
     '''
@@ -49,7 +49,7 @@ def plot(data, source = None):
     '''
 
     from numpy import shape
-    global xyPlot
+    global xyplot
 
     g = Gnuplot.Gnuplot()
     g('set style data lines')
@@ -66,5 +66,5 @@ def plot(data, source = None):
         g.plot(Gnuplot.Data(xvals, data[0,:]))
         for i in range(1, s[0]):
             g.replot(Gnuplot.Data(xvals, data[i,:]))
-    xyPlot = g
+    xyplot = g
     return g

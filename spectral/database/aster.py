@@ -29,7 +29,7 @@
 #
 
 
-tableSchemas = [
+table_schemas = [
     'CREATE TABLE Samples (SampleID INTEGER PRIMARY KEY, Name TEXT, Type TEXT, Class TEXT, SubClass TEXT, ' \
 			  'ParticleSize TEXT, SampleNum TEXT, Owner TEXT, Origin TEXT, Phase TEXT, Description TEXT)',
     'CREATE TABLE Spectra (SpectrumID INTEGER PRIMARY KEY, SampleID INTEGER, SensorCalibrationID INTEGER, ' \
@@ -38,19 +38,19 @@ tableSchemas = [
 			  'NumValues INTEGER, XData BLOB, YData BLOB)',
     ]
 
-arrayTypeCode = 'f'
+arraytypecode = 'f'
 
 # These files contained malformed signature data and will be ignored.
-badFiles = [
+bad_files = [
     'jhu.nicolet.mineral.silicate.tectosilicate.fine.albite1.spectrum.txt',
     'usgs.perknic.rock.igneous.mafic.colid.me3.spectrum.txt'
     ]
 
 
-def readPair(fin, numLines = 1):
+def read_pair(fin, num_lines = 1):
     '''Reads a colon-delimited attribute-value pair from the file stream.'''
     s = ''
-    for i in range(numLines):
+    for i in range(num_lines):
         s += " " + fin.readline().strip()
     return [x.strip().decode('iso-8859-1').lower() for x in s.split(':')]
     
@@ -60,9 +60,9 @@ class Signature:
         self.sample = {}
         self.measurement = {}
 
-def readFile(fileName):
+def read_file(filename):
     '''Reads an ASTER 2.x spectrum file.'''
-    fin = open(fileName)
+    fin = open(filename)
     s = Signature()
 
     # Number of lines per metadata attribute value
@@ -88,13 +88,13 @@ def readFile(fileName):
     # Read sample metadata
     fin.seek(0)
     for i in range(len(lpv)):
-        pair = readPair(fin, lpv[i])
+        pair = read_pair(fin, lpv[i])
         s.sample[pair[0].lower()] = pair[1]
 
     # Read measurement metadata
     lpv = [1] * 8 + [2]
     for i in range(len(lpv)):
-        pair = readPair(fin, lpv[i])
+        pair = read_pair(fin, lpv[i])
         if len(pair) < 2:
             print pair
         s.measurement[pair[0].lower()] = pair[1]
@@ -110,20 +110,20 @@ def readFile(fileName):
 	
 	# Try to handle invalid values on signature lines
 	if nItems == 1:
-#	    print 'single item (%s) on signature line, %s' %  (pair[0], fileName)
+#	    print 'single item (%s) on signature line, %s' %  (pair[0], filename)
 	    continue
 	elif nItems > 2:
-	    print 'more than 2 values on signature line,', fileName
+	    print 'more than 2 values on signature line,', filename
 	    continue
 	try:
 	    x = float(pair[0])
 	except:
-	    print 'corrupt signature line,', fileName
+	    print 'corrupt signature line,', filename
 	if x == 0:
-#	    print 'Zero wavelength value', fileName
+#	    print 'Zero wavelength value', filename
 	    continue
 	elif x < 0:
-	    print 'Negative wavelength value,', fileName
+	    print 'Negative wavelength value,', filename
 	    continue
 
         pairs.append(pair)
@@ -144,9 +144,9 @@ def readFile(fileName):
     return s
 
 class AsterDatabase:
-    schemas = tableSchemas
+    schemas = table_schemas
     
-    def _addSample(self, name, sampleType, sampleClass, subClass, particleSize, sampleNumber, owner, origin, phase, description):
+    def _add_sample(self, name, sampleType, sampleClass, subClass, particleSize, sampleNumber, owner, origin, phase, description):
 	sql = '''INSERT INTO Samples (Name, Type, Class, SubClass, ParticleSize, SampleNum, Owner, Origin, Phase, Description)
 		    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
 	self.cursor.execute(sql, (name, sampleType, sampleClass, subClass, particleSize, sampleNumber, owner, origin, phase, description))
@@ -154,15 +154,15 @@ class AsterDatabase:
 	self.db.commit()
 	return rowId
     
-    def _addSignature(self, sampleID, calibrationID, instrument, environment, measurement,
+    def _add_signature(self, sampleID, calibrationID, instrument, environment, measurement,
 		     xUnit, yUnit, minWavelength, maxWavelength, xData, yData):
 	import sqlite3
 	import array
 	sql = '''INSERT INTO Spectra (SampleID, SensorCalibrationID, Instrument,
 		 Environment, Measurement, XUnit, YUnit, MinWavelength, MaxWavelength,
 		 NumValues, XData, YData) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
-	xBlob = sqlite3.Binary(array.array(arrayTypeCode, xData).tostring())
-	yBlob = sqlite3.Binary(array.array(arrayTypeCode, yData).tostring())
+	xBlob = sqlite3.Binary(array.array(arraytypecode, xData).tostring())
+	yBlob = sqlite3.Binary(array.array(arraytypecode, yData).tostring())
 	numValues = len(xData)
 	self.cursor.execute(sql, (sampleID, calibrationID, instrument, environment, measurement, \
 			    xUnit, yUnit, minWavelength, maxWavelength, numValues, xBlob, yBlob))
@@ -171,16 +171,16 @@ class AsterDatabase:
 	return rowId
 	
     @classmethod
-    def create(cls, fileName, asterDataDir = None):
+    def create(cls, filename, aster_data_dir = None):
 	'''Creates an ASTER relational database by parsing ASTER data files.
 	
 	Arguments:
 	
-	    `fileName` (str):
+	    `filename` (str):
 	    
 		Name of the new sqlite database file to create.
 	    
-	    `asterDataDir` (str):
+	    `aster_data_dir` (str):
 	    
 		Path to the directory containing ASTER library data files. If
 		this argument is not provided, no data will be imported.
@@ -204,21 +204,21 @@ class AsterDatabase:
 	    >>> db = AsterDatabase("aster_lib.db")
 	'''
         import os
-        if os.path.isfile(fileName):
+        if os.path.isfile(filename):
             raise Exception('Error: Specified file already exists.')
-	db = AsterDatabase(fileName)
+	db = AsterDatabase(filename)
 	for schema in cls.schemas:
 	    db.cursor.execute(schema)
-        if asterDataDir:
-            db._importAsterFiles(asterDataDir)
+        if aster_data_dir:
+            db._import_aster_files(aster_data_dir)
 	return db
 	
-    def __init__(self, sqliteFileName = None):
+    def __init__(self, sqlite_filename = None):
 	'''Creates a database object to interface an existing database.
 	
 	Arguments:
 	
-	    `sqliteFileName` (str):
+	    `sqlite_filename` (str):
 	    
 		Name of the database file.  If this argument is not provided,
 		an interface to a database file will not be established.
@@ -227,21 +227,21 @@ class AsterDatabase:
 	
 	    An :class:`~spectral.AsterDatabase` object connected to the database.
 	'''
-	if sqliteFileName:
-	    self._connect(sqliteFileName)
+	if sqlite_filename:
+	    self._connect(sqlite_filename)
 	else:
 	    self.db = None
 	    self.cursor = None
         
-    def _importAsterFiles(self, asterDataDir):
+    def _import_aster_files(self, aster_data_dir):
         '''Read each file in the ASTER library and convert to AVIRIS bands.'''
         from glob import glob
         import numpy
         import os
         
-        if not os.path.isdir(asterDataDir):
+        if not os.path.isdir(aster_data_dir):
             raise Exception('Error: Invalid directory name specified.')
-        filesToIgnore = [asterDataDir + '/' + f for f in badFiles]
+        filesToIgnore = [aster_data_dir + '/' + f for f in bad_files]
     
         numFiles = 0
         numIgnored = 0
@@ -251,13 +251,13 @@ class AsterDatabase:
             pass
         sigs = []
         
-        for f in glob(asterDataDir + '/*spectrum.txt'):
+        for f in glob(aster_data_dir + '/*spectrum.txt'):
             if f in filesToIgnore:
                 numIgnored += 1
                 continue
             print('Importing %s.' % f)
             numFiles += 1
-            sig = readFile(f)
+            sig = read_file(f)
             s = sig.sample
             if s['particle size'].lower == 'liquid':
                 phase = 'liquid'
@@ -267,7 +267,7 @@ class AsterDatabase:
                 sampleNum = s['sample no.']
             else:
                 sampleNum = ''
-            id = self._addSample(s['name'], s['type'], s['class'], s['subclass'], s['particle size'],
+            id = self._add_sample(s['name'], s['type'], s['class'], s['subclass'], s['particle size'],
                                  sampleNum, s['owner'], s['origin'], phase, s['description'])
             
             instrument = os.path.basename(f).split('.')[1]
@@ -283,10 +283,10 @@ class AsterDatabase:
             measurement = m['measurement']
             if measurement[0] == 't':
                 measurement = 'transmittance'
-            self._addSignature(id, -1, instrument, environment, measurement,
+            self._add_signature(id, -1, instrument, environment, measurement,
                                m['x units'], yUnit, m['first x value'], m['last x value'], sig.x, sig.y)
         if numFiles == 0:
-            print 'No ASTER data files were found in directory "%s".' % asterDataDir
+            print 'No ASTER data files were found in directory "%s".' % aster_data_dir
         else:
             print 'Processed %d files.' % numFiles
         if numIgnored > 0:
@@ -296,18 +296,18 @@ class AsterDatabase:
 
         return sigs
 	
-    def _connect(self, sqliteFileName):
+    def _connect(self, sqlite_filename):
 	'''Establishes a connection to the Specbase sqlite database.'''
 	import sqlite3
-	self.db = sqlite3.connect(sqliteFileName)
+	self.db = sqlite3.connect(sqlite_filename)
 	self.cursor = self.db.cursor()
 	
-    def getSpectrum(self, spectrumID):
+    def get_spectrum(self, spectrumID):
 	'''Returns a spectrum from the database.
 	
 	Usage:
 	
-	    (x, y) = aster.getSpectrum(spectrumID)
+	    (x, y) = aster.get_spectrum(spectrumID)
 	    
 	Arguments:
 	
@@ -327,7 +327,7 @@ class AsterDatabase:
 		Spectrum data values for each band.
 	    
 	Returns a pair of vectors containing the wavelengths and measured values
-	values of a measurment.  For additional metadata, call "getSignature"
+	values of a measurment.  For additional metadata, call "get_signature"
 	instead.
 	'''
 	import array
@@ -336,18 +336,18 @@ class AsterDatabase:
 	rows = result.fetchall()
 	if len(rows) < 1:
 	    raise 'Measurement record not found'
-	x = array.array(arrayTypeCode)
+	x = array.array(arraytypecode)
 	x.fromstring(rows[0][0])
-	y = array.array(arrayTypeCode)
+	y = array.array(arraytypecode)
 	y.fromstring(rows[0][1])
 	return (list(x), list(y))
 
-    def getSignature(self, spectrumID):
+    def get_signature(self, spectrumID):
 	'''Returns a spectrum with some additional metadata.
 	
 	Usage::
 	
-	    sig = aster.getSignature(spectrumID)
+	    sig = aster.get_signature(spectrumID)
 	    
 	Arguments:
 	
@@ -362,15 +362,15 @@ class AsterDatabase:
 	    
 		An object with the following attributes:
 		
-		=============	=====	========================================
+		==============	=====	========================================
 		Attribute	Type		Description
-		=============	=====	========================================
-		measurementID	int	SpectrumID value from Spectra table
-		sampleName	str	**Sample** from the **Samples** table
-		sampleID	int	**SampleID** from the **Samples** table
+		==============	=====	========================================
+		measurement_id	int	SpectrumID value from Spectra table
+		sample_name	str	**Sample** from the **Samples** table
+		sample_id	int	**SampleID** from the **Samples** table
 		x		list	list of band center wavelengths
 		y		list	list of spectrum values for each band
-		=============	=====	========================================
+		==============	=====	========================================
 	'''
         import array
 	
@@ -384,13 +384,13 @@ class AsterDatabase:
             raise "Measurement record not found"
 
 	sig = Signature()
-	sig.measurementID = spectrumID
-	sig.sampleName = results[0][0]
-	sig.sampleID = results[0][1]
-	x = array.array(arrayTypeCode)
+	sig.measurement_id = spectrumID
+	sig.sample_name = results[0][0]
+	sig.sample_id = results[0][1]
+	x = array.array(arraytypecode)
 	x.fromstring(results[0][2])
         sig.x = list(x)
-	y = array.array(arrayTypeCode)
+	y = array.array(arraytypecode)
 	y.fromstring(results[0][3])
         sig.y = list(y)
 	return sig
@@ -432,7 +432,7 @@ class AsterDatabase:
 	else:
 	    return self.cursor.execute(sql)
     
-    def printQuery(self, sql, args=None):
+    def print_query(self, sql, args=None):
 	'''Prints the text result of an arbitrary SQL statement.
 
 	Arguments:
@@ -457,7 +457,7 @@ class AsterDatabase:
 	    ...        'WHERE Spectra.SampleID = Samples.SampleID ' +
 	    ...        'AND Name LIKE "%grass%" AND MinWavelength < ?'
 	    >>> args = (0.5,)
-	    >>> db.printQuery(sql, args)
+	    >>> db.print_query(sql, args)
 	    356|dry grass
 	    357|grass
 	'''
@@ -465,7 +465,7 @@ class AsterDatabase:
 	for row in ret:
 	    print "|".join([str(x) for x in row ])
     
-    def createEnviSpectralLibrary(self, spectrumIDs, bandInfo):
+    def create_envi_spectral_library(self, spectrumIDs, bandInfo):
 	'''Creates an ENVI-formatted spectral library for a list of spectra.
 	
 	Arguments:
@@ -496,10 +496,10 @@ class AsterDatabase:
         spectra = numpy.empty((len(spectrumIDs), len(bandInfo.centers)))
         names = []
         for i in range(len(spectrumIDs)):
-            sig = self.getSignature(spectrumIDs[i])
+            sig = self.get_signature(spectrumIDs[i])
             resample = BandResampler(sig.x, bandInfo.centers, None, bandInfo.bandwidths)
             spectra[i] = resample(sig.y)
-            names.append(sig.sampleName)
+            names.append(sig.sample_name)
 	header = {}
 	header['wavelength units'] = 'um'
 	header['spectra names'] = names

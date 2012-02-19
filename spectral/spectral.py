@@ -34,6 +34,9 @@ Generic functions for handling spectral image files.
 
 import numpy
 
+from exceptions import DeprecationWarning
+from warnings import warn
+
 class SpySettings:
     def __init__(self):
 	self.viewer = None
@@ -42,7 +45,7 @@ class SpySettings:
 settings = SpySettings()
 
 # Default color table
-spyColors = numpy.array([[  0,   0,   0],
+spy_colors = numpy.array([[  0,   0,   0],
                    [255,   0,   0],
                    [  0, 255,   0],
                    [  0,   0, 255],
@@ -93,36 +96,36 @@ class BandInfo:
     =================	===================================== 	=======
     centers		List of band centers		    	None
     bandwidths		List of band FWHM values	    	None
-    centersStdDevs	List of std devs of band centers    	None
-    bandwidthsStdDevs	List of std devs of bands FWHMs     	None
-    bandQuantity	Image data type (e.g., "reflectance")	""
-    bandUnit		Band unit (e.g., "nanometer")	    	""
+    centers_stdevs	List of std devs of band centers    	None
+    bandwidth_stdevs	List of std devs of bands FWHMs     	None
+    band_quantity	Image data type (e.g., "reflectance")	""
+    band_unit		Band unit (e.g., "nanometer")	    	""
     =================	===================================== 	=======
     '''
     def __init__(self):
 	self.centers = None
 	self.bandwidths = None
-	self.centersStdDevs = None
-	self.bandwidthsStdDevs = None
-	self.bandQuantity = ""
-	self.bandUnit = ""
+	self.centers_stdevs = None
+	self.bandwidth_stdevs = None
+	self.band_quantity = ""
+	self.band_unit = ""
 
 class Image():
     '''spectral.Image is the common base class for spectral image objects.'''
 
     def __init__(self, params, metadata = None):
 	self.bands = BandInfo()
-        self.setParams(params, metadata)
+        self.set_params(params, metadata)
 
-    def setParams(self, params, metadata):
+    def set_params(self, params, metadata):
         import spectral
         import array
         from exceptions import Exception
         
         try:
-            self.nBands = params.nBands
-            self.nRows = params.nRows
-            self.nCols = params.nCols
+            self.nbands = params.nbands
+            self.nrows = params.nrows
+            self.ncols = params.ncols
             self._typecode = params.typecode         # for Numeric module
 
             if not metadata:
@@ -138,9 +141,9 @@ class Image():
         class P: pass
         p = P()
 
-        p.nBands = self.nBands
-        p.nRows = self.nRows
-        p.nCols = self.nCols
+        p.nbands = self.nbands
+        p.nrows = self.nrows
+        p.ncols = self.ncols
         p.format = self.format
         p.metadata = self.metadata
         p.typecode = self._typecode
@@ -149,6 +152,11 @@ class Image():
 
     def __repr__(self):
         return self.__str__()
+
+    def setParams(self, *args):
+	warn('Image.setParams has been deprecated.  Use Image.set_params',
+	     DeprecationWarning)
+	return self.set_params(*args)
        
 class ImageArray(numpy.ndarray, Image):
     '''ImageArray is an interface to an image loaded entirely into memory.
@@ -174,19 +182,19 @@ class ImageArray(numpy.ndarray, Image):
     def __repr__(self):
         return self.__str__()
     
-    def readBand(self, i):
+    def read_band(self, i):
 	'''For compatibility with SpyFile objects. Returns arr[:,:,i]'''
 	return self[:, :, i]
     
-    def readBands(self, bands):
+    def read_bands(self, bands):
 	'''For compatibility with SpyFile objects. Equivlalent to arr.take(bands, 2)'''
 	return self.take(bands, 2)    
 
-    def readPixel(self, row, col):
+    def read_pixel(self, row, col):
 	'''For compatibility with SpyFile objects. Equivlalent to arr[row, col]'''
 	return self[row, col]
 
-    def readDatum(self, i, j, k):
+    def read_datum(self, i, j, k):
 	'''For compatibility with SpyFile objects. Equivlalent to arr[i, j, k]'''
 	return self[i, j, k]
     
@@ -199,8 +207,8 @@ class ImageArray(numpy.ndarray, Image):
 	return numpy.array(numpy.ndarray.__getitem__(self, key))
     
     def info(self):
-        s = '\t# Rows:         %6d\n' % (self.nRows)
-        s += '\t# Samples:      %6d\n' % (self.nCols)
+        s = '\t# Rows:         %6d\n' % (self.nrows)
+        s += '\t# Samples:      %6d\n' % (self.ncols)
         s += '\t# Bands:        %6d\n' % (self.shape[2])
 
         tc = self.typecode()
@@ -219,6 +227,24 @@ class ImageArray(numpy.ndarray, Image):
             
         s += '\tData format:  %8s' % tcs
         return s
+
+    # Deprecated methods
+    def read_band(self, i):
+	warn('ImageArray.read_band has been deprecated.  Use ImageArray.read_band.',
+	     DeprecationWarning)
+	return self.read_band(i)
+    def read_bands(self, bands):
+	warn('ImageArray.read_bands has been deprecated.  Use ImageArray.read_bands.',
+	     DeprecationWarning)
+	return self.read_bands(bands)
+    def read_pixel(self, row, col):
+	warn('ImageArray.read_pixel has been deprecated.  Use ImageArray.read_pixel.',
+	     DeprecationWarning)
+	return self.read_pixel(bands)
+    def read_datum(self, i, j, k):
+	warn('ImageArray.read_datum has been deprecated.  Use ImageArray.read_datum.',
+	     DeprecationWarning)
+	return self.read_datum(i, j, k)
 
 def image(file):
     '''
@@ -247,9 +273,9 @@ def image(file):
     from exceptions import IOError
     import os
     from io import aviris, envi, erdas, spyfile
-    from io.spyfile import findFilePath
+    from io.spyfile import find_file_path
 
-    pathname = findFilePath(file)
+    pathname = find_file_path(file)
         
     # Try to open it as an ENVI header file.
     try:
@@ -271,29 +297,29 @@ def image(file):
 
     raise IOError, 'Unable to determine file type or type not supported.'
 
-def tileImage(im, nRows, nCols):
+def tile_image(im, nrows, ncols):
     '''
-    Break an image into nRows x nCols tiles.
+    Break an image into nrows x ncols tiles.
 
-    USAGE: tiles = tileImage(im, nRows, nCols)
+    USAGE: tiles = tile_image(im, nrows, ncols)
 
     ARGUMENTS:
         im              The SpyFile to tile.
-        nRows           Number of tiles in the veritical direction.
-        nCols           Number of tiles in the horizontal direction.
+        nrows           Number of tiles in the veritical direction.
+        ncols           Number of tiles in the horizontal direction.
 
     RETURN VALUE:
         tiles           A list of lists of SubImage objects. tiles
-                        contains nRows lists, each of which contains
-                        nCols SubImage objects.
+                        contains nrows lists, each of which contains
+                        ncols SubImage objects.
     '''
 
     from numpy.oldnumeric import array, Int
     from io.spyfile import SubImage
-    x = (array(range(nRows + 1)) * float(im.nRows) / nRows).astype(Int)
-    y = (array(range(nCols + 1)) * float(im.nCols) / nCols).astype(Int)
-    x[-1] = im.nRows
-    y[-1] = im.nCols
+    x = (array(range(nrows + 1)) * float(im.nrows) / nrows).astype(Int)
+    y = (array(range(ncols + 1)) * float(im.ncols) / ncols).astype(Int)
+    x[-1] = im.nrows
+    y[-1] = im.ncols
 
     tiles = []
     for r in range(len(x) - 1):
@@ -320,7 +346,7 @@ def help(x):
     
     print x.__doc__
 
-def saveTrainingSets(sets, file):
+def save_training_sets(sets, file):
     '''
     Saves a list of TrainingSet objects to a file.  This function assumes
     that all the sets in the list refer to the same image and mask array.
@@ -339,7 +365,7 @@ def saveTrainingSets(sets, file):
 
     f.close()
     
-def loadTrainingSets(file, im = 0):
+def load_training_sets(file, im = 0):
     '''
     Loads a list of TrainingSet objects from a file.  This function assumes
     that all the sets in the list refer to the same image and mask array.
@@ -366,5 +392,21 @@ def loadTrainingSets(file, im = 0):
     f.close()
     return sets   
 
+# Deprecated Functions
+
+def tile_image(im, nrows, ncols):
+    warn('tile_image has been deprecated.  Use tile_image.',
+	 DeprecationWarning)
+    return tile_image(im, nrows, ncols)
+
+def save_training_sets(sets, file):
+    warn('save_training_sets has been deprecated.  Use save_training_sets.',
+	 DeprecationWarning)
+    return save_training_sets(sets, file)
+
+def load_training_sets(file, im = 0):
+    warn('load_training_sets has been deprecated.  Use load_training_sets.',
+	 DeprecationWarning)
+    return load_training_sets(file, im)
 
 

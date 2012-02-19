@@ -33,17 +33,17 @@ __version__ = '0.6'
 
 import sys
 if sys.byteorder == 'little':
-    byteOrder = 0   # little endian
+    byte_order = 0   # little endian
 else:
-    byteOrder = 1   # big endian
+    byte_order = 1   # big endian
 
 BSQ = 0
 BIL = 1
 BIP = 2
 
 #from numpy import *
-from spectral import image, loadTrainingSets, saveTrainingSets, settings, \
-     tileImage, spyColors, BandInfo
+from spectral import image, load_training_sets, save_training_sets, settings, \
+     tile_image, spy_colors, BandInfo
 from io import *
 from algorithms import *
 from graphics import *

@@ -2,6 +2,20 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2012-02-19	tboggs <tboggs@users.sourceforge.net>
+
+    Changed many method and function names to be consitent with external
+    modules (this affects almost every file so I won't list them here). Fixed
+    several bugs affecting file reading for several formats.
+    
+    * io/bipfile.py (BipFile.read_bands): convert tuple to list to prevent
+      an exception.
+    * io/bsqfile:
+      (BsqFile.read_subregion):  Fixed a bug that caused reading wrong section
+      of data when lower row limit is non-zero.
+      (BsqFile.read_subimage):  Fixed a bug that caused reading wrong data
+      values when lower row limit is non-zero.
+
 2011-01-28	tboggs <tboggs@users.sourceforge.net>
 
     Updated ERDAS/LAN file interface to handle either endian, regardless of host

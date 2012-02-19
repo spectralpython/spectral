@@ -29,10 +29,10 @@
 # Thomas Boggs, tboggs@users.sourceforge.net
 #
 
-from algorithms import mean_cov, covariance, principalComponents, linearDiscriminant, \
-		       reduceEigenvectors, bDistance, bhattacharyyaDistance, \
-		       createTrainingClasses, ndvi, orthogonalize, transformImage, \
-		       unmix, spectralAngles
+from algorithms import mean_cov, covariance, principal_components, linear_discriminant, \
+		       reduce_eigenvectors, bdist, \
+		       create_training_classes, ndvi, orthogonalize, transform_image, \
+		       unmix, spectral_angles
 from classifiers import GaussianClassifier, MahalanobisDistanceClassifier
 from clustering import L1, L2, kmeans, cluster, isoCluster
 from perceptron import PerceptronClassifier

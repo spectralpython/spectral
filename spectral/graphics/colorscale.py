@@ -36,7 +36,7 @@ class ColorScale:
     :meth:`__call__` operator takes a scalar input and returns the corresponding
     color, interpolating between defined colors.
     '''    
-    def __init__(self, levels, colors, numTics = 256):
+    def __init__(self, levels, colors, num_tics = 256):
         '''
         Creates the ColorScale.
 
@@ -50,7 +50,7 @@ class ColorScale:
 	    
 		RGB 3-tuples that define the colors corresponding to `levels`.
 	    
-	    `numTicks` (int):
+	    `num_tics` (int):
 	    
 		The total number of colors in the scale, not including the
 		background color.  This includes the colors given in the
@@ -71,7 +71,7 @@ class ColorScale:
         self.span = levels[-1] - levels[0]
         self.max = levels[-1]
         self.min = levels[0]
-        self.tics = np.array(range(numTics), np.float) * (self.span / numTics) + self.min
+        self.tics = np.array(range(num_tics), np.float) * (self.span / num_tics) + self.min
         self.colorTics = np.zeros([self.tics.shape[0], 3], np.int)
         self.size = len(self.tics)
         self.bgColor = np.array([0, 0, 0])
@@ -96,7 +96,7 @@ class ColorScale:
         else:
             return self.colorTics[int((float(val) - self.min) / self.span * self.size)]
 
-    def setBackgroundColor(color):
+    def set_background_color(color):
         '''Sets RGB color used for values below the scale minimum.
 	
 	Arguments:
@@ -109,7 +109,7 @@ class ColorScale:
             raise 'Color value must be have exactly 3 elements.'
         self.bgColor = color
 
-    def setRange(self, min, max):
+    def set_range(self, min, max):
         '''Sets the min and max values of the color scale.
 	
 	The distribution of colors within the scale will stretch or shrink
@@ -120,7 +120,7 @@ class ColorScale:
         self.span = max - min
 
 
-def createDefaultColorScale():
+def create_default_color_scale():
     '''Returns a black-blue-green-red-white color scale.'''
     from numpy.oldnumeric import array
     mycolors = array([[  0,   0,   0],
@@ -133,4 +133,4 @@ def createDefaultColorScale():
     scale = ColorScale(levels, mycolors)
     return scale
 
-defaultColorScale = createDefaultColorScale()
+default_color_scale = create_default_color_scale()

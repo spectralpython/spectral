@@ -56,7 +56,7 @@ class SpyWxPythonThreadStarter:
         '''Sends a view request to the wxWindows thread.'''
         
         import spywxpythonthread
-        evt = spywxpythonthread.ViewImageRequest(rgb, **kwargs)
+        evt = spywxpythonthread.view_imageRequest(rgb, **kwargs)
         spywxpythonthread.wx.PostEvent(self.app.catcher, evt)
 
 
@@ -73,7 +73,7 @@ def view(*args, **kwargs):
     from spectral import Image
     from numpy.oldnumeric import UnsignedInt8
 
-    rgb = apply(graphics.getImageDisplayData, args, kwargs)
+    rgb = apply(graphics.get_image_display_data, args, kwargs)
 
     # To plot pixel spectrum on double-click, create a reference
     # back to the original SpyFile object.

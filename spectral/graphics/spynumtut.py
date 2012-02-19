@@ -36,6 +36,6 @@ def view(*args, **kwargs):
     import graphics
     from numpy.oldnumeric import transpose
 
-    rgb = apply(Graphics.getImageDisplayData, args, kwargs)
+    rgb = apply(Graphics.get_image_display_data, args, kwargs)
     NumTut.view(transpose(rgb, (1, 0, 2)))
     

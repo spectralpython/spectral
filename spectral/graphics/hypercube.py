@@ -121,17 +121,17 @@ class WxHypercubeFrame(wx.Frame):
         
         #
         # Set the event handlers.
-        self.canvas.Bind(wx.EVT_ERASE_BACKGROUND, self.processEraseBackgroundEvent)
-        self.canvas.Bind(wx.EVT_SIZE, self.processSizeEvent)
-        self.canvas.Bind(wx.EVT_PAINT, self.onPaint)
-        self.canvas.Bind(wx.EVT_CHAR, self.onChar)
+        self.canvas.Bind(wx.EVT_ERASE_BACKGROUND, self.on_erase_background)
+        self.canvas.Bind(wx.EVT_SIZE, self.on_resize)
+        self.canvas.Bind(wx.EVT_PAINT, self.on_paint)
+        self.canvas.Bind(wx.EVT_CHAR, self.on_char)
 
-    def LoadTextures(self):
+    def load_textures(self):
         #global texture
         from Image import open
         import spectral
 	import graphics
-        from spectral.graphics.colorscale import defaultColorScale
+        from spectral.graphics.colorscale import default_color_scale
 
 
         global DEFAULT_TEXTURE_SIZE
@@ -144,7 +144,7 @@ class WxHypercubeFrame(wx.Frame):
         if self.kwargs.has_key('scale'):
             scale = self.kwargs['scale']
         else:
-            scale = defaultColorScale
+            scale = default_color_scale
 
         data = self.hsi
         s = data.shape
@@ -159,7 +159,7 @@ class WxHypercubeFrame(wx.Frame):
                 bands = map(int, data.metadata['default bands'])
             else:
                 bands = range(3)
-            image = graphics.makePilImage(data, bands, format='bmp')
+            image = graphics.make_pil_image(data, bands, format='bmp')
 
         # Read data for sides of cube
         sides = [data[s[0] - 1, :, :].squeeze()]		# front face
@@ -170,9 +170,9 @@ class WxHypercubeFrame(wx.Frame):
         # Create images for sides of cube
         scaleMin = min([min(side.ravel()) for side in sides])
         scaleMax = max([max(side.ravel()) for side in sides])
-        scale = defaultColorScale
-        scale.setRange(scaleMin, scaleMax)
-        sideImages = [graphics.makePilImage(side, colorScale=scale, autoScale=1, format='bmp') for side in sides]
+        scale = default_color_scale
+        scale.set_range(scaleMin, scaleMax)
+        sideImages = [graphics.make_pil_image(side, colorScale=scale, autoScale=1, format='bmp') for side in sides]
         images = [image] + sideImages + [image]
 
         self.textures = glGenTextures(6)
@@ -214,11 +214,11 @@ class WxHypercubeFrame(wx.Frame):
     #
     # wxPython Window Handlers
     
-    def processEraseBackgroundEvent(self, event):
+    def on_erase_background(self, event):
         """Process the erase background event."""
         pass # Do nothing, to avoid flashing on MSWin
     
-    def processSizeEvent(self, event):
+    def on_resize(self, event):
         """Process the resize event."""
         if self.canvas.GetContext():
             # Make sure the frame is shown before calling SetCurrent.
@@ -226,19 +226,19 @@ class WxHypercubeFrame(wx.Frame):
             self.canvas.SetCurrent()
 
             size = self.canvas.GetClientSize()
-            self.OnReshape(size.width, size.height)
+            self.on_reshape(size.width, size.height)
             self.canvas.Refresh(False)
         event.Skip()
     
-    def onPaint(self, event):
+    def on_paint(self, event):
         """Process the drawing event."""
         self.canvas.SetCurrent()
         
         # This is a 'perfect' time to initialize OpenGL ... only if we need to
         if not self.GLinitialized:
-            self.OnInitGL()
+            self.initgl()
             self.GLinitialized = True
-            self.printHelp()
+            self.print_help()
         
         if self.light:
             glEnable(GL_LIGHTING)
@@ -247,16 +247,16 @@ class WxHypercubeFrame(wx.Frame):
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)	# Clear The Screen And The Depth Buffer
         glLoadIdentity()					# Reset The View
-        self.OnDraw()
+        self.on_draw()
 
         event.Skip()
     
     #
     # GLFrame OpenGL Event Handlers
     
-    def OnInitGL(self):
+    def initgl(self):
         """Initialize OpenGL for use in the window."""
-        self.LoadTextures()
+        self.load_textures()
         glEnable(GL_TEXTURE_2D)
         glClearColor(0.0, 0.0, 0.0, 0.0)	# This Will Clear The Background Color To Black
         glClearDepth(1.0)			# Enables Clearing Of The Depth Buffer
@@ -278,7 +278,7 @@ class WxHypercubeFrame(wx.Frame):
         glEnable(GL_LIGHT0)					# Enable Light One 
 
     
-    def OnReshape(self, width, height):
+    def on_reshape(self, width, height):
         """Reshape the OpenGL viewport based on the dimensions of the window."""
         glViewport(0, 0, width, height)
         
@@ -289,7 +289,7 @@ class WxHypercubeFrame(wx.Frame):
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
     
-    def OnDraw(self, *args, **kwargs):
+    def on_draw(self, *args, **kwargs):
 
         # Determine cube proportions
         divisor = max(self.hsi.shape[:2])
@@ -358,7 +358,7 @@ class WxHypercubeFrame(wx.Frame):
 
         self.SwapBuffers()
 
-    def onChar(self,event):
+    def on_char(self,event):
         key = event.GetKeyCode()
         if key == ord('w'):
             self.rotation[0] -= 1
@@ -379,14 +379,14 @@ class WxHypercubeFrame(wx.Frame):
         elif key == ord('l'):
             self.light = not self.light
         elif key == ord('h'):
-            self.printHelp()
-        self.OnDraw()
-        self.onPaint(event)
+            self.print_help()
+        self.on_draw()
+        self.on_paint(event)
 
         if key == ord('q'):
             self.Destroy()
 
-    def printHelp(self):
+    def print_help(self):
         print
         print 'Keybinds:'
         print '---------'

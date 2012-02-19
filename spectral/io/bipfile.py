@@ -45,7 +45,7 @@ class BipFile(SpyFile):
             metadata = {}
         SpyFile.__init__(self, params, metadata)        
 
-    def readBand(self, band):
+    def read_band(self, band):
         '''Reads a single band from the image.
 	
 	Arguments:
@@ -65,12 +65,12 @@ class BipFile(SpyFile):
         import numpy.oldnumeric as Numeric
 
         vals = array(self.format)
-        delta = self.sampleSize * (self.nBands - 1) 
-        nVals = self.nRows * self.nCols
+        delta = self.sample_size * (self.nbands - 1) 
+        nVals = self.nrows * self.ncols
 
         f = self.fid
 
-        f.seek(self.offset + self.sampleSize * band, 0)
+        f.seek(self.offset + self.sample_size * band, 0)
         
         # Pixel format is BIP
         for i in range(nVals - 1):
@@ -81,13 +81,13 @@ class BipFile(SpyFile):
         if self.swap:
             vals.byteswap()            
         arr = Numeric.array(vals.tolist())
-        arr = Numeric.reshape(arr, (self.nRows, self.nCols))
+        arr = Numeric.reshape(arr, (self.nrows, self.ncols))
 
-	if self.scaleFactor != 1:
-	    return arr / float(self.scaleFactor)
+	if self.scale_factor != 1:
+	    return arr / float(self.scale_factor)
         return arr
 
-    def readBands(self, bands):
+    def read_bands(self, bands):
         '''Reads multiple bands from the image.
 	
 	Arguments:
@@ -109,13 +109,13 @@ class BipFile(SpyFile):
 
         vals = array(self.format)
         offset = self.offset
-        delta = self.sampleSize * self.nBands
-        nVals = self.nRows * self.nCols
+        delta = self.sample_size * self.nbands
+        nVals = self.nrows * self.ncols
 
         # Increments between bands
-        delta_b = bands[:]
+        delta_b = list(bands[:])
         for i in range(len(delta_b)):
-            delta_b[i] *= self.sampleSize
+            delta_b[i] *= self.sample_size
 
         f = self.fid
         
@@ -129,13 +129,13 @@ class BipFile(SpyFile):
         if self.swap:
             vals.byteswap()
         arr = Numeric.array(vals.tolist())
-        arr = Numeric.reshape(arr, (self.nRows, self.nCols, len(bands)))
+        arr = Numeric.reshape(arr, (self.nrows, self.ncols, len(bands)))
 
-	if self.scaleFactor != 1:
-	    return arr / float(self.scaleFactor)
+	if self.scale_factor != 1:
+	    return arr / float(self.scale_factor)
         return arr
 
-    def readPixel(self, row, col):
+    def read_pixel(self, row, col):
         '''Reads the pixel at position (row,col) from the file.
 	
 	Arguments:
@@ -156,30 +156,30 @@ class BipFile(SpyFile):
         vals = array(self.format)
 
         f = self.fid        
-        f.seek(self.offset + self.sampleSize \
-               * self.nBands * (row * self.nCols + col), 0)
+        f.seek(self.offset + self.sample_size \
+               * self.nbands * (row * self.ncols + col), 0)
         # Pixel format is BIP so read entire pixel.
-        vals.fromfile(f, self.nBands)
+        vals.fromfile(f, self.nbands)
 
         if self.swap:
             vals.byteswap()
         pixel = Numeric.array(vals.tolist())
 
-	if self.scaleFactor != 1:
-	    return pixel / float(self.scaleFactor)
+	if self.scale_factor != 1:
+	    return pixel / float(self.scale_factor)
         return pixel
 
-    def readSubRegion(self, rowBounds, colBounds, bands = None):
+    def read_subregion(self, row_bounds, col_bounds, bands = None):
         '''
         Reads a contiguous rectangular sub-region from the image.
 	
 	Arguments:
 	
-	    `rowBounds` (2-tuple of ints):
+	    `row_bounds` (2-tuple of ints):
 	    
 		(a, b) -> Rows a through b-1 will be read.
 	
-	    `colBounds` (2-tuple of ints):
+	    `col_bounds` (2-tuple of ints):
 	    
 		(a, b) -> Columnss a through b-1 will be read.
 	    
@@ -198,13 +198,13 @@ class BipFile(SpyFile):
         import numpy.oldnumeric as Numeric
 
         offset = self.offset
-        nBands = self.nBands
-        nSubRows = rowBounds[1] - rowBounds[0]  # Rows in sub-image
-        nSubCols = colBounds[1] - colBounds[0]  # Cols in sub-image
-        d_row = self.sampleSize * self.nCols * self.nBands
-        colStartPos = colBounds[0] * self.sampleSize * self.nBands
+        nbands = self.nbands
+        nSubRows = row_bounds[1] - row_bounds[0]  # Rows in sub-image
+        nSubCols = col_bounds[1] - col_bounds[0]  # Cols in sub-image
+        d_row = self.sample_size * self.ncols * self.nbands
+        colStartPos = col_bounds[0] * self.sample_size * self.nbands
         vals = array.array(self.format)
-        nVals = self.nRows * self.nCols
+        nVals = self.nrows * self.ncols
 
         # Increments between bands
         if bands != None:
@@ -212,25 +212,25 @@ class BipFile(SpyFile):
             nSubBands = len(bands)
             delta_b = bands[:]
             for i in range(len(delta_b)):
-                delta_b[i] *= self.sampleSize
+                delta_b[i] *= self.sample_size
         else:
             allBands = 1
-            nSubBands = self.nBands
+            nSubBands = self.nbands
 
         f = self.fid
         
         # Pixel format is BIP
-        for i in range(rowBounds[0], rowBounds[1]):
+        for i in range(row_bounds[0], row_bounds[1]):
             f.seek(offset + i * d_row + colStartPos, 0)
             rowPos = f.tell()
 
             if allBands:
                 # This is the simple one
-                vals.fromfile(f, nSubCols * nBands)
+                vals.fromfile(f, nSubCols * nbands)
             else:
                 # Need to pull out specific bands for each column.
                 for j in range(nSubCols):
-                    f.seek(rowPos + j * self.sampleSize * self.nBands, 0)
+                    f.seek(rowPos + j * self.sample_size * self.nbands, 0)
                     pixelPos = f.tell()
                     for k in range(len(bands)):
                         f.seek(pixelPos + delta_b[k], 0)    # Next band
@@ -241,12 +241,12 @@ class BipFile(SpyFile):
         arr = Numeric.array(vals.tolist())
         arr = Numeric.reshape(arr, (nSubRows, nSubCols, nSubBands))
 
-	if self.scaleFactor != 1:
-	    return arr / float(self.scaleFactor)
+	if self.scale_factor != 1:
+	    return arr / float(self.scale_factor)
         return arr
 
 
-    def readSubImage(self, rows, cols, bands = None):
+    def read_subimage(self, rows, cols, bands = None):
         '''
 	Reads arbitrary rows, columns, and bands from the image.
 	
@@ -276,14 +276,14 @@ class BipFile(SpyFile):
         import numpy.oldnumeric as Numeric
 
         offset = self.offset
-        nBands = self.nBands
+        nbands = self.nbands
         nSubRows = len(rows)                        # Rows in sub-image
         nSubCols = len(cols)                        # Cols in sub-image
-        d_band = self.sampleSize
-        d_col = d_band * self.nBands
-        d_row = d_col * self.nCols
+        d_band = self.sample_size
+        d_col = d_band * self.nbands
+        d_row = d_col * self.ncols
         vals = array.array(self.format)
-        nVals = self.nRows * self.nCols
+        nVals = self.nrows * self.ncols
 
         # Increments between bands
         if bands != None:
@@ -291,8 +291,8 @@ class BipFile(SpyFile):
             nSubBands = len(bands)
         else:
             allBands = 1
-            bands = range(self.nBands)
-            nSubBands = self.nBands
+            bands = range(self.nbands)
+            nSubBands = self.nbands
 
         f = self.fid
         
@@ -315,11 +315,11 @@ class BipFile(SpyFile):
         arr = Numeric.array(vals.tolist())
         arr = Numeric.reshape(arr, (nSubRows, nSubCols, nSubBands))
 
-	if self.scaleFactor != 1:
-	    return arr / float(self.scaleFactor)
+	if self.scale_factor != 1:
+	    return arr / float(self.scale_factor)
         return arr
 
-    def readDatum(self, i, j, k):
+    def read_datum(self, i, j, k):
         '''Reads the band `k` value for pixel at row `i` and column `j`.
 	
 	Arguments:
@@ -335,13 +335,13 @@ class BipFile(SpyFile):
 
         vals = array(self.format)
         f = self.fid        
-        f.seek(self.offset + self.sampleSize \
-               * (self.nBands * (i * self.nCols + j) + k), 0)
+        f.seek(self.offset + self.sample_size \
+               * (self.nbands * (i * self.ncols + j) + k), 0)
         # Pixel format is BIP so read entire pixel.
         vals.fromfile(f, 1)
         if self.swap:
             vals.byteswap()
-	return vals.tolist()[0] / float(self.scaleFactor)
+	return vals.tolist()[0] / float(self.scale_factor)
 
         
         

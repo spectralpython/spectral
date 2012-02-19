@@ -50,7 +50,7 @@ wxEVT_VIEW_IMAGE = 50002
 def EVT_VIEW_IMAGE(win, func):
     win.Connect(-1, -1, wxEVT_VIEW_IMAGE, func)
 
-class ViewImageRequest(wx.PyEvent):
+class view_imageRequest(wx.PyEvent):
     '''A request for a new image.'''
     def __init__(self, rgb, **kwargs):
         wx.PyEvent.__init__(self)
@@ -68,11 +68,11 @@ class HiddenCatcher(wx.Frame):
     def __init__(self):
         wx.Frame.__init__(self, None,-1,'')
         
-        EVT_VIEW_IMAGE(self, self.viewImage)
+        EVT_VIEW_IMAGE(self, self.view_image)
 #        self.bmp = wxBitmap("/dos/myphotos/roll2/can.bmp",
 #                            wxBITMAP_TYPE_BMP)
 
-    def viewImage(self, evt):
+    def view_image(self, evt):
         if evt.kwargs.has_key('function'):
             frame = evt.kwargs['function']()
             frame.Show(True)
@@ -106,15 +106,15 @@ class WxImageFrame(wx.Frame):
         wx.Frame.__init__(self, parent, index, title,
                           wx.DefaultPosition)
         self.SetClientSizeWH(self.bmp.GetWidth(), self.bmp.GetHeight())
-        EVT_PAINT(self, self.OnPaint)
-        EVT_LEFT_DCLICK(self, self.leftDoubleClick)
+        EVT_PAINT(self, self.on_paint)
+        EVT_LEFT_DCLICK(self, self.left_double_click)
 
 
-    def OnPaint(self, e):
+    def on_paint(self, e):
         dc = wx.PaintDC(self)
-        self.Paint(dc)
+        self.paint(dc)
 
-    def Paint(self, dc):
+    def paint(self, dc):
 
         # mDC = wxMemoryDC()
         # mDC.SelectObject(bmp)
@@ -125,7 +125,7 @@ class WxImageFrame(wx.Frame):
         # dc.Blit(0,0, bmp.GetWidth(), bmp.GetHeight(), mDC, 0, 0)
         dc.EndDrawing()
 
-    def leftDoubleClick(self, evt):
+    def left_double_click(self, evt):
         print (evt.m_y, evt.m_x)
         from spectral import settings
         if self.kwargs.has_key("data source"):
