@@ -33,6 +33,7 @@ Tools for handling files that are band interleaved by line (BIL).
 '''
 
 from spyfile import SpyFile
+import numpy as np
 
 class BilFile(SpyFile):
     '''
@@ -41,11 +42,20 @@ class BilFile(SpyFile):
     '''
 
     def __init__(self, params, metadata = None):
+	import sys, os
+	import numpy as np
         import spectral
         self.interleave = spectral.BIL
         if metadata == None:
             metadata = {}
         SpyFile.__init__(self, params, metadata)        
+
+	if (os.path.getsize(self.filename) < sys.maxint):
+	    (R, C, B) = self.shape
+	    self.memmap = np.memmap(self.filename, dtype=self.format, mode='r',
+				    offset=self.offset, shape=(R,B,C))
+	else:
+	    self.memmap = None
 
     def read_band(self, band):
         '''Reads a single band from the image.
@@ -66,6 +76,14 @@ class BilFile(SpyFile):
         from array import array
         import numpy
         
+	if self.memmap != None:
+	    data = np.array(self.memmap[:,band,:])
+	    if self.swap:
+		data.byteswap(True)
+	    if self.scale_factor != 1:
+		data = data / float(self.scale_factor)
+	    return data
+
         vals = array(self.format)
         offset = self.offset + band * self.sample_size * self.ncols
 
@@ -107,7 +125,15 @@ class BilFile(SpyFile):
         from array import array
         import numpy
 
-        f = self.fid
+ 	if self.memmap != None:
+	    data = np.array(self.memmap[:,bands,:]).transpose((0, 2, 1))
+	    if self.swap:
+		data.byteswap(True)
+	    if self.scale_factor != 1:
+		data = data / float(self.scale_factor)
+	    return data
+
+	f = self.fid
 
         arr = numpy.empty((self.nrows, self.ncols, len(bands)), self.format)
 
@@ -157,6 +183,14 @@ class BilFile(SpyFile):
         offset = self.offset + row * self.nbands * self.ncols \
                  * self.sample_size + col * self.sample_size
 
+	if self.memmap != None:
+	    data = np.array(self.memmap[row, :, col])
+	    if self.swap:
+		data.byteswap(True)
+	    if self.scale_factor != 1:
+		data = data / float(self.scale_factor)
+	    return data
+
         f = self.fid
 
         ncols = self.ncols
@@ -202,6 +236,20 @@ class BilFile(SpyFile):
 
         from array import array
         import numpy
+
+	if self.memmap != None:
+	    if bands == None:
+		data = np.array(self.memmap[row_bounds[0]: row_bounds[1], :,
+					    col_bounds[0]: col_bounds[1]])
+	    else:
+		data = np.array(self.memmap[row_bounds[0]: row_bounds[1], bands,
+					    col_bounds[0]: col_bounds[1]])
+	    data = data.transpose((0, 2, 1))
+	    if self.swap:
+		data.byteswap(True)
+	    if self.scale_factor != 1:
+		data = data / float(self.scale_factor)
+	    return data
 
         nSubRows = row_bounds[1] - row_bounds[0]  # Rows in sub-image
         nSubCols = col_bounds[1] - col_bounds[0]  # Cols in sub-image
@@ -272,6 +320,18 @@ class BilFile(SpyFile):
         from array import array
         import numpy
         
+	if self.memmap != None:
+	    if bands == None:
+		data = np.array(self.memmap.take(rows, 0).take(cols, 2))
+	    else:
+		data = np.array(self.memmap.take(rows, 0).take(bands, 1).take(cols, 2))
+	    data = data.transpose((0, 2, 1))
+	    if self.swap:
+		data.byteswap(True)
+	    if self.scale_factor != 1:
+		data = data / float(self.scale_factor)
+	    return data
+
         nSubRows = len(rows)                        # Rows in sub-image
         nSubCols = len(cols)                        # Cols in sub-image
         d_col = self.sample_size
@@ -323,6 +383,14 @@ class BilFile(SpyFile):
 	pixels. For such cases, use readBands or readPixel instead.	
 	'''
         import array
+
+	if self.memmap != None:
+	    datum = self.memmap[i, k, j]
+	    if self.swap:
+		datum = datum.byteswap()
+	    if self.scale_factor != 1:
+		datum /= float(self.scale_factor)
+	    return datum
 
         d_col = self.sample_size
         d_band = d_col * self.ncols

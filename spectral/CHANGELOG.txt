@@ -2,6 +2,25 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2012-02-23	tboggs <tboggs@users.sourceforge.net>
+
+    Added numpy.memmap objects to SpyFile instances.  This improves read speed
+    by about a factor of 10 (although algorithms are still about 10 times faster
+    when using in-memory arrays).
+    
+    * io/bilfile.py:
+      (BilFile.__init__): Set memmmap member for buffered input.
+      (BilFile.read_band, read_bands, read_pixel, read_subregion, read_subimage,
+       read_datum): Use memmap for reading file, if available.
+    * io/bipfile.py:
+      (BipFile.__init__): Set memmmap member for buffered input.
+      (BipFile.read_band, read_bands, read_pixel, read_subregion, read_subimage,
+       read_datum): Use memmap for reading file, if available.
+    * io/bsqfile.py:
+      (BsqFile.__init__): Set memmmap member for buffered input.
+      (BsqFile.read_band, read_bands, read_pixel, read_subregion, read_subimage,
+       read_datum): Use memmap for reading file, if available.
+
 2012-02-19	tboggs <tboggs@users.sourceforge.net>
 
     Updated version number to '0.7' in __init__.py

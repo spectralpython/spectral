@@ -33,17 +33,26 @@ Tools for handling files that are band interleaved by pixel (BIP).
 '''
 
 from spyfile import SpyFile
+import numpy as np
 
 class BipFile(SpyFile):
     '''
     A class to interface image files stored with bands interleaved by pixel.
     '''
     def __init__(self, params, metadata = None):
+	import sys, os
+	import numpy as np
         import spectral
         self.interleave = spectral.BIP
         if metadata == None:
             metadata = {}
         SpyFile.__init__(self, params, metadata)        
+
+	if (os.path.getsize(self.filename) < sys.maxint):
+	    self.memmap = np.memmap(self.filename, dtype=self.format, mode='r',
+				    offset=self.offset, shape=self.shape)
+	else:
+	    self.memmap = None
 
     def read_band(self, band):
         '''Reads a single band from the image.
@@ -63,6 +72,14 @@ class BipFile(SpyFile):
 
         from array import array
         import numpy.oldnumeric as Numeric
+
+	if self.memmap != None:
+	    data = np.array(self.memmap[:,:,band])
+	    if self.swap:
+		data.byteswap(True)
+	    if self.scale_factor != 1:
+		data = data / float(self.scale_factor)
+	    return data
 
         vals = array(self.format)
         delta = self.sample_size * (self.nbands - 1) 
@@ -106,6 +123,14 @@ class BipFile(SpyFile):
 	'''
         from array import array
         import numpy.oldnumeric as Numeric
+
+	if self.memmap != None:
+	    data = np.array(self.memmap[:,:,bands])
+	    if self.swap:
+		data.byteswap(True)
+	    if self.scale_factor != 1:
+		data = data / float(self.scale_factor)
+	    return data
 
         vals = array(self.format)
         offset = self.offset
@@ -153,6 +178,14 @@ class BipFile(SpyFile):
         from array import array
         import numpy.oldnumeric as Numeric
 
+	if self.memmap != None:
+	    data = np.array(self.memmap[row, col,:])
+	    if self.swap:
+		data.byteswap(True)
+	    if self.scale_factor != 1:
+		data = data / float(self.scale_factor)
+	    return data
+
         vals = array(self.format)
 
         f = self.fid        
@@ -196,6 +229,19 @@ class BipFile(SpyFile):
         '''
         import array
         import numpy.oldnumeric as Numeric
+
+	if self.memmap != None:
+	    if bands == None:
+		data = np.array(self.memmap[row_bounds[0]: row_bounds[1],
+					    col_bounds[0]: col_bounds[1], :])
+	    else:
+		data = np.array(self.memmap[row_bounds[0]: row_bounds[1],
+					    col_bounds[0]: col_bounds[1], bands])
+	    if self.swap:
+		data.byteswap(True)
+	    if self.scale_factor != 1:
+		data = data / float(self.scale_factor)
+	    return data
 
         offset = self.offset
         nbands = self.nbands
@@ -275,6 +321,17 @@ class BipFile(SpyFile):
         import array
         import numpy.oldnumeric as Numeric
 
+	if self.memmap != None:
+	    if bands == None:
+		data = np.array(self.memmap.take(rows, 0).take(cols, 1))
+	    else:
+		data = np.array(self.memmap.take(rows, 0).take(cols, 1).take(bands, 2))
+	    if self.swap:
+		data.byteswap(True)
+	    if self.scale_factor != 1:
+		data = data / float(self.scale_factor)
+	    return data
+
         offset = self.offset
         nbands = self.nbands
         nSubRows = len(rows)                        # Rows in sub-image
@@ -332,6 +389,14 @@ class BipFile(SpyFile):
 	pixels. For such cases, use readBands or readPixel instead.	
 	'''
         from array import array
+
+	if self.memmap != None:
+	    datum = self.memmap[i, j, k]
+	    if self.swap:
+		datum = datum.byteswap()
+	    if self.scale_factor != 1:
+		datum /= float(self.scale_factor)
+	    return datum
 
         vals = array(self.format)
         f = self.fid        

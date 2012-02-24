@@ -33,6 +33,7 @@ Tools for handling files that are band sequential (BSQ).
 '''
 
 from spyfile import SpyFile
+import numpy as np
 
 class BsqFile(SpyFile):
     '''
@@ -40,11 +41,20 @@ class BsqFile(SpyFile):
     '''
 
     def __init__(self, params, metadata = None):
+	import sys, os
         import spectral
         self.interleave = spectral.BSQ
         if metadata == None:
             metadata = {}
-        SpyFile.__init__(self, params, metadata)        
+        SpyFile.__init__(self, params, metadata)
+	
+	if (os.path.getsize(self.filename) < sys.maxint):
+	    print 'CREATING MEMMAP'
+	    (R, C, B) = self.shape
+	    self.memmap = np.memmap(self.filename, dtype=self.format, mode='r',
+				    offset=self.offset, shape=(B,R,C))
+	else:
+	    self.memmap = None
 
     def read_band(self, band):
         '''Reads a single band from the image.
@@ -63,6 +73,14 @@ class BsqFile(SpyFile):
 	'''
         from array import array
         import numpy.oldnumeric as Numeric
+	
+	if self.memmap != None:
+	    data = np.array(self.memmap[band,:,:])
+	    if self.swap:
+		data.byteswap(True)
+	    if self.scale_factor != 1:
+		data = data / float(self.scale_factor)
+	    return data
 
         vals = array(self.format)
         offset = self.offset + band * self.sample_size * self.nrows *self.ncols
@@ -102,6 +120,14 @@ class BsqFile(SpyFile):
 
         from array import array
         import numpy.oldnumeric as Numeric
+
+	if self.memmap != None:
+	    data = np.array(self.memmap[bands,:,:]).transpose((1, 2, 0))
+	    if self.swap:
+		data.byteswap(True)
+	    if self.scale_factor != 1:
+		data = data / float(self.scale_factor)
+	    return data
 
         f = self.fid
 
@@ -153,6 +179,14 @@ class BsqFile(SpyFile):
 
         from array import array
         import numpy.oldnumeric as Numeric
+
+	if self.memmap != None:
+	    data = np.array(self.memmap[:, row, col])
+	    if self.swap:
+		data.byteswap(True)
+	    if self.scale_factor != 1:
+		data = data / float(self.scale_factor)
+	    return data
 
         vals = array(self.format)
         delta = self.sample_size * (self.nbands - 1)
@@ -209,7 +243,20 @@ class BsqFile(SpyFile):
         '''
 
         from array import array
-	import numpy as np
+
+	if self.memmap != None:
+	    if bands == None:
+		data = np.array(self.memmap[:, row_bounds[0]: row_bounds[1],
+					    col_bounds[0]: col_bounds[1]])
+	    else:
+		data = np.array(self.memmap[bands, row_bounds[0]: row_bounds[1],
+					    col_bounds[0]: col_bounds[1]])
+	    data = data.transpose((1, 2, 0))
+	    if self.swap:
+		data.byteswap(True)
+	    if self.scale_factor != 1:
+		data = data / float(self.scale_factor)
+	    return data
 
         nSubRows = row_bounds[1] - row_bounds[0]  # Rows in sub-image
         nSubCols = col_bounds[1] - col_bounds[0]  # Cols in sub-image
@@ -289,6 +336,18 @@ class BsqFile(SpyFile):
         from array import array
         import numpy.oldnumeric as Numeric
 
+	if self.memmap != None:
+	    if bands == None:
+		data = np.array(self.memmap[:].take(rows, 1).take(cols, 2))
+	    else:
+		data = np.array(self.memmap.take(bands, 0).take(rows, 1).take(cols, 2))
+	    data = data.transpose((1, 2, 0))
+	    if self.swap:
+		data.byteswap(True)
+	    if self.scale_factor != 1:
+		data = data / float(self.scale_factor)
+	    return data
+
         nSubRows = len(rows)                        # Rows in sub-image
         nSubCols = len(cols)                        # Cols in sub-image
         d_col = self.sample_size
@@ -355,6 +414,14 @@ class BsqFile(SpyFile):
 	pixels. For such cases, use readBands or readPixel instead.	
 	'''
         import array
+	
+	if self.memmap != None:
+	    datum = self.memmap[k, i, j]
+	    if self.swap:
+		datum = datum.byteswap()
+	    if self.scale_factor != 1:
+		datum /= float(self.scale_factor)
+	    return datum
 
         nrows = self.nrows
         ncols = self.ncols
