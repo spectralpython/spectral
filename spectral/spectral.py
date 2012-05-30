@@ -229,20 +229,20 @@ class ImageArray(numpy.ndarray, Image):
         return s
 
     # Deprecated methods
-    def read_band(self, i):
-	warn('ImageArray.read_band has been deprecated.  Use ImageArray.read_band.',
+    def readBand(self, i):
+	warn('ImageArray.readBand has been deprecated.  Use ImageArray.read_band.',
 	     DeprecationWarning)
 	return self.read_band(i)
-    def read_bands(self, bands):
-	warn('ImageArray.read_bands has been deprecated.  Use ImageArray.read_bands.',
+    def readBands(self, bands):
+	warn('ImageArray.readBands has been deprecated.  Use ImageArray.read_bands.',
 	     DeprecationWarning)
 	return self.read_bands(bands)
-    def read_pixel(self, row, col):
-	warn('ImageArray.read_pixel has been deprecated.  Use ImageArray.read_pixel.',
+    def readPixel(self, row, col):
+	warn('ImageArray.readPixel has been deprecated.  Use ImageArray.read_pixel.',
 	     DeprecationWarning)
 	return self.read_pixel(bands)
-    def read_datum(self, i, j, k):
-	warn('ImageArray.read_datum has been deprecated.  Use ImageArray.read_datum.',
+    def readDatum(self, i, j, k):
+	warn('ImageArray.readDatum has been deprecated.  Use ImageArray.read_datum.',
 	     DeprecationWarning)
 	return self.read_datum(i, j, k)
 

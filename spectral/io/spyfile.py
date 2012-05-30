@@ -38,7 +38,7 @@ within the image file.
 Let's open our sample image.
 
     >>> from spectral import *
-    >>> img = image('92AV3C')
+    >>> img = image('92AV3C.lan')
     >>> img.__class__
     <class spectral.io.bilfile.BilFile at 0x1021ed3b0>
     >>> print img
