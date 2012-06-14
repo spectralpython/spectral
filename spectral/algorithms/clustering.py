@@ -170,7 +170,7 @@ def kmeans(image, nclusters = 10, max_iterations = 20, **kwargs):
     iterations = None
     
     for (key, val) in kwargs.items():
-	if key == 'startClusters':
+	if key == 'start_clusters':
 	    start_clusters = val
 	elif key == 'compare':
 	    compare = val
@@ -342,7 +342,7 @@ def kmeans_ndarray(image, nclusters = 10, max_iterations = 20, **kwargs):
     iterations = None
     
     for (key, val) in kwargs.items():
-	if key == 'startClusters':
+	if key == 'start_clusters':
 	    start_clusters = val
 	elif key == 'compare':
 	    compare = val
@@ -367,7 +367,7 @@ def kmeans_ndarray(image, nclusters = 10, max_iterations = 20, **kwargs):
     if start_clusters != None:
         assert (start_clusters.shape[0] == nclusters), 'There must be \
         nclusters clusters in the startCenters array.'
-        centers = numpy.array(startClusters)
+        centers = numpy.array(start_clusters)
     else:
 	print 'Initializing clusters along diagonal of N-dimensional bounding box.'
 	boxMin = np.amin(image, 0)

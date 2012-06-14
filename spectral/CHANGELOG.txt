@@ -2,6 +2,14 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2012-06-14	tboggs <tboggs@users.sourceforge.net>
+
+    Fixed mismatch in parameter names in kmeans_ndarray.
+    
+    * spectral/algorithms/clustering.py(kmeans_ndarray): Changed `startClusters`
+      to `start_clusters`.
+
+
 2012-05-30	tboggs <tboggs@users.sourceforge.net>
 
     Fixed bad search/replace that caused infinite recursion in some read funcs.
@@ -12,6 +20,7 @@
       (read_pixel): Mislabled readPixel warning caused infinite recursion.
       (read_datum): Mislabled readDatum warning caused infinite recursion.
     * io/spyfile.py: Fixed doc string
+    
 2012-02-23	tboggs <tboggs@users.sourceforge.net>
 
     Added numpy.memmap objects to SpyFile instances.  This improves read speed
