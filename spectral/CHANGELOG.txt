@@ -2,6 +2,10 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2012-06-17	tboggs <tboggs@users.sourceforge.net>
+
+    * graphics/hypercube.py: Added mouse control for hypercube display.
+
 2012-06-14	tboggs <tboggs@users.sourceforge.net>
 
     Fixed mismatch in parameter names in kmeans_ndarray.

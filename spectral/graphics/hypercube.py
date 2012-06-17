@@ -3,7 +3,7 @@
 #   hypercube.py - This file is part of the Spectral Python (SPy)
 #   package.
 #
-#   Copyright (C) 2001-2010 Thomas Boggs
+#   Copyright (C) 2001-2012 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -70,14 +70,87 @@ except ImportError:
 
 try:
     from OpenGL.GL import *
-    from OpenGL.GLUT import *
-    from OpenGL.GLU import *
 except ImportError:
     raise ImportError, "Required dependency OpenGL not present"
 
 DEFAULT_WIN_SIZE = (500, 500)                   # Default dimensions of image frame
 DEFAULT_TEXTURE_SIZE = (256, 256)               # Default size of textures on cube faces
 
+def rtp_to_xyz(r, theta, phi):
+    '''Convert spherical polar coordinates to Cartesian'''
+    from math import pi, cos, sin
+    theta *= pi / 180.0
+    phi *= pi / 180.0
+    s = r * sin(theta)
+    return [s * cos(phi), s * sin(phi), r * cos(theta)]
+
+def xyz_to_rtp(x, y, z):
+    '''Convert Cartesian coordinates to Spherical Polar.'''
+    from math import asin, acos, sqrt, pi
+    r = sqrt(x * x + y * y + z * z)
+    rho = sqrt(x * x + y * y)
+    phi = asin(y / rho) * 180. / pi
+    if x < 0.0:
+	phi += 180 
+    theta = acos(z / r) * 180. / pi
+    return [r, theta, phi]
+    
+(DOWN, UP) = (1, 0)
+class MouseHandler:
+    '''A class for enable rotate/zoom functions in an OpenGL window.'''
+    MAX_BUTTONS = 10
+    def __init__(self, window):
+	self.window = window
+	self.position = None
+	self.event_position = None
+	self.left = UP
+	self.right = UP
+	self.middle = UP
+    def left_down(self, event):
+	self.event_position = (event.X, event.Y)
+	self.position = (event.X, event.Y)
+	self.left = DOWN
+	event.Skip()
+    def left_up(self, event):
+	self.position = (event.X, event.Y)
+	self.left = UP
+	event.Skip()
+    def motion(self, event):
+	'''Handles panning & zooming for mouse click+drag events.'''
+	import numpy as np
+	if DOWN not in (self.left, self.right):
+	    return
+	#print 'Mouse movement:', x, y
+	(w, h) = self.window.size
+	dx = event.X - self.position[0]
+	dy = event.Y - self.position[1]
+	if self.left == DOWN:
+	    if wx.GetKeyState(wx.WXK_CONTROL):
+		# Mouse movement zooms in/out relative to target position
+		if dx != 0.0:
+		    self.window.camera_pos_rtp[0] *= (float(w - dx) / w)
+	    elif wx.GetKeyState(wx.WXK_SHIFT):
+		# Mouse movement pans target position in the plane of the window
+		camera_pos = np.array(rtp_to_xyz(*self.window.camera_pos_rtp))
+		view_vec = -np.array(rtp_to_xyz(*self.window.camera_pos_rtp))
+		zhat = np.array([0.0, 0.0, 1.0])
+		right = -np.cross(zhat, view_vec)
+		right /= np.sum(np.square(right))
+		up = np.cross(right, view_vec)
+		up /= np.sum(np.square(up))
+		dr = right * (4.0 * dx / w)
+		du = up * (4.0 * dy / h)
+		self.window.target_pos += du - dr
+	    else:
+		# Mouse movement creates a rotation about the target position
+		xangle = 2.0 * self.window.fovy * float(dx) / h
+		yangle = 2.0 * self.window.fovy * float(dy) / h
+		rtp = self.window.camera_pos_rtp
+		rtp[1] = min(max(rtp[1] - yangle, 0.05), 179.95)
+		self.window.camera_pos_rtp[2] -= xangle
+	self.position = (event.X, event.Y)
+	self.window.Refresh()
+	event.Skip()
 
 class WxHypercubeFrame(wx.Frame):
     """A simple class for using OpenGL with wxPython."""
@@ -86,30 +159,35 @@ class WxHypercubeFrame(wx.Frame):
         global DEFAULT_WIN_SIZE
 
         self.kwargs = kwargs
-        if kwargs.has_key('size'):
-            size = wx.Size(*kwargs['size'])
-        else:
-            size = wx.Size(*DEFAULT_WIN_SIZE)
-        if kwargs.has_key('title'):
-            title = kwargs['title']
-        else:
-            title = 'Hypercube'
+	self.size = kwargs.get('size', DEFAULT_WIN_SIZE)
+	self.title = kwargs.get('title', 'Hypercube')
 
         #
         # Forcing a specific style on the window.
         #   Should this include styles passed?
         style = wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE
+        super(WxHypercubeFrame, self).__init__(parent, id, self.title,
+					       wx.DefaultPosition,
+					       wx.Size(*self.size),
+					       style,
+					       kwargs.get('name', 'Hypercube'))
         
-        super(WxHypercubeFrame, self).__init__(parent, id, title, wx.DefaultPosition, size, wx.DEFAULT_FRAME_STYLE, kwargs.get('name', 'Hypercube'))
-        
-        self.GLinitialized = False
-        attribList = (glcanvas.WX_GL_RGBA, # RGBA
-                      glcanvas.WX_GL_DOUBLEBUFFER, # Double Buffered
-                      glcanvas.WX_GL_DEPTH_SIZE, 32) # 32 bit
-        
-        #
-        # Create the canvas
-        self.canvas = glcanvas.GLCanvas(self, attribList=attribList)
+        self.gl_initialized = False
+        attribs = (glcanvas.WX_GL_RGBA, # RGBA
+                   glcanvas.WX_GL_DOUBLEBUFFER, # Double Buffered
+                   glcanvas.WX_GL_DEPTH_SIZE, 32) # 32 bit
+        self.canvas = glcanvas.GLCanvas(self, attribList=attribs)
+
+	# These members can be modified before calling the show method.
+	self.clear_color = (0., 0., 0., 1.)
+	self.matrix_mode = GL_PROJECTION
+	self.win_pos = (100, 100)
+	self.fovy = 60.
+	self.znear = 0.1
+	self.zfar = 10.0
+	self.target_pos = [0.0, 0.0, 0.0]
+	self.camera_pos_rtp = [7.0, 45.0, 30.0]
+	self.up = [0.0, 0.0, 1.0]
 
         self.hsi = data
         self.cubeHeight = 1.0
@@ -118,17 +196,20 @@ class WxHypercubeFrame(wx.Frame):
         self.light = False
 
         self.texturesLoaded = False
+	self.mouse_handler = MouseHandler(self)
         
-        #
         # Set the event handlers.
         self.canvas.Bind(wx.EVT_ERASE_BACKGROUND, self.on_erase_background)
         self.canvas.Bind(wx.EVT_SIZE, self.on_resize)
         self.canvas.Bind(wx.EVT_PAINT, self.on_paint)
+        self.canvas.Bind(wx.EVT_LEFT_DOWN, self.mouse_handler.left_down)
+        self.canvas.Bind(wx.EVT_LEFT_UP, self.mouse_handler.left_up)
+        self.canvas.Bind(wx.EVT_MOTION, self.mouse_handler.motion)
         self.canvas.Bind(wx.EVT_CHAR, self.on_char)
 
     def load_textures(self):
-        #global texture
         from Image import open
+	import OpenGL.GL as gl
         import spectral
 	import graphics
         from spectral.graphics.colorscale import default_color_scale
@@ -175,7 +256,7 @@ class WxHypercubeFrame(wx.Frame):
         sideImages = [graphics.make_pil_image(side, colorScale=scale, autoScale=1, format='bmp') for side in sides]
         images = [image] + sideImages + [image]
 
-        self.textures = glGenTextures(6)
+        self.textures = gl.glGenTextures(6)
         texImages = []
         (a, b, c) = data.shape
         texSizes = [(b, a), (b, c), (a, c), (b, c), (a, c), (b, a)]
@@ -185,23 +266,10 @@ class WxHypercubeFrame(wx.Frame):
             texImages.append(img)
             
             # Create Linear Filtered Texture 
-            glBindTexture(GL_TEXTURE_2D, long(self.textures[i]))
-            glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR)
-            glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR)
-            glTexImage2D(GL_TEXTURE_2D, 0, 3, dimX, dimY, 0, GL_RGBA, GL_UNSIGNED_BYTE, texImages[i])
-            
-##        # Create Texture	
-##        glBindTexture(GL_TEXTURE_2D, glGenTextures(1))   # 2d texture (x and y size)
-##            
-##        glPixelStorei(GL_UNPACK_ALIGNMENT,1)
-##        glTexImage2D(GL_TEXTURE_2D, 0, 3, ix, iy, 0, GL_RGBA, GL_UNSIGNED_BYTE, image)
-##        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
-##        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
-##        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
-##        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
-##        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-##        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-##        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
+            gl.glBindTexture(gl.GL_TEXTURE_2D, long(self.textures[i]))
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
+            gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, 3, dimX, dimY, 0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, texImages[i])
 
     def GetGLExtents(self):
         """Get the extents of the OpenGL canvas."""
@@ -211,168 +279,152 @@ class WxHypercubeFrame(wx.Frame):
         """Swap the OpenGL buffers."""
         self.canvas.SwapBuffers()
     
-    #
-    # wxPython Window Handlers
-    
     def on_erase_background(self, event):
         """Process the erase background event."""
         pass # Do nothing, to avoid flashing on MSWin
     
+    def initgl(self):
+        """Initialize OpenGL for use in the window."""
+	import OpenGL.GL as gl
+	import OpenGL.GLU as glu
+        self.load_textures()
+        gl.glEnable(gl.GL_TEXTURE_2D)
+        gl.glClearColor(0.0, 0.0, 0.0, 0.0)	# This Will Clear The Background Color To Black
+        gl.glClearDepth(1.0)			# Enables Clearing Of The Depth Buffer
+        gl.glDepthFunc(gl.GL_LESS)			# The Type Of Depth Test To Do
+        gl.glEnable(GL_DEPTH_TEST)			# Enables Depth Testing
+        gl.glShadeModel(gl.GL_SMOOTH)			# Enables Smooth Color Shading
+            
+        gl.glMatrixMode(gl.GL_PROJECTION)
+        gl.glLoadIdentity()			# Reset The Projection Matrix
+        # Calculate The Aspect Ratio Of The Window
+        (width, height) = self.canvas.GetClientSize()
+        glu.gluPerspective(45.0, float(width)/float(height), 0.1, 100.0)
+
+        gl.glMatrixMode(gl.GL_MODELVIEW)
+
+        gl.glLightfv(gl.GL_LIGHT0, gl.GL_AMBIENT, (0.5, 0.5, 0.5, 1.0))	# Setup The Ambient Light 
+        gl.glLightfv(gl.GL_LIGHT0, gl.GL_DIFFUSE, (1.0, 1.0, 1.0, 1.0))	# Setup The Diffuse Light 
+        gl.glLightfv(gl.GL_LIGHT0, gl.GL_POSITION, (0.0, 0.0, 2.0, 1.0))	# Position The Light 
+        gl.glEnable(gl.GL_LIGHT0)					# Enable Light One 
+
+    def on_paint(self, event):
+        """Process the drawing event."""
+	import OpenGL.GL as gl
+	import OpenGL.GLU as glu
+        self.canvas.SetCurrent()
+        
+        if not self.gl_initialized:
+            self.initgl()
+            self.gl_initialized = True
+            self.print_help()
+        
+        if self.light:
+            gl.glEnable(gl.GL_LIGHTING)
+        else:
+            gl.glDisable(gl.GL_LIGHTING)
+
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)	# Clear The Screen And The Depth Buffer
+        gl.glLoadIdentity()					# Reset The View
+
+	gl.glPushMatrix()
+	glu.gluLookAt(*(list(rtp_to_xyz(*self.camera_pos_rtp)) + list(self.target_pos) + list(self.up)))
+
+        self.draw_cube()
+
+	gl.glPopMatrix()
+	gl.glFlush()
+	self.SwapBuffers()
+	event.Skip()
+    
+    def draw_cube(self, *args, **kwargs):
+	import OpenGL.GL as gl
+        # Determine cube proportions
+        divisor = max(self.hsi.shape[:2])
+        hh, hw = [float(x) / divisor for x in self.hsi.shape[:2]]
+        hz = self.cubeHeight
+
+        # Top Face (note that the texture's corners have to match the quad's corners)
+        gl.glBindTexture(gl.GL_TEXTURE_2D, long(self.textures[0]))
+        gl.glBegin(gl.GL_QUADS)
+        gl.glTexCoord2f(0.0, 0.0); glVertex3f(-hw, -hh,  hz)	# Bottom Left Of The Texture and Quad
+        gl.glTexCoord2f(1.0, 0.0); glVertex3f( hw, -hh,  hz)	# Bottom Right Of The Texture and Quad
+        gl.glTexCoord2f(1.0, 1.0); glVertex3f( hw,  hh,  hz)	# Top Right Of The Texture and Quad
+        gl.glTexCoord2f(0.0, 1.0); glVertex3f(-hw,  hh,  hz)	# Top Left Of The Texture and Quad
+        gl.glEnd();
+
+        # Bottom Face
+        gl.glBindTexture(gl.GL_TEXTURE_2D, long(self.textures[5]))
+        gl.glBegin(gl.GL_QUADS)
+        gl.glTexCoord2f(0.0, 0.0); glVertex3f(-hw, -hh, -hz)	# Bottom Left Of The Texture and Quad
+        gl.glTexCoord2f(1.0, 0.0); glVertex3f( hw, -hh, -hz)	# Bottom Right Of The Texture and Quad
+        gl.glTexCoord2f(1.0, 1.0); glVertex3f( hw,  hh, -hz)	# Top Right Of The Texture and Quad
+        gl.glTexCoord2f(0.0, 1.0); glVertex3f(-hw,  hh, -hz)	# Top Left Of The Texture and Quad
+        gl.glEnd();
+
+        # Far Face
+        gl.glBindTexture(gl.GL_TEXTURE_2D, long(self.textures[3]))
+        gl.glBegin(gl.GL_QUADS)
+        gl.glTexCoord2f(1.0, 1.0); glVertex3f(-hw,  hh, -hz)	# Top Left Of The Texture and Quad
+        gl.glTexCoord2f(0.0, 1.0); glVertex3f(-hw,  hh,  hz)	# Bottom Left Of The Texture and Quad
+        gl.glTexCoord2f(0.0, 0.0); glVertex3f( hw,  hh,  hz)	# Bottom Right Of The Texture and Quad
+        gl.glTexCoord2f(1.0, 0.0); glVertex3f( hw,  hh, -hz)	# Top Right Of The Texture and Quad
+        gl.glEnd();
+
+        # Near Face       
+        gl.glBindTexture(gl.GL_TEXTURE_2D, long(self.textures[1]))
+        gl.glBegin(gl.GL_QUADS)
+        gl.glTexCoord2f(1.0, 1.0); glVertex3f(-hw, -hh, -hz)	# Top Right Of The Texture and Quad
+        gl.glTexCoord2f(1.0, 0.0); glVertex3f( hw, -hh, -hz)	# Top Left Of The Texture and Quad
+        gl.glTexCoord2f(0.0, 0.0); glVertex3f( hw, -hh,  hz)	# Bottom Left Of The Texture and Quad
+        gl.glTexCoord2f(0.0, 1.0); glVertex3f(-hw, -hh,  hz)	# Bottom Right Of The Texture and Quad
+        gl.glEnd();
+
+        # Right face
+        gl.glBindTexture(gl.GL_TEXTURE_2D, long(self.textures[2]))
+        gl.glBegin(gl.GL_QUADS)
+        gl.glTexCoord2f(1.0, 0.0); glVertex3f( hw, -hh, -hz)	# Bottom Right Of The Texture and Quad
+        gl.glTexCoord2f(1.0, 1.0); glVertex3f( hw,  hh, -hz)	# Top Right Of The Texture and Quad
+        gl.glTexCoord2f(0.0, 1.0); glVertex3f( hw,  hh,  hz)	# Top Left Of The Texture and Quad
+        gl.glTexCoord2f(0.0, 0.0); glVertex3f( hw, -hh,  hz)	# Bottom Left Of The Texture and Quad
+        gl.glEnd();
+
+        # Left Face
+        gl.glBindTexture(gl.GL_TEXTURE_2D, long(self.textures[4]))
+        gl.glBegin(gl.GL_QUADS)
+        gl.glTexCoord2f(1.0, 0.0); glVertex3f(-hw, -hh, -hz)	# Bottom Left Of The Texture and Quad
+        gl.glTexCoord2f(0.0, 0.0); glVertex3f(-hw, -hh,  hz)	# Bottom Right Of The Texture and Quad
+        gl.glTexCoord2f(0.0, 1.0); glVertex3f(-hw,  hh,  hz)	# Top Right Of The Texture and Quad
+        gl.glTexCoord2f(1.0, 1.0); glVertex3f(-hw,  hh, -hz)	# Top Left Of The Texture and Quad
+        gl.glEnd();
+
     def on_resize(self, event):
         """Process the resize event."""
         if self.canvas.GetContext():
             # Make sure the frame is shown before calling SetCurrent.
             self.Show()
             self.canvas.SetCurrent()
-
             size = self.canvas.GetClientSize()
-            self.on_reshape(size.width, size.height)
+            self.resize(size.width, size.height)
             self.canvas.Refresh(False)
         event.Skip()
     
-    def on_paint(self, event):
-        """Process the drawing event."""
-        self.canvas.SetCurrent()
-        
-        # This is a 'perfect' time to initialize OpenGL ... only if we need to
-        if not self.GLinitialized:
-            self.initgl()
-            self.GLinitialized = True
-            self.print_help()
-        
-        if self.light:
-            glEnable(GL_LIGHTING)
-        else:
-            glDisable(GL_LIGHTING)
-
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)	# Clear The Screen And The Depth Buffer
-        glLoadIdentity()					# Reset The View
-        self.on_draw()
-
-        event.Skip()
-    
-    #
-    # GLFrame OpenGL Event Handlers
-    
-    def initgl(self):
-        """Initialize OpenGL for use in the window."""
-        self.load_textures()
-        glEnable(GL_TEXTURE_2D)
-        glClearColor(0.0, 0.0, 0.0, 0.0)	# This Will Clear The Background Color To Black
-        glClearDepth(1.0)			# Enables Clearing Of The Depth Buffer
-        glDepthFunc(GL_LESS)			# The Type Of Depth Test To Do
-        glEnable(GL_DEPTH_TEST)			# Enables Depth Testing
-        glShadeModel(GL_SMOOTH)			# Enables Smooth Color Shading
-            
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()			# Reset The Projection Matrix
-        # Calculate The Aspect Ratio Of The Window
-        (width, height) = self.canvas.GetClientSize()
-        gluPerspective(45.0, float(width)/float(height), 0.1, 100.0)
-
-        glMatrixMode(GL_MODELVIEW)
-
-        glLightfv(GL_LIGHT0, GL_AMBIENT, (0.5, 0.5, 0.5, 1.0))	# Setup The Ambient Light 
-        glLightfv(GL_LIGHT0, GL_DIFFUSE, (1.0, 1.0, 1.0, 1.0))	# Setup The Diffuse Light 
-        glLightfv(GL_LIGHT0, GL_POSITION, (0.0, 0.0, 2.0, 1.0))	# Position The Light 
-        glEnable(GL_LIGHT0)					# Enable Light One 
-
-    
-    def on_reshape(self, width, height):
+    def resize(self, width, height):
         """Reshape the OpenGL viewport based on the dimensions of the window."""
-        glViewport(0, 0, width, height)
+	import OpenGL.GL as gl
+        self.size = (width, height)
+        gl.glViewport(0, 0, width, height)
+        gl.glMatrixMode(gl.GL_PROJECTION)
+        gl.glLoadIdentity()
+	glu.gluPerspective(self.fovy, float(width) / height,
+			   self.znear, self.zfar)
         
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        gluPerspective(45.0, float(width)/float(height), 0.1, 100.0)
-        
-        glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()
+        gl.glMatrixMode(gl.GL_MODELVIEW)
+        gl.glLoadIdentity()
     
-    def on_draw(self, *args, **kwargs):
-
-        # Determine cube proportions
-        divisor = max(self.hsi.shape[:2])
-        hh, hw = [float(x) / divisor for x in self.hsi.shape[:2]]
-        hz = self.cubeHeight
-
-        # Cube orientation
-        glTranslatef(0.0, 0.0, self.distance)			# Move Into The Screen
-        glRotatef(self.rotation[0],1.0,0.0,0.0)			# Rotate The Cube On It's X Axis
-        glRotatef(self.rotation[1],0.0,1.0,0.0)			# Rotate The Cube On It's Y Axis
-        glRotatef(self.rotation[2],0.0,0.0,1.0)			# Rotate The Cube On It's Z Axis
-
-        # Top Face (note that the texture's corners have to match the quad's corners)
-        glBindTexture(GL_TEXTURE_2D, long(self.textures[0]))
-        glBegin(GL_QUADS)
-        glTexCoord2f(0.0, 0.0); glVertex3f(-hw, -hh,  hz)	# Bottom Left Of The Texture and Quad
-        glTexCoord2f(1.0, 0.0); glVertex3f( hw, -hh,  hz)	# Bottom Right Of The Texture and Quad
-        glTexCoord2f(1.0, 1.0); glVertex3f( hw,  hh,  hz)	# Top Right Of The Texture and Quad
-        glTexCoord2f(0.0, 1.0); glVertex3f(-hw,  hh,  hz)	# Top Left Of The Texture and Quad
-        glEnd();
-
-        # Bottom Face
-        glBindTexture(GL_TEXTURE_2D, long(self.textures[5]))
-        glBegin(GL_QUADS)
-        glTexCoord2f(0.0, 0.0); glVertex3f(-hw, -hh, -hz)	# Bottom Left Of The Texture and Quad
-        glTexCoord2f(1.0, 0.0); glVertex3f( hw, -hh, -hz)	# Bottom Right Of The Texture and Quad
-        glTexCoord2f(1.0, 1.0); glVertex3f( hw,  hh, -hz)	# Top Right Of The Texture and Quad
-        glTexCoord2f(0.0, 1.0); glVertex3f(-hw,  hh, -hz)	# Top Left Of The Texture and Quad
-        glEnd();
-
-        # Far Face
-        glBindTexture(GL_TEXTURE_2D, long(self.textures[3]))
-        glBegin(GL_QUADS)
-        glTexCoord2f(1.0, 1.0); glVertex3f(-hw,  hh, -hz)	# Top Left Of The Texture and Quad
-        glTexCoord2f(0.0, 1.0); glVertex3f(-hw,  hh,  hz)	# Bottom Left Of The Texture and Quad
-        glTexCoord2f(0.0, 0.0); glVertex3f( hw,  hh,  hz)	# Bottom Right Of The Texture and Quad
-        glTexCoord2f(1.0, 0.0); glVertex3f( hw,  hh, -hz)	# Top Right Of The Texture and Quad
-        glEnd();
-
-        # Near Face       
-        glBindTexture(GL_TEXTURE_2D, long(self.textures[1]))
-        glBegin(GL_QUADS)
-        glTexCoord2f(1.0, 1.0); glVertex3f(-hw, -hh, -hz)	# Top Right Of The Texture and Quad
-        glTexCoord2f(1.0, 0.0); glVertex3f( hw, -hh, -hz)	# Top Left Of The Texture and Quad
-        glTexCoord2f(0.0, 0.0); glVertex3f( hw, -hh,  hz)	# Bottom Left Of The Texture and Quad
-        glTexCoord2f(0.0, 1.0); glVertex3f(-hw, -hh,  hz)	# Bottom Right Of The Texture and Quad
-        glEnd();
-
-        # Right face
-        glBindTexture(GL_TEXTURE_2D, long(self.textures[2]))
-        glBegin(GL_QUADS)
-        glTexCoord2f(1.0, 0.0); glVertex3f( hw, -hh, -hz)	# Bottom Right Of The Texture and Quad
-        glTexCoord2f(1.0, 1.0); glVertex3f( hw,  hh, -hz)	# Top Right Of The Texture and Quad
-        glTexCoord2f(0.0, 1.0); glVertex3f( hw,  hh,  hz)	# Top Left Of The Texture and Quad
-        glTexCoord2f(0.0, 0.0); glVertex3f( hw, -hh,  hz)	# Bottom Left Of The Texture and Quad
-        glEnd();
-
-        # Left Face
-        glBindTexture(GL_TEXTURE_2D, long(self.textures[4]))
-        glBegin(GL_QUADS)
-        glTexCoord2f(1.0, 0.0); glVertex3f(-hw, -hh, -hz)	# Bottom Left Of The Texture and Quad
-        glTexCoord2f(0.0, 0.0); glVertex3f(-hw, -hh,  hz)	# Bottom Right Of The Texture and Quad
-        glTexCoord2f(0.0, 1.0); glVertex3f(-hw,  hh,  hz)	# Top Right Of The Texture and Quad
-        glTexCoord2f(1.0, 1.0); glVertex3f(-hw,  hh, -hz)	# Top Left Of The Texture and Quad
-        glEnd();
-
-        self.SwapBuffers()
-
     def on_char(self,event):
         key = event.GetKeyCode()
-        if key == ord('w'):
-            self.rotation[0] -= 1
-        elif key == ord('s'):
-            self.rotation[0] += 1
-        elif key == ord('a'):
-            self.rotation[2] -= 1
-        elif key == ord('d'):
-            self.rotation[2] += 1
-        elif key == ord('r'):
-            self.distance -= 0.1
-        elif key == ord('f'):
-            self.distance += 0.1
-        elif key == ord('t'):
+        if key == ord('t'):
             self.cubeHeight += 0.1
         elif key == ord('g'):
             self.cubeHeight -= 0.1
@@ -380,7 +432,7 @@ class WxHypercubeFrame(wx.Frame):
             self.light = not self.light
         elif key == ord('h'):
             self.print_help()
-        self.on_draw()
+#        self.on_draw()
         self.on_paint(event)
 
         if key == ord('q'):
@@ -388,10 +440,14 @@ class WxHypercubeFrame(wx.Frame):
 
     def print_help(self):
         print
+	print 'Mouse Functions:'
+	print '----------------'
+	print 'left-click & drag        ->   Rotate cube'
+	print 'CTRL+left-click & drag   ->   Zoom in/out'
+	print 'SHIFT+left-click & drag  ->  Pan'
+	print
         print 'Keybinds:'
         print '---------'
-        print 'w/s/a/d -> rotate up/down/left/right'
-        print 'r/f     -> increase/decrease distance'
         print 'l       -> toggle light'
         print 't/g     -> stretch/compress z-dimension'
         print 'h       -> print help message'
