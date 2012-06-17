@@ -4,6 +4,13 @@
 
 2012-06-17	tboggs <tboggs@users.sourceforge.net>
 
+    Fixed broken deprecation warnings that cause infinite recursion
+    
+    * spectral.py: Fixed deprection warnings for `tileImage`,
+      `saveTrainingSets`, and `loadTrainingSets`.
+
+2012-06-17	tboggs <tboggs@users.sourceforge.net>
+
     * graphics/hypercube.py: Added mouse control for hypercube display.
 
 2012-06-14	tboggs <tboggs@users.sourceforge.net>

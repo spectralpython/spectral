@@ -394,19 +394,17 @@ def load_training_sets(file, im = 0):
 
 # Deprecated Functions
 
-def tile_image(im, nrows, ncols):
+def tileImage(im, nrows, ncols):
     warn('tile_image has been deprecated.  Use tile_image.',
 	 DeprecationWarning)
     return tile_image(im, nrows, ncols)
 
-def save_training_sets(sets, file):
+def saveTrainingSets(sets, file):
     warn('save_training_sets has been deprecated.  Use save_training_sets.',
 	 DeprecationWarning)
     return save_training_sets(sets, file)
 
-def load_training_sets(file, im = 0):
+def loadTrainingSets(file, im = 0):
     warn('load_training_sets has been deprecated.  Use load_training_sets.',
 	 DeprecationWarning)
     return load_training_sets(file, im)
-
-
