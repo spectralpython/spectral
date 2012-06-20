@@ -68,13 +68,8 @@ try:
 except ImportError:
     raise ImportError, "Required dependency wx.glcanvas not present"
 
-try:
-    from OpenGL.GL import *
-except ImportError:
-    raise ImportError, "Required dependency OpenGL not present"
-
-DEFAULT_WIN_SIZE = (500, 500)                   # Default dimensions of image frame
-DEFAULT_TEXTURE_SIZE = (256, 256)               # Default size of textures on cube faces
+DEFAULT_WIN_SIZE = (500, 500)		# Default dimensions of image frame
+DEFAULT_TEXTURE_SIZE = (256, 256)	# Default size of textures on cube faces
 
 def rtp_to_xyz(r, theta, phi):
     '''Convert spherical polar coordinates to Cartesian'''
@@ -97,7 +92,7 @@ def xyz_to_rtp(x, y, z):
     
 (DOWN, UP) = (1, 0)
 class MouseHandler:
-    '''A class for enable rotate/zoom functions in an OpenGL window.'''
+    '''A class to enable rotate/zoom functions in an OpenGL window.'''
     MAX_BUTTONS = 10
     def __init__(self, window):
 	self.window = window
@@ -180,7 +175,7 @@ class WxHypercubeFrame(wx.Frame):
 
 	# These members can be modified before calling the show method.
 	self.clear_color = (0., 0., 0., 1.)
-	self.matrix_mode = GL_PROJECTION
+#	self.matrix_mode = GL_PROJECTION
 	self.win_pos = (100, 100)
 	self.fovy = 60.
 	self.znear = 0.1
@@ -292,7 +287,7 @@ class WxHypercubeFrame(wx.Frame):
         gl.glClearColor(0.0, 0.0, 0.0, 0.0)	# This Will Clear The Background Color To Black
         gl.glClearDepth(1.0)			# Enables Clearing Of The Depth Buffer
         gl.glDepthFunc(gl.GL_LESS)			# The Type Of Depth Test To Do
-        gl.glEnable(GL_DEPTH_TEST)			# Enables Depth Testing
+        gl.glEnable(gl.GL_DEPTH_TEST)			# Enables Depth Testing
         gl.glShadeModel(gl.GL_SMOOTH)			# Enables Smooth Color Shading
             
         gl.glMatrixMode(gl.GL_PROJECTION)
@@ -347,55 +342,47 @@ class WxHypercubeFrame(wx.Frame):
         # Top Face (note that the texture's corners have to match the quad's corners)
         gl.glBindTexture(gl.GL_TEXTURE_2D, long(self.textures[0]))
         gl.glBegin(gl.GL_QUADS)
-        gl.glTexCoord2f(0.0, 0.0); glVertex3f(-hw, -hh,  hz)	# Bottom Left Of The Texture and Quad
-        gl.glTexCoord2f(1.0, 0.0); glVertex3f( hw, -hh,  hz)	# Bottom Right Of The Texture and Quad
-        gl.glTexCoord2f(1.0, 1.0); glVertex3f( hw,  hh,  hz)	# Top Right Of The Texture and Quad
-        gl.glTexCoord2f(0.0, 1.0); glVertex3f(-hw,  hh,  hz)	# Top Left Of The Texture and Quad
+        gl.glTexCoord2f(0.0, 0.0); gl.glVertex3f(-hw, -hh,  hz)	# Bottom Left Of The Texture and Quad
+        gl.glTexCoord2f(1.0, 0.0); gl.glVertex3f( hw, -hh,  hz)	# Bottom Right Of The Texture and Quad
+        gl.glTexCoord2f(1.0, 1.0); gl.glVertex3f( hw,  hh,  hz)	# Top Right Of The Texture and Quad
+        gl.glTexCoord2f(0.0, 1.0); gl.glVertex3f(-hw,  hh,  hz)	# Top Left Of The Texture and Quad
         gl.glEnd();
 
-        # Bottom Face
-        gl.glBindTexture(gl.GL_TEXTURE_2D, long(self.textures[5]))
-        gl.glBegin(gl.GL_QUADS)
-        gl.glTexCoord2f(0.0, 0.0); glVertex3f(-hw, -hh, -hz)	# Bottom Left Of The Texture and Quad
-        gl.glTexCoord2f(1.0, 0.0); glVertex3f( hw, -hh, -hz)	# Bottom Right Of The Texture and Quad
-        gl.glTexCoord2f(1.0, 1.0); glVertex3f( hw,  hh, -hz)	# Top Right Of The Texture and Quad
-        gl.glTexCoord2f(0.0, 1.0); glVertex3f(-hw,  hh, -hz)	# Top Left Of The Texture and Quad
-        gl.glEnd();
 
         # Far Face
         gl.glBindTexture(gl.GL_TEXTURE_2D, long(self.textures[3]))
         gl.glBegin(gl.GL_QUADS)
-        gl.glTexCoord2f(1.0, 1.0); glVertex3f(-hw,  hh, -hz)	# Top Left Of The Texture and Quad
-        gl.glTexCoord2f(0.0, 1.0); glVertex3f(-hw,  hh,  hz)	# Bottom Left Of The Texture and Quad
-        gl.glTexCoord2f(0.0, 0.0); glVertex3f( hw,  hh,  hz)	# Bottom Right Of The Texture and Quad
-        gl.glTexCoord2f(1.0, 0.0); glVertex3f( hw,  hh, -hz)	# Top Right Of The Texture and Quad
+        gl.glTexCoord2f(1.0, 1.0); gl.glVertex3f(-hw,  hh, -hz)	# Top Left Of The Texture and Quad
+        gl.glTexCoord2f(0.0, 1.0); gl.glVertex3f(-hw,  hh,  hz)	# Bottom Left Of The Texture and Quad
+        gl.glTexCoord2f(0.0, 0.0); gl.glVertex3f( hw,  hh,  hz)	# Bottom Right Of The Texture and Quad
+        gl.glTexCoord2f(1.0, 0.0); gl.glVertex3f( hw,  hh, -hz)	# Top Right Of The Texture and Quad
         gl.glEnd();
 
         # Near Face       
         gl.glBindTexture(gl.GL_TEXTURE_2D, long(self.textures[1]))
         gl.glBegin(gl.GL_QUADS)
-        gl.glTexCoord2f(1.0, 1.0); glVertex3f(-hw, -hh, -hz)	# Top Right Of The Texture and Quad
-        gl.glTexCoord2f(1.0, 0.0); glVertex3f( hw, -hh, -hz)	# Top Left Of The Texture and Quad
-        gl.glTexCoord2f(0.0, 0.0); glVertex3f( hw, -hh,  hz)	# Bottom Left Of The Texture and Quad
-        gl.glTexCoord2f(0.0, 1.0); glVertex3f(-hw, -hh,  hz)	# Bottom Right Of The Texture and Quad
+        gl.glTexCoord2f(1.0, 1.0); gl.glVertex3f(-hw, -hh, -hz)	# Top Right Of The Texture and Quad
+        gl.glTexCoord2f(1.0, 0.0); gl.glVertex3f( hw, -hh, -hz)	# Top Left Of The Texture and Quad
+        gl.glTexCoord2f(0.0, 0.0); gl.glVertex3f( hw, -hh,  hz)	# Bottom Left Of The Texture and Quad
+        gl.glTexCoord2f(0.0, 1.0); gl.glVertex3f(-hw, -hh,  hz)	# Bottom Right Of The Texture and Quad
         gl.glEnd();
 
         # Right face
         gl.glBindTexture(gl.GL_TEXTURE_2D, long(self.textures[2]))
         gl.glBegin(gl.GL_QUADS)
-        gl.glTexCoord2f(1.0, 0.0); glVertex3f( hw, -hh, -hz)	# Bottom Right Of The Texture and Quad
-        gl.glTexCoord2f(1.0, 1.0); glVertex3f( hw,  hh, -hz)	# Top Right Of The Texture and Quad
-        gl.glTexCoord2f(0.0, 1.0); glVertex3f( hw,  hh,  hz)	# Top Left Of The Texture and Quad
-        gl.glTexCoord2f(0.0, 0.0); glVertex3f( hw, -hh,  hz)	# Bottom Left Of The Texture and Quad
+        gl.glTexCoord2f(1.0, 0.0); gl.glVertex3f( hw, -hh, -hz)	# Bottom Right Of The Texture and Quad
+        gl.glTexCoord2f(1.0, 1.0); gl.glVertex3f( hw,  hh, -hz)	# Top Right Of The Texture and Quad
+        gl.glTexCoord2f(0.0, 1.0); gl.glVertex3f( hw,  hh,  hz)	# Top Left Of The Texture and Quad
+        gl.glTexCoord2f(0.0, 0.0); gl.glVertex3f( hw, -hh,  hz)	# Bottom Left Of The Texture and Quad
         gl.glEnd();
 
         # Left Face
         gl.glBindTexture(gl.GL_TEXTURE_2D, long(self.textures[4]))
         gl.glBegin(gl.GL_QUADS)
-        gl.glTexCoord2f(1.0, 0.0); glVertex3f(-hw, -hh, -hz)	# Bottom Left Of The Texture and Quad
-        gl.glTexCoord2f(0.0, 0.0); glVertex3f(-hw, -hh,  hz)	# Bottom Right Of The Texture and Quad
-        gl.glTexCoord2f(0.0, 1.0); glVertex3f(-hw,  hh,  hz)	# Top Right Of The Texture and Quad
-        gl.glTexCoord2f(1.0, 1.0); glVertex3f(-hw,  hh, -hz)	# Top Left Of The Texture and Quad
+        gl.glTexCoord2f(1.0, 0.0); gl.glVertex3f(-hw, -hh, -hz)	# Bottom Left Of The Texture and Quad
+        gl.glTexCoord2f(0.0, 0.0); gl.glVertex3f(-hw, -hh,  hz)	# Bottom Right Of The Texture and Quad
+        gl.glTexCoord2f(0.0, 1.0); gl.glVertex3f(-hw,  hh,  hz)	# Top Right Of The Texture and Quad
+        gl.glTexCoord2f(1.0, 1.0); gl.glVertex3f(-hw,  hh, -hz)	# Top Left Of The Texture and Quad
         gl.glEnd();
 
     def on_resize(self, event):
@@ -510,6 +497,14 @@ def hypercube(data, *args, **kwargs):
     
 	from spectral.graphics.hypercube import hypercube
     '''
-    from spectral.graphics.spywxpython import viewer
-    cubeFunctor = HypercubeFunctor(data, *args, **kwargs)
-    viewer.view(None, function = cubeFunctor)
+    import spectral
+    import time
+    from spectral.graphics import spywxpython
+
+    # Initialize the display thread if it isn't already
+    if spywxpython.viewer == None:
+	spectral.init_graphics()
+	time.sleep(3)
+
+    functor = HypercubeFunctor(data, *args, **kwargs)
+    spywxpython.viewer.view(None, function=functor)

@@ -32,3 +32,5 @@
 
 from graphics import init_graphics, save_image, view, view_indexed
 from colorscale import ColorScale
+from hypercube import hypercube
+from ndwindow import ndwindow

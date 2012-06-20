@@ -2,6 +2,18 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2012-06-20	tboggs <tboggs@users.sourceforge.net>
+
+    Initial ND window capability.  Automatically initialize display thread when
+    `hypercube` is called, if needed.  Removed global import of OpenGL namespace
+    from hypercube.py.
+    
+    * graphics/__init__.py: Import `hypercube` and `ndwindow` functions.
+    * graphics/hypercube.py: Eliminated global import of OpenGL namespace.
+      (hypercube): Automatically call `init_graphics`, if needed.
+    * graphics/ndwindow.py: New file for ND window display.
+    * graphics/spywxpython.py: Init module-level `viewer` to None.
+    
 2012-06-17	tboggs <tboggs@users.sourceforge.net>
 
     Fixed broken deprecation warnings that cause infinite recursion

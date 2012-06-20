@@ -36,6 +36,7 @@ must be referenced in that thread.  Thus, much of the actual GUI code
 is in SpyWxPythonThread.py.
 '''
 
+viewer = None
 
 class SpyWxPythonThreadStarter:
     def start(self):
