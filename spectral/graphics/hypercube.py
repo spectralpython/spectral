@@ -175,7 +175,6 @@ class WxHypercubeFrame(wx.Frame):
 
 	# These members can be modified before calling the show method.
 	self.clear_color = (0., 0., 0., 1.)
-#	self.matrix_mode = GL_PROJECTION
 	self.win_pos = (100, 100)
 	self.fovy = 60.
 	self.znear = 0.1

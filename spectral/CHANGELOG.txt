@@ -2,6 +2,35 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2012-07-08	tboggs <tboggs@users.sourceforge.net>
+
+    Added a right-click meny to the `WxNDWindowFrame` for pixel class
+    reassignment.  `ndwindow` now returns a proxy object by which client code
+    can access the current value of the `classes` array associated with the
+    displayed data.
+
+    * graphics/graphics.py
+      (_next_window_data_proxy_id): Module-level counter for data proxy IDs.
+      (_window_data_proxies): Module-level dict of window data objects.
+      (WindowData): New base class for window data objects.
+      (WindowDataProxy): New proxy base class for accessing WindowData objects.
+      (create_window_data_proxy_id): Returns a new WindowDataProxy ID and
+        adds an associated entry in _window_data_proxies.
+    * graphics/ndwindow.py:
+      (MouseMenu): New class for implementing a right-click menu.
+      (WxNDWindowFrame.__init__): Take proxy ID as an argument.
+      (WxNDWindowFrame.on_event_close): New method for updating proxy data prior
+        to closing the window.
+      (WxNDWindowFrame.right_click): New method to pop up the right-click menu.
+      (WxNDWindowFrame.on_char): Call `on_event_close` when closing the window.
+      (NDWindowData): New class for holding returnable client data.
+      (NDWindowDataProxy): New data proxy used by client (calling) code.
+      (NDWindowFunctor.__init__): Take proxy ID argument.
+      (NDWindowFunctor.__call__): Pass proxy ID to window constructor.
+      (ndwindow): Return a proxy object to allow client code to access updated
+        values of `classes` array.
+    * graphics/hypercube.py: Code cleanup.
+      
 2012-06-20	tboggs <tboggs@users.sourceforge.net>
 
     Initial ND window capability.  Automatically initialize display thread when

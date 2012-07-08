@@ -36,6 +36,9 @@ Common functions for extracting and manipulating data for graphical display.
 from exceptions import DeprecationWarning
 from warnings import warn
 
+_next_window_data_proxy_id = 1
+_window_data_proxies = {}
+
 def init_graphics():
     '''Initialize default graphics handlers.'''
 
@@ -443,6 +446,38 @@ def get_image_display_data(source, bands = None, **kwargs):
             rgb = (rgb - mmin) / (mmax - mmin)
 
     return rgb
+
+class WindowData(object):
+    '''A base class for data rertrievable from open windows.'''
+    def __init__(self, proxy_id):
+	global _window_data_proxies
+	self.window_closed = False
+	self.remove_on_close = False
+	self._proxy_id = proxy_id
+	_window_data_proxies[self._proxy_id] = self
+
+class WindowDataProxy:
+    '''A base class for proxying data associated with SPy windows.'''
+    def __init__(self):
+	self.id = create_window_data_proxy_id()
+    def __del__(self):
+	global _window_data_proxies
+	data = _window_data_proxies.get(self.id)
+	if data and data.window_closed == False:
+	    data.remove_on_close = True
+    def get_data(self):
+	global _window_data_proxies
+	return _window_data_proxies[self.id]
+    def pop(self):
+	global _window_data_proxies
+	_window_data_proxies.pop(self.id)
+
+def create_window_data_proxy_id():
+    '''Returns the ID of a new WindowDataProxy object.'''
+    global _next_window_data_proxy_id
+    _window_data_proxies[_next_window_data_proxy_id] = None
+    _next_window_data_proxy_id += 1
+    return _next_window_data_proxy_id - 1
 
 #Deprecated functions
 

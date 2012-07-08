@@ -135,6 +135,23 @@ from spectral.graphics.colorscale import ColorScale
 from spectral import spy_colors
 import numpy as np
 
+
+class MouseMenu(wx.Menu):
+    '''Right-click menu for reassigning points to different classes.'''
+    def __init__(self, window):
+        super(MouseMenu, self).__init__(title='Assign to class')
+        self.window = window
+	self.id_classes = {}
+	for i in range(self.window.max_menu_class + 1):
+	    id = wx.NewId()
+	    self.id_classes[id] = i
+	    mi = wx.MenuItem(self, id, str(i))
+	    self.AppendItem(mi)
+	    self.Bind(wx.EVT_MENU, self.reassign_points, mi)
+    def reassign_points(self, event):
+	i = self.id_classes[event.GetId()]
+	self.window.post_reassign_selection(i)
+
 # Multipliers for projecting data into each 3D octant
 octant_coeffs = np.array([
     [ 1,  1,  1],
@@ -180,13 +197,12 @@ def random_subset(sequence, nsamples):
 class WxNDWindowFrame(wx.Frame):
     '''A widow class for displaying N-dimensional data points.'''
 
-
-    def __init__(self, data, parent, id, *args, **kwargs):
+    def __init__(self, data, proxy_id, parent, id, *args, **kwargs):
         global DEFAULT_WIN_SIZE
-	print 'IN __INIT__'
         self.kwargs = kwargs
 	self.size = kwargs.get('size', DEFAULT_WIN_SIZE)
 	self.title = kwargs.get('title', 'ND Window')
+	self.proxy_id = proxy_id
 
         #
         # Forcing a specific style on the window.
@@ -199,10 +215,9 @@ class WxNDWindowFrame(wx.Frame):
 					       kwargs.get('name', 'ND Window'))
         
         self.gl_initialized = False
-        attribs = (glcanvas.WX_GL_RGBA, # RGBA
-                   glcanvas.WX_GL_DOUBLEBUFFER, # Double Buffered
-                   glcanvas.WX_GL_DEPTH_SIZE, 32) # 32 bit
-#	self.display_mode = GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_ALPHA
+        attribs = (glcanvas.WX_GL_RGBA,
+                   glcanvas.WX_GL_DOUBLEBUFFER,
+                   glcanvas.WX_GL_DEPTH_SIZE, 32)
         self.canvas = glcanvas.GLCanvas(self, attribList=attribs)
 
 	self.clear_color = (0, 0, 0, 0)
@@ -234,11 +249,26 @@ class WxNDWindowFrame(wx.Frame):
         self.canvas.Bind(wx.EVT_LEFT_UP, self.mouse_handler.left_up)
         self.canvas.Bind(wx.EVT_MOTION, self.mouse_handler.motion)
         self.canvas.Bind(wx.EVT_CHAR, self.on_char)
+	self.canvas.Bind(wx.EVT_RIGHT_DOWN, self.right_click)
+	self.canvas.Bind(wx.EVT_CLOSE, self.on_event_close)
 
 	self.data = data
 	self.classes = kwargs.get('classes', None)
 	self.features = kwargs.get('features', range(6))
-
+	self.max_menu_class = np.max(self.classes.ravel())
+	
+    def on_event_close(self, event=None):
+	from spectral.graphics.graphics import _window_data_proxies
+	if self.window_data.remove_on_close == True \
+	   and _window_data_proxies.has_key(self.proxy_id):
+	    _window_data_proxies.pop(self.proxy_id)
+	else:
+	    self.window_data.window_closed = True
+	self.window_data = None
+	
+    def right_click(self, event):
+	self.canvas.PopupMenu(MouseMenu(self), event.GetPosition())
+	
     def add_display_command(self, cmd):
 	'''Adds a command to be called next time `display` is run.'''
 	self._display_commands.append(cmd)
@@ -282,7 +312,7 @@ class WxNDWindowFrame(wx.Frame):
 	if classes == None:
 	    self.classes = np.zeros(data.shape[:2], dtype=int)
 	else:
-	    self.classes = classes
+	    self.classes = np.array(classes)
 
 	self.palette = spy_colors.astype(float) / 255.
 	self.palette[0] = np.array([1.0, 1.0, 1.0])
@@ -308,12 +338,11 @@ class WxNDWindowFrame(wx.Frame):
 	# background to extract the pixel's row/col index.
 
 	N = self.data.shape[0] * self.data.shape[1]
-	self._npasses = 1
-	print 'RGBA BITS =', self._rgba_bits
-	while N > 2**(self._npasses * sum(self._rgba_bits)):
-	    self._npasses += 1
-	print 'NUM PASSES =', self._npasses
+	if N > 2**sum(self._rgba_bits):
+	    raise Exception('Insufficient color bits (%d) for N-D window display' \
+			    % sum(self._rgba_bits))
 	
+	self.window_data = NDWindowData(self.proxy_id, np.array(self.classes.reshape(self.data.shape[:2])))
 	self.reset_view_geometry()
 	    
     def set_octant_display_features(self, features):
@@ -532,6 +561,7 @@ class WxNDWindowFrame(wx.Frame):
 	reassigned pixels from the display list, then reassigning again,
 	repeating until there are no more pixels in the selction box.
 	'''
+	import spectral
 	nreassigned_tot = 0
 	i = 1
 	while True:
@@ -543,7 +573,6 @@ class WxNDWindowFrame(wx.Frame):
 	    nreassigned = np.sum(cr[ids] != new_class)
 	    nreassigned_tot += nreassigned
 	    cr[ids] = new_class
-	    print 'self.colors.shape ', self.colors.shape
 	    new_color = np.zeros(4, 'uint8')
 	    new_color[:3] = (np.array(self.palette[new_class]) * 255).astype('uint8')
 	    self.colors.reshape((-1,4))[ids] = new_color
@@ -556,6 +585,8 @@ class WxNDWindowFrame(wx.Frame):
 	print '%d points were reasssigned to class %d.' \
 	      % (nreassigned_tot, new_class)
 	self._selection_box = None
+	self.window_data.classes = cr.reshape(self.data.shape[:2])
+#	spectral.returns['ndwindow'] = cr.reshape(self.data.shape[:2])
 	return nreassigned_tot
 	    
 	
@@ -709,28 +740,6 @@ class WxNDWindowFrame(wx.Frame):
 	gl.glShadeModel(gl.GL_FLAT)
 	self.set_data(self.data, classes=self.classes, features=self.features)
 
-#    def show(self, data, **kwargs):
-#	'''Initializes GLUT and starts the main loop.'''
-#	print 'IN SHOW'
-#	glutInit()
-#	glutInitDisplayMode(self.display_mode)
-#	glutInitWindowSize(*self.size)
-#	glutInitWindowPosition(*self.win_pos)
-#	glutCreateWindow(self.title)
-#	
-#	self.initgl()
-#	glutDisplayFunc(self.display)
-#	glutReshapeFunc(self.reshape)
-#	glutMouseFunc(self.mouse_handler.click)
-#	glutMotionFunc(self.mouse_handler.motion)
-#
-#	classes = kwargs.get('classes', None)
-#	features = kwargs.get('features', None)
-#	self.set_data(data, classes=classes, features=features)
-#
-#	self.create_menus()
-#	glutMainLoop()
-
     def on_resize(self, event):
         """Process the resize event."""
         if self.canvas.GetContext():
@@ -785,33 +794,17 @@ class WxNDWindowFrame(wx.Frame):
 	    self.point_size = max(self.point_size - 1, 1.0)
 	    self._refresh_display_lists = True
 	elif key == 'q':
-	    self.Destroy()
-#	    import sys
-#	    sys.exit(0)
+	    self.on_event_close()
+	    self.Close(True)
+#	    self.Destroy()
 	elif key == 'r':
 	    self.reset_view_geometry()
 	elif key == 'u':
 	    self._show_unassigned = not self._show_unassigned
 	    print 'SHOW UNASSIGNED =', self._show_unassigned
 	    self._refresh_display_lists = True
-	elif key == 'x':
-	    self.reassign_selection(5)
 
 	self.canvas.Refresh()
-    
-    def create_menus(self):
-	'''Creates the GLUT menu for reassigning pixels in the selection box.'''
-	
-	reassign = glutCreateMenu(self.post_reassign_selection)
-	[glutAddMenuEntry(str(i), i) for i in
-	    range(max(self.classes.ravel() + 1))]
-#	identify = glutCreateMenu(self.get_points_in_selection_box)
-#	glutAddMenuEntry("This", 4)
-#	glutAddMenuEntry("That", 5)
-	glutCreateMenu(main_menu)
-	glutAddSubMenu("Reassign points to class", reassign)
-#	glutAddSubMenu("Identify points", identify)
-	glutAttachMenu(GLUT_RIGHT_BUTTON)
     
     def update_window_title(self):
 	'''Prints current file name and current point color to window title.'''
@@ -844,18 +837,42 @@ r	-->	Reset viewing geometry
 u	-->	Toggle display of unassigned points (points with class == 0)
 '''
 
-#This function is needed if creating GLUT mouse menus
-def main_menu(i):
-    pass
+from spectral.graphics.graphics import WindowData, WindowDataProxy
+
+class NDWindowData(WindowData):
+    def __init__(self, proxy_id, classes):
+	WindowData.__init__(self, proxy_id)
+	self.classes = classes
+
+class NDWindowDataProxy(WindowDataProxy):
+    def __init__(self):
+	WindowDataProxy.__init__(self)
+	self._classes = None
+    @property
+    def classes(self):
+	if self._classes != None:
+	    # The window was already closed so the data are stored locally.
+	    return self._classes
+	data = self.get_data()
+	if data.window_closed:
+	    # Return and store the data, then remove the window data object.
+	    self._classes = data.classes
+	    self.pop()
+	    return self._classes
+	else:
+	    # Return proxied data
+	    return data.classes
 
 class NDWindowFunctor:
     '''A functor used to create the new ND window in the display thread.'''
-    def __init__(self, data, *args, **kwargs):
+    def __init__(self, data, proxy_id, *args, **kwargs):
         self.data = data
         self.args = args
+	self.proxy_id = proxy_id
         self.kwargs = kwargs
     def __call__(self):
-        frame = WxNDWindowFrame(self.data, None, -1, *self.args, **self.kwargs)
+        frame = WxNDWindowFrame(self.data, self.proxy_id, None, -1,
+				*self.args, **self.kwargs)
         return frame
 
 def ndwindow(data, *args, **kwargs):
@@ -865,14 +882,17 @@ def ndwindow(data, *args, **kwargs):
     
     # Initialize the display thread if it isn't already
     if spywxpython.viewer == None:
-	spectral.init_graphics()
-	time.sleep(3)
-
-    functor = NDWindowFunctor(data, *args, **kwargs)
+	for i in range(3):
+	    spectral.init_graphics()
+	    time.sleep(3)
+	    if spywxpython.viewer != None:
+		print 'OK:', i
+		break
+    proxy = NDWindowDataProxy()
+    functor = NDWindowFunctor(data, proxy.id, *args, **kwargs)
     spywxpython.viewer.view(None, function = functor)
+    return proxy
 
 # TO DO:
-# - Add wx pixel reassignment menu
 # - Handle randomization for small numbers of features
-# - Return current feature map after window is closed
 # - ndwindow doc string
