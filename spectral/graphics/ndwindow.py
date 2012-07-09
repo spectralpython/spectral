@@ -255,7 +255,7 @@ class WxNDWindowFrame(wx.Frame):
 	self.data = data
 	self.classes = kwargs.get('classes', None)
 	self.features = kwargs.get('features', range(6))
-	self.max_menu_class = np.max(self.classes.ravel())
+	self.max_menu_class = np.max(self.classes.ravel() + 1)
 	
     def on_event_close(self, event=None):
 	from spectral.graphics.graphics import _window_data_proxies
@@ -587,6 +587,8 @@ class WxNDWindowFrame(wx.Frame):
 	      % (nreassigned_tot, new_class)
 	self._selection_box = None
 	self.window_data.classes = cr.reshape(self.data.shape[:2])
+	if nreassigned_tot > 0 and new_class == self.max_menu_class:
+	    self.max_menu_class += 1
 	return nreassigned_tot
 	    
 	
@@ -928,6 +930,57 @@ def validate_args(data, *args, **kwargs):
 	raise TypeError('Invalide window title specification.')
 	
 def ndwindow(data, *args, **kwargs):
+    '''Creates a 3D window that displays ND data from an image.
+
+    Arguments:
+
+	`data` (:class:`spectral.ImageArray` or :class:`numpy.ndarray`):
+	
+	    Source image data to display.  `data` can be and instance of a
+	    :class:`spectral.ImageArray or a :class:`numpy.ndarray`. `source`
+	    must have shape `MxNxB`, where M >= 3.
+
+    Keyword Arguments:
+
+        `classes` (:class:`numpy.ndarray`):
+	
+	    2-dimensional array of integers specifying the classes of each pixel
+	    in `data`. `classes` must have the same dimensions as the first two
+	    dimensions of `data`.
+	
+	`features` (list or list of integer lists):
+
+	    This keyword specifies which bands/features from `data` should be
+	    displayed in the 3D window. It must be defined as one of the
+	    following:
+	    
+	    #. A length-3 list of integer feature IDs. In this case, the data
+	       points will be displayed in the positive x,y,z octant using
+	       features associated with the 3 integers.
+	    
+	    #. A length-6 list of integer feature IDs. In this case, each
+	       integer specifies a single feature index to be associated with
+	       the coordinate semi-axes x, y, z, -x, -y, and -z	(in that order).
+	       Each octant will display data points using the features
+	       associated with the 3 semi-axes for that octant.
+
+	    #. A length-8 list of length-3 lists of integers. In this case, each
+	       length-3 list specfies the features to be displayed in a single
+	       octants (the same semi-axis can be associated with different
+	       features in different octants).  Octants are ordered starting
+	       with the postive x,y,z octant and procede counterclockwise around
+	       the z-axis, then procede similarly around the negative half of
+	       the z-axis.  An octant triplet can be specified as None instead
+	       of a list, in which case nothing will be rendered in that octant.
+	
+	`size` (2-tuple of ints)
+	
+	    Specifies the initial size (pixel rows/cols) of the window.
+	    
+	`title` (string)
+	
+	    The title to display in the ND window title bar.
+    '''
     import spectral
     import time
     from spectral.graphics import spywxpython

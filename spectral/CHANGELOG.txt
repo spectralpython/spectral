@@ -25,6 +25,9 @@
       (WxNDWindowFrame.on_char):
       * Call `on_event_close` when closing the window.
       * Only allow single-octant mode if fewer than six features are available.
+      (WxNDWindowFrame.reassign_selection): If pixels were reassigned to the max
+        class, increment the max class so a new empty class will be available
+	next time the mouse menu is opened.
       (WxNDWindowFrame.set_data): Only allow single-octant mode if fewer than
         six features are available.
       (NDWindowData): New class for holding returnable client data.
@@ -33,7 +36,7 @@
       (NDWindowFunctor.__call__): Pass proxy ID to window constructor.
       (validate_args): New function to validate args passed to `ndwindow`.
       (ndwindow): Return a proxy object to allow client code to access updated
-        values of `classes` array. Call `validate_args`.
+        values of `classes` array. Call `validate_args`. Added doc string.
     * graphics/hypercube.py: Code cleanup.
       
 2012-06-20	tboggs <tboggs@users.sourceforge.net>
