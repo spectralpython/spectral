@@ -187,7 +187,7 @@ def random_subset(sequence, nsamples):
     '''Returns a list of `nsamples` unique random elements from `sequence`.'''
     import random
     if len(sequence) < nsamples:
-	raise Exception('Sequence in random_triplet must have at least' +
+	raise Exception('Sequence in random_triplet must have at least ' +
 			'3 elements.')
     triplet = [random.choice(sequence) for i in range(nsamples)]
     while len(set(triplet)) != nsamples:
@@ -212,7 +212,7 @@ class WxNDWindowFrame(wx.Frame):
 					       wx.DefaultPosition,
 					       wx.Size(*self.size),
 					       style,
-					       kwargs.get('name', 'ND Window'))
+					       self.title)
         
         self.gl_initialized = False
         attribs = (glcanvas.WX_GL_RGBA,
@@ -298,6 +298,9 @@ class WxNDWindowFrame(wx.Frame):
 	import OpenGL.GL as gl
 	classes = kwargs.get('classes', None)
 	features = kwargs.get('features', range(6))
+	if self.data.shape[2] < 6:
+	    features = features[:3]
+	    self.quadrant_mode == 'single'
 
 	# Scale the data set to span an octant
 
@@ -532,8 +535,6 @@ class WxNDWindowFrame(wx.Frame):
 	if self._selection_box != None:
 	    self.draw_box(*self._selection_box)
 	
-#	self.update_window_title()
-	 
 	self.SwapBuffers()
 	event.Skip()
 
@@ -586,7 +587,6 @@ class WxNDWindowFrame(wx.Frame):
 	      % (nreassigned_tot, new_class)
 	self._selection_box = None
 	self.window_data.classes = cr.reshape(self.data.shape[:2])
-#	spectral.returns['ndwindow'] = cr.reshape(self.data.shape[:2])
 	return nreassigned_tot
 	    
 	
@@ -773,6 +773,10 @@ class WxNDWindowFrame(wx.Frame):
 	if key == 'a':
 	    self.show_axes_tf = not self.show_axes_tf
 	elif key == 'd':
+	    if self.data.shape[2] < 6:
+		print 'Only single-quadrant mode is supported for %d features.' % \
+		      self.data.shape[2]
+		return
 	    if self.quadrant_mode == 'single':
 		self.quadrant_mode = 'mirrored'
 	    elif self.quadrant_mode == 'mirrored':
@@ -796,7 +800,6 @@ class WxNDWindowFrame(wx.Frame):
 	elif key == 'q':
 	    self.on_event_close()
 	    self.Close(True)
-#	    self.Destroy()
 	elif key == 'r':
 	    self.reset_view_geometry()
 	elif key == 'u':
@@ -840,11 +843,13 @@ u	-->	Toggle display of unassigned points (points with class == 0)
 from spectral.graphics.graphics import WindowData, WindowDataProxy
 
 class NDWindowData(WindowData):
+    '''Class to hold data to be accessible by window client code.'''
     def __init__(self, proxy_id, classes):
 	WindowData.__init__(self, proxy_id)
 	self.classes = classes
 
 class NDWindowDataProxy(WindowDataProxy):
+    '''A proxy data class by which client code can access window data.'''
     def __init__(self):
 	WindowDataProxy.__init__(self)
 	self._classes = None
@@ -875,6 +880,53 @@ class NDWindowFunctor:
 				*self.args, **self.kwargs)
         return frame
 
+def validate_args(data, *args, **kwargs):
+    '''Validates arguments to the `ndwindow` function.'''
+    from exceptions import ValueError, TypeError
+    import numpy as np
+    if not isinstance(data, np.ndarray):
+	raise TypeError('`data` argument must be a numpy ndarray.')
+    if len(data.shape) != 3:
+	raise ValueError('`data` argument must have 3 dimensions.')
+    if data.shape[2] < 3:
+	raise ValueError('`data` argument must have at least 3 values along' + \
+			 ' third dimension.')
+    if kwargs.has_key('classes'):
+	classes = kwargs['classes']
+	if classes.shape != data.shape[:2]:
+	    raise ValueError('`classes` keyword argument shape does not match' +
+			     ' `data` argument shape.')
+    if kwargs.has_key('features'):
+	features = kwargs['features']
+	if type(features) not in (list, tuple):
+	    raise TypeError('`features` keyword must be a list or tuple.')
+	if len(features) in (3, 6):
+	    if max(features) >= data.shape[2]:
+		raise ValueError('Feature index exceeds max for data array.')
+	elif len(features) == 8:
+	    for octant in features:
+		if type(octant) not in (list, tuple, type(None)):
+		    raise TypeError('Each octant in `features` keyword must' + \
+				    'be a list/tuple of 3 ints or None.')
+		if type(octant) not in (list, tuple) and len(octant) != 3:
+		    raise TypeError('Each octant in the `features` keyword ' +
+				    'must be a list/tuple of exactly 3 ints.')
+		if max(octant) >= data.shape[2]:
+		    raise ValueError('Feature index exceeds max for data array.')
+	else:
+	    raise ValueError('Invalid number of elements in `features` keyword.')
+    if kwargs.has_key('size'):
+	size = kwargs['size']
+	if type(size) not in (list, tuple) or len(size) != 2:
+	    raise ValueError('`size` keyword must be a list/tuple of two ints.')
+	for n in size:
+	    if type(n) != int:
+		raise TypeError('`size` keyword must contain two ints.')
+	    if n < 1:
+		raise ValueError('Invalid window size specification.')
+    if kwargs.has_key('title') and type(kwargs['title']) != str:
+	raise TypeError('Invalide window title specification.')
+	
 def ndwindow(data, *args, **kwargs):
     import spectral
     import time
@@ -888,11 +940,8 @@ def ndwindow(data, *args, **kwargs):
 	    if spywxpython.viewer != None:
 		print 'OK:', i
 		break
+    validate_args(data, *args, **kwargs)
     proxy = NDWindowDataProxy()
     functor = NDWindowFunctor(data, proxy.id, *args, **kwargs)
     spywxpython.viewer.view(None, function = functor)
     return proxy
-
-# TO DO:
-# - Handle randomization for small numbers of features
-# - ndwindow doc string

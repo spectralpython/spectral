@@ -22,13 +22,18 @@
       (WxNDWindowFrame.on_event_close): New method for updating proxy data prior
         to closing the window.
       (WxNDWindowFrame.right_click): New method to pop up the right-click menu.
-      (WxNDWindowFrame.on_char): Call `on_event_close` when closing the window.
+      (WxNDWindowFrame.on_char):
+      * Call `on_event_close` when closing the window.
+      * Only allow single-octant mode if fewer than six features are available.
+      (WxNDWindowFrame.set_data): Only allow single-octant mode if fewer than
+        six features are available.
       (NDWindowData): New class for holding returnable client data.
       (NDWindowDataProxy): New data proxy used by client (calling) code.
       (NDWindowFunctor.__init__): Take proxy ID argument.
       (NDWindowFunctor.__call__): Pass proxy ID to window constructor.
+      (validate_args): New function to validate args passed to `ndwindow`.
       (ndwindow): Return a proxy object to allow client code to access updated
-        values of `classes` array.
+        values of `classes` array. Call `validate_args`.
     * graphics/hypercube.py: Code cleanup.
       
 2012-06-20	tboggs <tboggs@users.sourceforge.net>
