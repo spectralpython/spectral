@@ -4,6 +4,27 @@
 # This file contains release notes for various SPy releases
 ################################################################################
 
+SPy 0.8
+================================================================================
+Release date: 2012.07.10
+
+Changes
+-------
+
+* Added an N-Dimensional visualization capability.
+
+* Added mouse control for hypercube display.
+
+* Improved read speed of SpyFile objects by about a factor of 10.
+
+Bug Fixes
+---------
+
+* Fixed several erroneously implemented deprecation warnings that caused
+  infinite recursion in funciton calls.
+
+* Fixed mismatch in parameter names in kmeans_ndarray.
+
 SPy 0.7
 ================================================================================
 Release date: 2012.02.19
