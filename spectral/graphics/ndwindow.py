@@ -687,6 +687,7 @@ class WxNDWindowFrame(wx.Frame):
 	'''Creates display lists to render unit length x,y,z axes.'''
 	import OpenGL.GL as gl
 	import OpenGL.GLUT as glut
+	glut.glutInit()
 	gl.glNewList(self.gllist_id, gl.GL_COMPILE)
 	gl.glBegin(gl.GL_LINES)
 	gl.glColor3f(1.0, 0.0, 0.0)

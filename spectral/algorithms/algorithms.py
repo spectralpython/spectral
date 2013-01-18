@@ -33,6 +33,7 @@
 Various functions and algorithms for processing spectral data.
 '''
 import numpy
+import numpy as np
 
 from exceptions import DeprecationWarning
 from warnings import warn
@@ -196,8 +197,12 @@ def mean_cov(image, mask = None, index = None):
     '''
     import spectral
     from spectral import status
+    import numpy as np
     from numpy import zeros, transpose, dot, newaxis
-    
+
+    if isinstance(image, np.ndarray) and image.dtype != np.float64:
+	image = image.astype(np.float64)
+
     if not isinstance(image, Iterator):
         it = iterator(image, mask, index)
     else:
@@ -269,13 +274,108 @@ def covariance(*args):
     '''
     return mean_cov(*args)[1]
 
+class PrincipalComponents:
+    '''
+    An object for storing a data set's principal components.  The
+    object has the following members:
+    
+        `eigenvalues`:
+	
+	    A length B array of eigenvalues
+	
+        `eigenvectors`:
+	
+	    A `BxB` array of normalized eigenvectors
+	
+        `mean`:
+	
+	    The length `B` mean vector of the image pixels
+	
+        `cov`:
+	
+	    The `BxB` covariance matrix of the image
+	
+	`transform`:
+	
+	    A callable function to transform data to the space of the
+	    principal components.
+	
+	`reduce`:
+	
+	    A method to return a reduced set of principal components based
+	    on either a fixed number of components or a fraction of total
+	    variance.
+    '''
+    def __init__(self, vals, vecs, mean, cov):
+	from transforms import LinearTransform
+	self.eigenvalues = vals
+	self.eigenvectors = vecs
+	self.mean = mean
+	self.cov = cov
+	self.transform = LinearTransform(self.eigenvectors, pre=-self.mean)
+    
+    def reduce(self, N=0, **kwargs):
+	'''Reduces the number or principal components.
+	
+	Keyword Arguments (one of the following must be specified):
+	
+	    `num` (integer):
+	    
+		Number of eigenvalues/eigenvectors to retain.  The top `num`
+		eigenvalues will be retained.
+		
+	    `eigs` (list):
+	    
+		A list of indices of eigenvalues/eigenvectors to be retained.
+	    
+	    'fraction' (float):
+	    
+		The fraction of total image variance to retain.  Eigenvalues
+		will be retained (starting from greatest to smallest) until
+		`fraction` of total image variance is retained.
+	'''
+	from spectral import status
+	
+	num = kwargs.get('num', None)
+	eigs = kwargs.get('eigs', None)
+	fraction = kwargs.get('fraction', None)
+	if num != None:
+	    return PrincipalComponents(self.eigenvalues[:num],
+				       self.eigenvectors[:num],
+				       self.mean, self.cov)
+	elif eigs != None:
+	    vals = self.eigenvalues[eigs]
+	    vecs = self.eigenvectors[eigs]
+	    return PrincipalComponents(vals, vecs, self.mean, self.cov)
+	elif fraction != None:
+	    if not 0 < fraction <= 1:
+		raise Exception('fraction must be in range (0,1].')
+	    N = len(self.eigenvalues)
+	    cumsum = numpy.cumsum(self.eigenvalues)
+	    sum = cumsum[-1]
+	    # Count how many values to retain.
+	    for i in range(N):
+		if (cumsum[i] / sum) >= fraction:
+		    break
+	    if i == (N - 1):
+		# No reduction
+		status.write('No reduction in eigenvectors achieved.')
+		return self
+	
+	    vals = self.eigenvalues[:i + 1]
+	    vecs = self.eigenvectors[:i + 1, :]
+	    return PrincipalComponents(vals, vecs, self.mean, self.cov)
+	else:
+	    raise Exception('Must specify one of the following keywords:' \
+			    '`num`, `eigs`, `fraction`.')
+
 def principal_components(image):
     '''
     Calculate Principal Component eigenvalues & eigenvectors for an image.
 
     Usage::
     
-	(L, V, m, C) = principal_components(image)
+	pc = principal_components(image)
 
     Arguments:
     
@@ -283,23 +383,28 @@ def principal_components(image):
 	
 	    An `MxNxB` image
     
-    Returns a 4-tuple of :class:`numpy.ndarray` objects containing:
+    Returns a `PrincipalComponents object with the following members:
     
-        `L`:
+        `eigenvalues`:
 	
 	    A length B array of eigenvalues
 	
-        `V`:
+        `eigenvectors`:
 	
 	    A `BxB` array of normalized eigenvectors
 	
-        `m`:
+        `mean`:
 	
 	    The length `B` mean vector of the image pixels
 	
-        `C`:
+        `cov`:
 	
 	    The `BxB` covariance matrix of the image
+	
+	`transform`:
+	
+	    A callable function to transform data to the space of the
+	    principal components.
     '''
     from numpy import sqrt, sum
     
@@ -314,7 +419,7 @@ def principal_components(image):
     # numpy stores eigenvectors in columns
     V = V.transpose()
 
-    return (L, V, mean, cov)
+    return PrincipalComponents(L, V, mean, cov)
 
 
 def linear_discriminant(classes):

@@ -2,6 +2,22 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2013-01-17	tboggs <tboggs@users.sourceforge.net>
+
+    Added a matched filter function and created a PrincipalComponents object.
+    
+    * graphics/ndwindow.py
+      (WxNDWindowFrame.create_axes_list): Call glutInit to prevent error if
+        `ndwindow` is called without class labels.
+    * algorithms/algorithms.py
+      (mean_cov): Use 64-bit floats for covariance calculation.
+      (PrincipalComponents): New class.
+      (principal_components): Function now returns a PrincipalComponents object
+        instead of a tuple.
+    * algorithms/detectors.py: New file. Contains MatchedFilter class.
+    * algorithms/transforms.py: New file. Contains LinearTransform class.
+    * algorithms/spymath.py: New file.  Contains matrix_sqrt function.
+
 2012-07-08	tboggs <tboggs@users.sourceforge.net>
 
     Added a right-click meny to the `WxNDWindowFrame` for pixel class
