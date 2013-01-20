@@ -2,6 +2,25 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2013-01-19	tboggs <tboggs@users.sourceforge.net>
+
+    Added a FisherLinearDiscriminant class, fixed doc strings, and handle
+    LinearTransformation objects in TrainingClass.transform.
+
+    * algorithsm/algorithms.py
+      (FisherLinearDiscriminant): New class.
+      (linear_discriminant): Returns a FisherLinearDiscriminant object instead
+        of a tuple.
+      (reduce_eigenvectors): Function removed (replaced by method in
+        PrincipleComponents class).
+      (TrainingClass.transform): Also accept a LinearTransform as arg.
+      (TrainingClassSet.transform): Get nbands from one of the classes.
+    * algorithms/detectors.py (MatchedFilter): Fixed latex markup in doc string.
+    * algorithms/transforms.py (LinearTransform): Fixed doc string.
+    * algorithms/__init__.py: Removed reduce_eigenvectors from imports
+    
+    
+    
 2013-01-17	tboggs <tboggs@users.sourceforge.net>
 
     Added a matched filter function and created a PrincipalComponents object.

@@ -383,7 +383,7 @@ def principal_components(image):
 	
 	    An `MxNxB` image
     
-    Returns a `PrincipalComponents object with the following members:
+    Returns a `PrincipalComponents` object with the following members:
     
         `eigenvalues`:
 	
@@ -422,6 +422,45 @@ def principal_components(image):
     return PrincipalComponents(L, V, mean, cov)
 
 
+class FisherLinearDiscriminant:
+    '''
+    An object for storing a data set's principal components.  The
+    object has the following members:
+    
+        `eigenvalues`:
+
+	    A length B array of eigenvalues
+	
+        `eigenvectors`:
+	
+	    A `BxB` array of normalized eigenvectors
+	
+        `mean`:
+	
+	    The length `B` mean vector of the image pixels (from all classes)
+	
+        `cov_b`:
+	
+	    The `BxB` matrix of covariance *between* classes
+	
+        `cov_w`:
+	
+	    The `BxB` matrix of average covariance *within* each class
+	
+	`transform`:
+	
+	    A callable function to transform data to the space of the
+	    linear discriminant.
+    '''
+    def __init__(self, vals, vecs, mean, cov_b, cov_w):
+	from transforms import LinearTransform
+	self.eigenvalues = vals
+	self.eigenvectors = vecs
+	self.mean = mean
+	self.cov_b = cov_b
+	self.cov_w = cov_w
+	self.transform = LinearTransform(self.eigenvectors, pre=-self.mean)
+
 def linear_discriminant(classes):
     '''
     Solve Fisher's linear discriminant for eigenvalues and eigenvectors.
@@ -434,23 +473,9 @@ def linear_discriminant(classes):
 	
 	    The set of `C` classes to discriminate.
     
-    Returns a 4-tuple containing:
-    
-	`L` (ndarray):
-	
-	    The length `C-1` array of eigenvalues.
-	    
-	`V` (ndarray):
-	
-	    The `(C-1)xB` array of eigenvectors.
-	
-	`Cb` (ndarray):
-	
-	    The between-class covariance matrix.
-	
-	`Cw` (ndarray):
-	
-	    The within-class covariance matrix.
+    Returns a `FisherLinearDiscriminant` object containing the within/between-
+    class covariances, mean vector, and a callable transform to convert data to
+    the transform's space.
 
     This function determines the solution to the generalized eigenvalue problem
     
@@ -460,10 +485,6 @@ def linear_discriminant(classes):
     
             (inv(Cw) * Cb) * x = lambda * x
             
-    The return value is a 4-tuple containing the vector of eigenvalues,
-    a matrix of the corresponding eigenvectors, the between-class
-    covariance matrix, and the within-class covariance matrix.
-
     References:
 
 	Richards, J.A. & Jia, X. Remote Sensing Digital Image Analysis: An
@@ -515,68 +536,10 @@ def linear_discriminant(classes):
     for i in range(vecs.shape[0]):
     	vecs[i, :] /= math.sqrt(d[i].real)
     	
-    return (vals.real, vecs.real, cov_b, cov_w)
+    return FisherLinearDiscriminant (vals.real, vecs.real, mean, cov_b, cov_w)
 
 # Alias for Linear Discriminant Analysis (LDA)
 lda = linear_discriminant
-
-
-def reduce_eigenvectors(L, V, fraction = 0.99):
-    '''
-    Reduces number of eigenvalues and eigenvectors retained.
-
-    Usage::
-    
-	(L2, V2) = reduce_eigenvectors(L, V [, fraction])
-
-    Arguments:
-    
-        `L` (ndarray):
-	
-	    A vector of descending eigenvalues.
-	
-        `V` (ndarray):
-	
-	    The array of eigenvectors corresponding to `L`.
-	
-        `fraction` (float) [default 0.99]:
-	
-	    The fraction of sum(L) (total image variance) to retain.
-	
-    Returns a 2-tuple containing:
-    
-        `L2` (ndarray):
-	
-	    A vector containing the first N eigenvalues in L such that
-	    sum(`L2`) / sum(`L`) >= `fraction`.
-			
-        `V2` (ndarray):
-	
-	    The array of retained eigenvectors corresponding to L2.
-
-    Retains only the first N eigenvalues and eigenvectors such that the
-    sum of the retained eigenvalues divided by the sum of all eigenvalues
-    is greater than or equal to fraction.  If fraction is not specified,
-    the default value of 0.99 is used.
-    '''
-
-    import numpy.oldnumeric as Numeric
-
-    cumEig = Numeric.cumsum(L)
-    sum = cumEig[-1]
-    # Count how many values to retain.
-    for i in range(len(L)):
-	if (cumEig[i] / sum) >= fraction:
-	    break
-
-    if i == (len(L) - 1):
-	# No reduction
-	return (L, V)
-
-    # Return cropped eigenvalues and eigenvectors
-    L = L[:i + 1]
-    V = V[:i + 1, :]
-    return (L, V)
 
 def log_det(x):
     return sum(numpy.log([eigv for eigv in numpy.linalg.eigvals(x) if eigv > 0]))
@@ -696,22 +659,23 @@ class TrainingClass:
 	After the transform is applied,	the class statistics will have `C` bands.
         '''
 
-        from numpy import dot, transpose, newaxis
+	from transforms import LinearTransform
         from numpy.linalg import det, inv
         import math
         from spectral.io.spyfile import TransformedImage
 
-        self.stats.mean = dot(X, self.stats.mean[:, newaxis])[:, 0]
-        self.stats.cov = dot(X, dot(self.stats.cov, transpose(X)))
-        self.stats.inv_cov = inv(self.stats.cov)
-        
-        try:
-            self.stats.log_det_cov = math.log(det(self.stats.cov))
-        except:
-            self.stats.log_det_cov = log_det(self.stats.cov)
+	if isinstance(X, np.ndarray):
+	    self.stats.mean = np.dot(X, self.stats.mean[:, newaxis])[:, 0]
+	    self.stats.cov = np.dot(X, self.stats.cov).dot(X.T)
+	    self.stats.inv_cov = inv(self.stats.cov)
+	    self.nbands = X.shape[0]
+	elif isinstance(X, LinearTransform):
+	    self.stats.mean = X(self.stats.mean)
+	    self.stats.cov = np.dot(X._A, self.stats.cov).dot(X._A.T)
+	    self.stats.inv_cov = inv(self.stats.cov)
+	    self.nbands = X._A.shape[0]
 
-        self.nbands = X.shape[0]
-        self.image = transform_image(X, self.image)
+	self.stats.log_det_cov = log_det(self.stats.cov)
 
     def dump(self, fp):
         '''
@@ -809,7 +773,7 @@ class TrainingClassSet:
 	'''
         for cl in self.classes.values():
             cl.transform(X)
-        self.nbands = X.shape[0]
+        self.nbands = self.classes.values()[0].nbands
         
     def __iter__(self):
         '''

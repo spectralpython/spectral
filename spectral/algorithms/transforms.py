@@ -36,10 +36,11 @@ Base classes for various types of transforms
 import numpy as np
 
 class LinearTransform:
+    '''A callable linear transform object.'''
     def __init__(self, A, **kwargs):
         '''Arguments:
         
-            `A` (class::`numpy.ndarrray`):
+            `A` (:class:`~numpy.ndarrray`):
             
                 An (J,K) array to be applied to length-K targets.
                     
@@ -65,7 +66,7 @@ class LinearTransform:
         
         Arguments:
         
-            `X` (class::`numpy.ndarray):
+            `X` (:class:`~numpy.ndarray`):
             
                 `X` is either an (M,N,K) array containing M*N length-K vectors
                 to be transformed or it is an (R,K) array lf length-K vectors

@@ -42,10 +42,12 @@ class MatchedFilter(LinearTransform):
     Given target/background means and a common covariance matrix, the matched
     filter response is given by:
     
-    math::`y=\frac{(\mu_t-\mu_b)^T\Sigma^{-1}(x-\mu_b){(\mu_t-\mu_b)^T\Sigma^{-1}(\mu_t-\mu_b)}`
+    .. math::
     
-    where math::`\mu_t` is the target mean, math::`\mu_b` is the background
-    mean, and math::`\Sigma` is the covariance.
+        y=\frac{(\mu_t-\mu_b)^T\Sigma^{-1}(x-\mu_b)}{(\mu_t-\mu_b)^T\Sigma^{-1}(\mu_t-\mu_b)}
+    
+    where :math:`\mu_t` is the target mean, :math:`\mu_b` is the background
+    mean, and :math:`\Sigma` is the covariance.
     '''
     
     def __init__(self, u_b, u_t, C):
