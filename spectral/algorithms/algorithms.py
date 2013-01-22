@@ -651,7 +651,7 @@ class TrainingClass:
 	
 	Arguments:
 	
-	    `X` (:class:numpy.ndarray):
+	    `X` (:class:numpy.ndarray or LinearTransform):
 
 		The linear transform array.  If the class has `B` bands, then
 		`X` must have shape `(C,B)`.
@@ -665,15 +665,12 @@ class TrainingClass:
         from spectral.io.spyfile import TransformedImage
 
 	if isinstance(X, np.ndarray):
-	    self.stats.mean = np.dot(X, self.stats.mean[:, newaxis])[:, 0]
-	    self.stats.cov = np.dot(X, self.stats.cov).dot(X.T)
-	    self.stats.inv_cov = inv(self.stats.cov)
-	    self.nbands = X.shape[0]
+	    X = LinearTransform(X)
 	elif isinstance(X, LinearTransform):
 	    self.stats.mean = X(self.stats.mean)
 	    self.stats.cov = np.dot(X._A, self.stats.cov).dot(X._A.T)
 	    self.stats.inv_cov = inv(self.stats.cov)
-	    self.nbands = X._A.shape[0]
+	    self.nbands = X.dim_out
 
 	self.stats.log_det_cov = log_det(self.stats.cov)
 

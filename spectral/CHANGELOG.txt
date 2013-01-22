@@ -24,6 +24,8 @@
       (LinearTransform.__init__): Added dim_in, dim_out, and dtype members.
       (LinearTransform.__call__): Cast transformed data to appropriate type.
       (LinearTransform.chain): New method to chain two transforms together.
+    * algorithms/algorithms.py
+      (TrainingClass.transform): Explicitly use LinearTransform.
 
 2013-01-19	tboggs <tboggs@users.sourceforge.net>
 

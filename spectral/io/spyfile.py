@@ -625,11 +625,6 @@ class TransformedImage(Image):
         # Remove unnecessary dimensions
 
         transformed = take(transformed_xy, bands, 2)
-        
-#        if transformed.shape[0] == 1:
-#            transformed.shape = transformed.shape[1:]
-#        if transformed.shape[0] == 1:
-#            transformed.shape = transformed.shape[1:]
             
         return transformed.squeeze()
 
@@ -674,14 +669,12 @@ class TransformedImage(Image):
 
     def read_datum(self, i, j, k):
 	return self.read_pixel(i, j)[k]
-#        return numpy.take(self.transform(self.read_pixel(i, j)), k)
 
     def read_bands(self, bands):
         shape = (self.image.nrows, self.image.ncols, len(bands))
         data = numpy.zeros(shape, float)
         for i in range(shape[0]):
             for j in range(shape[1]):
-#                data[i, j] = numpy.take(self.read_pixel(i, j), bands, 2)
                 data[i, j] = self.read_pixel(i, j)[bands]
         return data
     
