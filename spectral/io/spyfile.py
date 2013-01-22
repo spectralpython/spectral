@@ -511,12 +511,12 @@ class SubImage(SpyFile):
                                         list(array(col_bounds) + self.col_offset), \
                                         bands)
 
-def transform_image(matrix, img):
+def transform_image(transform, img):
     '''Applies a linear transform to an image.
     
     Arguments:
     
-	`matrix` (ndarray):
+	`transform` (ndarray or LinearTransform):
 	
 	    The `CxB` linear transform to apply.
 	
@@ -536,15 +536,17 @@ def transform_image(matrix, img):
     
     '''
     import numpy as np
+    from spectral.algorithms.transforms import LinearTransform
     if isinstance(img, np.ndarray):
-	print 'It is an array'
-	ret = np.empty(img.shape[:2] + (matrix.shape[0],), img.dtype)
+	if isinstance(transform, LinearTransform):
+	    return transform(img)
+	ret = np.empty(img.shape[:2] + (transform.shape[0],), img.dtype)
 	for i in range(img.shape[0]):
 	    for j in range(img.shape[1]):
-		ret[i, j] = np.dot(matrix, img[i, j])
+		ret[i, j] = np.dot(transform, img[i, j])
 	return ret
     else:
-	return TransformedImage(matrix, img)
+	return TransformedImage(transform, img)
     
 class TransformedImage(Image):
     '''
@@ -553,48 +555,43 @@ class TransformedImage(Image):
     '''
     _typecode = 'f'
     
-    def __init__(self, matrix, img):
+    def __init__(self, transform, img):
         import numpy.oldnumeric as Numeric
+	from spectral.algorithms.transforms import LinearTransform
 
         if not isinstance(img, Image):
             raise Exception('Invalid image argument to to TransformedImage constructor.')
 
-        arrayType = type(Numeric.array([1]))
-        if type(matrix) != arrayType:
-            raise Exception('First argument must be a transformation matrix.')
-        if len(matrix.shape) != 2:
-            raise Exception('Transformation matrix has invalid shape.')
+	if isinstance(transform, numpy.ndarray):
+	    transform = LinearTransform(transform)
+	self.transform = transform
+	
+	if self.transform.dim_in != img.shape[-1]:
+	    raise Exception('Number of bands in image (%d) do not match the '
+			    ' input dimension of the transform (%d).'
+			    % (img.shape[-1], transform.dim_in))
 
+        arrayType = type(Numeric.array([1]))
         params = img.params()
         self.set_params(params, params.metadata)
 
 
         # If img is also a TransformedImage, then just modify the transform
         if isinstance(img, TransformedImage):
-            self.matrix = matrixmultiply(matrix, img.matrix)
+	    self.transform = self.transform.chain(img.transform)
             self.image = img.image
-            if matrix.shape[1] != img.matrix.shape[0]:
-                raise 'Invalid shape for transformation matrix.'
-            # Set shape to what it will be after linear transformation
-            self.shape = [self.image.shape[0], self.image.shape[1], matrix.shape[0]]
         else:
-            self.matrix = matrix
             self.image = img
-            if matrix.shape[1] != img.nbands:
-                raise 'Invalid shape for transformation matrix.'
-            # Set shape to what it will be after linear transformation
-            self.shape = [img.shape[0], img.shape[1], matrix.shape[0]]
-
-        self.nbands = matrix.shape[0]
+	self.shape = self.image.shape[:2] + (self.transform.dim_out,)
+        self.nbands = self.transform.dim_out
 
     def __getitem__(self, args):
         '''
         Get data from the image and apply the transform.
         '''
         from numpy import zeros, dot, take
-        from numpy.oldnumeric import NewAxis
         if len(args) < 2:
-            raise 'Must pass at least two subscript arguments'
+            raise Exception('Must pass at least two subscript arguments')
 
         # Note that band indices are wrt transformed features
         if len(args) == 2 or args[2] == None:
@@ -617,37 +614,34 @@ class TransformedImage(Image):
 
         orig = self.image.__getitem__(args[:2])
         if len(orig.shape) == 1:
-            orig = orig[NewAxis, NewAxis, :]
+            orig = orig[numpy.newaxis, numpy.newaxis, :]
         elif len(orig.shape) == 2:
-            orig = orig[NewAxis, :]
-        transformed_xy = zeros([orig.shape[0], orig.shape[1], self.shape[2]], self._typecode)
+            orig = orig[numpy.newaxis, :]
+        transformed_xy = zeros(orig.shape[:2] + (self.shape[2],),
+			       self.transform.dtype)
         for i in range(transformed_xy.shape[0]):
             for j in range(transformed_xy.shape[1]):
-                transformed_xy[i, j] = dot(self.matrix, orig[i, j])
+                transformed_xy[i, j] = self.transform(orig[i, j])
         # Remove unnecessary dimensions
 
         transformed = take(transformed_xy, bands, 2)
         
-        if transformed.shape[0] == 1:
-            transformed.shape = transformed.shape[1:]
-        if transformed.shape[0] == 1:
-            transformed.shape = transformed.shape[1:]
+#        if transformed.shape[0] == 1:
+#            transformed.shape = transformed.shape[1:]
+#        if transformed.shape[0] == 1:
+#            transformed.shape = transformed.shape[1:]
             
-        return transformed
+        return transformed.squeeze()
 
 
     def read_pixel(self, row, col):
-        return numpy.dot(self.matrix, self.image.read_pixel(row, col))                       
+        return self.transform(self.image.read_pixel(row, col))                       
                    
     def load(self):
 	'''Loads all the image data, transforms it, and returns it in a numpy array).'''
 	data = self.image.load()
-	xdata = numpy.empty(self.shape, 'f')
-	for i in xrange(self.shape[0]):
-	    for j in xrange(self.shape[1]):
-		xdata[i, j] = numpy.dot(self.matrix, data[i, j])
-	return xdata
-	
+	return self.transform(data)
+
     def read_subregion(self, row_bounds, col_bounds, bands = None):
         '''
         Reads a contiguous rectangular sub-region from the image. First
@@ -656,16 +650,12 @@ class TransformedImage(Image):
         of band indices is not given, all bands are read.
         '''
         from numpy import zeros, dot
-        orig = self.image.read_subregion(row_bounds, col_bounds)
-        transformed = zeros([orig.shape[0], orig.shape[1], self.shape[2]], self._typecode)
-        for i in range(transformed.shape[0]):
-            for j in range(transformed.shape[1]):
-                transformed[i, j] = dot(self.matrix, orig[i, j])
+        data = self.image.read_subregion(row_bounds, col_bounds)
+	xdata = self.transform(data)
         if bands:
-            return numpy.take(transformed, bands, 2)
+            return numpy.take(xdata, bands, 2)
         else:
-            return transformed
-
+            return xdata
 
     def read_subimage(self, rows, cols, bands = None):
         '''
@@ -675,25 +665,24 @@ class TransformedImage(Image):
         containing list of band indices is not given, all bands are read.
         '''
         from numpy import zeros, dot
-        orig = self.image.read_subimage(rows, cols)
-        transformed = zeros([orig.shape[0], orig.shape[1], self.shape[2]], self._typecode)
-        for i in range(transformed.shape[0]):
-            for j in range(transformed.shape[1]):
-                transformed[i, j] = dot(self.matrix, orig[i, j])
+        data = self.image.read_subimage(rows, cols)
+	xdata = self.transform(data)
         if bands:
-            return numpy.take(transformed, bands, 2)
+            return numpy.take(xdata, bands, 2)
         else:
-            return transformed
+            return xdata
 
     def read_datum(self, i, j, k):
-        return numpy.take(self.read_pixel(i, j), k)
+	return self.read_pixel(i, j)[k]
+#        return numpy.take(self.transform(self.read_pixel(i, j)), k)
 
     def read_bands(self, bands):
-        shape = (self.image.nrows, self.image.ncols, self.nbands)
+        shape = (self.image.nrows, self.image.ncols, len(bands))
         data = numpy.zeros(shape, float)
         for i in range(shape[0]):
             for j in range(shape[1]):
-                data[i, j] = numpy.take(self.read_pixel(i, j), bands)
+#                data[i, j] = numpy.take(self.read_pixel(i, j), bands, 2)
+                data[i, j] = self.read_pixel(i, j)[bands]
         return data
     
     def typecode(self):

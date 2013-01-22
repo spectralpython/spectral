@@ -2,6 +2,29 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2013-01-21	tboggs <tboggs@users.sourceforge.net>
+
+    LinearTransform objects can now be chained together and can be passed a
+    specific dtype for output.  They also have dim_in and dim_out members.
+    `transform_image` optionally accepts LinearTransform arg instead of an
+    ndarray.
+
+    * io/spyfile.py
+      (transform_image): Alternately accept a LinearTransform as arg.
+      (TransformedImage.__init__): Alternately acccept a LinearTransform as arg.
+        Store the transform as a LinearTransform object.
+      (TransformedImage.__getitem__): Use the `transform` member.
+      (TransformedImage.read_pixel): Use the `transform` member.
+      (TransformedImage.load): Use the `transform` member.
+      (TransformedImage.read_subregion): Use the `transform` member.
+      (TransformedImage.read_subimage): Use the `transform` member.
+      (TransformedImage.read_datum): Use the `transform` member.
+      (TransformedImage.read_bands): Use the `transform` member.
+    * algorithms/transforms.py
+      (LinearTransform.__init__): Added dim_in, dim_out, and dtype members.
+      (LinearTransform.__call__): Cast transformed data to appropriate type.
+      (LinearTransform.chain): New method to chain two transforms together.
+
 2013-01-19	tboggs <tboggs@users.sourceforge.net>
 
     Added a FisherLinearDiscriminant class, fixed doc strings, and handle
@@ -18,8 +41,6 @@
     * algorithms/detectors.py (MatchedFilter): Fixed latex markup in doc string.
     * algorithms/transforms.py (LinearTransform): Fixed doc string.
     * algorithms/__init__.py: Removed reduce_eigenvectors from imports
-    
-    
     
 2013-01-17	tboggs <tboggs@users.sourceforge.net>
 
