@@ -4,6 +4,10 @@
 
 2013-01-22	tboggs <tboggs@users.sourceforge.net>
 
+    * __init__.py: Incremented __version__ to '0.9'
+
+2013-01-22	tboggs <tboggs@users.sourceforge.net>
+
     * algorithms/algorithms.py
       (TrainingClass.transform): Remove superfluous `if` block from previous
         commit.
