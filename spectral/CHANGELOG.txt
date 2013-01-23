@@ -2,6 +2,12 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2013-01-22	tboggs <tboggs@users.sourceforge.net>
+
+    * algorithms/algorithms.py
+      (TrainingClass.transform): Remove superfluous `if` block from previous
+        commit.
+
 2013-01-21	tboggs <tboggs@users.sourceforge.net>
 
     LinearTransform objects can now be chained together and can be passed a

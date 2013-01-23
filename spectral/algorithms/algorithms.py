@@ -645,16 +645,16 @@ class TrainingClass:
         self._size = self.stats.nsamples
         self._stats_valid = 1
 
-    def transform(self, X):
+    def transform(self, transform):
         '''
         Perform a linear transformation on the statistics of the training set.
 	
 	Arguments:
 	
-	    `X` (:class:numpy.ndarray or LinearTransform):
+	    `transform` (:class:numpy.ndarray or LinearTransform):
 
 		The linear transform array.  If the class has `B` bands, then
-		`X` must have shape `(C,B)`.
+		`transform` must have shape `(C,B)`.
 		
 	After the transform is applied,	the class statistics will have `C` bands.
         '''
@@ -664,13 +664,12 @@ class TrainingClass:
         import math
         from spectral.io.spyfile import TransformedImage
 
-	if isinstance(X, np.ndarray):
-	    X = LinearTransform(X)
-	elif isinstance(X, LinearTransform):
-	    self.stats.mean = X(self.stats.mean)
-	    self.stats.cov = np.dot(X._A, self.stats.cov).dot(X._A.T)
-	    self.stats.inv_cov = inv(self.stats.cov)
-	    self.nbands = X.dim_out
+	if isinstance(transform, np.ndarray):
+	    transform = LinearTransform(transform)
+	self.stats.mean = transform(self.stats.mean)
+	self.stats.cov = np.dot(transform._A, self.stats.cov).dot(transform._A.T)
+	self.stats.inv_cov = inv(self.stats.cov)
+	self.nbands = transform.dim_out
 
 	self.stats.log_det_cov = log_det(self.stats.cov)
 
