@@ -4,6 +4,36 @@
 # This file contains release notes for various SPy releases
 ################################################################################
 
+SPy 0.9
+================================================================================
+Release date: 2013.03.23
+
+New Features
+------------
+
+* Added a linear target detector (MatchedFilter).
+
+* Added a class for linear transformations (LinearTransform).
+
+Changes
+-------
+
+* `principal_components` function now returns a object, which contains return
+  values previously in a tuple, , as well as the associated linear transform,
+  and a `reduce` method.
+  
+* `linear_discriminant` function now returns an object, which contains return
+  values previously in a tuple, as well as the associated linear transform.
+  
+* Covariance calculation is now performed using 64-bit floats.
+
+Bug Fixes
+---------
+
+* Fixed a bug causing `ndwindow` to fail when no class mask is passed as a
+  keyword arg.
+
+
 SPy 0.8
 ================================================================================
 Release date: 2012.07.10
