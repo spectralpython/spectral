@@ -7,6 +7,8 @@
     * algorithms/algorithms.py
       (TrainingClass.transform): Remove superfluous `if` block from previous
         commit.
+    * algorithms/transforms.py: doc string changes
+    * algorithms/__init__.py: import MatchedFilter from detectors module.
 
 2013-01-21	tboggs <tboggs@users.sourceforge.net>
 

@@ -34,5 +34,6 @@ from algorithms import (mean_cov, covariance, principal_components, bdist,
 		       orthogonalize, transform_image, unmix, spectral_angles)
 from classifiers import GaussianClassifier, MahalanobisDistanceClassifier
 from clustering import L1, L2, kmeans, cluster, isoCluster
+from detectors import MatchedFilter
 from perceptron import PerceptronClassifier
 from resampling import BandResampler

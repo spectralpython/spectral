@@ -36,7 +36,23 @@ Base classes for various types of transforms
 import numpy as np
 
 class LinearTransform:
-    '''A callable linear transform object.'''
+    '''A callable linear transform object.
+    
+    In addition to the __call__ method, which applies the transform to given,
+    data, a LinearTransform object also has the following members:
+    
+	`dim_in` (int):
+	
+	    The expected length of input vectors.
+	
+	`dim_out` (int):
+	
+	    The length of output vectors (after linear transformation).
+	
+	`dtype` (numpy dtype):
+	
+	    The numpy dtype for the output ndarray data.
+    '''
     def __init__(self, A, **kwargs):
         '''Arguments:
         
@@ -76,7 +92,7 @@ class LinearTransform:
             `X` (:class:`~numpy.ndarray`):
             
                 `X` is either an (M,N,K) array containing M*N length-K vectors
-                to be transformed or it is an (R,K) array f length-K vectors
+                to be transformed or it is an (R,K) array of length-K vectors
                 to be transformed.
                 
         Returns an (M,N,J) or (R,J) array, depending on shape of `X`, where J
