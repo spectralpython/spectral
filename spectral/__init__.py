@@ -29,7 +29,7 @@
 # Thomas Boggs, tboggs@users.sourceforge.net
 #
 
-__version__ = '0.9'
+__version__ = '0.9+'
 
 import sys
 if sys.byteorder == 'little':
@@ -48,6 +48,15 @@ from io import *
 from algorithms import *
 from graphics import *
 from database import *
+
+try:
+    import pylab
+    from graphics import spypylab
+    pylab.ion()
+    spectral.settings.plotter = spypylab
+except:
+    warn('Unable to import orconfigure pylab plotter.  Spectrum plots will be '
+	 'unavailable.', UserWarning)
 
 import utilities.status
 status = utilities.status.StatusDisplay()

@@ -1,6 +1,32 @@
-# file:     ndwindow.py
-# author:   Thomas Boggs (tboggs@gmu.edu)
-# created:  2012.06.18
+#########################################################################
+#
+#   ndwindow.py - This file is part of the Spectral Python (SPy)
+#   package.
+#
+#   Copyright (C) 2001-2012 Thomas Boggs
+#
+#   Spectral Python is free software; you can redistribute it and/
+#   or modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   Spectral Python is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#     
+#   You should have received a copy of the GNU General Public License
+#   along with this software; if not, write to
+#
+#               Free Software Foundation, Inc.
+#               59 Temple Place, Suite 330
+#               Boston, MA 02111-1307
+#               USA
+#
+#########################################################################
+#
+# Send comments to:
+# Thomas Boggs, tboggs@users.sourceforge.net
 #
 '''
 This file contains functions and classes for display N-dimensional data sets
@@ -56,6 +82,7 @@ class MouseHandler:
 		(x, y) = self.position
 		cmd = lambda : self.window.get_pixel_info(x, self.window.size[1] - y)
 		self.window.add_display_command(cmd)
+		self.window.canvas.SetCurrent(self.canvas.context)
 		self.window.canvas.Refresh()
 	    elif wx.GetKeyState(wx.WXK_SHIFT):
 		# Switch to box selection mode.
@@ -80,6 +107,7 @@ class MouseHandler:
 		# Shift key was released before box selection completed.
 		print 'BOX SELECTION CANCELLED.'
 		self.window._selection_box = None
+	    self.window.canvas.SetCurrent(self.window.canvas.context)
 	    self.window.canvas.Refresh()
 	elif self.mode == 'ZOOMING':
 	    self.mode = 'DEFAULT'
@@ -194,7 +222,7 @@ def random_subset(sequence, nsamples):
 	triplet = [random.choice(sequence) for i in range(nsamples)]
     return triplet
 
-class WxNDWindowFrame(wx.Frame):
+class NDWindow(wx.Frame):
     '''A widow class for displaying N-dimensional data points.'''
 
     def __init__(self, data, proxy_id, parent, id, *args, **kwargs):
@@ -208,17 +236,18 @@ class WxNDWindowFrame(wx.Frame):
         # Forcing a specific style on the window.
         #   Should this include styles passed?
         style = wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE
-        super(WxNDWindowFrame, self).__init__(parent, id, self.title,
-					       wx.DefaultPosition,
-					       wx.Size(*self.size),
-					       style,
-					       self.title)
+        super(NDWindow, self).__init__(parent, id, self.title,
+				       wx.DefaultPosition,
+				       wx.Size(*self.size),
+				       style,
+				       self.title)
         
         self.gl_initialized = False
         attribs = (glcanvas.WX_GL_RGBA,
                    glcanvas.WX_GL_DOUBLEBUFFER,
-                   glcanvas.WX_GL_DEPTH_SIZE, 32)
+                   glcanvas.WX_GL_DEPTH_SIZE, 16)
         self.canvas = glcanvas.GLCanvas(self, attribList=attribs)
+	self.canvas.context = wx.glcanvas.GLContext(self.canvas)
 
 	self.clear_color = (0, 0, 0, 0)
 	self.show_axes_tf = True
@@ -253,9 +282,15 @@ class WxNDWindowFrame(wx.Frame):
 	self.canvas.Bind(wx.EVT_CLOSE, self.on_event_close)
 
 	self.data = data
-	self.classes = kwargs.get('classes', None)
+	classes = kwargs.get('classes', None)
+	if classes == None:
+	    self.classes = np.zeros(data.shape[:2], dtype=np.int8)
+	else:
+	    self.classes = np.array(classes)
+
+	self.classes = kwargs.get('classes', np.zeros(data.shape[:-1], np.uint))
 	self.features = kwargs.get('features', range(6))
-	self.max_menu_class = np.max(self.classes.ravel() + 1)
+	self.max_menu_class = int(np.max(self.classes.ravel() + 1))
 	
     def on_event_close(self, event=None):
 	from spectral.graphics.graphics import _window_data_proxies
@@ -267,6 +302,7 @@ class WxNDWindowFrame(wx.Frame):
 	self.window_data = None
 	
     def right_click(self, event):
+	self.canvas.SetCurrent(self.canvas.context)
 	self.canvas.PopupMenu(MouseMenu(self), event.GetPosition())
 	
     def add_display_command(self, cmd):
@@ -311,11 +347,6 @@ class WxNDWindowFrame(wx.Frame):
 	denom = np.where(denom > 0, denom, 1.0)
 	self.data = (data2d - mins) / denom
 	self.data.shape = data.shape
-
-	if classes == None:
-	    self.classes = np.zeros(data.shape[:2], dtype=int)
-	else:
-	    self.classes = np.array(classes)
 
 	self.palette = spy_colors.astype(float) / 255.
 	self.palette[0] = np.array([1.0, 1.0, 1.0])
@@ -500,7 +531,7 @@ class WxNDWindowFrame(wx.Frame):
 	import OpenGL.GL as gl
 	import OpenGL.GLU as glu
 	
-	self.canvas.SetCurrent()
+	self.canvas.SetCurrent(self.canvas.context)
 	if not self.gl_initialized:
 	    self.initgl()
 	    self.gl_initialized = True
@@ -687,7 +718,7 @@ class WxNDWindowFrame(wx.Frame):
 	'''Creates display lists to render unit length x,y,z axes.'''
 	import OpenGL.GL as gl
 	import OpenGL.GLUT as glut
-	glut.glutInit()
+#	glut.glutInit()
 	gl.glNewList(self.gllist_id, gl.GL_COMPILE)
 	gl.glBegin(gl.GL_LINES)
 	gl.glColor3f(1.0, 0.0, 0.0)
@@ -708,13 +739,15 @@ class WxNDWindowFrame(wx.Frame):
 	gl.glVertex3f(0.0, 0.0, 0.0)
 	gl.glVertex3f(0.0, 0.0, -1.0)
 	gl.glEnd()
+	
+	if bool(glut.glutBitmapCharacter):
+	    gl.glRasterPos3f(1.05, 0.0, 0.0);
+	    glut.glutBitmapCharacter(glut.GLUT_BITMAP_HELVETICA_18, ord('x'))
+	    gl.glRasterPos3f(0.0, 1.05, 0.0);
+	    glut.glutBitmapCharacter(glut.GLUT_BITMAP_HELVETICA_18, ord('y'))
+	    gl.glRasterPos3f(0.0, 0.0, 1.05);
+	    glut.glutBitmapCharacter(glut.GLUT_BITMAP_HELVETICA_18, ord('z'))
 
-	gl.glRasterPos3f(1.05, 0.0, 0.0);
-	glut.glutBitmapCharacter(glut.GLUT_BITMAP_HELVETICA_18, ord('x'))
-	gl.glRasterPos3f(0.0, 1.05, 0.0);
-	glut.glutBitmapCharacter(glut.GLUT_BITMAP_HELVETICA_18, ord('y'))
-	gl.glRasterPos3f(0.0, 0.0, 1.05);
-	glut.glutBitmapCharacter(glut.GLUT_BITMAP_HELVETICA_18, ord('z'))
 	gl.glEndList()
 
     def GetGLExtents(self):
@@ -748,7 +781,7 @@ class WxNDWindowFrame(wx.Frame):
         if self.canvas.GetContext():
             # Make sure the frame is shown before calling SetCurrent.
             self.Show()
-            self.canvas.SetCurrent()
+            self.canvas.SetCurrent(self.canvas.context)
             size = self.canvas.GetClientSize()
             self.resize(size.width, size.height)
             self.canvas.Refresh(False)
@@ -871,18 +904,6 @@ class NDWindowDataProxy(WindowDataProxy):
 	    # Return proxied data
 	    return data.classes
 
-class NDWindowFunctor:
-    '''A functor used to create the new ND window in the display thread.'''
-    def __init__(self, data, proxy_id, *args, **kwargs):
-        self.data = data
-        self.args = args
-	self.proxy_id = proxy_id
-        self.kwargs = kwargs
-    def __call__(self):
-        frame = WxNDWindowFrame(self.data, self.proxy_id, None, -1,
-				*self.args, **self.kwargs)
-        return frame
-
 def validate_args(data, *args, **kwargs):
     '''Validates arguments to the `ndwindow` function.'''
     from exceptions import ValueError, TypeError
@@ -929,73 +950,3 @@ def validate_args(data, *args, **kwargs):
 		raise ValueError('Invalid window size specification.')
     if kwargs.has_key('title') and type(kwargs['title']) != str:
 	raise TypeError('Invalide window title specification.')
-	
-def ndwindow(data, *args, **kwargs):
-    '''Creates a 3D window that displays ND data from an image.
-
-    Arguments:
-
-	`data` (:class:`spectral.ImageArray` or :class:`numpy.ndarray`):
-	
-	    Source image data to display.  `data` can be and instance of a
-	    :class:`spectral.ImageArray or a :class:`numpy.ndarray`. `source`
-	    must have shape `MxNxB`, where M >= 3.
-
-    Keyword Arguments:
-
-        `classes` (:class:`numpy.ndarray`):
-	
-	    2-dimensional array of integers specifying the classes of each pixel
-	    in `data`. `classes` must have the same dimensions as the first two
-	    dimensions of `data`.
-	
-	`features` (list or list of integer lists):
-
-	    This keyword specifies which bands/features from `data` should be
-	    displayed in the 3D window. It must be defined as one of the
-	    following:
-	    
-	    #. A length-3 list of integer feature IDs. In this case, the data
-	       points will be displayed in the positive x,y,z octant using
-	       features associated with the 3 integers.
-	    
-	    #. A length-6 list of integer feature IDs. In this case, each
-	       integer specifies a single feature index to be associated with
-	       the coordinate semi-axes x, y, z, -x, -y, and -z	(in that order).
-	       Each octant will display data points using the features
-	       associated with the 3 semi-axes for that octant.
-
-	    #. A length-8 list of length-3 lists of integers. In this case, each
-	       length-3 list specfies the features to be displayed in a single
-	       octants (the same semi-axis can be associated with different
-	       features in different octants).  Octants are ordered starting
-	       with the postive x,y,z octant and procede counterclockwise around
-	       the z-axis, then procede similarly around the negative half of
-	       the z-axis.  An octant triplet can be specified as None instead
-	       of a list, in which case nothing will be rendered in that octant.
-	
-	`size` (2-tuple of ints)
-	
-	    Specifies the initial size (pixel rows/cols) of the window.
-	    
-	`title` (string)
-	
-	    The title to display in the ND window title bar.
-    '''
-    import spectral
-    import time
-    from spectral.graphics import spywxpython
-    
-    # Initialize the display thread if it isn't already
-    if spywxpython.viewer == None:
-	for i in range(3):
-	    spectral.init_graphics()
-	    time.sleep(3)
-	    if spywxpython.viewer != None:
-		print 'OK:', i
-		break
-    validate_args(data, *args, **kwargs)
-    proxy = NDWindowDataProxy()
-    functor = NDWindowFunctor(data, proxy.id, *args, **kwargs)
-    spywxpython.viewer.view(None, function = functor)
-    return proxy

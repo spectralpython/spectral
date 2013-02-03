@@ -30,7 +30,11 @@
 #
 
 
-from graphics import init_graphics, save_image, view, view_indexed
+from graphics import (save_image, view, view_indexed, view_cube, view_nd)
 from colorscale import ColorScale
-from hypercube import hypercube
-from ndwindow import ndwindow
+
+from exceptions import DeprecationWarning, UserWarning
+from warnings import warn
+
+# Deprecated functions
+from graphics import hypercube, ndwindow

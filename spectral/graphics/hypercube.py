@@ -147,7 +147,7 @@ class MouseHandler:
 	self.window.Refresh()
 	event.Skip()
 
-class WxHypercubeFrame(wx.Frame):
+class HypercubeWindow(wx.Frame):
     """A simple class for using OpenGL with wxPython."""
     
     def __init__(self, data, parent, id, *args, **kwargs):
@@ -161,17 +161,18 @@ class WxHypercubeFrame(wx.Frame):
         # Forcing a specific style on the window.
         #   Should this include styles passed?
         style = wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE
-        super(WxHypercubeFrame, self).__init__(parent, id, self.title,
-					       wx.DefaultPosition,
-					       wx.Size(*self.size),
-					       style,
-					       kwargs.get('name', 'Hypercube'))
+        super(HypercubeWindow, self).__init__(parent, id, self.title,
+					      wx.DefaultPosition,
+					      wx.Size(*self.size),
+					      style,
+					      kwargs.get('name', 'Hypercube'))
         
         self.gl_initialized = False
         attribs = (glcanvas.WX_GL_RGBA, # RGBA
                    glcanvas.WX_GL_DOUBLEBUFFER, # Double Buffered
                    glcanvas.WX_GL_DEPTH_SIZE, 32) # 32 bit
-        self.canvas = glcanvas.GLCanvas(self, attribList=attribs)
+        self.canvas = glcanvas.GLCanvas(self, attribList=attribs, size=self.size)
+	self.canvas.context = wx.glcanvas.GLContext(self.canvas)
 
 	# These members can be modified before calling the show method.
 	self.clear_color = (0., 0., 0., 1.)
@@ -306,7 +307,7 @@ class WxHypercubeFrame(wx.Frame):
         """Process the drawing event."""
 	import OpenGL.GL as gl
 	import OpenGL.GLU as glu
-        self.canvas.SetCurrent()
+        self.canvas.SetCurrent(self.canvas.context)
         
         if not self.gl_initialized:
             self.initgl()
@@ -389,7 +390,7 @@ class WxHypercubeFrame(wx.Frame):
         if self.canvas.GetContext():
             # Make sure the frame is shown before calling SetCurrent.
             self.Show()
-            self.canvas.SetCurrent()
+            self.canvas.SetCurrent(self.canvas.context)
             size = self.canvas.GetClientSize()
             self.resize(size.width, size.height)
             self.canvas.Refresh(False)
@@ -439,71 +440,3 @@ class WxHypercubeFrame(wx.Frame):
         print 'h       -> print help message'
         print 'q       -> close window'
         print
-
-class HypercubeFunctor:
-    '''A functor used to create the new window in the second thread.'''
-    def __init__(self, data, *args, **kwargs):
-        self.data = data
-        self.args = args
-        self.kwargs = kwargs
-    def __call__(self):
-        frame = WxHypercubeFrame(self.data, None, -1, *self.args, **self.kwargs)
-        return frame
-
-def hypercube(data, *args, **kwargs):
-    '''Renders an interactive 3D hypercube in a new window.
-
-    Arguments:
-
-	`data` (:class:`spectral.Image` or :class:`numpy.ndarray`):
-	
-	    Source image data to display.  `data` can be and instance of a
-	    :class:`spectral.Image` (e.g., :class:`spectral.SpyFile` or
-	    :class:`spectral.ImageArray`) or a :class:`numpy.ndarray`. `source`
-	    must have shape `MxN` or `MxNxB`.
-
-    Keyword Arguments:
-
-        `bands` (3-tuple of ints):
-	
-	    3-tuple specifying which bands from the image data should be
-	    displayed on top of the cube.
-
-        `top` (:class:`PIL.Image`):
-	
-	    An alternate bitmap to display on top of the cube.
-
-        `scale` (:class:`spectral.ColorScale`)
-	
-	    A color scale to be used for color in the sides of the cube. If this
-	    keyword is not specified, :obj:`spectral.graphics.colorscale.defaultColorScale`
-	    is used.
-	
-	`size` (2-tuple of ints):
-	
-	    Width and height (in pixels) for initial size of the new window.
-
-        `title` (str):
-	
-	    Title text to display in the new window frame.
-    
-    This function opens a new window, renders a 3D hypercube, and accepts
-    keyboard input to manipulate the view of the hypercube.  Accepted keyboard
-    inputs are printed to the console output.  Focus must be on the 3D window
-    to accept keyboard input.  To avoid unecessary :mod:`PyOpenGl` dependency,
-    `hypercube` is not imported into the main `spectral` namespace by default so
-    you must import it::
-    
-	from spectral.graphics.hypercube import hypercube
-    '''
-    import spectral
-    import time
-    from spectral.graphics import spywxpython
-
-    # Initialize the display thread if it isn't already
-    if spywxpython.viewer == None:
-	spectral.init_graphics()
-	time.sleep(3)
-
-    functor = HypercubeFunctor(data, *args, **kwargs)
-    spywxpython.viewer.view(None, function=functor)

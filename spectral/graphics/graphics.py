@@ -33,47 +33,13 @@
 Common functions for extracting and manipulating data for graphical display.
 '''
 
-from exceptions import DeprecationWarning
+from exceptions import UserWarning
 from warnings import warn
+import numpy as np
+import spectral
 
 _next_window_data_proxy_id = 1
 _window_data_proxies = {}
-
-def init_graphics():
-    '''Initialize default graphics handlers.'''
-
-    try:
-	import spectral
-        import pylab
-	import spypylab
-        pylab.ion()
-	spectral.settings.plotter = spypylab
-    except:
-        print "Unable to initialize Pylab for plotting."
-	try:
-	    print "Trying Gnuplot..."
-	    import spygnuplot
-	    spectral.settings.plotter = SpyGnuplot
-	    print "Gnuplot initialized."
-	except:
-	    print "Unable to initialize Gnuplot for plotting."
-	    print "No plotters initialized."
-
-    init_wxpython()
-
-def init_wxpython():
-    '''Use wxPython for image display.'''
-    import spectral
-    import spywxpython
-    viewer = spywxpython
-    viewer.init()
-    spectral.settings.viewer = viewer
-
-def initNumTut():
-    '''Use NumTut for image display.'''
-    import spectral
-    import spynumtut
-    spectral.settings.viewer = spynumtut
 
 def view(*args, **kwargs):
     '''
@@ -124,24 +90,137 @@ def view(*args, **kwargs):
     respectively. If its shape is `MxNxB`, where `B > 3`, the first, middle, and
     last bands will be displayed in the RGB channels, unless `bands` is
     specified.
-    '''
-    from spectral import settings
-    
-    # Try to init the graphics thread, if it hasn't already been.
-    if not settings.viewer:
-	import time
-	init_graphics()
-	print "Initializing graphics handlers..."
-	time.sleep(3)
-	try:
-	    settings.viewer.view(*args, **kwargs)
-	except:
-	    print "Error: Failed to display image.  This may be due to the GUI " \
-		  "thread taking too long to initialize.  Try calling \"init_graphics()\" " \
-		  "to explicitly initialize the GUI thread, then repeat the display command."
-    else:
-	settings.viewer.view(*args, **kwargs)
+    '''    
+    import graphics
+    from spectral import Image
+    from spectral.graphics.rasterwindow import RasterWindow
 
+    rgb = get_image_display_data(*args, **kwargs)
+
+    # To plot pixel spectrum on double-click, create a reference
+    # back to the original SpyFile object.
+    if isinstance(args[0], Image):
+        kwargs["data source"] = args[0]
+
+    if not kwargs.has_key("colors"):
+        rgb = (rgb * 255).astype(np.uint8)
+    else:
+        rgb = rgb.astype(np.uint8)
+
+    frame = RasterWindow(None, -1, rgb, **kwargs)
+    frame.Raise()
+    frame.Show()
+    return frame
+
+def view_cube(data, *args, **kwargs):
+    '''Renders an interactive 3D hypercube in a new window.
+
+    Arguments:
+
+	`data` (:class:`spectral.Image` or :class:`numpy.ndarray`):
+	
+	    Source image data to display.  `data` can be and instance of a
+	    :class:`spectral.Image` (e.g., :class:`spectral.SpyFile` or
+	    :class:`spectral.ImageArray`) or a :class:`numpy.ndarray`. `source`
+	    must have shape `MxN` or `MxNxB`.
+
+    Keyword Arguments:
+
+        `bands` (3-tuple of ints):
+	
+	    3-tuple specifying which bands from the image data should be
+	    displayed on top of the cube.
+
+        `top` (:class:`PIL.Image`):
+	
+	    An alternate bitmap to display on top of the cube.
+
+        `scale` (:class:`spectral.ColorScale`)
+	
+	    A color scale to be used for color in the sides of the cube. If this
+	    keyword is not specified, :obj:`spectral.graphics.colorscale.defaultColorScale`
+	    is used.
+	
+	`size` (2-tuple of ints):
+	
+	    Width and height (in pixels) for initial size of the new window.
+
+        `title` (str):
+	
+	    Title text to display in the new window frame.
+    
+    This function opens a new window, renders a 3D hypercube, and accepts
+    keyboard input to manipulate the view of the hypercube.  Accepted keyboard
+    inputs are printed to the console output.  Focus must be on the 3D window
+    to accept keyboard input.
+    '''
+    from spectral.graphics.hypercube import HypercubeWindow
+    frame = HypercubeWindow(data, None, -1, *args, **kwargs)
+    frame.Show()
+    frame.Raise()
+
+def view_nd(data, *args, **kwargs):
+    '''Creates a 3D window that displays ND data from an image.
+
+    Arguments:
+
+	`data` (:class:`spectral.ImageArray` or :class:`numpy.ndarray`):
+	
+	    Source image data to display.  `data` can be and instance of a
+	    :class:`spectral.ImageArray or a :class:`numpy.ndarray`. `source`
+	    must have shape `MxNxB`, where M >= 3.
+
+    Keyword Arguments:
+
+        `classes` (:class:`numpy.ndarray`):
+	
+	    2-dimensional array of integers specifying the classes of each pixel
+	    in `data`. `classes` must have the same dimensions as the first two
+	    dimensions of `data`.
+	
+	`features` (list or list of integer lists):
+
+	    This keyword specifies which bands/features from `data` should be
+	    displayed in the 3D window. It must be defined as one of the
+	    following:
+	    
+	    #. A length-3 list of integer feature IDs. In this case, the data
+	       points will be displayed in the positive x,y,z octant using
+	       features associated with the 3 integers.
+	    
+	    #. A length-6 list of integer feature IDs. In this case, each
+	       integer specifies a single feature index to be associated with
+	       the coordinate semi-axes x, y, z, -x, -y, and -z	(in that order).
+	       Each octant will display data points using the features
+	       associated with the 3 semi-axes for that octant.
+
+	    #. A length-8 list of length-3 lists of integers. In this case, each
+	       length-3 list specfies the features to be displayed in a single
+	       octants (the same semi-axis can be associated with different
+	       features in different octants).  Octants are ordered starting
+	       with the postive x,y,z octant and procede counterclockwise around
+	       the z-axis, then procede similarly around the negative half of
+	       the z-axis.  An octant triplet can be specified as None instead
+	       of a list, in which case nothing will be rendered in that octant.
+	
+	`size` (2-tuple of ints)
+	
+	    Specifies the initial size (pixel rows/cols) of the window.
+	    
+	`title` (string)
+	
+	    The title to display in the ND window title bar.
+    '''
+    import spectral
+    import time
+    from spectral.graphics.ndwindow import (NDWindow, validate_args,
+					    NDWindowDataProxy)
+    validate_args(data, *args, **kwargs)
+    proxy = NDWindowDataProxy()
+    window = NDWindow(data, proxy.id, None, -1, *args, **kwargs)
+    window.Show()
+    window.Raise()
+    return window
 
 def view_indexed(*args, **kwargs):
     '''
@@ -314,7 +393,6 @@ def save_image(*args, **kwargs):
 	
 	
     '''
-
     im = apply(make_pil_image, args[1:], kwargs)
 
     if kwargs.has_key("format"):
@@ -481,13 +559,13 @@ def create_window_data_proxy_id():
 
 #Deprecated functions
 
-def viewIndexed(*args, **kwargs):
-    warn('viewIndexed has been deprecated.  Use view_indexed.',
-	 DeprecationWarning)
-    return view_indexed(*args, **kwargs)
+def hypercube(*args, **kwargs):
+    warn('Function `hypercube` has been deprecated.  Use `view_cube`.',
+	 UserWarning)
+    return view_cube(*args, **kwargs)
 
-def saveImage(*args, **kwargs):
-    warn('saveImage has been deprecated.  Use save_image.',
-	 DeprecationWarning)
-    return save_image(*args, **kwargs)
+def ndwindow(*args, **kwargs):
+    warn('Function `ndwindow` has been deprecated.  Use `view_nd`.',
+	 UserWarning)
+    return view_nd(*args, **kwargs)
 

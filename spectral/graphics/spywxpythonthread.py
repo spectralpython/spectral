@@ -142,7 +142,6 @@ class WxImageServer(wx.App):
     '''
 
     def OnInit(self):
-        wx.InitAllImageHandlers()
         catcher = HiddenCatcher()
         catcher.app = self
         #self.SetTopWindow(catcher)

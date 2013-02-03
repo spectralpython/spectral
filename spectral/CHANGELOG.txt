@@ -2,6 +2,49 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2013-02-03	tboggs <tboggs@users.sourceforge.net>
+
+    This is the first commit for SPy migration to using ipython for running
+    GUI windows in a separate thread.  As of this commit, interactive use of
+    SPy requires ipython (likely started with "ipython --pylab" and setting
+    the appropriate matplotlib backend).
+    
+    * __init__.py:
+      * Incremented __version__ to '0.9+'
+      * Set up pylab for creating spectral plots.
+    * graphics/__init__.py: Updated imports to relfect new view functions.
+    * graphics/graphics.py:
+      (init_graphics): Deleted function (no longer required).
+      (view): Create display window directly (not via separate thread).
+      (init_wxpython): Deleted function (no longer required).
+      (initNumTut): Deleted function (deprecated long ago).
+      (view_cube): New function that replaces `hypercube`. Creates display
+        window directly (not via separate thread).
+      (view_nd): New function that replaced `ndwindow`. Creates display
+        window directly (not via separate thread).
+    * graphics/hypercube.py:
+      (WxHypercubeFrame): Class renamed `HypercubeWindow`.  Several changes to
+        accomodate wx 2.9, including explicitly setting GLContext.
+      (HypercubeFunctor): Class removed - no longer necessary since integrating
+        with ipython.
+      (hypercube): Function replace by `view_cube` and modified for integration
+        with ipython.  New function is in graphics.py.
+    * graphics/ndwindow:
+      (MouseHandler.left_down): Expicitly set GLContext manager for wx 2.9
+      (MouseHandler.left_up): Expicitly set GLContext manager for wx 2.9
+      (WxNDWindowFrame): Class renamed `NDWindow`.
+      (NDWindow.__init__): Handle case when `classes` kwarg is not given.
+      (NDWindow.right_click): Expicitly set GLContext manager for wx 2.9
+      (NDWindow.create_axes_list): Do not display axes labels if
+        glutBitmapCharacter is not available.
+      (NDWindowFunctor): Class removed - no longer necessary since integrating
+        with ipython.
+      (ndwindow): Function renamed `view_nd` and moved to graphics.py.
+    * graphics/rasterwindow.py: New file that holds RasterWindow class.
+    * graphics/spywxpythonthread:
+      (WxImageServer.OnInit): Remove deprecated call `wx.InitAllImageHandlers`.
+      
+
 2013-01-22	tboggs <tboggs@users.sourceforge.net>
 
     * __init__.py: Incremented __version__ to '0.9'
