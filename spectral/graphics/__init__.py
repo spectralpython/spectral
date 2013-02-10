@@ -29,12 +29,8 @@
 # Thomas Boggs, tboggs@users.sourceforge.net
 #
 
-
 from graphics import (save_image, view, view_indexed, view_cube, view_nd)
 from colorscale import ColorScale
-
-from exceptions import DeprecationWarning, UserWarning
-from warnings import warn
 
 # Deprecated functions
 from graphics import hypercube, ndwindow

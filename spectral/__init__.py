@@ -31,6 +31,10 @@
 
 __version__ = '0.9+'
 
+# START_WX_APP is True and there is no current wx.App object when a GUI
+# function is called, then an app object will be created.
+START_WX_APP = True
+
 import sys
 if sys.byteorder == 'little':
     byte_order = 0   # little endian

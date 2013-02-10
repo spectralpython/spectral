@@ -95,6 +95,10 @@ def view(*args, **kwargs):
     from spectral import Image
     from spectral.graphics.rasterwindow import RasterWindow
 
+    if not running_ipython():
+	warn_no_ipython()
+    check_wx_app()
+
     rgb = get_image_display_data(*args, **kwargs)
 
     # To plot pixel spectrum on double-click, create a reference
@@ -155,6 +159,11 @@ def view_cube(data, *args, **kwargs):
     to accept keyboard input.
     '''
     from spectral.graphics.hypercube import HypercubeWindow
+
+    if not running_ipython():
+	warn_no_ipython()
+    check_wx_app()
+
     frame = HypercubeWindow(data, None, -1, *args, **kwargs)
     frame.Show()
     frame.Raise()
@@ -215,6 +224,11 @@ def view_nd(data, *args, **kwargs):
     import time
     from spectral.graphics.ndwindow import (NDWindow, validate_args,
 					    NDWindowDataProxy)
+
+    if not running_ipython():
+	warn_no_ipython()
+    check_wx_app()
+
     validate_args(data, *args, **kwargs)
     proxy = NDWindowDataProxy()
     window = NDWindow(data, proxy.id, None, -1, *args, **kwargs)
@@ -252,6 +266,10 @@ def view_indexed(*args, **kwargs):
     The default color palette used is defined by :obj:`spectral.spy_colors`.
     '''
     from spectral import settings, spy_colors
+
+    if not running_ipython():
+	warn_no_ipython()
+    check_wx_app()
 
     if not kwargs.has_key('colors'):
         kwargs['colors'] = spy_colors
@@ -543,6 +561,58 @@ def create_window_data_proxy_id():
     _window_data_proxies[_next_window_data_proxy_id] = None
     _next_window_data_proxy_id += 1
     return _next_window_data_proxy_id - 1
+
+def running_ipython():
+    '''Returns True if ipython is running.'''
+    try:
+	__IPYTHON__
+	return True
+    except NameError:
+	return False
+
+def warn_no_ipython():
+    '''Warns that user is calling a GUI function outside of ipython.'''
+    import sys
+    msg = '''
+#############################################################################
+SPy graphics functions are inteded to be run from IPython with the
+`pylab` mode set for wxWindows.  For example,
+
+    # ipython --pylab=WX
+
+GUI functions will likely not function properly if you aren't running IPython
+or haven't started it configured for pylab and wx.
+#############################################################################
+'''
+    
+    if sys.platform == 'darwin':
+	msg += '''
+NOTE: If you are running on Mac OS X and receive an error message
+stating the following:
+
+    "PyNoAppError: The wx.App object must be created first!",
+
+You can avoid this error by running the following commandes immediately after
+starting your ipython session:
+
+    In [1]: import wx
+    
+    In [2]: app = wx.App()
+#############################################################################
+'''
+    warn(msg, UserWarning)
+
+def check_wx_app():
+    '''Generates a warning if there is not a running wx.App.
+    If spectral.START_WX_APP is True and there is no current app, then on will
+    be started.
+    '''
+    import spectral
+    import wx
+    if not wx.GetApp() and spectral.START_WX_APP == True:
+	warn('\nThere is no current wx.App object - creating one now.',
+	     UserWarning)
+	spectral.app = wx.App()
 
 #Deprecated functions
 

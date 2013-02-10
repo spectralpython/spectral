@@ -4,6 +4,20 @@
 
 2013-02-10	tboggs <tboggs@users.sourceforge.net>
 
+    Warn users if they try to call a GUI function outside of ipython and start
+    a wx.App if there is not one already
+    
+    * __init__.py: Added parameter `START_WX_APP`.
+    * graphics/__init__.py: Removed unecessary imports.
+    * graphics/graphics.py:
+      (view): Check if running ipython and if wx.App exists.
+      (view_cube): ditto
+      (view_nd): ditto
+      (view_indexed): ditto
+      (running_ipython): New function
+      (warn_no_ipython): New function
+      (check_wx_app): New function
+
     Set raster plotting module on initialization
     
     * __init__.py: Set raster plotter.
