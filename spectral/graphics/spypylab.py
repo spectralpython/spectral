@@ -49,7 +49,7 @@ def plot(data, source = None):
 
     s = shape(data)
 
-    if source != None:
+    if source != None and hasattr(source, 'bands'):
 	xvals = source.bands.centers
     else:
 	xvals = None
@@ -67,7 +67,7 @@ def plot(data, source = None):
             p = pylab.plot(xvals, data[i, :])
     spectral.xyplot = p
     pylab.grid(1)
-    if source != None:
+    if source != None and hasattr(source, 'bands'):
 	xlabel = source.bands.band_quantity
 	if len(source.bands.band_unit) > 0:
 	    xlabel = xlabel + ' (' + source.bands.band_unit + ')'
