@@ -160,6 +160,9 @@ def open(file, image = None):
                     break
         if not image:
             raise IOError, 'Unable to determine image file name.'
+    else:
+	image = find_file_path(image)
+
     p.filename = image
 
     #  Determine numeric data type

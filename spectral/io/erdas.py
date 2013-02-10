@@ -116,14 +116,16 @@ def open(file):
     p = Params()
     p.byte_order = 0
 
+    file_path = find_file_path(file)
+
     lh = read_erdas_lan_header(find_file_path(file))
     if lh["nbands"] < 0 or lh["nbands"] > 512 or \
        lh["ncols"] < 0 or lh["ncols"] > 10000 or \
        lh["nrows"] < 0 or lh["nrows"] > 10000:
 	  p.byte_order = 1
-	  lh = read_erdas_lan_header(find_file_path(file), 1)
+	  lh = read_erdas_lan_header(file_path, 1)
 
-    p.filename = file
+    p.filename = file_path
     p.nbands = lh["nbands"]
     p.ncols = lh["ncols"]
     p.nrows = lh["nrows"]

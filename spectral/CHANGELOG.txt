@@ -2,6 +2,37 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2013-02-10	tboggs <tboggs@users.sourceforge.net>
+
+    Set raster plotting module on initialization
+    
+    * __init__.py: Set raster plotter.
+
+    Handle scalar valued transforms (e.g., scaling spectral data by a constant).
+    
+    * algorithms/transforms.py:
+      (LinearTransform.__init__): Handle scalar transforms.
+      (LinearTransform.__call__): Handle scalar transforms.
+    * io/spyfile.py:
+      (TransformedImage.__init__): Handle scalar valued transforms.
+
+    Fixed error when double-clicking on transformed image raster view.
+    
+    * graphics/spypylab (plot): Check for presence of `bands` member of data.
+    * io/spyfile.py:
+      - Changed doc string for ipython.
+      (TransformedImage.bands): New property method.
+
+    Search spectral data directories for files opened not via `spectral.image`.
+    
+    * io/envi.py (open): Search data directories for optional `image` arg.
+    * io/erdas.py (open): Search data directories for file arg.
+
+    * io/aviris.py (open): Remove deprecated call to `readAvirisBands`.
+
+    * graphics/graphics.py (view_indexed): Remove deprecated call to
+      `init_graphics`.
+    
 2013-02-03	tboggs <tboggs@users.sourceforge.net>
 
     This is the first commit for SPy migration to using ipython for running
