@@ -43,11 +43,14 @@ class LinearTransform:
     
 	`dim_in` (int):
 	
-	    The expected length of input vectors.
+	    The expected length of input vectors. This will be `None` if the
+	    input dimension is unknown (e.g., if the transform is a scalar).
 	
 	`dim_out` (int):
 	
-	    The length of output vectors (after linear transformation).
+	    The length of output vectors (after linear transformation). This
+	    will be `None` if the input dimension is unknown (e.g., if
+	    the transform is a scalar).
 	
 	`dtype` (numpy dtype):
 	
@@ -77,11 +80,17 @@ class LinearTransform:
         
         self._pre = kwargs.get('pre', None)
         self._post = kwargs.get('post', None)
-        if len(A.shape) == 1:
-            self._A = A.reshape(((1,) + A.shape))
+	A = np.array(A, copy=True)
+	if A.ndim == 0:
+	    # Do not know input/ouput dimensions
+	    self._A = A
+	    (self.dim_out, self.dim_in) = (None, None)
         else:
-            self._A = A
-	(self.dim_out, self.dim_in) = self._A.shape
+	    if len(A.shape) == 1:
+		self._A = A.reshape(((1,) + A.shape))
+	    else:
+		self._A = A
+	    (self.dim_out, self.dim_in) = self._A.shape
 	self.dtype = kwargs.get('dtype', self._A.dtype)
 
     def __call__(self, X):
@@ -140,7 +149,8 @@ class LinearTransform:
 	
 	if isinstance(transform, np.ndarray):
 	    transform = LinearTransform(transform)
-	if self.dim_in != transform.dim_out:
+	if self.dim_in != None and transform.dim_out != None \
+	and self.dim_in != transform.dim_out:
 	    raise Exception('Input/Output dimensions of chained transforms'
 			    'do not match.')
 
@@ -166,7 +176,7 @@ class LinearTransform:
 	    post += self._post
 	if post != None:
 	    post = np.array(post)
-	A = self._A.dot(transform._A)
+	A = np.dot(self._A, transform._A)
 	return LinearTransform(A, pre=pre, post=post)
 
 	

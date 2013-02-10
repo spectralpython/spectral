@@ -37,12 +37,17 @@ within the image file.
 
 Let's open our sample image.
 
-    >>> from spectral import *
-    >>> img = image('92AV3C.lan')
-    >>> img.__class__
-    <class spectral.io.bilfile.BilFile at 0x1021ed3b0>
-    >>> print img
-	    Data Source:   '/Users/thomas/spectral_data/92AV3C'
+.. ipython::
+
+    In [1]: from spectral import *
+    
+    In [2]: img = image('92AV3C.lan')
+    
+    In [3]: img.__class__
+    Out[3]: spectral.io.bilfile.BilFile
+    
+    In [4]: print img
+	    Data Source:   '/Users/thomas/spectral_data/92AV3C.lan'
 	    # Rows:            145
 	    # Samples:         145
 	    # Bands:           220
@@ -64,14 +69,20 @@ operator. The :class:`~spectral.SpyFile` object is subscripted as an *MxNxB*
 array where *M* is the number of rows in the image, *N* is the number of
 columns, and *B* is thenumber of bands.
 
-    >>> img.shape
-    (145, 145, 220)
-    >>> pixel = img[50,100]
-    >>> pixel.shape
-    (220,)
-    >>> band6 = img[:,:,5]
-    >>> band6.shape
-    (145, 145, 1)
+.. ipython::
+
+    In [5]: img.shape
+    Out[5]: (145, 145, 220)
+    
+    In [6]: pixel = img[50,100]
+    
+    In [7]: pixel.shape
+    Out[7]: (220,)
+    
+    In [8]: band6 = img[:,:,5]
+    
+    In [9]: band6.shape
+    Out[9]: (145, 145, 1)
 
 The image data values were not read from the file until the subscript operator
 calls were performed.  Note that since Python indices start at 0, ``img[50,100]``
@@ -566,7 +577,7 @@ class TransformedImage(Image):
 	    transform = LinearTransform(transform)
 	self.transform = transform
 	
-	if self.transform.dim_in != img.shape[-1]:
+	if self.transform.dim_in not in (None, img.shape[-1]):
 	    raise Exception('Number of bands in image (%d) do not match the '
 			    ' input dimension of the transform (%d).'
 			    % (img.shape[-1], transform.dim_in))
@@ -582,8 +593,16 @@ class TransformedImage(Image):
             self.image = img.image
         else:
             self.image = img
-	self.shape = self.image.shape[:2] + (self.transform.dim_out,)
-        self.nbands = self.transform.dim_out
+	if self.transform.dim_out != None:
+	    self.shape = self.image.shape[:2] + (self.transform.dim_out,)
+	    self.nbands = self.transform.dim_out
+	else:
+	    self.shape = self.image.shape
+	    self.nbands = self.image.nbands
+    
+    @property
+    def bands(self):
+	return self.image.bands
 
     def __getitem__(self, args):
         '''
