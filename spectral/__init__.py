@@ -54,6 +54,7 @@ try:
     from graphics import spypylab
     pylab.ion()
     spectral.settings.plotter = spypylab
+    spectral.settings.viewer = graphics
 except:
     warn('Unable to import orconfigure pylab plotter.  Spectrum plots will be '
 	 'unavailable.', UserWarning)
