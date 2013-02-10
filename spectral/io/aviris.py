@@ -83,7 +83,7 @@ def open(file, band_file = None):
     img.scale_factor = 10000.0
     
     if band_file:
-	img.bands = readAvirisBands(find_file_path(band_file))
+	img.bands = read_aviris_bands(find_file_path(band_file))
     else:
 	# Let user know if band cal files are available
 	fileDir = os.path.split(p.filename)[0]
