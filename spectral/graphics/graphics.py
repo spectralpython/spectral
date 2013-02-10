@@ -256,20 +256,7 @@ def view_indexed(*args, **kwargs):
     if not kwargs.has_key('colors'):
         kwargs['colors'] = spy_colors
 
-    # Try to init the graphics thread, if it hasn't already been.
-    if not settings.viewer:
-	import time
-	init_graphics()
-	print "Initializing graphics handlers..."
-	time.sleep(3)
-	try:
-	    settings.viewer.view(*args, **kwargs)
-	except:
-	    print "Error: Failed to display image.  This may be due to the GUI " \
-		  "thread taking too long to initialize.  Try calling \"init_graphics()\" " \
-		  "to explicitly initialize the GUI thread, then repeat the display command."
-    else:
-	settings.viewer.view(*args, **kwargs)
+    settings.viewer.view(*args, **kwargs)
     
 
 def make_pil_image(*args, **kwargs):
