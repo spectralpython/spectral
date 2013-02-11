@@ -152,6 +152,7 @@ class HypercubeWindow(wx.Frame):
     
     def __init__(self, data, parent, id, *args, **kwargs):
         global DEFAULT_WIN_SIZE
+	from spectral import settings
 
         self.kwargs = kwargs
 	self.size = kwargs.get('size', DEFAULT_WIN_SIZE)
@@ -170,7 +171,7 @@ class HypercubeWindow(wx.Frame):
         self.gl_initialized = False
         attribs = (glcanvas.WX_GL_RGBA, # RGBA
                    glcanvas.WX_GL_DOUBLEBUFFER, # Double Buffered
-                   glcanvas.WX_GL_DEPTH_SIZE, 32) # 32 bit
+                   glcanvas.WX_GL_DEPTH_SIZE, settings.WX_GL_DEPTH_SIZE)
         self.canvas = glcanvas.GLCanvas(self, attribList=attribs, size=self.size)
 	self.canvas.context = wx.glcanvas.GLContext(self.canvas)
 

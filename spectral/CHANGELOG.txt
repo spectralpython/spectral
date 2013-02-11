@@ -2,6 +2,25 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2013-02-11	tboggs <tboggs@users.sourceforge.net>
+
+    Moved START_WX_APP into settings object and make configurable
+    WX_GL_DEPTH_SIZE.
+    
+    * __init__.py: Moved START_WX_APP to settings object.
+    * algorithms/__init__.py: Import LinearTransform.
+    * graphics/graphics.py:
+      (check_wx_app): Moved START_WX_APP to settings object.
+    * graphics/hypercube.py:
+      (HypercubeWindow.__init__): Use WX_GL_DEPTH_SIZE value from settings.
+    * graphics/ndwindow.py:
+      (NDWindow.__init__): Use WX_GL_DEPTH_SIZE value from settings.
+      (NDWindow.reassign_selection): Print dots for each pass instead of number
+        of reassigned pixels.
+      (NDWindow.create_axes_list): Put try block around GLUT calls.
+      (NDWindow.initgl): Call glutInit()
+    * spectral.py (SpySettings.__init__): Add START_WX_APP and WX_GL_DEPTH_SIZE.
+    
 2013-02-10	tboggs <tboggs@users.sourceforge.net>
 
     Improved performance of class covariance calculation for in-memory images

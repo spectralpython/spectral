@@ -609,7 +609,7 @@ def check_wx_app():
     '''
     import spectral
     import wx
-    if not wx.GetApp() and spectral.START_WX_APP == True:
+    if not wx.GetApp() and spectral.settings.START_WX_APP == True:
 	warn('\nThere is no current wx.App object - creating one now.',
 	     UserWarning)
 	spectral.app = wx.App()

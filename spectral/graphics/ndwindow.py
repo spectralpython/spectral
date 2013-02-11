@@ -226,6 +226,7 @@ class NDWindow(wx.Frame):
     '''A widow class for displaying N-dimensional data points.'''
 
     def __init__(self, data, proxy_id, parent, id, *args, **kwargs):
+	from spectral import settings
         global DEFAULT_WIN_SIZE
         self.kwargs = kwargs
 	self.size = kwargs.get('size', DEFAULT_WIN_SIZE)
@@ -245,7 +246,7 @@ class NDWindow(wx.Frame):
         self.gl_initialized = False
         attribs = (glcanvas.WX_GL_RGBA,
                    glcanvas.WX_GL_DOUBLEBUFFER,
-                   glcanvas.WX_GL_DEPTH_SIZE, 16)
+                   glcanvas.WX_GL_DEPTH_SIZE, settings.WX_GL_DEPTH_SIZE)
         self.canvas = glcanvas.GLCanvas(self, attribList=attribs)
 	self.canvas.context = wx.glcanvas.GLContext(self.canvas)
 
@@ -596,6 +597,7 @@ class NDWindow(wx.Frame):
 	import spectral
 	nreassigned_tot = 0
 	i = 1
+	print 'Reassigning points',
 	while True:
 	    indices = np.array(self._display_indices)
 	    classes = np.array(self.classes.ravel()[indices])
@@ -611,10 +613,11 @@ class NDWindow(wx.Frame):
 	    self.create_display_lists()
 	    if len(ids) == 0:
 		break
-	    print 'Pass %d: %d points reassigned to class %d.' \
-		  % (i, nreassigned, new_class)
+#	    print 'Pass %d: %d points reassigned to class %d.' \
+#		  % (i, nreassigned, new_class)
+	    print '.',
 	    i += 1
-	print '%d points were reasssigned to class %d.' \
+	print '\n%d points were reasssigned to class %d.' \
 	      % (nreassigned_tot, new_class)
 	self._selection_box = None
 	self.window_data.classes = cr.reshape(self.data.shape[:2])
@@ -718,7 +721,6 @@ class NDWindow(wx.Frame):
 	'''Creates display lists to render unit length x,y,z axes.'''
 	import OpenGL.GL as gl
 	import OpenGL.GLUT as glut
-#	glut.glutInit()
 	gl.glNewList(self.gllist_id, gl.GL_COMPILE)
 	gl.glBegin(gl.GL_LINES)
 	gl.glColor3f(1.0, 0.0, 0.0)
@@ -740,13 +742,16 @@ class NDWindow(wx.Frame):
 	gl.glVertex3f(0.0, 0.0, -1.0)
 	gl.glEnd()
 	
-	if bool(glut.glutBitmapCharacter):
-	    gl.glRasterPos3f(1.05, 0.0, 0.0);
-	    glut.glutBitmapCharacter(glut.GLUT_BITMAP_HELVETICA_18, ord('x'))
-	    gl.glRasterPos3f(0.0, 1.05, 0.0);
-	    glut.glutBitmapCharacter(glut.GLUT_BITMAP_HELVETICA_18, ord('y'))
-	    gl.glRasterPos3f(0.0, 0.0, 1.05);
-	    glut.glutBitmapCharacter(glut.GLUT_BITMAP_HELVETICA_18, ord('z'))
+	try:
+	    if bool(glut.glutBitmapCharacter):
+		gl.glRasterPos3f(1.05, 0.0, 0.0);
+		glut.glutBitmapCharacter(glut.GLUT_BITMAP_HELVETICA_18, ord('x'))
+		gl.glRasterPos3f(0.0, 1.05, 0.0);
+		glut.glutBitmapCharacter(glut.GLUT_BITMAP_HELVETICA_18, ord('y'))
+		gl.glRasterPos3f(0.0, 0.0, 1.05);
+		glut.glutBitmapCharacter(glut.GLUT_BITMAP_HELVETICA_18, ord('z'))
+	except:
+	    pass
 
 	gl.glEndList()
 
@@ -765,6 +770,7 @@ class NDWindow(wx.Frame):
     def initgl(self):
 	'''App-specific initialization for after GLUT has been initialized.'''
 	import OpenGL.GL as gl
+	import OpenGL.GLUT as glut
 	self.gllist_id = gl.glGenLists(9)
 	gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
 	gl.glEnableClientState(gl.GL_COLOR_ARRAY)
@@ -775,6 +781,7 @@ class NDWindow(wx.Frame):
 	gl.glEnable(gl.GL_DEPTH_TEST)
 	gl.glShadeModel(gl.GL_FLAT)
 	self.set_data(self.data, classes=self.classes, features=self.features)
+	glut.glutInit()
 
     def on_resize(self, event):
         """Process the resize event."""

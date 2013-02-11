@@ -41,6 +41,14 @@ class SpySettings:
     def __init__(self):
 	self.viewer = None
 	self.plotter = None
+	
+	# If START_WX_APP is True and there is no current wx.App object when a
+	# GUI function is called, then an app object will be created.
+	self.START_WX_APP = True
+	
+	# Parameter used by GLCanvas objects in view_cube and view_nd. If the
+	# canvas does not render, try changing reducing this value (e.g., 16).
+	self.WX_GL_DEPTH_SIZE = 32
 
 settings = SpySettings()
 
