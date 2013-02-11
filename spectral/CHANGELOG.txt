@@ -4,6 +4,15 @@
 
 2013-02-10	tboggs <tboggs@users.sourceforge.net>
 
+    Improved performance of class covariance calculation for in-memory images
+    and fixed a bug introduced by 0.9 when computing covariance for SpyFile
+    objects.
+    
+    * algorithms/algorithms.py (mean_cov): Always use numpy.cov when computing
+      covariance for in-memory images (even when class mask is present). Fixed
+      a bug due to Int16 comptations that cause incorrect covariance calculation
+      for SpyFile objects (introduced by SPy 0.9).
+
     Warn users if they try to call a GUI function outside of ipython and start
     a wx.App if there is not one already
     

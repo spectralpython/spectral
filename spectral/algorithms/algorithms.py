@@ -156,7 +156,7 @@ def mean_cov(image, mask = None, index = None):
 
     Arguments:
     
-        `vectors` (ndarrray, :class:`~spectral.Image`, or :class:`spectral.Iterator`):
+        `image` (ndarrray, :class:`~spectral.Image`, or :class:`spectral.Iterator`):
 	
 	    If an ndarray, it should have shape `MxNxB` and the mean & covariance
 	    will be calculated for each band (third dimension).
@@ -200,8 +200,20 @@ def mean_cov(image, mask = None, index = None):
     import numpy as np
     from numpy import zeros, transpose, dot, newaxis
 
-    if isinstance(image, np.ndarray) and image.dtype != np.float64:
-	image = image.astype(np.float64)
+    if isinstance(image, np.ndarray):
+	X = image.astype(np.float64)
+	if X.ndim == 3:
+	    X = image.reshape(-1, image.shape[-1]).T
+	if mask != None:
+	    mask = mask.ravel()
+	    if index != None:
+		ii = np.argwhere(mask == index)
+	    else:
+		ii = np.argwhere(mask != 0)
+	    X = np.take(X, ii.squeeze(), axis=1)
+	m = np.average(X, axis=1)
+	C = np.cov(X)
+	return (m, C, X.shape[1])
 
     if not isinstance(image, Iterator):
         it = iterator(image, mask, index)
@@ -222,11 +234,11 @@ def mean_cov(image, mask = None, index = None):
             status.update_percentage(float(count) / nSamples * 100.)
         count += 1
         sumX += x
-        x = x[:, newaxis]
-        sumX2 += dot(x, transpose(x))
-    mean = sumX / count
+        x = x.astype(np.float64)[:, newaxis]
+        sumX2 += x.dot(x.T)
+    mean = (sumX / count)
     sumX = sumX[:, newaxis]
-    cov = (sumX2 - dot(sumX, transpose(sumX)) / float(count)) / float(count - 1)
+    cov = (sumX2 - sumX.dot(sumX.T) / count) / (count - 1)
     status.end_percentage()
     return (mean, cov, count)
 
