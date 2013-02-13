@@ -222,16 +222,79 @@ def random_subset(sequence, nsamples):
 	triplet = [random.choice(sequence) for i in range(nsamples)]
     return triplet
 
+class NDWindowProxy(object):
+    '''A proxy class to retrieve data from an NDWindow.
+    An instance contains the following members:
+    
+	`classes` (ndarray):
+	
+	    The current class labels associated with the NDWindow data.
+	
+	`set_features` ((list, string)):
+	
+	    List of features and the display mode (see set_features doc string.)
+    '''
+    def __init__(self, window):
+	self._window = window
+	self._classes = window.classes
+
+    @property
+    def classes(self):
+	'''Returns the current class labels associated with data points.'''
+	return self._classes
+
+    def set_features(self, *args, **kwargs):
+	'''Specifies which features to display in the 3D window.
+	
+	Arguments:
+	
+	`features` (list or list of integer lists):
+
+	    This keyword specifies which bands/features from `data` should be
+	    displayed in the 3D window. It must be defined as one of the
+	    following:
+	    
+	    #. If `mode` is set to "single" (the default), then `features`
+	       must be a length-3 list of integer feature IDs. In this case,
+	       the data points will be displayed in the positive x,y,z octant
+	       using features associated with the 3 integers. 
+	    
+	    #. If `mode` is set to "mirrored", then `features` must be a
+	       length-6 list of integer feature IDs. In this case, each
+	       integer specifies a single feature index to be associated with
+	       the coordinate semi-axes x, y, z, -x, -y, and -z	(in that order).
+	       Each octant will display data points using the features
+	       associated with the 3 semi-axes for that octant.
+
+	    #. If `mode` is set to "independent", then `features` must be a
+	       length-8 list of length-3 lists of integers. In this case, each
+	       length-3 list specfies the features to be displayed in a single
+	       octants (the same semi-axis can be associated with different
+	       features in different octants).  Octants are ordered starting
+	       with the postive x,y,z octant and procede counterclockwise around
+	       the z-axis, then procede similarly around the negative half of
+	       the z-axis.  An octant triplet can be specified as None instead
+	       of a list, in which case nothing will be rendered in that octant.
+	       
+	`mode` (string, default="single")
+	
+	    The display mode for the 3D octants.  This value must be "single",
+	    "mirrored", or "independent".
+	'''
+
+	if not isinstance(self._window, wx.Frame):
+	    raise Exception('The window no longer exists.')
+	self._window.set_features(*args, **kwargs)
+
 class NDWindow(wx.Frame):
     '''A widow class for displaying N-dimensional data points.'''
 
-    def __init__(self, data, proxy_id, parent, id, *args, **kwargs):
+    def __init__(self, data, parent, id, *args, **kwargs):
 	from spectral import settings
         global DEFAULT_WIN_SIZE
         self.kwargs = kwargs
 	self.size = kwargs.get('size', DEFAULT_WIN_SIZE)
 	self.title = kwargs.get('title', 'ND Window')
-	self.proxy_id = proxy_id
 
         #
         # Forcing a specific style on the window.
@@ -273,7 +336,7 @@ class NDWindow(wx.Frame):
 
         # Set the event handlers.
         self.canvas.Bind(wx.EVT_ERASE_BACKGROUND, self.on_erase_background)
-        self.canvas.Bind(wx.EVT_SIZE, self.on_resize)
+        self.Bind(wx.EVT_SIZE, self.on_resize)
         self.canvas.Bind(wx.EVT_PAINT, self.on_paint)
         self.canvas.Bind(wx.EVT_LEFT_DOWN, self.mouse_handler.left_down)
         self.canvas.Bind(wx.EVT_LEFT_UP, self.mouse_handler.left_up)
@@ -294,13 +357,7 @@ class NDWindow(wx.Frame):
 	self.max_menu_class = int(np.max(self.classes.ravel() + 1))
 	
     def on_event_close(self, event=None):
-	from spectral.graphics.graphics import _window_data_proxies
-	if self.window_data.remove_on_close == True \
-	   and _window_data_proxies.has_key(self.proxy_id):
-	    _window_data_proxies.pop(self.proxy_id)
-	else:
-	    self.window_data.window_closed = True
-	self.window_data = None
+	pass
 	
     def right_click(self, event):
 	self.canvas.SetCurrent(self.canvas.context)
@@ -376,8 +433,6 @@ class NDWindow(wx.Frame):
 	if N > 2**sum(self._rgba_bits):
 	    raise Exception('Insufficient color bits (%d) for N-D window display' \
 			    % sum(self._rgba_bits))
-	
-	self.window_data = NDWindowData(self.proxy_id, np.array(self.classes.reshape(self.data.shape[:2])))
 	self.reset_view_geometry()
 	    
     def set_octant_display_features(self, features):
@@ -500,6 +555,25 @@ class NDWindow(wx.Frame):
 	pprint(np.array(features))
 	self.set_octant_display_features(features)
 
+    def set_features(self, features, mode = 'single'):
+	from pprint import pprint
+	if mode == 'single':
+	    if len(features) != 3:
+		raise Exception('Expected 3 feature indices for "single" mode.')
+	elif mode == 'mirrored':
+	    if len(features) != 6:
+		raise Exception('Expected 6 feature indices for "mirrored" mode.')
+	elif mode == 'independent':
+	    if len(features) != 8:
+		raise Exception('Expected 8 3-tuples of feature indices for'
+				'"independent" mode.')
+	else:
+	    raise Exception('Unrecognized feature mode: %s.' % str(mode))
+	print 'New feature IDs:'
+	pprint(np.array(features))
+	self.set_octant_display_features(features)
+	self.Refresh()
+	    
     def draw_box(self, x0, y0, x1, y1):
 	'''Draws a selection box in the 3-D window.
 	Coordinates are with respect to the lower left corner of the window.
@@ -620,7 +694,6 @@ class NDWindow(wx.Frame):
 	print '\n%d points were reasssigned to class %d.' \
 	      % (nreassigned_tot, new_class)
 	self._selection_box = None
-	self.window_data.classes = cr.reshape(self.data.shape[:2])
 	if nreassigned_tot > 0 and new_class == self.max_menu_class:
 	    self.max_menu_class += 1
 	return nreassigned_tot
@@ -785,13 +858,13 @@ class NDWindow(wx.Frame):
 
     def on_resize(self, event):
         """Process the resize event."""
-        if self.canvas.GetContext():
-            # Make sure the frame is shown before calling SetCurrent.
-            self.Show()
-            self.canvas.SetCurrent(self.canvas.context)
-            size = self.canvas.GetClientSize()
-            self.resize(size.width, size.height)
-            self.canvas.Refresh(False)
+	self.canvas.SetCurrent(self.canvas.context)
+	# Make sure the frame is shown before calling SetCurrent.
+	self.Show()
+	self.canvas.SetCurrent(self.canvas.context)
+	size = event.GetSize()
+	self.resize(size.width, size.height)
+	self.canvas.Refresh(False)
         event.Skip()
     
     def resize(self, width, height):
@@ -856,6 +929,10 @@ class NDWindow(wx.Frame):
 	'''Prints current file name and current point color to window title.'''
 	s = 'SPy N-D Data Set'
 	glutSetWindowTitle(s)
+    
+    def get_proxy(self):
+	'''Returns a proxy object to access data from the window.'''
+	return NDWindowProxy(self)
 
     def print_help(self):
 	'''Prints a list of accepted keyboard/mouse inputs.'''
@@ -882,34 +959,6 @@ q	-->	Exit the application
 r	-->	Reset viewing geometry
 u	-->	Toggle display of unassigned points (points with class == 0)
 '''
-
-from spectral.graphics.graphics import WindowData, WindowDataProxy
-
-class NDWindowData(WindowData):
-    '''Class to hold data to be accessible by window client code.'''
-    def __init__(self, proxy_id, classes):
-	WindowData.__init__(self, proxy_id)
-	self.classes = classes
-
-class NDWindowDataProxy(WindowDataProxy):
-    '''A proxy data class by which client code can access window data.'''
-    def __init__(self):
-	WindowDataProxy.__init__(self)
-	self._classes = None
-    @property
-    def classes(self):
-	if self._classes != None:
-	    # The window was already closed so the data are stored locally.
-	    return self._classes
-	data = self.get_data()
-	if data.window_closed:
-	    # Return and store the data, then remove the window data object.
-	    self._classes = data.classes
-	    self.pop()
-	    return self._classes
-	else:
-	    # Return proxied data
-	    return data.classes
 
 def validate_args(data, *args, **kwargs):
     '''Validates arguments to the `ndwindow` function.'''

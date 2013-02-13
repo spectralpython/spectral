@@ -2,6 +2,34 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2013-02-12	tboggs <tboggs@users.sourceforge.net>
+
+    Enabled setting NDWindow features from command line.  Simplified window
+    proxy interface, and fixed ND and hypercube window resizing.
+    
+    * graphics/graphics.py:
+      (_next_window_data_proxy_id): Removed module variable.
+      (_window_data_proxies): Removed module variable.
+      (view_nd): Use `NDWindowProxy` object.
+      (WindowData): Removed class.
+      (WindowDataProxy): Removed class.
+      (create_window_data_proxy_id): Removed function.
+    * graphics/hypercube.py:
+      (HypercubeWindow.on_resize): Remove GetContext check.
+      (HypercubeWindow.resize): Added needed OpenGL.GLU import
+    * graphics/ndwindow:
+      (NDWindowProxy): New class to give user access to class labels and to set
+        display features in an open NDWindow.
+      (NDWindow.__init__): Remove obsolete proxy_id arg. Send EVT_SIZE to the
+        frame instead of the GLCanvas.
+      (NDWindow.on_event_close): Remove old proxy cleanup code.
+      (NDWindow.set_data):  Remove old proxy cleanup code.
+      (NDWindow.set_features): New method for user to set features from CLI.
+      (NDWindow.on_resize): Remove GetContext check.
+      (NDWindow.get_proxy): New method.
+      (NDWindowData): Removed class.
+      (NDWindowDataProxy): Removed class.
+      
 2013-02-11	tboggs <tboggs@users.sourceforge.net>
 
     Moved START_WX_APP into settings object and make configurable

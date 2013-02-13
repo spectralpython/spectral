@@ -38,9 +38,6 @@ from warnings import warn
 import numpy as np
 import spectral
 
-_next_window_data_proxy_id = 1
-_window_data_proxies = {}
-
 def view(*args, **kwargs):
     '''
     Opens a window and displays a raster greyscale or color image.
@@ -219,22 +216,24 @@ def view_nd(data, *args, **kwargs):
 	`title` (string)
 	
 	    The title to display in the ND window title bar.
+    
+    Returns an NDWindowProxy object with a `classes` member to access the
+    current class labels associated with data points and a `set_features`
+    member to specify which features are displayed.
     '''
     import spectral
     import time
-    from spectral.graphics.ndwindow import (NDWindow, validate_args,
-					    NDWindowDataProxy)
+    from spectral.graphics.ndwindow import NDWindow, validate_args
 
     if not running_ipython():
 	warn_no_ipython()
     check_wx_app()
 
     validate_args(data, *args, **kwargs)
-    proxy = NDWindowDataProxy()
-    window = NDWindow(data, proxy.id, None, -1, *args, **kwargs)
+    window = NDWindow(data, None, -1, *args, **kwargs)
     window.Show()
     window.Raise()
-    return window
+    return window.get_proxy()
 
 def view_indexed(*args, **kwargs):
     '''
@@ -529,38 +528,6 @@ def get_image_display_data(source, bands = None, **kwargs):
             rgb = (rgb - mmin) / (mmax - mmin)
 
     return rgb
-
-class WindowData(object):
-    '''A base class for data rertrievable from open windows.'''
-    def __init__(self, proxy_id):
-	global _window_data_proxies
-	self.window_closed = False
-	self.remove_on_close = False
-	self._proxy_id = proxy_id
-	_window_data_proxies[self._proxy_id] = self
-
-class WindowDataProxy:
-    '''A base class for proxying data associated with SPy windows.'''
-    def __init__(self):
-	self.id = create_window_data_proxy_id()
-    def __del__(self):
-	global _window_data_proxies
-	data = _window_data_proxies.get(self.id)
-	if data and data.window_closed == False:
-	    data.remove_on_close = True
-    def get_data(self):
-	global _window_data_proxies
-	return _window_data_proxies[self.id]
-    def pop(self):
-	global _window_data_proxies
-	_window_data_proxies.pop(self.id)
-
-def create_window_data_proxy_id():
-    '''Returns the ID of a new WindowDataProxy object.'''
-    global _next_window_data_proxy_id
-    _window_data_proxies[_next_window_data_proxy_id] = None
-    _next_window_data_proxy_id += 1
-    return _next_window_data_proxy_id - 1
 
 def running_ipython():
     '''Returns True if ipython is running.'''

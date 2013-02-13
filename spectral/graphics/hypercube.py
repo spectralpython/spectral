@@ -388,25 +388,23 @@ class HypercubeWindow(wx.Frame):
 
     def on_resize(self, event):
         """Process the resize event."""
-        if self.canvas.GetContext():
-            # Make sure the frame is shown before calling SetCurrent.
-            self.Show()
-            self.canvas.SetCurrent(self.canvas.context)
-            size = self.canvas.GetClientSize()
-            self.resize(size.width, size.height)
-            self.canvas.Refresh(False)
-        event.Skip()
+	self.canvas.SetCurrent(self.canvas.context)
+	self.Show()
+	size = self.canvas.GetClientSize()
+	self.resize(size.width, size.height)
+	self.canvas.Refresh(False)
+	event.Skip()
     
     def resize(self, width, height):
         """Reshape the OpenGL viewport based on the dimensions of the window."""
 	import OpenGL.GL as gl
+	import OpenGL.GLU as glu
         self.size = (width, height)
         gl.glViewport(0, 0, width, height)
         gl.glMatrixMode(gl.GL_PROJECTION)
         gl.glLoadIdentity()
 	glu.gluPerspective(self.fovy, float(width) / height,
 			   self.znear, self.zfar)
-        
         gl.glMatrixMode(gl.GL_MODELVIEW)
         gl.glLoadIdentity()
     
