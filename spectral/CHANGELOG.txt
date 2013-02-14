@@ -2,6 +2,18 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2013-02-14	tboggs <tboggs@users.sourceforge.net>
+
+    Handle possible missing GLUT module and handle multiple wx series (2.8/2.9).
+    
+    * graphics/graphics.py (WindowProxy): New class.
+    * graphics/ndwindow.py:
+      (NDWindowProxy): Class now derived from WindowProxy.
+      (NDWindow.__init__): Added new member _have_glut.
+      (NDWindow.create_axes_list): Check if GLUT is present before making calls.
+      (NDWindow.initgl): Handle missing GLUT.
+      (NDWindow.on_resize): Use different GLContext conditions for wx 2.8/2.9.
+    
 2013-02-12	tboggs <tboggs@users.sourceforge.net>
 
     Enabled setting NDWindow features from command line.  Simplified window

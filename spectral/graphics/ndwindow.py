@@ -222,7 +222,9 @@ def random_subset(sequence, nsamples):
 	triplet = [random.choice(sequence) for i in range(nsamples)]
     return triplet
 
-class NDWindowProxy(object):
+from spectral.graphics.graphics import WindowProxy
+
+class NDWindowProxy(WindowProxy):
     '''A proxy class to retrieve data from an NDWindow.
     An instance contains the following members:
     
@@ -235,7 +237,7 @@ class NDWindowProxy(object):
 	    List of features and the display mode (see set_features doc string.)
     '''
     def __init__(self, window):
-	self._window = window
+	WindowProxy.__init__(self, window)
 	self._classes = window.classes
 
     @property
@@ -313,6 +315,7 @@ class NDWindow(wx.Frame):
         self.canvas = glcanvas.GLCanvas(self, attribList=attribs)
 	self.canvas.context = wx.glcanvas.GLContext(self.canvas)
 
+	self._have_glut = False
 	self.clear_color = (0, 0, 0, 0)
 	self.show_axes_tf = True
 	self.point_size = 1.0
@@ -775,9 +778,6 @@ class NDWindow(wx.Frame):
 	self.draw_data_set()
 	gl.glPopMatrix()
 	gl.glFlush()
-	if kwargs.get('swap_buffers', False):
-	    print 'SWAPPING RGB BUFFERS'
-	    gl.glutSwapBuffers()
 
     def index_to_image_row_col(self, index):
 	'''Converts the unraveled pixel ID to row/col of the N-D image.'''
@@ -793,7 +793,6 @@ class NDWindow(wx.Frame):
     def create_axes_list(self):
 	'''Creates display lists to render unit length x,y,z axes.'''
 	import OpenGL.GL as gl
-	import OpenGL.GLUT as glut
 	gl.glNewList(self.gllist_id, gl.GL_COMPILE)
 	gl.glBegin(gl.GL_LINES)
 	gl.glColor3f(1.0, 0.0, 0.0)
@@ -814,18 +813,22 @@ class NDWindow(wx.Frame):
 	gl.glVertex3f(0.0, 0.0, 0.0)
 	gl.glVertex3f(0.0, 0.0, -1.0)
 	gl.glEnd()
-	
-	try:
-	    if bool(glut.glutBitmapCharacter):
-		gl.glRasterPos3f(1.05, 0.0, 0.0);
-		glut.glutBitmapCharacter(glut.GLUT_BITMAP_HELVETICA_18, ord('x'))
-		gl.glRasterPos3f(0.0, 1.05, 0.0);
-		glut.glutBitmapCharacter(glut.GLUT_BITMAP_HELVETICA_18, ord('y'))
-		gl.glRasterPos3f(0.0, 0.0, 1.05);
-		glut.glutBitmapCharacter(glut.GLUT_BITMAP_HELVETICA_18, ord('z'))
-	except:
-	    pass
 
+	if self._have_glut:
+	    try:
+		import OpenGL.GLUT as glut
+		if bool(glut.glutBitmapCharacter):
+		    gl.glRasterPos3f(1.05, 0.0, 0.0);
+		    glut.glutBitmapCharacter(glut.GLUT_BITMAP_HELVETICA_18,
+					     ord('x'))
+		    gl.glRasterPos3f(0.0, 1.05, 0.0);
+		    glut.glutBitmapCharacter(glut.GLUT_BITMAP_HELVETICA_18,
+					     ord('y'))
+		    gl.glRasterPos3f(0.0, 0.0, 1.05);
+		    glut.glutBitmapCharacter(glut.GLUT_BITMAP_HELVETICA_18,
+					     ord('z'))
+	    except:
+		pass
 	gl.glEndList()
 
     def GetGLExtents(self):
@@ -843,7 +846,6 @@ class NDWindow(wx.Frame):
     def initgl(self):
 	'''App-specific initialization for after GLUT has been initialized.'''
 	import OpenGL.GL as gl
-	import OpenGL.GLUT as glut
 	self.gllist_id = gl.glGenLists(9)
 	gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
 	gl.glEnableClientState(gl.GL_COLOR_ARRAY)
@@ -854,19 +856,29 @@ class NDWindow(wx.Frame):
 	gl.glEnable(gl.GL_DEPTH_TEST)
 	gl.glShadeModel(gl.GL_FLAT)
 	self.set_data(self.data, classes=self.classes, features=self.features)
-	glut.glutInit()
+
+	try:
+	    import OpenGL.GLUT as glut
+	    glut.glutInit()
+	    self._have_glut = True
+	except:
+	    pass
 
     def on_resize(self, event):
-        """Process the resize event."""
-	self.canvas.SetCurrent(self.canvas.context)
-	# Make sure the frame is shown before calling SetCurrent.
-	self.Show()
-	self.canvas.SetCurrent(self.canvas.context)
-	size = event.GetSize()
-	self.resize(size.width, size.height)
-	self.canvas.Refresh(False)
-        event.Skip()
-    
+        '''Process the resize event.'''
+
+	# For wx versions 2.9.x, GLCanvas.GetContext() always returns None,
+	# whereas 2.8.x will return the context so test for both versions.
+
+	if wx.VERSION >= (2,9) or self.canvas.GetContext():
+	    self.canvas.SetCurrent(self.canvas.context)
+	    # Make sure the frame is shown before calling SetCurrent.
+	    self.Show()
+	    size = event.GetSize()
+	    self.resize(size.width, size.height)
+	    self.canvas.Refresh(False)
+	event.Skip()
+
     def resize(self, width, height):
         """Reshape the OpenGL viewport based on the dimensions of the window."""
 	import OpenGL.GL as gl

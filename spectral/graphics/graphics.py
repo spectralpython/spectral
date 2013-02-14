@@ -581,6 +581,11 @@ def check_wx_app():
 	     UserWarning)
 	spectral.app = wx.App()
 
+class WindowProxy(object):
+    '''Base class for proxy objects used to access data from display windows.'''
+    def __init__(self, window):
+	self._window = window
+
 #Deprecated functions
 
 def hypercube(*args, **kwargs):
