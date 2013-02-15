@@ -4,6 +4,17 @@
 
 2013-02-14	tboggs <tboggs@users.sourceforge.net>
 
+    Update default orientation of hypercube display.
+    
+    * graphics.hypercube.py:
+      (HypercubeWindow.load_textures): Create textures so they display
+        correctly when drawn on cube faces from lower left CCW to upper left
+	vertices when viewed from outside the cube.
+      (HypercubeWindow.draw_cube): Ditto.  Also draw bottom of cube.
+    * io/aviris.py (load): Fixed help message for reading spectral bands.
+
+2013-02-14	tboggs <tboggs@users.sourceforge.net>
+
     Handle possible missing GLUT module and handle multiple wx series (2.8/2.9).
     
     * graphics/graphics.py (WindowProxy): New class.

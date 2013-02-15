@@ -95,7 +95,7 @@ def open(file, band_file = None):
 		print "    " + os.path.split(f)[1]
 	    print '\nTo associate a band calibration file with an AVIRIS data file, ' \
 	          're-open the AVIRIS file with the following syntax:\n'
-	    print '    >>> img = openAviris(fileName, calFileName)\n'
+	    print '    >>> img = aviris.open(fileName, calFileName)\n'
     return img
 
 def read_aviris_bands(cal_filename):
