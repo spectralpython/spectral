@@ -4,6 +4,22 @@
 
 2013-02-14	tboggs <tboggs@users.sourceforge.net>
 
+    Handle multiple wx versions in view_cube and return a proxy for all
+    GUI functions.
+    
+    * graphics/graphics.py:
+      (SpyWindow): New class - Base class for all GUI windows.
+      (view): Return a window proxy object.
+      (view_cube): Return a window proxy object.
+    * graphics/hypercube.py:
+      (HypercubeWindow): Now also derived from SpyWindow (inherits get_proxy).
+      (HypercubeWindow.__init__): Explicitly call wx.Frame.__int__.
+      (HypercubeWindow.on_resize): Handle wx 2.8.x and 2.9.x.
+    * graphics/rasterwindow.py (RasterWindow): Now also derived from SpyWindow
+      (inherits get_proxy).     
+      
+2013-02-14	tboggs <tboggs@users.sourceforge.net>
+
     Update default orientation of hypercube display.
     
     * graphics.hypercube.py:

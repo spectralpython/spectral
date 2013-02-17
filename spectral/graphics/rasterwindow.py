@@ -1,7 +1,8 @@
 
 import wx
+from spectral.graphics.graphics import SpyWindow
 
-class RasterWindow(wx.Frame):
+class RasterWindow(wx.Frame, SpyWindow):
     '''
     RasterWindow is the primary wxWindows object for displaying SPy
     images.  The frames also handle left double-click events by

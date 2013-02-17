@@ -147,7 +147,9 @@ class MouseHandler:
 	self.window.Refresh()
 	event.Skip()
 
-class HypercubeWindow(wx.Frame):
+from spectral.graphics.graphics import SpyWindow
+
+class HypercubeWindow(wx.Frame, SpyWindow):
     """A simple class for using OpenGL with wxPython."""
     
     def __init__(self, data, parent, id, *args, **kwargs):
@@ -162,11 +164,11 @@ class HypercubeWindow(wx.Frame):
         # Forcing a specific style on the window.
         #   Should this include styles passed?
         style = wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE
-        super(HypercubeWindow, self).__init__(parent, id, self.title,
-					      wx.DefaultPosition,
-					      wx.Size(*self.size),
-					      style,
-					      kwargs.get('name', 'Hypercube'))
+        wx.Frame.__init__(self, parent, id, self.title,
+			  wx.DefaultPosition,
+			  wx.Size(*self.size),
+			  style,
+			  kwargs.get('name', 'Hypercube'))
         
         self.gl_initialized = False
         attribs = (glcanvas.WX_GL_RGBA, # RGBA
@@ -400,11 +402,13 @@ class HypercubeWindow(wx.Frame):
 
     def on_resize(self, event):
         """Process the resize event."""
-	self.canvas.SetCurrent(self.canvas.context)
-	self.Show()
-	size = self.canvas.GetClientSize()
-	self.resize(size.width, size.height)
-	self.canvas.Refresh(False)
+
+	if wx.VERSION >= (2,9) or self.canvas.GetContext():
+	    self.canvas.SetCurrent(self.canvas.context)
+	    self.Show()
+	    size = self.canvas.GetClientSize()
+	    self.resize(size.width, size.height)
+	    self.canvas.Refresh(False)
 	event.Skip()
     
     def resize(self, width, height):

@@ -38,6 +38,15 @@ from warnings import warn
 import numpy as np
 import spectral
 
+class WindowProxy(object):
+    '''Base class for proxy objects used to access data from display windows.'''
+    def __init__(self, window):
+	self._window = window
+
+class SpyWindow():
+    def get_proxy(self):
+	return WindowProxy(self)
+
 def view(*args, **kwargs):
     '''
     Opens a window and displays a raster greyscale or color image.
@@ -111,7 +120,7 @@ def view(*args, **kwargs):
     frame = RasterWindow(None, -1, rgb, **kwargs)
     frame.Raise()
     frame.Show()
-    return frame
+    return frame.get_proxy()
 
 def view_cube(data, *args, **kwargs):
     '''Renders an interactive 3D hypercube in a new window.
@@ -161,9 +170,10 @@ def view_cube(data, *args, **kwargs):
 	warn_no_ipython()
     check_wx_app()
 
-    frame = HypercubeWindow(data, None, -1, *args, **kwargs)
-    frame.Show()
-    frame.Raise()
+    window = HypercubeWindow(data, None, -1, *args, **kwargs)
+    window.Show()
+    window.Raise()
+    return window.get_proxy()
 
 def view_nd(data, *args, **kwargs):
     '''Creates a 3D window that displays ND data from an image.
@@ -273,8 +283,7 @@ def view_indexed(*args, **kwargs):
     if not kwargs.has_key('colors'):
         kwargs['colors'] = spy_colors
 
-    settings.viewer.view(*args, **kwargs)
-    
+    return view(*args, **kwargs)
 
 def make_pil_image(*args, **kwargs):
     '''
@@ -580,11 +589,6 @@ def check_wx_app():
 	warn('\nThere is no current wx.App object - creating one now.',
 	     UserWarning)
 	spectral.app = wx.App()
-
-class WindowProxy(object):
-    '''Base class for proxy objects used to access data from display windows.'''
-    def __init__(self, window):
-	self._window = window
 
 #Deprecated functions
 
