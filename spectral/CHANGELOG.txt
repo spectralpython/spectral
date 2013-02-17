@@ -2,6 +2,13 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2013-02-17	tboggs <tboggs@users.sourceforge.net>
+
+    Updated SPy version to 0.10
+    
+    * __init__.py: Updated version to 0.10.
+    * HISTORY.txt: Added version 0.10 info.
+
 2013-02-14	tboggs <tboggs@users.sourceforge.net>
 
     Handle multiple wx versions in view_cube and return a proxy for all

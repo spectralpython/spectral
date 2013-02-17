@@ -4,9 +4,69 @@
 # This file contains release notes for various SPy releases
 ################################################################################
 
+SPy 0.10
+================================================================================
+Release date: 2013.02.17
+
+As of this release, SPy now uses IPython for non-blocking GUI windows. IPython
+should be started in "--pylab" mode with the appropriate backend set (see
+:ref:`starting_ipython`). The standard python interpreter can still be used if
+GUI functions are not being called.
+
+New Features
+------------
+
+* Added a linear target detector (MatchedFilter).
+
+* :func:`~spectral.algorithms.transforms.LinearTransform` and
+  :func:`~spectral.algorithms.algorithms.transform_image` now handle scalar
+  transforms.
+
+* All functions opening a GUI window will now return a proxy object to enable
+  access to any associated data (e.g., accessing changed class values in an
+  N-D data display).
+
+* GUI functions are now aware of differences in wxWidgets versions
+  (2.8.x vs. 2.9.x).
+
+Changes
+-------
+
+* SPy no longer requires explicit creation of a new wx thread.  Instead,
+  running SPy interactively with GUI functions now requires using IPython
+  in "pylab" mode.
+
+* A few functions have been renamed for consistency:
+
+  * `hypercube` is now :func:`~spectral.graphics.graphics.view_cube`.
+  
+  * `ndwindow is now :func:`~spectral.graphics.graphics.view_nd`.
+
+* numpy is used for more covariance calculations (e.g., class-specific
+  covariance) to improve performance on multi-core systems.
+
+* Two new parameters have been added to the `spectral.settings` object:
+
+  #. `START_WX_APP` : If this parameter is True and no wx App exists when a
+     GUI function is called, then an App will be started to prevent an error.
+     
+  #. `WX_GL_DEPTH_SIZE` : If the default GL_DEPTH_SIZE is not supported by the
+     host system (resulting in a blank GLCanvas in :func:`~spectral.graphics.view_cube`
+     or :func:`~spectral.graphics.view_nd), this parameter can be reduced
+     (e.g., to 24 or 16) to enable OpenGL rendering.
+  
+Bug Fixes
+---------
+
+* Spectral plotting failed when double-clicking a transformed image due to
+  band info being unavailable.  A check is now performed to prevent this.
+
+* OpenGL-related calls will no longer fail if GLUT or an associated font is
+  not available.
+  
 SPy 0.9
 ================================================================================
-Release date: 2013.03.23
+Release date: 2013.01.23
 
 New Features
 ------------
