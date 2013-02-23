@@ -2,6 +2,14 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2013-02-22	tboggs <tboggs@users.sourceforge.net>
+
+    Fixed bug introduced by SPy 0.10 that caused incorrect spectrum to be
+    displayed when double-clicking a raster image.
+    
+    * graphics/rasterwindow.py (RasterWindow.left_double_click): Incorrectly
+      had GetX() and GetY() reversed for double-click handler.
+
 2013-02-17	tboggs <tboggs@users.sourceforge.net>
 
     Updated SPy version to 0.10

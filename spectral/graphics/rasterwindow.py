@@ -42,6 +42,7 @@ class RasterWindow(wx.Frame, SpyWindow):
     def left_double_click(self, evt):
         from spectral import settings
         if self.kwargs.has_key("data source"):
+	    print '(%d,%d)' % (evt.GetY(), evt.GetX())
             settings.plotter.plot(self.kwargs["data source"] \
-				  [evt.GetX(), evt.GetY()], \
+				  [evt.GetY(), evt.GetX()], \
 				  source = self.kwargs["data source"])
