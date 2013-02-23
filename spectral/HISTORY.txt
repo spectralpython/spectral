@@ -4,6 +4,15 @@
 # This file contains release notes for various SPy releases
 ################################################################################
 
+SPy 0.10.1
+================================================================================
+Release date: 2013.02.23
+
+This is a bug-fix release that corrects the spectrum displayed when double-
+clicking on a raster display.  Version 0.10 introduced a bug that had the
+row/column swapped, resulting in either the wrong pixel being plotted or an
+exception raised.
+
 SPy 0.10
 ================================================================================
 Release date: 2013.02.17

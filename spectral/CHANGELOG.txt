@@ -4,9 +4,12 @@
 
 2013-02-22	tboggs <tboggs@users.sourceforge.net>
 
+    Updated SPy version to 0.10.1.
+
     Fixed bug introduced by SPy 0.10 that caused incorrect spectrum to be
     displayed when double-clicking a raster image.
     
+    * __init__.py: Updated version to 0.10.1
     * graphics/rasterwindow.py (RasterWindow.left_double_click): Incorrectly
       had GetX() and GetY() reversed for double-click handler.
 
