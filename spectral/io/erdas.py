@@ -108,6 +108,7 @@ def open(file):
 
     from bilfile import BilFile
     from spyfile import find_file_path
+    import numpy as np
 
     # ERDAS 7.5 headers do not specify byte order so we'll guess little endian.
     # If any of the parameters look weird, we'll try again with big endian.
@@ -131,16 +132,15 @@ def open(file):
     p.nrows = lh["nrows"]
     p.offset = 128
     if lh["packing"] == 2:
-	lh["typecode"] = 'h'
-        p.format = 'h'
-        p.typecode = 'h'
+	p.dtype = np.dtype('i2').char
+    elif lh["packing"] == 0:
+	p.dtype = np.dtype('i1').char
+    elif lh["packing"] == 1:
+	raise Exception('4-bit data type not supported in SPy ERDAS/Lan format handler.')
     else:
-	lh["typecode"] = 'b'
-        p.format = 'b'
-        p.typecode = 'b'
+	raise Exception('Unexpected data type specified in ERDAS/Lan header.')
     
     return BilFile(p, lh)    
-
 
 def read_erdas_lan_header(fileName, byte_order=0):
     '''Read parameters from a lan file header.
@@ -194,14 +194,6 @@ def read_erdas_lan_header(fileName, byte_order=0):
 
     # Unpack all header data
     h["packing"] = word.pop(0)
-    if h["packing"] == 2:
-	h["typecode"] = 'h'
-    elif h["packing"] == 1:
-	raise Exception('4-bit data type not supported in SPy ERDAS/Lan format handler.')
-    elif h["packing"] == 0:
-	h["typecode"] = 'b'
-    else:
-	raise Exception('Unexpected data type specified in ERDAS/Lan header.')
     h["nbands"] = word.pop(0)
 
     if h["type"] == 'HEAD74':

@@ -43,6 +43,22 @@ extension that SPy can not identify.
 .. [#envi-trademark] ENVI is a registered trademark of ITT Corporation.
 '''
 
+import numpy as np
+
+dtype_map = [('1', np.int8),			# byte
+	     ('2', np.int16),			# 16-bit int
+	     ('3', np.int32),			# 32-bit int
+	     ('4', np.float32),			# 32-bit float
+	     ('5', np.float64),			# 64-bit float
+	     ('6', np.complex64),		# 2x32-bit complex
+	     ('9', np.complex128),		# 2x64-bit complex
+	     ('12', np.uint16),			# 6-bit unsigned int
+	     ('13', np.uint32),			# 32-bit unsigned int
+	     ('14', np.int64),			# 64-bit int
+	     ('15', np.uint64)]			# 64-bit unsigned int
+envi_to_dtype = {k: np.dtype(v).char for (k, v) in dtype_map}
+dtype_to_envi = dict(tuple(reversed(item)) for item in envi_to_dtype.items())
+
 def read_envi_header(file):
     '''
     USAGE: hdr = readEnviHeader(file)
@@ -71,17 +87,16 @@ def read_envi_header(file):
             if find(lines[i], '=') == -1:
                 i += 1
                 continue
-	    (key, sep, val) = lines[i].partition("=")
-            key = strip(key)
-            val = strip(val[:-1])
+	    (key, sep, val) = lines[i].partition('=')
+            key = key.strip()
+            val = val.strip()
             if val[0] == '{':
-                str = val
+                str = val.strip()
                 while str[-1] != '}':
                     i += 1
-                    str += strip(lines[i][:-1])
-                
+                    str += '\n' + lines[i].strip()
                 if key == 'description':
-                    dict[key] = str[1:-1]
+                    dict[key] = str.strip('{}').strip()
                 else:
                     vals = split(str[1:-1], ',')
                     for j in range(len(vals)):
@@ -164,61 +179,11 @@ def open(file, image = None):
 	image = find_file_path(image)
 
     p.filename = image
-
-    #  Determine numeric data type
-    if h["data type"] == '1':
-        # byte
-        p.format = 'b'
-        p.typecode = 'b'
-    elif h["data type"] == '2':
-        # 16-bit int
-        p.format = 'h'
-        p.typecode = 'h'
-    elif h["data type"] == '3':
-        # 32-bit int
-        p.format = 'f'
-        p.typecode = 'f'
-    elif h["data type"] == '4':
-        #  32-bit float
-        p.format = 'f'
-        p.typecode = 'f'
-    elif h["data type"] == '5':
-        #  64-bit float
-        p.format = 'd'
-        p.typecode = 'd'
-    elif h["data type"] == '6':
-        #  2x32-bit complex
-        p.format = 'F'
-        p.typecode = 'F'
-    elif h["data type"] == '9':
-        #  2x64-bit complex
-        p.format = 'D'
-        p.typecode = 'D'
-    elif h["data type"] == '12':
-        #  16-bit unsigned int
-        p.format = 'H'
-        p.typecode = 'H'
-    elif h["data type"] == '13':
-        #  32-bit unsigned int
-        p.format = 'I'
-        p.typecode = 'I'
-    elif h["data type"] == '14':
-        #  64-bit int
-        p.format = 'q'
-        p.typecode = 'q'
-    elif h["data type"] == '15':
-        #  64-bit unsigned int
-        p.format = 'Q'
-        p.typecode = 'Q'
-    else:
-        #  Don't recognize this type code
-        raise TypeError, 'Unrecognized data type code in header ' + \
-              'file.  If you believe the header to be correct, please' + \
-              'submit a bug report to have the type code added.'
+    p.dtype = envi_to_dtype[h["data type"]]
 
     if h.get('file type') == 'ENVI Spectral Library':
 	# File is a spectral library
-	data = numpy.fromfile(p.filename, p.format, p.ncols * p.nrows)
+	data = numpy.fromfile(p.filename, p.dtype, p.ncols * p.nrows)
 	data.shape = (p.nrows, p.ncols)
 	if (p.byte_order != spectral.byte_order):
 	    data = data.byteswap()

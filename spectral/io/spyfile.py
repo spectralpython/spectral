@@ -53,7 +53,7 @@ Let's open our sample image.
 	    # Bands:           220
 	    Interleave:        BIL
 	    Quantization:  16 bits
-	    Data format:         h
+	    Data format:     int16
 
 The image was not located in the working directory but it was still opened
 because it was in a directory specified by the *SPECTRAL_DATA* environment
@@ -108,6 +108,7 @@ the images spectral bands.
 '''
 
 import numpy
+import numpy as np
 from spectral.spectral import Image
 
 from exceptions import DeprecationWarning
@@ -148,15 +149,13 @@ class SpyFile(Image):
 
         try:
             self.filename = params.filename
-            self.format = params.format
-            self._typecode = params.typecode         # for Numeric module
             self.offset = params.offset
             self.byte_order = params.byte_order
             if spectral.byte_order != self.byte_order:
                 self.swap = 1
             else:
                 self.swap = 0
-            self.sample_size = array.array(self.format).itemsize
+            self.sample_size = np.dtype(params.dtype).itemsize
 
             self.fid = open(find_file_path(self.filename), "rb")
 
@@ -182,28 +181,9 @@ class SpyFile(Image):
 	s += '\tInterleave:     %6s\n' % (interleave)
         s += '\tQuantization: %3d bits\n' % (self.sample_size * 8)
 
-        tc = self._typecode
-        if tc == '1':
-            tcs = 'char'
-        elif tc == 's':
-            tcs = 'Int16'
-        elif tc == 'i':
-            tcs = Int32
-        elif tc == 'f':
-            tcs = 'Float32'
-        elif tc == 'd':
-            tcs = 'Float64'
-        else:
-            tcs = self._typecode
-            
-        s += '\tData format:  %8s' % tcs
+        s += '\tData format:  %8s' % np.dtype(self.dtype).name
         return s
 
-
-    def typecode(self):
-        '''Returns the typecode of the Numeric array type for the image file.'''
-        return self._typecode
-    
     def load(self):
 	'''Loads the entire image into memory in a :class:`spectral.ImageArray` object.
 	
@@ -216,12 +196,12 @@ class SpyFile(Image):
         from spectral.spectral import ImageArray
         from array import array
         
-        data = array(self.typecode())
+        data = array('b')
         self.fid.seek(self.offset)
-        data.fromfile(self.fid, self.nrows * self.ncols * self.nbands)
+        data.fromfile(self.fid, self.nrows * self.ncols * self.nbands * self.sample_size)
+        npArray = np.fromstring(data.tostring(), dtype=self.dtype)
         if self.swap:
-            data.byteswap()
-        npArray = numpy.array(data, ImageArray.format)
+            npArray.byteswap(True)
         if self.interleave == spectral.BIL:
             npArray.shape = (self.nrows, self.nbands, self.ncols)
             npArray = npArray.transpose([0, 2, 1])
@@ -230,10 +210,9 @@ class SpyFile(Image):
             npArray = npArray.transpose([1, 2, 0])
 	else:
 	    npArray.shape = (self.nrows, self.ncols, self.nbands)
-	    
+	npArray = npArray.astype(ImageArray.format)
 	if self.scale_factor != 1:
 	    npArray /= self.scale_factor
-	
         return ImageArray(npArray, self)
 
     def __getitem__(self, args):
@@ -564,10 +543,9 @@ class TransformedImage(Image):
     An image with a linear transformation applied to each pixel spectrum.
     The transformation is not applied until data is read from the image file.
     '''
-    _typecode = 'f'
+    dtype = np.dtype('f4').char
     
     def __init__(self, transform, img):
-        import numpy.oldnumeric as Numeric
 	from spectral.algorithms.transforms import LinearTransform
 
         if not isinstance(img, Image):
@@ -582,7 +560,6 @@ class TransformedImage(Image):
 			    ' input dimension of the transform (%d).'
 			    % (img.shape[-1], transform.dim_in))
 
-        arrayType = type(Numeric.array([1]))
         params = img.params()
         self.set_params(params, params.metadata)
 
@@ -696,27 +673,3 @@ class TransformedImage(Image):
             for j in range(shape[1]):
                 data[i, j] = self.read_pixel(i, j)[bands]
         return data
-    
-    def typecode(self):
-	return self._typecode
-        
-def typecode(obj):
-    '''
-    The typecode method was removed from arrays in the transition from Numeric/Numarray
-    to NumPy.  This function returns the appropriate typecode for numpy arrays or
-    any object with a typecode() method.
-    '''
-    import numpy
-    if isinstance(obj, numpy.ndarray):
-	return obj.dtype.char
-    else:
-	return obj.typecode()
-
-# Deprecated Functions
-
-def transformImage(matrix, img):
-    warn('transformImage has been deprecated.  Use transform_image.',
-	 DeprecationWarning)
-    return transform_image(matrix, img)
-
-

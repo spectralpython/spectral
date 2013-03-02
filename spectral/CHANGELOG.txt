@@ -2,6 +2,58 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2013-03-02	tboggs <tboggs@users.sourceforge.net>
+
+    Removed `typecode` and `format` variables throughout the code, switching
+    instead to using numpy.dtype for representing data types.  In file read
+    operations, the array module now always uses a byte ('b') data type and
+    numpy is used to convert to the desired image data type.  This enables
+    support for additional data types that aren't supported by array (e.g.,
+    64-bit unsigned integers and complex data types).
+    
+    A bug was also fixed that prevented 32-bit integer data types from being
+    read properly.
+    
+    No longer removing newline characters from ENVI header `description`
+    parameter.
+    
+    * algorithms/algorithms.py (ImageMaskIterator.__iter__): Use dtype instead
+      of typecode.
+    * algorithms/clustering.py (OnePassClusterer.classify_image): Use dtype
+      instead of typecode.
+    * io/aviris.py (open): Use dtype instead of typecode.
+    * io/bilfile.py (BilFile.{__init__,read_band,read_bands,read_pixel,
+      read_subregion,read_subimage,read_datum}): Use dtype instead of typecode.
+    * io/bipfile.py (BilFile.{__init__,read_band,read_bands,read_pixel,
+      read_subregion,read_subimage,read_datum}): Use dtype instead of typecode.
+    * io/bsqfile.py (BilFile.{__init__,read_band,read_bands,read_pixel,
+      read_subregion,read_subimage,read_datum}): Use dtype instead of typecode.
+    * io/envi.py: Created mapping between ENVI data types and dtype chars.
+      (read_envi_header): Do not remove newlines from `description` parameter.
+      (open): Use dtype mapping insted of old format/typecode.  Fixed a bug
+        causing incorrect import of 32-bit integer data type.
+    * io/erdas.py:
+      (open): Use dtype instead of typecode/format.
+      (read_erdas_lan_header): Do not set typecode or raise exception
+        (duplicates code in `open`).
+    * io/spyfile.py
+      (SpyFile.set_params): No longer using typecode/format.
+      (SpyFile.__str__): Get data type from dtype.
+      (SpyFile.typecode): Removed method.
+      (SpyFile.load): Use array module to read byte data type and use numpy
+        to convert to appropriate numeric type.
+      (TransformedImage): Set class-level `dtype` instead of `_typecode`.
+      (TransformedImage.__init__): Removed unecessary code.
+      (TransformedImage.typecode): Removed method.
+      (typecode): Removed function.
+      (transformImage): Removed deprecated function.
+    * spectral.py:
+      (Image.set_params): Set dtype instead of _typecode.
+      (Image.params): Set dtype instead of _typecode.
+      (ImageArray.__new__): Set dtype to data type (not source image dtype).
+      (ImageArray.typecode): Removed method.
+      (ImageArray.info): Use dtype instead of typecode.
+
 2013-02-22	tboggs <tboggs@users.sourceforge.net>
 
     Updated SPy version to 0.10.1.

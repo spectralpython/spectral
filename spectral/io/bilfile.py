@@ -52,7 +52,7 @@ class BilFile(SpyFile):
 
 	if (os.path.getsize(self.filename) < sys.maxint):
 	    (R, C, B) = self.shape
-	    self.memmap = np.memmap(self.filename, dtype=self.format, mode='r',
+	    self.memmap = np.memmap(self.filename, dtype=self.dtype, mode='r',
 				    offset=self.offset, shape=(R,B,C))
 	else:
 	    self.memmap = None
@@ -84,7 +84,7 @@ class BilFile(SpyFile):
 		data = data / float(self.scale_factor)
 	    return data
 
-        vals = array(self.format)
+        vals = array('b')
         offset = self.offset + band * self.sample_size * self.ncols
 
         f = self.fid
@@ -93,11 +93,11 @@ class BilFile(SpyFile):
         for i in range(self.nrows):
             f.seek(offset + i * self.sample_size * self.nbands * \
                    self.ncols, 0)
-            vals.fromfile(f, self.ncols)
+            vals.fromfile(f, self.ncols * self.sample_size)
 
+        arr = numpy.fromstring(vals.tostring(), dtype=self.dtype)
         if self.swap:
-            vals.byteswap()
-        arr = numpy.array(vals.tolist())
+            arr.byteswap(True)
         arr = arr.reshape((self.nrows, self.ncols))
 
 	if self.scale_factor != 1:
@@ -135,29 +135,28 @@ class BilFile(SpyFile):
 
 	f = self.fid
 
-        arr = numpy.empty((self.nrows, self.ncols, len(bands)), self.format)
+        arr = numpy.empty((self.nrows, self.ncols, len(bands)), self.dtype)
 
         for j in range(len(bands)):
   
-            vals = array(self.format)
+            vals = array('b')
             offset = self.offset + (bands[j]) * self.sample_size * self.ncols
 
             # Pixel format is BIL, so read an entire line at  time.
             for i in range(self.nrows):
                 f.seek(offset + i * self.sample_size * self.nbands * \
                        self.ncols, 0)
-                vals.fromfile(f, self.ncols)
+                vals.fromfile(f, self.ncols * self.sample_size)
 
-            if self.swap:
-                vals.byteswap()
-            bandArr = numpy.array(vals.tolist())
-            bandArr = bandArr.reshape((self.nrows, self.ncols))
-            arr[:,:,j] = bandArr
+	    band = numpy.fromstring(vals.tostring(), dtype=self.dtype)
+            arr[:,:,j] = band.reshape((self.nrows, self.ncols))
+	if self.swap:
+	    arr.byteswap(True)
 
 	if self.scale_factor != 1:
 	    return arr / float(self.scale_factor)
-        return arr
 
+        return arr
 
     def read_pixel(self, row, col):
         '''Reads the pixel at position (row,col) from the file.
@@ -178,11 +177,6 @@ class BilFile(SpyFile):
         from array import array
         import numpy
         
-        vals = array(self.format)
-        delta = self.sample_size * (self.nbands - 1)
-        offset = self.offset + row * self.nbands * self.ncols \
-                 * self.sample_size + col * self.sample_size
-
 	if self.memmap != None:
 	    data = np.array(self.memmap[row, :, col])
 	    if self.swap:
@@ -191,18 +185,22 @@ class BilFile(SpyFile):
 		data = data / float(self.scale_factor)
 	    return data
 
+        vals = array('b')
+        delta = self.sample_size * (self.nbands - 1)
+        offset = self.offset + row * self.nbands * self.ncols \
+                 * self.sample_size + col * self.sample_size
         f = self.fid
 
         ncols = self.ncols
-        sampleSize = self.sample_size
+        sample_size = self.sample_size
 
         for i in range(self.nbands):
-            f.seek(offset + i * sampleSize * ncols, 0)
-            vals.fromfile(f, 1)
+            f.seek(offset + i * sample_size * ncols, 0)
+            vals.fromfile(f, sample_size)
 
+        pixel = numpy.fromstring(vals.tostring(), dtype=self.dtype)
         if self.swap:
-            vals.byteswap()
-        pixel = numpy.array(vals.tolist(), self._typecode)
+            pixel.byteswap(True)
 
 	if self.scale_factor != 1:
 	    return pixel / float(self.scale_factor)
@@ -264,7 +262,7 @@ class BilFile(SpyFile):
             # Read all bands.
             bands = range(self.nbands)
 
-        arr = numpy.empty((nSubRows, nSubCols, len(bands)), self.typecode())
+        arr = numpy.empty((nSubRows, nSubCols, len(bands)), self.dtype)
 
         offset = self.offset
         ncols = self.ncols
@@ -275,14 +273,14 @@ class BilFile(SpyFile):
         for i in range(row_bounds[0], row_bounds[1]):
             f.seek(offset + i * d_row + colStartPos, 0)
             rowPos = f.tell()
-            vals = array(self.format)
+            vals = array('b')
             for j in bands:
                 f.seek(rowPos + j * ncols * sampleSize, 0)
-                vals.fromfile(f, nSubCols)
-            if self.swap:
-                vals.byteswap()
-            subArray = numpy.array(vals.tolist())
+                vals.fromfile(f, nSubCols * sampleSize)
+            subArray = numpy.fromstring(vals.tostring(), dtype=self.dtype)
             subArray = subArray.reshape((nSubBands, nSubCols))
+            if self.swap:
+                subArray.byteswap(True)
             arr[i - row_bounds[0],:,:] = numpy.transpose(subArray)
 
 	if self.scale_factor != 1:
@@ -347,10 +345,11 @@ class BilFile(SpyFile):
             bands = range(self.nbands)
         nSubBands = len(bands)
 
-        arr = numpy.empty((nSubRows, nSubCols, nSubBands), self.typecode())
+        arr = numpy.empty((nSubRows, nSubCols, nSubBands), self.dtype)
 
         offset = self.offset
-        vals = array(self.format)
+        vals = array('b')
+	sample_size = self.sample_size
 
         # Pixel format is BIL
         for i in rows:
@@ -360,11 +359,11 @@ class BilFile(SpyFile):
                            i * d_row +        \
                            j * d_col +        \
                            k * d_band, 0)
-                    vals.fromfile(f, 1)
-        if self.swap:
-            vals.byteswap()
-        subArray = numpy.array(vals.tolist())
+                    vals.fromfile(f, sample_size)
+        subArray = numpy.fromstring(vals.tostring(), dtype=self.dtype)
         subArray = subArray.reshape((nSubRows, nSubCols, nSubBands))
+        if self.swap:
+            subArray.byteswap(True)
 
 	if self.scale_factor != 1:
 	    return subArray / float(self.scale_factor)
@@ -397,9 +396,9 @@ class BilFile(SpyFile):
         d_row = d_band * self.nbands
 
         self.fid.seek(self.offset + i * d_row + j * d_col + k * d_band, 0)
-        vals = array.array(self.format)
-        vals.fromfile(self.fid, 1)
+        vals = array.array('b')
+        vals.fromfile(self.fid, self.sample_size)
         if self.swap:
-            vals.byteswap()
+            vals.byteswap(True)
 	return vals.tolist()[0] / float(self.scale_factor)
         

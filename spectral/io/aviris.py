@@ -58,6 +58,7 @@ def open(file, band_file = None):
 	IOError
     '''
 
+    import numpy as np
     from spectral.io.bipfile import BipFile
     import os, glob
     from exceptions import IOError
@@ -73,8 +74,7 @@ def open(file, band_file = None):
     if fileSize % 275072 != 0:
         raise IOError, 'File size not consitent with Aviris format.'
     p.nrows = int(fileSize / 275072)
-    p.format = 'h'
-    p.typecode = 'h'
+    p.dtype = np.dtype('i2').char
     p.offset = 0
     p.byte_order = 1
     metadata = {'default bands' : ['29', '18', '8']}

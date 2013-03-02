@@ -91,9 +91,7 @@ class ImageMaskIterator(Iterator):
         return self.image.shape[2]
     def __iter__(self):
         from spectral import status
-	from spectral.io import typecode
         from numpy import transpose, indices, reshape, compress, not_equal
-        typechar = typecode(self.image)
         (nrows, ncols, nbands) = self.image.shape
 
         # Translate the mask into indices into the data source
@@ -102,7 +100,7 @@ class ImageMaskIterator(Iterator):
         inds = compress(not_equal(self.mask.ravel(), 0), inds, 0).astype('h')
 
         for i in range(inds.shape[0]):
-            sample = self.image[inds[i][0], inds[i][1]].astype(typechar)
+            sample = self.image[inds[i][0], inds[i][1]].astype(self.image.dtype)
             if len(sample.shape) == 3:
                 sample.shape = (sample.shape[2],)
             (self.row, self.col) = inds[i][:2]

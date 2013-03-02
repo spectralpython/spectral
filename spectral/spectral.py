@@ -134,7 +134,7 @@ class Image():
             self.nbands = params.nbands
             self.nrows = params.nrows
             self.ncols = params.ncols
-            self._typecode = params.typecode         # for Numeric module
+	    self.dtype = params.dtype
 
             if not metadata:
                 self.metadata = {}
@@ -152,9 +152,8 @@ class Image():
         p.nbands = self.nbands
         p.nrows = self.nrows
         p.ncols = self.ncols
-        p.format = self.format
         p.metadata = self.metadata
-        p.typecode = self._typecode
+	p.dtype = self.dtype
 
         return p
 
@@ -180,12 +179,12 @@ class ImageArray(numpy.ndarray, Image):
         
         obj = numpy.asarray(data).view(ImageArray)
         # Add param data to Image initializer
-        Image.__init__(obj, spyFile.params(), spyFile.metadata)
+	params = spyFile.params()
+	params.dtype = data.dtype
+	params.swap = 0
+        Image.__init__(obj, params, spyFile.metadata)
 	obj.bands = spyFile.bands
         return obj
-
-    def typecode(self):
-        return self.dtype.char
 
     def __repr__(self):
         return self.__str__()
@@ -219,21 +218,7 @@ class ImageArray(numpy.ndarray, Image):
         s += '\t# Samples:      %6d\n' % (self.ncols)
         s += '\t# Bands:        %6d\n' % (self.shape[2])
 
-        tc = self.typecode()
-        if tc == '1':
-            tcs = 'char'
-        elif tc == 's':
-            tcs = 'Int16'
-        elif tc == 'i':
-            tcs = Int32
-        elif tc == 'f':
-            tcs = 'Float32'
-        elif tc == 'd':
-            tcs = 'Float64'
-        else:
-            tcs = 'unknown'
-            
-        s += '\tData format:  %8s' % tcs
+        s += '\tData format:  %8s' % self.dtype.name
         return s
 
     # Deprecated methods

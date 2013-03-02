@@ -41,7 +41,6 @@ class BipFile(SpyFile):
     '''
     def __init__(self, params, metadata = None):
 	import sys, os
-	import numpy as np
         import spectral
         self.interleave = spectral.BIP
         if metadata == None:
@@ -49,7 +48,7 @@ class BipFile(SpyFile):
         SpyFile.__init__(self, params, metadata)        
 
 	if (os.path.getsize(self.filename) < sys.maxint):
-	    self.memmap = np.memmap(self.filename, dtype=self.format, mode='r',
+	    self.memmap = np.memmap(self.filename, dtype=self.dtype, mode='r',
 				    offset=self.offset, shape=self.shape)
 	else:
 	    self.memmap = None
@@ -71,7 +70,6 @@ class BipFile(SpyFile):
 	'''
 
         from array import array
-        import numpy.oldnumeric as Numeric
 
 	if self.memmap != None:
 	    data = np.array(self.memmap[:,:,band])
@@ -81,9 +79,10 @@ class BipFile(SpyFile):
 		data = data / float(self.scale_factor)
 	    return data
 
-        vals = array(self.format)
+        vals = array('b')
         delta = self.sample_size * (self.nbands - 1) 
         nVals = self.nrows * self.ncols
+	sample_size = self.sample_size
 
         f = self.fid
 
@@ -91,14 +90,14 @@ class BipFile(SpyFile):
         
         # Pixel format is BIP
         for i in range(nVals - 1):
-            vals.fromfile(f, 1)
+            vals.fromfile(f, sample_size)
             f.seek(delta, 1)
-        vals.fromfile(f, 1)
+        vals.fromfile(f, sample_size)
 
+        arr = np.fromstring(vals.tostring(), dtype=self.dtype)
+        arr = arr.reshape(self.nrows, self.ncols)
         if self.swap:
-            vals.byteswap()            
-        arr = Numeric.array(vals.tolist())
-        arr = Numeric.reshape(arr, (self.nrows, self.ncols))
+            arr.byteswap(True)            
 
 	if self.scale_factor != 1:
 	    return arr / float(self.scale_factor)
@@ -122,7 +121,6 @@ class BipFile(SpyFile):
 		len(`bands`).
 	'''
         from array import array
-        import numpy.oldnumeric as Numeric
 
 	if self.memmap != None:
 	    data = np.array(self.memmap[:,:,bands])
@@ -132,10 +130,11 @@ class BipFile(SpyFile):
 		data = data / float(self.scale_factor)
 	    return data
 
-        vals = array(self.format)
+        vals = array('b')
         offset = self.offset
         delta = self.sample_size * self.nbands
         nVals = self.nrows * self.ncols
+	sample_size = self.sample_size
 
         # Increments between bands
         delta_b = list(bands[:])
@@ -149,12 +148,11 @@ class BipFile(SpyFile):
             pixelOffset = offset + i * delta
             for j in range(len(bands)):
                 f.seek(pixelOffset + delta_b[j], 0)        # Next band
-                vals.fromfile(f, 1)
-
+                vals.fromfile(f, sample_size)
+        arr = numpy.fromstring(vals.tostring(), dtype=self.dtype)
+        arr = arr.reshape(self.nrows, self.ncols, len(bands))
         if self.swap:
-            vals.byteswap()
-        arr = Numeric.array(vals.tolist())
-        arr = Numeric.reshape(arr, (self.nrows, self.ncols, len(bands)))
+            arr.byteswap(True)
 
 	if self.scale_factor != 1:
 	    return arr / float(self.scale_factor)
@@ -176,7 +174,6 @@ class BipFile(SpyFile):
 		A length-`B` array, where `B` is the number of bands in the image.
 	'''
         from array import array
-        import numpy.oldnumeric as Numeric
 
 	if self.memmap != None:
 	    data = np.array(self.memmap[row, col,:])
@@ -186,17 +183,17 @@ class BipFile(SpyFile):
 		data = data / float(self.scale_factor)
 	    return data
 
-        vals = array(self.format)
+        vals = array('b')
 
         f = self.fid        
         f.seek(self.offset + self.sample_size \
                * self.nbands * (row * self.ncols + col), 0)
         # Pixel format is BIP so read entire pixel.
-        vals.fromfile(f, self.nbands)
+        vals.fromfile(f, self.nbands, self.sample_size)
 
+        pixel = np.fromstring(vals.tostring(), dtype=self.dtype)
         if self.swap:
-            vals.byteswap()
-        pixel = Numeric.array(vals.tolist())
+            pixel.byteswap(True)
 
 	if self.scale_factor != 1:
 	    return pixel / float(self.scale_factor)
@@ -228,7 +225,6 @@ class BipFile(SpyFile):
 		An `MxNxL` array.
         '''
         import array
-        import numpy.oldnumeric as Numeric
 
 	if self.memmap != None:
 	    if bands == None:
@@ -249,8 +245,9 @@ class BipFile(SpyFile):
         nSubCols = col_bounds[1] - col_bounds[0]  # Cols in sub-image
         d_row = self.sample_size * self.ncols * self.nbands
         colStartPos = col_bounds[0] * self.sample_size * self.nbands
-        vals = array.array(self.format)
+        vals = array.array('b')
         nVals = self.nrows * self.ncols
+	sample_size = self.sample_size
 
         # Increments between bands
         if bands != None:
@@ -272,7 +269,7 @@ class BipFile(SpyFile):
 
             if allBands:
                 # This is the simple one
-                vals.fromfile(f, nSubCols * nbands)
+                vals.fromfile(f, nSubCols * nbands * sample_size)
             else:
                 # Need to pull out specific bands for each column.
                 for j in range(nSubCols):
@@ -280,12 +277,11 @@ class BipFile(SpyFile):
                     pixelPos = f.tell()
                     for k in range(len(bands)):
                         f.seek(pixelPos + delta_b[k], 0)    # Next band
-                        vals.fromfile(f, 1)
-
+                        vals.fromfile(f, sample_size)
+        arr = np.fromstring(vals.tostring(), dtype=self.dtype)
+        arr = arr.reshape(nSubRows, nSubCols, nSubBands)
         if self.swap:
-            vals.byteswap()
-        arr = Numeric.array(vals.tolist())
-        arr = Numeric.reshape(arr, (nSubRows, nSubCols, nSubBands))
+            arr.byteswap(True)
 
 	if self.scale_factor != 1:
 	    return arr / float(self.scale_factor)
@@ -319,7 +315,6 @@ class BipFile(SpyFile):
 		and `L` = len(bands) (or # of image bands if `bands` == None).
         '''
         import array
-        import numpy.oldnumeric as Numeric
 
 	if self.memmap != None:
 	    if bands == None:
@@ -339,8 +334,9 @@ class BipFile(SpyFile):
         d_band = self.sample_size
         d_col = d_band * self.nbands
         d_row = d_col * self.ncols
-        vals = array.array(self.format)
+        vals = array('b')
         nVals = self.nrows * self.ncols
+	sample_size = self.sample_size
 
         # Increments between bands
         if bands != None:
@@ -358,19 +354,19 @@ class BipFile(SpyFile):
             for j in cols:
                 if allBands:
                     f.seek(offset + i * d_row + j * d_col, 0)
-                    vals.fromfile(f, nSubBands)
+                    vals.fromfile(f, nSubBands * sample_size)
                 else:
                     for k in bands:
                         f.seek(offset +
                                i * d_row +
                                j * d_col +
                                k * d_band, 0)
-                        vals.fromfile(f, 1)
+                        vals.fromfile(f, sample_size)
 
+        arr = np.fromstring(vals.tostring(), dtype=self.dtype)
+        arr = arr.reshape(nSubRows, nSubCols, nSubBands)
         if self.swap:
-            vals.byteswap()
-        arr = Numeric.array(vals.tolist())
-        arr = Numeric.reshape(arr, (nSubRows, nSubCols, nSubBands))
+            arr.byteswap(True)
 
 	if self.scale_factor != 1:
 	    return arr / float(self.scale_factor)
@@ -398,14 +394,14 @@ class BipFile(SpyFile):
 		datum /= float(self.scale_factor)
 	    return datum
 
-        vals = array(self.format)
+        vals = array('b')
         f = self.fid        
         f.seek(self.offset + self.sample_size \
                * (self.nbands * (i * self.ncols + j) + k), 0)
         # Pixel format is BIP so read entire pixel.
-        vals.fromfile(f, 1)
+        vals.fromfile(f, self.sample_size)
         if self.swap:
-            vals.byteswap()
+            vals.byteswap(True)
 	return vals.tolist()[0] / float(self.scale_factor)
 
         

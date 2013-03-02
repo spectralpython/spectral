@@ -616,11 +616,8 @@ class OnePassClusterer(Classifier):
         from spectral.io.spyfile import SpyFile
         self.image = image
         self.cluster_map = numpy.zeros(self.image.shape[:2], int)
-        if isinstance(image, SpyFile):
-            typecode = image.typecode()
-        else:
-            typecode = 'f'
-        self.clusters = numpy.zeros((self.max_clusters, self.image.shape[2]), typecode)
+        self.clusters = numpy.zeros((self.max_clusters, self.image.shape[2]),
+				    self.image.dtype)
         self.nclusters = 0
         clusters = self.clusters
         self.init_clusters()

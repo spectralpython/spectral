@@ -51,7 +51,7 @@ class BsqFile(SpyFile):
 	if (os.path.getsize(self.filename) < sys.maxint):
 	    print 'CREATING MEMMAP'
 	    (R, C, B) = self.shape
-	    self.memmap = np.memmap(self.filename, dtype=self.format, mode='r',
+	    self.memmap = np.memmap(self.filename, dtype=self.dtype, mode='r',
 				    offset=self.offset, shape=(B,R,C))
 	else:
 	    self.memmap = None
@@ -72,7 +72,6 @@ class BsqFile(SpyFile):
 		An `MxN` array of values for the specified band.
 	'''
         from array import array
-        import numpy.oldnumeric as Numeric
 	
 	if self.memmap != None:
 	    data = np.array(self.memmap[band,:,:])
@@ -82,19 +81,19 @@ class BsqFile(SpyFile):
 		data = data / float(self.scale_factor)
 	    return data
 
-        vals = array(self.format)
+        vals = array('b')
         offset = self.offset + band * self.sample_size * self.nrows *self.ncols
 
         f = self.fid
         
         # Pixel format is BSQ, so read the whole band at once.
         f.seek(offset, 0)
-        vals.fromfile(f, self.nrows * self.ncols)
+        vals.fromfile(f, self.nrows * self.ncols * self.sample_size)
 
+        arr = np.fromstring(vals.tostring(), dtype=self.dtype)
+        arr = arr.reshape(self.nrows, self.ncols)
         if self.swap:
-            vals.byteswap()
-        arr = Numeric.array(vals.tolist())
-        arr = Numeric.reshape(arr, (self.nrows, self.ncols))
+            arr.byteswap(True)
 
 	if self.scale_factor != 1:
 	    return arr / float(self.scale_factor)
@@ -119,7 +118,6 @@ class BsqFile(SpyFile):
 	'''
 
         from array import array
-        import numpy.oldnumeric as Numeric
 
 	if self.memmap != None:
 	    data = np.array(self.memmap[bands,:,:]).transpose((1, 2, 0))
@@ -131,30 +129,22 @@ class BsqFile(SpyFile):
 
         f = self.fid
 
-        # Get the type of the Numeric array (must be a better way)
-        ta = array(self.format)
-        f.seek(self.offset, 0)
-        ta.fromfile(f, 1)
-        na = Numeric.array(ta.tolist())
-        arrType = na.dtype.char
-
-        arr = Numeric.zeros((self.nrows, self.ncols, len(bands)), arrType)
+        arr = np.zeros((self.nrows, self.ncols, len(bands)), dtype=self.dtype)
 
         for j in range(len(bands)):
   
-            vals = array(self.format)
+            vals = array('b')
             offset = self.offset + (bands[j]) * self.sample_size \
                      * self.nrows * self.ncols
 
             # Pixel format is BSQ, so read an entire band at time.
             f.seek(offset, 0)
-            vals.fromfile(f, self.nrows * self.ncols)
+            vals.fromfile(f, self.nrows * self.ncols * self.sample_size)
 
+            band = np.fromstring(vals.tostring(), dtype=self.dtype)
+            arr[:,:,j] = band.reshape(self.nrows, self.ncols)
             if self.swap:
-                vals.byteswap()
-            bandArr = Numeric.array(vals.tolist())
-            bandArr = Numeric.reshape(bandArr, (self.nrows, self.ncols))
-            arr[:,:,j] = bandArr
+                arr.byteswap(True)
 
 	if self.scale_factor != 1:
 	    return arr / float(self.scale_factor)
@@ -178,7 +168,6 @@ class BsqFile(SpyFile):
 	'''
 
         from array import array
-        import numpy.oldnumeric as Numeric
 
 	if self.memmap != None:
 	    data = np.array(self.memmap[:, row, col])
@@ -188,7 +177,7 @@ class BsqFile(SpyFile):
 		data = data / float(self.scale_factor)
 	    return data
 
-        vals = array(self.format)
+        vals = array('b')
         delta = self.sample_size * (self.nbands - 1)
         offset = self.offset + row * self.nbands * self.ncols \
                  * self.sample_size + col * self.sample_size
@@ -206,11 +195,11 @@ class BsqFile(SpyFile):
                    + i * bandSize\
                    + row * rowSize \
                    + col * sampleSize, 0)
-            vals.fromfile(f, 1)
+            vals.fromfile(f, sampleSize)
 
+        pixel = np.fromstring(vals.tostring(), dtype=self.dtype)
         if self.swap:
-            vals.byteswap()
-        pixel = Numeric.array(vals.tolist(), self._typecode)
+            pixel.byteswap(True)
 
 	if self.scale_factor != 1:
 	    return pixel / float(self.scale_factor)
@@ -264,18 +253,12 @@ class BsqFile(SpyFile):
         f = self.fid
         f.seek(self.offset, 0)
         
-        # Get the type of the Numeric array (must be a better way)
-        ta = array(self.format)
-        ta.fromfile(f, 1)
-        na = np.array(ta.tolist())
-        arrType = na.dtype.char
-
         # Increments between bands
         if bands == None:
             # Read all bands.
             bands = range(self.nbands)
 
-        arr = np.zeros((nSubRows, nSubCols, len(bands)), arrType)
+        arr = np.zeros((nSubRows, nSubCols, len(bands)), dtype=self.dtype)
 
         nrows = self.nrows
         ncols = self.ncols
@@ -288,18 +271,18 @@ class BsqFile(SpyFile):
 
         # Pixel format is BSQ
         for i in bands:
-            vals = array(self.format)
+            vals = array('b')
             bandOffset = i * bandSize
             for j in range(row_bounds[0], row_bounds[1]):
                 f.seek(self.offset \
                        + bandOffset \
                        + j * rowSize \
                        + colStartOffset, 0)
-                vals.fromfile(f, nSubCols)
-            if self.swap:
-                vals.byteswap()
-            subArray = np.array(vals.tolist()).reshape((nSubRows, nSubCols))
+                vals.fromfile(f, nSubCols * sampleSize)
+            subArray = np.fromstring(vals.totring()).reshape((nSubRows, nSubCols))
             arr[:,:,i] = subArray
+            if self.swap:
+                arr.byteswap(True)
 
 	if self.scale_factor != 1:
 	    return arr / float(self.scale_factor)
@@ -334,7 +317,6 @@ class BsqFile(SpyFile):
         '''
 
         from array import array
-        import numpy.oldnumeric as Numeric
 
 	if self.memmap != None:
 	    if bands == None:
@@ -357,22 +339,16 @@ class BsqFile(SpyFile):
         f = self.fid
         f.seek(self.offset, 0)
         
-        # Get the type of the Numeric array (must be a better way)
-        ta = array(self.format)
-        ta.fromfile(f, 1)
-        na = Numeric.array(ta.tolist())
-        arrType = na.dtype.char
-
         # Increments between bands
         if bands == None:
             # Read all bands.
             bands = range(self.nbands)
         nSubBands = len(bands)
 
-        arr = Numeric.zeros((nSubRows, nSubCols, nSubBands), arrType)
+        arr = np.zeros((nSubRows, nSubCols, nSubBands), dtype=self.dtype)
 
         offset = self.offset
-        vals = array(self.format)
+        vals = array('b')
 
         nrows = self.nrows
         ncols = self.ncols
@@ -390,16 +366,16 @@ class BsqFile(SpyFile):
                     f.seek(bandOffset \
                            + rowOffset \
                            + k * sampleSize, 0)
-                    vals.fromfile(f, 1)
+                    vals.fromfile(f, sampleSize)
+        arr = np.fromstring(vals.tostring(), dtype=self.dtype)
+        arr = arr.reshape(nSubBands, nSubRows, nSubCols)
+	arr = np.transpose(arr, (1, 2, 0))
         if self.swap:
-            vals.byteswap()
-        subArray = Numeric.array(vals.tolist())
-        subArray = Numeric.reshape(subArray, (nSubBands, nSubRows, nSubCols))
-	subArray = Numeric.transpose(subArray, (1, 2, 0))
+            arr.byteswap(True)
 
 	if self.scale_factor != 1:
-	    return subArray / float(self.scale_factor)
-        return subArray
+	    return arr / float(self.scale_factor)
+        return arr
 
     def read_datum(self, i, j, k):
         '''Reads the band `k` value for pixel at row `i` and column `j`.
@@ -431,10 +407,10 @@ class BsqFile(SpyFile):
                       + (k * nrows * ncols \
                          + i * ncols \
                          + j) * sampleSize, 0)
-        vals = array.array(self.format)
-        vals.fromfile(self.fid, 1)
+        vals = array.array('b')
+        vals.fromfile(self.fid, sampleSize)
         if self.swap:
-            vals.byteswap()
+            vals.byteswap(True)
         return vals.tolist()[0] / float(self.scale_factor)
 
         
