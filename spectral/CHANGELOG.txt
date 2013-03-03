@@ -4,6 +4,21 @@
 
 2013-03-02	tboggs <tboggs@users.sourceforge.net>
 
+    Added ability to save images in ENVI format.
+    
+    * io/envi.py:
+      (open): Do not set "header file" in metadata dict to avoild polluting
+        ENVI header file parameters.
+      (check_new_file_name): New function.
+      (save_image): New function.
+      (write_envi_header): Write correct "file type" parameter and write the
+        standard parameters at the top of the file.
+    * io/spyfile.py
+      (SpyFile.load): Accept optional dtype parameter.
+      (interleave_transpose): New function
+
+2013-03-02	tboggs <tboggs@users.sourceforge.net>
+
     Removed `typecode` and `format` variables throughout the code, switching
     instead to using numpy.dtype for representing data types.  In file read
     operations, the array module now always uses a byte ('b') data type and

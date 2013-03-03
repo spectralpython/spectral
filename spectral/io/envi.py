@@ -146,7 +146,6 @@ def open(file, image = None):
 
     headerPath = find_file_path(file)
     h = read_envi_header(headerPath)
-    h["header file"] = file
 
     class Params: pass
     p = Params()
@@ -220,6 +219,135 @@ def open(file, image = None):
     
     return img
 
+def check_new_filename(hdr_file, img_ext, force):
+    '''Raises an exception if the associated header or image file names exist.
+    '''
+    import os
+    if img_ext[0] != '.':
+	img_ext += '.'
+    hdr_file = os.path.realpath(hdr_file)
+    (base, ext) = os.path.splitext(hdr_file)
+    if ext.lower() != '.hdr':
+	raise ValueError('Header file name must end in ".hdr" or ".HDR".')
+    image_file = base + img_ext
+    if not force:
+	if os.path.isfile(hdr_file):
+	    raise Exception('Header file %s already exists. Use `force` keyword'
+			    ' to force overwrite.')
+	if os.path.isfile(image_file):
+	    raise Exception('Image file %s already exists. Use `force` keyword '
+			    'to force overwrite.')
+    return (hdr_file, image_file)
+
+def save_image(hdr_file, image, **kwargs):
+    '''
+    Saves an image to disk.
+
+    Arguments:
+    
+	`hdr_file` (str):
+	
+	    Header file (with ".hdr" extension) name with path.
+	
+	`image` (SpyFile object or numpy.ndarray):
+	
+	    The image to save.
+    
+    Keyword Arguments:
+	
+	`dtype` (numpy dtype or type string):
+	
+	    The numpy data type with which to store the image.  For example,
+	    to store the image in 16-bit unsigned integer format, the argument
+	    could be any of `numpy.uint16`, "u2", "uint16", or "H".
+	    
+	`force` (bool):
+	
+	    If the associated image file or header already exist and `force` is
+	    True, the files will be overwritten; otherwise, if either of the
+	    files exist, an exception will be raised.
+	
+	`ext` (str):
+	
+	    The extension to use for the image file.  If not specified, the
+	    default extension ".img" will be used.  If `ext` is an empty string,
+	    the image file will have the same name as the header but without
+	    the ".hdr" extension.
+	
+	`interleave` (str):
+	
+	    The band interleave format to use in the file.  This argument should
+	    be one of "bil", "bip", or "bsq".  If not specified, the image will
+	    be written in BIP interleave.
+	    
+	`byteswap` (bool):
+	
+	    If True, image data will be byteswapped before writing to disk.
+	    Otherwise native byte order will be used.
+	
+	`metadata` (dict):
+	
+	    A dict containing ENVI header parameters (e.g., parameters extracted
+	    from a source image).
+
+    If the source image being saved was already in ENVI format, then the SpyFile
+    object for that image will contain a `metadata` dict that can be passed as
+    the `metadata` keyword. However, care should be taken to ensure that all
+    the metadata fields from the source image are still accurate (e.g., band
+    names or wavelengths will no longer be correct if the data being saved are
+    from a principal components transformation).
+    '''
+    import os
+    import spectral
+    from spectral.io.spyfile import interleave_transpose
+
+    metadata = kwargs.get('metadata', {}).copy()
+    force = kwargs.get('force', False)
+    img_ext = kwargs.get('ext', '.img')
+
+    (hdr_file, img_file) = check_new_filename(hdr_file, img_ext, force)
+
+    if isinstance(image, np.ndarray):
+	data = image
+    else:
+	data = image.load(image.dtype)
+    
+    dtype = np.dtype(kwargs.get('dtype', data.dtype)).char
+    if dtype != data.dtype.char:
+	data = data.astype(dtype)
+    metadata['data type'] = dtype_to_envi[dtype]
+    
+    # A few header parameters need to be set independent of what is provided
+    # in the supplied metadata.
+
+    # Always write data from start of file, regardless of what was in
+    # provided metadata.
+    offset = metadata.get('header offset', 0)
+    if offset != 0:
+	print 'Ignoring non-zero header offset in provided metadata.'
+    metadata['header offset'] = 0
+    
+    metadata['lines'] = data.shape[0]
+    metadata['samples'] = data.shape[1]
+    metadata['bands'] = data.shape[2]
+    metadata['file type'] = 'ENVI Standard'
+    interleave = kwargs.get('interleave', 'bip').lower()
+    if interleave != 'bip':
+	if interleave not in ['bil', 'bsq']:
+	    raise ValueError('Invalid interleave: %s'
+			     % str(kwargs['interleave']))
+	data = data.transpose(interleave_transpose('bip', interleave))
+    metadata['interleave'] = interleave
+    if kwargs.get('byteswap', False):
+	metadata['byte order'] = 1 * (not spectral.byte_order)
+	data = data.byteswap()
+    else:
+	metadata['byte order'] = spectral.byte_order
+
+    write_envi_header(hdr_file, metadata, is_library = False)
+    print 'Writing file', img_file
+    data.tofile(img_file)
+    
 class SpectralLibrary:
     '''
     The envi.SpectralLibrary class holds data contained in an ENVI-formatted spectral
@@ -320,10 +448,22 @@ def write_envi_header(fileName, header_dict, is_library = False):
     fout = __builtin__.open(fileName, 'w')
     d = {}
     d.update(header_dict)
-    d['file type'] = 'ENVI Spectral Library'
+    if is_library:
+        d['file type'] = 'ENVI Spectral Library'
+    elif not d.has_key('file type'):
+	d['file type'] = 'ENVI Standard'
     fout.write('ENVI\n')
+    # Write the standard parameters at the top of the file
+    std_params = ['description', 'samples', 'lines', 'bands', 'header offset',
+		  'file type', 'data type', 'interleave', 'sensor type',
+		  'byte order', 'map info']
+    for k in std_params:
+	if k in d:
+	    print 'writing', k
+	    _write_header_param(fout, k, d[k])
     for k in d:
-	_write_header_param(fout, k, d[k])
+	if k not in d:
+	    _write_header_param(fout, k, d[k])
     fout.close()
     
 def readEnviHdr(file):

@@ -184,9 +184,15 @@ class SpyFile(Image):
         s += '\tData format:  %8s' % np.dtype(self.dtype).name
         return s
 
-    def load(self):
+    def load(self, dtype=None):
 	'''Loads the entire image into memory in a :class:`spectral.ImageArray` object.
 	
+	Arguments:
+	
+	    `dtype` (numpy.dtype):
+	    
+		An optional dtype to which the loaded array should be cast.
+
 	:class:`spectral.ImageArray` is derived from both :class:`spectral.Image`
 	and :class:`numpy.ndarray` so it supports the full :class:`numpy.ndarray`
 	interface.  The returns object will have shape `(M,N,B)`, where `M`, `N`,
@@ -196,6 +202,8 @@ class SpyFile(Image):
         from spectral.spectral import ImageArray
         from array import array
         
+	if dtype == None:
+	    dtype = ImageArray.format
         data = array('b')
         self.fid.seek(self.offset)
         data.fromfile(self.fid, self.nrows * self.ncols * self.nbands * self.sample_size)
@@ -210,7 +218,7 @@ class SpyFile(Image):
             npArray = npArray.transpose([1, 2, 0])
 	else:
 	    npArray.shape = (self.nrows, self.ncols, self.nbands)
-	npArray = npArray.astype(ImageArray.format)
+	npArray = npArray.astype(dtype)
 	if self.scale_factor != 1:
 	    npArray /= self.scale_factor
         return ImageArray(npArray, self)
@@ -673,3 +681,46 @@ class TransformedImage(Image):
             for j in range(shape[1]):
                 data[i, j] = self.read_pixel(i, j)[bands]
         return data
+
+def interleave_transpose(int1, int2):
+    '''Returns the 3-tuple of indices to transpose between interleaves.
+    
+    Arguments:
+    
+	`int1`, `int2` (string):
+	
+	    The input and output interleaves.  Each should be one of "bil",
+	    "bip", or "bsq".
+    
+    Returns:
+    
+	A 3-tuple of integers that can be passed to `numpy.transpose` to
+	convert and RxCxB image between the two interleaves.
+    '''
+    if int1.lower() not in ('bil', 'bip', 'bsq'):
+	raise ValueError('Invalid interleave: %s' % str(int1))
+    if int2.lower() not in ('bil', 'bip', 'bsq'):
+	raise ValueError('Invalid interleave: %s' % str(int2))
+    int1 = int1.lower()
+    int2 = int2.lower()
+    if int1 == 'bil':
+	if int2 == 'bil':
+	    return (1, 1, 1)
+	elif int2 == 'bip':
+	    return (0, 2, 1)
+	else:
+	    return (1, 0, 2)
+    elif int1 == 'bip':
+	if int2 == 'bil':
+	    return (0, 2, 1)
+	elif int2 == 'bip':
+	    return (1, 1, 1)
+	else:
+	    return (2, 0, 1)
+    else: # bsq
+	if int2 == 'bil':
+	    return (1, 0, 2)
+	elif int2 == 'bip':
+	    return (1, 2, 0)
+	else:
+	    return (1, 1, 1)
