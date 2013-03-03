@@ -184,14 +184,19 @@ class SpyFile(Image):
         s += '\tData format:  %8s' % np.dtype(self.dtype).name
         return s
 
-    def load(self, dtype=None):
+    def load(self, **kwargs):
 	'''Loads the entire image into memory in a :class:`spectral.ImageArray` object.
 	
-	Arguments:
+	Keyword Arguments:
 	
 	    `dtype` (numpy.dtype):
 	    
 		An optional dtype to which the loaded array should be cast.
+	    
+	    `scale` (bool, default True):
+	    
+		Specifies whether any applicable scale factor should be applied
+		to the data after loading.
 
 	:class:`spectral.ImageArray` is derived from both :class:`spectral.Image`
 	and :class:`numpy.ndarray` so it supports the full :class:`numpy.ndarray`
@@ -202,8 +207,10 @@ class SpyFile(Image):
         from spectral.spectral import ImageArray
         from array import array
         
-	if dtype == None:
-	    dtype = ImageArray.format
+	for k in kwargs.keys():
+	    if k not in ('dtype', 'scale'):
+		raise ValueError('Invalid keyword %s.' % str(k))
+	dtype = kwargs.get('dtype', ImageArray.format)
         data = array('b')
         self.fid.seek(self.offset)
         data.fromfile(self.fid, self.nrows * self.ncols * self.nbands * self.sample_size)
@@ -219,8 +226,8 @@ class SpyFile(Image):
 	else:
 	    npArray.shape = (self.nrows, self.ncols, self.nbands)
 	npArray = npArray.astype(dtype)
-	if self.scale_factor != 1:
-	    npArray /= self.scale_factor
+	if self.scale_factor != 1 and kwargs.get('scale', True):
+	    npArray = npArray / float(self.scale_factor)
         return ImageArray(npArray, self)
 
     def __getitem__(self, args):

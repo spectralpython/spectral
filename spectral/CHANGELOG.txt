@@ -2,6 +2,30 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2013-03-03	tboggs <tboggs@users.sourceforge.net>
+
+    Added ability to create new, writable image files.  Thanks to Ferdinand
+    Deger for contributing code for this.
+    
+    * io/envi.py:
+      (gen_params): New function to create a `Params` object from ENVI header
+        metadata.
+      (open):
+        - Use `gen_params` instead of building object directly.
+	- Added "hyspex" to list of recognized image file extensions.
+      (save_image): If image being saved is SpyFile object, do not coerce its
+        data type or apply scaling factor when loading the data.  Set the
+	"reflectance scale factor" in the header file instead.
+      (create_image): New function to create a new image file with memmap
+        access.
+      (write_envi_header): Fixed bug from previous commit that prevents
+        "non-standard" parameters from being written. Added
+	"reflectance scale factor" to the list of standard parameters.
+    * io/spyfile.py (SpyFile.load): Now accepts optional keywords:
+      `dtype` - Specifies explicit dtype for loaded image data.
+      `scale` - When set to False, prevents data from being scaled when loaded
+        if the SpyFile has a non-unity `scale_factor` value.
+
 2013-03-02	tboggs <tboggs@users.sourceforge.net>
 
     Added ability to save images in ENVI format.

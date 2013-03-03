@@ -109,6 +109,36 @@ def read_envi_header(file):
     except:
         raise IOError, "Error while reading ENVI file header."
 
+def gen_params(envi_header):
+    '''
+    Parse an envi_header to a `Params` object.
+    
+    Arguments:
+    
+    `envi_header` (dict or file_name):
+        
+	A dict or an `.hdr` file name
+    '''
+
+    from exceptions import TypeError
+
+    if not isinstance(envi_header,dict):
+        from spyfile import find_file_path
+        headerPath = find_file_path(envi_header)
+        h = read_envi_header(headerPath)
+    else:
+        h = envi_header
+    class Params: pass
+    p = Params()
+    p.nbands = int(h["bands"])
+    p.nrows = int(h["lines"])
+    p.ncols = int(h["samples"])
+    p.offset = int(h["header offset"])
+    p.byte_order = int(h["byte order"])
+    p.dtype = envi_to_dtype[h["data type"]]
+    p.filename = None
+    return p
+
 def open(file, image = None):
     '''
     Opens an image or spectral library with an associated ENVI HDR header file.
@@ -147,13 +177,7 @@ def open(file, image = None):
     headerPath = find_file_path(file)
     h = read_envi_header(headerPath)
 
-    class Params: pass
-    p = Params()
-    p.nbands = int(h["bands"])
-    p.nrows = int(h["lines"])
-    p.ncols = int(h["samples"])
-    p.offset = int(h["header offset"])
-    p.byte_order = int(h["byte order"])
+    p = gen_params(h)
 
     inter = h["interleave"]
 
@@ -163,7 +187,8 @@ def open(file, image = None):
         headerDir = os.path.split(headerPath)
         if headerPath[-4:].lower() == '.hdr':
             headerPathTitle = headerPath[:-4]
-            exts = ['', 'img', 'IMG', 'dat', 'DAT', 'sli', 'SLI'] + [inter.lower(), inter.upper()]
+            exts = ['', 'img', 'IMG', 'dat', 'DAT', 'sli', 'SLI',  'hyspex'] +\
+		   [inter.lower(), inter.upper()]
             for ext in exts:
 		if len(ext) == 0:
 		    testname = headerPathTitle
@@ -178,7 +203,6 @@ def open(file, image = None):
 	image = find_file_path(image)
 
     p.filename = image
-    p.dtype = envi_to_dtype[h["data type"]]
 
     if h.get('file type') == 'ENVI Spectral Library':
 	# File is a spectral library
@@ -310,8 +334,9 @@ def save_image(hdr_file, image, **kwargs):
     if isinstance(image, np.ndarray):
 	data = image
     else:
-	data = image.load(image.dtype)
-    
+	data = image.load(dtype=image.dtype, scale=False)
+	if image.scale_factor != 1:
+	    metadata['reflectance scale factor'] = image.scale_factor
     dtype = np.dtype(kwargs.get('dtype', data.dtype)).char
     if dtype != data.dtype.char:
 	data = data.astype(dtype)
@@ -347,6 +372,108 @@ def save_image(hdr_file, image, **kwargs):
     write_envi_header(hdr_file, metadata, is_library = False)
     print 'Writing file', img_file
     data.tofile(img_file)
+
+def create_image(hdr_file, metadata, **kwargs):
+    '''
+    Creates an image file and ENVI header with a memmep array for write access. 
+    
+    Arguments:
+    
+	`hdr_file` (str):
+	
+	    Header file (with ".hdr" extension) name with path.
+	
+	`metadata` (dict):
+    
+	    Metadata to specify the image file format.  The following paramters
+	    (in ENVI header format) are required: "bands", "lines", "samples",
+	    "header offset", and "data type".
+
+    Keyword Arguments:
+	
+	`dtype` (numpy dtype or type string):
+	
+	    The numpy data type with which to store the image.  For example,
+	    to store the image in 16-bit unsigned integer format, the argument
+	    could be any of `numpy.uint16`, "u2", "uint16", or "H". If this
+	    keyword is given, it will override the "data type" parameter in
+	    the `metadata` argument.
+	    
+	`force` (bool, False by default):
+	
+	    If the associated image file or header already exist and `force` is
+	    True, the files will be overwritten; otherwise, if either of the
+	    files exist, an exception will be raised.
+	
+	`ext` (str):
+	
+	    The extension to use for the image file.  If not specified, the
+	    default extension ".img" will be used.  If `ext` is an empty string,
+	    the image file will have the same name as the header but without
+	    the ".hdr" extension.
+
+	`memmap_mode` (str):
+	
+	    Mode of img.memmap ("w+" by default). See numpy.memmap for further
+	    information.
+
+    Returns:
+    
+	`SpyFile` object:
+	
+	    The returned SpyFile subclass object will have a `numpy.memmmap`
+	    object member named `memmap`, which can be used for direct access
+	    to the memory-mapped file data.
+    '''
+    from exceptions import NotImplementedError, TypeError
+    import numpy as np
+    import os
+    import spectral
+
+    force = kwargs.get('force', False)
+    img_ext = kwargs.get('ext', '.img')
+    memmap_mode = kwargs.get('memmap_mode', 'w+')
+    (hdr_file, img_file) = check_new_filename(hdr_file, img_ext, force)
+
+    metadata = metadata.copy()
+    if kwargs.get('dtype'):
+	metadata['data type'] = dtype_to_envi[dtype(kwargs['dtype']).char]
+    metadata['byte order'] = spectral.byte_order
+    params = gen_params(metadata)
+    params.filename = img_file
+
+    is_library = False
+    if metadata.get('file type') == 'ENVI Spectral Library':
+        is_library = True
+        raise NotImplementedError, 'ENVI Spectral Library cannot be created '
+
+    #  Create the appropriate object type -> the memmap (=image) will be created on disk
+    inter = metadata["interleave"]
+    (R, C, B) = (params.nrows, params.ncols, params.nbands)
+    if inter.lower() not in ['bil', 'bip', 'bsq']:
+	raise ValueError('Invalid interleave specified: %s.' % str(inter))
+    if inter.lower() == 'bil':
+        from spectral.io.bilfile import BilFile
+        memmap = np.memmap(img_file, dtype=params.dtype, mode=memmap_mode,
+			   offset=params.offset, shape=(R, B, C))
+        img = BilFile(params, metadata)
+        img.memmap = memmap
+    elif inter.lower() == 'bip':
+        from spectral.io.bipfile import BipFile
+        memmap = np.memmap(img_file, dtype=params.dtype, mode=memmap_mode,
+			   offset=params.offset, shape=(R, C, B))
+        img = BipFile(params, metadata)
+        img.memmap = memmap
+    else:
+        from spectral.io.bsqfile import BsqFile
+        memmap = np.memmap(img_file, dtype=params.dtype, mode=memmap_mode,
+			   offset=params.offset, shape=(B, R, C))
+        img = BsqFile(params, metadata)
+        img.memmap = memmap
+
+    # Write the header file after the image to assure write success 
+    write_envi_header(hdr_file, metadata, is_library = is_library)
+    return img
     
 class SpectralLibrary:
     '''
@@ -456,13 +583,12 @@ def write_envi_header(fileName, header_dict, is_library = False):
     # Write the standard parameters at the top of the file
     std_params = ['description', 'samples', 'lines', 'bands', 'header offset',
 		  'file type', 'data type', 'interleave', 'sensor type',
-		  'byte order', 'map info']
+		  'byte order', 'reflectance scale factor', 'map info']
     for k in std_params:
 	if k in d:
-	    print 'writing', k
 	    _write_header_param(fout, k, d[k])
     for k in d:
-	if k not in d:
+	if k not in std_params:
 	    _write_header_param(fout, k, d[k])
     fout.close()
     
