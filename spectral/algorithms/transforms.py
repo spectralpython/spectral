@@ -98,16 +98,25 @@ class LinearTransform:
         
         Arguments:
         
-            `X` (:class:`~numpy.ndarray`):
+            `X` (:class:`~numpy.ndarray` or object with `transform` method):
             
-                `X` is either an (M,N,K) array containing M*N length-K vectors
-                to be transformed or it is an (R,K) array of length-K vectors
-                to be transformed.
+                If `X` is an ndarray, it is either an (M,N,K) array containing
+		M*N length-K vectors to be transformed or it is an (R,K) array
+		of length-K vectors to be transformed. If `X` is an object with
+		a method named `transform` the result of passing the
+		`LinearTransform` object to the `transform` method will be
+		returned.
                 
         Returns an (M,N,J) or (R,J) array, depending on shape of `X`, where J
         is the length of the first dimension of the array `A` passed to
         __init__.
         '''
+	if not isinstance(X, np.ndarray):
+	    if hasattr(X, 'transform') and callable(X.transform):
+		return X.transform(self)
+	    else:
+		raise TypeError('Unable to apply transform to object.')
+
         shape = X.shape
         if len(shape) == 3:
             X = X.reshape((-1, shape[-1]))

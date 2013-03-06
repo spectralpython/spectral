@@ -297,14 +297,10 @@ class PrincipalComponents:
 	
 	    A `BxB` array of normalized eigenvectors
 	
-        `mean`:
+	`stats` (:class:`GaussianStats`):
 	
-	    The length `B` mean vector of the image pixels
-	
-        `cov`:
-	
-	    The `BxB` covariance matrix of the image
-	
+	    A statistics object containing `mean`, `cov`, and `nsamples`.
+
 	`transform`:
 	
 	    A callable function to transform data to the space of the
@@ -316,13 +312,20 @@ class PrincipalComponents:
 	    on either a fixed number of components or a fraction of total
 	    variance.
     '''
-    def __init__(self, vals, vecs, mean, cov):
+    def __init__(self, vals, vecs, stats):
 	from transforms import LinearTransform
 	self.eigenvalues = vals
 	self.eigenvectors = vecs
-	self.mean = mean
-	self.cov = cov
+	self.stats = stats
 	self.transform = LinearTransform(self.eigenvectors, pre=-self.mean)
+	
+    @property
+    def mean(self):
+	return self.stats.mean
+    
+    @property
+    def cov(self):
+	return self.stats.cov
     
     def reduce(self, N=0, **kwargs):
 	'''Reduces the number or principal components.
@@ -352,11 +355,11 @@ class PrincipalComponents:
 	if num != None:
 	    return PrincipalComponents(self.eigenvalues[:num],
 				       self.eigenvectors[:num],
-				       self.mean, self.cov)
+				       self.stats)
 	elif eigs != None:
 	    vals = self.eigenvalues[eigs]
 	    vecs = self.eigenvectors[eigs]
-	    return PrincipalComponents(vals, vecs, self.mean, self.cov)
+	    return PrincipalComponents(vals, vecs, self.stats)
 	elif fraction != None:
 	    if not 0 < fraction <= 1:
 		raise Exception('fraction must be in range (0,1].')
@@ -374,7 +377,7 @@ class PrincipalComponents:
 	
 	    vals = self.eigenvalues[:i + 1]
 	    vecs = self.eigenvectors[:i + 1, :]
-	    return PrincipalComponents(vals, vecs, self.mean, self.cov)
+	    return PrincipalComponents(vals, vecs, self.stats)
 	else:
 	    raise Exception('Must specify one of the following keywords:' \
 			    '`num`, `eigs`, `fraction`.')
@@ -403,13 +406,9 @@ def principal_components(image):
 	
 	    A `BxB` array of normalized eigenvectors
 	
-        `mean`:
+	`stats` (:class:`GaussianStats`):
 	
-	    The length `B` mean vector of the image pixels
-	
-        `cov`:
-	
-	    The `BxB` covariance matrix of the image
+	    A statistics object containing `mean`, `cov`, and `nsamples`.
 	
 	`transform`:
 	
@@ -420,8 +419,9 @@ def principal_components(image):
     
     (M, N, B) = image.shape
     
-    (mean, cov, count) = mean_cov(image)
-    (L, V) = numpy.linalg.eig(cov)
+    stats = calc_stats(image)
+
+    (L, V) = numpy.linalg.eig(stats.cov)
 
     #  Normalize eigenvectors
     V = V / sqrt(sum(V * V, 0))
@@ -429,7 +429,7 @@ def principal_components(image):
     # numpy stores eigenvectors in columns
     V = V.transpose()
 
-    return PrincipalComponents(L, V, mean, cov)
+    return PrincipalComponents(L, V, stats)
 
 
 class FisherLinearDiscriminant:
@@ -555,8 +555,62 @@ def log_det(x):
     return sum(numpy.log([eigv for eigv in numpy.linalg.eigvals(x) if eigv > 0]))
 
 class GaussianStats:
-    def __init__(self):
-        self.nsamples = 0
+    
+    def __init__(self, **kwargs):
+        self.nsamples = kwargs.get('nsamples', 0)
+	self.mean = kwargs.get('mean', None)
+	self.cov = kwargs.get('cov', None)
+	
+    def transform(self, xform):
+	'''Returns a version of the stats transformed by a linear transform.'''
+	from spectral.algorithms.transforms import LinearTransform
+	if not isinstance(xform, LinearTransform):
+	    raise TypeError('Expected a LinearTransform object.')
+	m = xform(self.mean)
+	C = xform._A.dot(self.cov).dot(xform._A.T)
+	return GaussianStats(mean=m, cov=C, nsamples=self.nsamples)
+    
+    def get_whitening_transform(self):
+	'''Returns transform that centers and whitens data for these stats.'''
+	from spectral.algorithms.transforms import LinearTransform
+        from spectral.algorithms.spymath import matrix_sqrt
+	C_1 = np.linalg.inv(self.cov)
+	return LinearTransform(matrix_sqrt(C_1, True), pre=-self.mean)
+
+def calc_stats(image, mask = None, index = None):
+    '''Computes Gaussian stats for image data..
+
+    Arguments:
+    
+        `image` (ndarrray, :class:`~spectral.Image`, or :class:`spectral.Iterator`):
+	
+	    If an ndarray, it should have shape `MxNxB` and the mean & covariance
+	    will be calculated for each band (third dimension).
+	
+	`mask` (ndarray):
+	
+	    If `mask` is specified, mean & covariance will be calculated for all
+	    pixels indicated in the mask array.  If `index` is specified, all
+	    pixels in `image` for which `mask == index` will be used; otherwise,
+	    all nonzero elements of `mask` will be used.
+	
+	`index` (int):
+	
+	    Specifies which value in `mask` to use to select pixels from `image`.
+	    If not specified but `mask` is, then all nonzero elements of `mask`
+	    will be used.
+	
+	If neither `mask` nor `index` are specified, all samples in `vectors`
+	will be used.
+	
+    Returns:
+    
+	`GaussianStats` object:
+	
+	    This object will have members `mean`, `cov`, and `nsamples`.
+    '''
+    (mean, cov, N) = mean_cov(image, mask, index)
+    return GaussianStats(mean=mean, cov=cov, nsamples=N)
 
 class TrainingClass:
     def __init__(self, image, mask, index = 0, class_prob = 1.0):
@@ -647,10 +701,8 @@ class TrainingClass:
         import math
         from numpy.linalg import inv, det
 
-        self.stats = GaussianStats()
-        (self.stats.mean, self.stats.cov, self.stats.nsamples) = \
-                          mean_cov(self.image, self.mask, self.index)
-        self.stats.invCov = inv(self.stats.cov)
+        self.stats = calc_stats(self.image, self.mask, self.index)
+        self.stats.inv_cov = inv(self.stats.cov)
         self.stats.log_det_cov = log_det(self.stats.cov)
         self._size = self.stats.nsamples
         self._stats_valid = 1

@@ -50,38 +50,36 @@ class MatchedFilter(LinearTransform):
     mean, and :math:`\Sigma` is the covariance.
     '''
     
-    def __init__(self, u_b, u_t, C):
+    def __init__(self, background, target):
 	'''Creates the filter, given background/target means and covariance.
         
         Arguments:
         
-            `u_b` (ndarray):
+            `background` (`GaussianStats`):
             
-                Length-K background mean.
+                The Gaussian statistics for the background (e.g., the result
+		of calling :func:`calc_stats`).
                 
-            `u_t` (ndarray):
+            `target` (ndarray):
             
                 Length-K target mean
-                
-            `C` (ndarray):
-            
-                Size (K,K) covariance of background and target distributions.
         '''
 	from math import sqrt
-	self.u_b = u_b
-	self.u_t = u_t
+	self.background = background
+	self.u_b = background.mean
+	self.u_t = target
         self._whitening_transform = None
 	
-	d_tb = (u_t - u_b)
+	d_tb = (target - self.u_b)
 	self.d_tb = d_tb
-	C_1 = np.linalg.inv(C)
+	C_1 = np.linalg.inv(background.cov)
 	self.C_1 = C_1
 
 	# Normalization coefficient (inverse of  squared Mahalanobis distance
         # between u_t and u_b)
 	self.coef = 1.0 / d_tb.dot(C_1).dot(d_tb)
 
-        LinearTransform.__init__(self, (self.coef * d_tb).dot(C_1), pre=-u_b)
+        LinearTransform.__init__(self, (self.coef * d_tb).dot(C_1), pre=-self.u_b)
     
     def whiten(self, X):
         '''Transforms data to the whitened space of the background.

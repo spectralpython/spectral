@@ -2,6 +2,29 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2013-03-05	tboggs <tboggs@users.sourceforge.net>
+
+    Added a new function `calc_stats` that returns a `GaussianStats` object.
+    Modified principal components, linear transforms, and matched filter to
+    use the stats object instead of passing separate means & covariances.
+
+    * algorithms/__init__.py: Import calc_stats.
+    * algorithms/algorithms:
+      (PrincipalComponents.__init__): Accept a `GaussianStats` object insted
+        of separate mean & covariance.
+      (PrincipalComponents.reduce): Use stats object.
+      (principal_components): Use stats object.
+      (GaussianStats.__init__): Accept parameters.
+      (GaussianStats.transform): New method.
+      (GaussianStats.get_whitening_transform): New method
+      (calc_stats): New function.
+      (TrainingClass.__init__): Use stats object.
+    * algorithms/detectors.py:
+      (MatchedFilter.__init__): Use stats object.
+    * algorithms/transforms.py:
+      (LinearTransform.__call__): Apply to any object with a `transform`
+        method.
+
 2013-03-03	tboggs <tboggs@users.sourceforge.net>
 
     Added ability to create new, writable image files.  Thanks to Ferdinand
