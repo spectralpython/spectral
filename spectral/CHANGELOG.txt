@@ -25,6 +25,20 @@
       (LinearTransform.__call__): Apply to any object with a `transform`
         method.
 
+    Fixed several bugs introduced when migrating to numpy dtypes that caused
+    improper file read operations only when memmap is not used.
+    
+    * io/bilfile.py (read_datum): Fixed file read bug.
+    * io/bipfile.py:
+      (read_bands): Fixed file read bug.
+      (read_pixel): Fixed file read bug.
+      (read_subimage): Fixed file read bug.
+      (read_datum): Fixed file read bug.
+    * io/bsqfile.py:
+      (read_bands): Fixed file read bug.
+      (read_subregion): Fixed file read bug.
+      (read_datum): Fixed file read bug.
+
 2013-03-03	tboggs <tboggs@users.sourceforge.net>
 
     Added ability to create new, writable image files.  Thanks to Ferdinand

@@ -149,7 +149,7 @@ class BipFile(SpyFile):
             for j in range(len(bands)):
                 f.seek(pixelOffset + delta_b[j], 0)        # Next band
                 vals.fromfile(f, sample_size)
-        arr = numpy.fromstring(vals.tostring(), dtype=self.dtype)
+        arr = np.fromstring(vals.tostring(), dtype=self.dtype)
         arr = arr.reshape(self.nrows, self.ncols, len(bands))
         if self.swap:
             arr.byteswap(True)
@@ -189,7 +189,7 @@ class BipFile(SpyFile):
         f.seek(self.offset + self.sample_size \
                * self.nbands * (row * self.ncols + col), 0)
         # Pixel format is BIP so read entire pixel.
-        vals.fromfile(f, self.nbands, self.sample_size)
+        vals.fromfile(f, self.nbands * self.sample_size)
 
         pixel = np.fromstring(vals.tostring(), dtype=self.dtype)
         if self.swap:
@@ -334,7 +334,7 @@ class BipFile(SpyFile):
         d_band = self.sample_size
         d_col = d_band * self.nbands
         d_row = d_col * self.ncols
-        vals = array('b')
+        vals = array.array('b')
         nVals = self.nrows * self.ncols
 	sample_size = self.sample_size
 
@@ -400,9 +400,10 @@ class BipFile(SpyFile):
                * (self.nbands * (i * self.ncols + j) + k), 0)
         # Pixel format is BIP so read entire pixel.
         vals.fromfile(f, self.sample_size)
+        arr = np.fromstring(vals.tostring(), dtype=self.dtype)
         if self.swap:
-            vals.byteswap(True)
-	return vals.tolist()[0] / float(self.scale_factor)
+            arr.byteswap(True)
+	return arr.tolist()[0] / float(self.scale_factor)
 
         
         

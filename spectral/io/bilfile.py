@@ -398,7 +398,8 @@ class BilFile(SpyFile):
         self.fid.seek(self.offset + i * d_row + j * d_col + k * d_band, 0)
         vals = array.array('b')
         vals.fromfile(self.fid, self.sample_size)
+        arr = np.fromstring(vals.tostring(), dtype=self.dtype)
         if self.swap:
-            vals.byteswap(True)
-	return vals.tolist()[0] / float(self.scale_factor)
+            arr.byteswap(True)
+	return arr.tolist()[0] / float(self.scale_factor)
         

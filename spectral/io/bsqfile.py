@@ -143,8 +143,8 @@ class BsqFile(SpyFile):
 
             band = np.fromstring(vals.tostring(), dtype=self.dtype)
             arr[:,:,j] = band.reshape(self.nrows, self.ncols)
-            if self.swap:
-                arr.byteswap(True)
+        if self.swap:
+            arr.byteswap(True)
 
 	if self.scale_factor != 1:
 	    return arr / float(self.scale_factor)
@@ -279,7 +279,8 @@ class BsqFile(SpyFile):
                        + j * rowSize \
                        + colStartOffset, 0)
                 vals.fromfile(f, nSubCols * sampleSize)
-            subArray = np.fromstring(vals.totring()).reshape((nSubRows, nSubCols))
+            subArray = np.fromstring(vals.tostring(),
+                                     dtype=self.dtype).reshape((nSubRows, nSubCols))
             arr[:,:,i] = subArray
             if self.swap:
                 arr.byteswap(True)
@@ -409,9 +410,10 @@ class BsqFile(SpyFile):
                          + j) * sampleSize, 0)
         vals = array.array('b')
         vals.fromfile(self.fid, sampleSize)
+        arr = np.fromstring(vals.tostring(), dtype=self.dtype)
         if self.swap:
-            vals.byteswap(True)
-        return vals.tolist()[0] / float(self.scale_factor)
+            arr.byteswap(True)
+	return arr.tolist()[0] / float(self.scale_factor)
 
         
 
