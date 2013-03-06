@@ -331,6 +331,7 @@ def save_image(hdr_file, image, **kwargs):
     from a principal components transformation).
     '''
     import os
+    import __builtin__
     import spectral
     from spectral.io.spyfile import interleave_transpose
 
@@ -343,7 +344,10 @@ def save_image(hdr_file, image, **kwargs):
     if isinstance(image, np.ndarray):
         data = image
     else:
-        data = image.load(dtype=image.dtype, scale=False)
+	if image.memmap is not None:
+	    data = image.memmap
+	else:
+	    data = image.load(dtype=image.dtype, scale=False)
         if image.scale_factor != 1:
             metadata['reflectance scale factor'] = image.scale_factor
     dtype = np.dtype(kwargs.get('dtype', data.dtype)).char
@@ -380,7 +384,10 @@ def save_image(hdr_file, image, **kwargs):
 
     write_envi_header(hdr_file, metadata, is_library=False)
     print 'Writing file', img_file
-    data.tofile(img_file)
+    bufsize = data.shape[0] * data.shape[1] * np.dtype(dtype).itemsize
+    fout = __builtin__.open(img_file, 'wb', bufsize)
+    fout.write(data.tostring())
+    fout.close()
 
 
 def create_image(hdr_file, metadata, **kwargs):

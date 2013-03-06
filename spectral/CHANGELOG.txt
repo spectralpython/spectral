@@ -4,6 +4,11 @@
 
 2013-03-06	tboggs <tboggs@users.sourceforge.net>
 
+    Made speed improvement to envi.save_image.
+    
+    * io/envi.py (save_image): Write directly to file instead of using
+      numpy's `tofile` function.
+
     Move clutter out of top-level namespace.
     
     * __init__.py: Move initialization code into _init() in spectral.py
