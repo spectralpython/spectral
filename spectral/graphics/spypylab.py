@@ -65,7 +65,7 @@ def plot(data, source = None):
         pylab.hold(1)
         for i in range(1, s[0]):
             p = pylab.plot(xvals, data[i, :])
-    spectral.xyplot = p
+    spectral._xyplot = p
     pylab.grid(1)
     if source != None and hasattr(source, 'bands'):
 	xlabel = source.bands.band_quantity

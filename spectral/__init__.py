@@ -51,16 +51,6 @@ from database import *
 # Import some submodules into top-level namespace
 import algorithms.detectors as detectors
 
-try:
-    import pylab
-    from graphics import spypylab
-    pylab.ion()
-    spectral.settings.plotter = spypylab
-    spectral.settings.viewer = graphics
-except:
-    warn('Unable to import or configure pylab plotter.  Spectrum plots will be '
-	 'unavailable.', UserWarning)
-
-import utilities.status
-status = utilities.status.StatusDisplay()
-
+from spectral import _init
+_init()
+del _init

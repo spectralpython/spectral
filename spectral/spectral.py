@@ -93,6 +93,23 @@ spy_colors = numpy.array([[  0,   0,   0],
 		   [  0, 100, 100],
 		   [  0, 200, 200]], numpy.int)
 
+def _init():
+    '''Basic configuration of the spectral package.'''
+    try:
+        global settings
+        import pylab
+        from .graphics import graphics as spygraphics
+        from .graphics import spypylab
+        pylab.ion()
+        settings.plotter = spypylab
+        settings.viewer = spygraphics
+    except:
+        warn('Unable to import or configure pylab plotter.  Spectrum plots will be '
+             'unavailable.', UserWarning)
+
+    import spectral
+    from .utilities import status
+    spectral.status = status.StatusDisplay()
 
 class BandInfo:
     '''A BandInfo object characterizes the spectral bands associated with an image.

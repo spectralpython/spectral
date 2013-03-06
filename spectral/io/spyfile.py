@@ -111,9 +111,6 @@ import numpy
 import numpy as np
 from spectral.spectral import Image
 
-from exceptions import DeprecationWarning
-from warnings import warn
-
 def find_file_path(filename):
     '''
     Search cwd and SPECTRAL_DATA directories for the given file.

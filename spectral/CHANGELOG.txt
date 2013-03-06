@@ -4,6 +4,13 @@
 
 2013-03-06	tboggs <tboggs@users.sourceforge.net>
 
+    Move clutter out of top-level namespace.
+    
+    * __init__.py: Move initialization code into _init() in spectral.py
+    * graphics/spypylab.py (plot): Move spectral.xyplot to spectral._xyplot.
+    * io/spyfile.py: Remove unecessary warning imports.
+    * spectral.py (_init): New function for package initialization.
+
     Added RX anomaly detector. Now importing `detectors` submodule into
     top-level namespace.
 
