@@ -4,6 +4,11 @@
 
 2013-03-05	tboggs <tboggs@users.sourceforge.net>
 
+    Ran autopep8 on envi.py and fixed two incorrect exception statements.
+    
+    io/envi.py: Fixed whitespace and code formatting via autopep8
+      (check_new_filename): Add missing arguments to exception statements.
+
     Added a new function `calc_stats` that returns a `GaussianStats` object.
     Modified principal components, linear transforms, and matched filter to
     use the stats object instead of passing separate means & covariances.
