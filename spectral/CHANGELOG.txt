@@ -2,11 +2,21 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2013-03-06	tboggs <tboggs@users.sourceforge.net>
+
+    Added RX anomaly detector. Now importing `detectors` submodule into
+    top-level namespace.
+
+    * __init__.py: import algorithms.detectors into top-level namespace.
+    * algorithms/__init__.py: Do not import MatchedFilter.
+    * algorithms/detectors.py: Applied autopep8
+      (RX): New class.
+    
 2013-03-05	tboggs <tboggs@users.sourceforge.net>
 
     Ran autopep8 on envi.py and fixed two incorrect exception statements.
     
-    io/envi.py: Fixed whitespace and code formatting via autopep8
+    * io/envi.py: Fixed whitespace and code formatting via autopep8
       (check_new_filename): Add missing arguments to exception statements.
 
     Added a new function `calc_stats` that returns a `GaussianStats` object.
