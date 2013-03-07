@@ -343,11 +343,18 @@ def save_image(hdr_file, image, **kwargs):
 
     if isinstance(image, np.ndarray):
         data = image
+        src_interleave = 'bip'
+        swap = False
     else:
-	if image.memmap is not None:
-	    data = image.memmap
-	else:
-	    data = image.load(dtype=image.dtype, scale=False)
+        if image.memmap is not None:
+            data = image.memmap
+            src_interleave = {spectral.BSQ: 'bsq', spectral.BIL: 'bil',
+                              spectral.BIP: 'bip'}[image.interleave]
+            swap = image.swap
+        else:
+            data = image.load(dtype=image.dtype, scale=False)
+            src_interleave = 'bip'
+            swap = False
         if image.scale_factor != 1:
             metadata['reflectance scale factor'] = image.scale_factor
     dtype = np.dtype(kwargs.get('dtype', data.dtype)).char
@@ -360,27 +367,31 @@ def save_image(hdr_file, image, **kwargs):
 
     # Always write data from start of file, regardless of what was in
     # provided metadata.
-    offset = metadata.get('header offset', 0)
+    offset = int(metadata.get('header offset', 0))
     if offset != 0:
         print 'Ignoring non-zero header offset in provided metadata.'
     metadata['header offset'] = 0
 
-    metadata['lines'] = data.shape[0]
-    metadata['samples'] = data.shape[1]
-    metadata['bands'] = data.shape[2]
+    metadata['lines'] = image.shape[0]
+    metadata['samples'] = image.shape[1]
+    metadata['bands'] = image.shape[2]
     metadata['file type'] = 'ENVI Standard'
     interleave = kwargs.get('interleave', 'bip').lower()
-    if interleave != 'bip':
-        if interleave not in ['bil', 'bsq']:
-            raise ValueError('Invalid interleave: %s'
-                             % str(kwargs['interleave']))
-        data = data.transpose(interleave_transpose('bip', interleave))
+    if interleave not in ['bil', 'bip', 'bsq']:
+        raise ValueError('Invalid interleave: %s'
+                         % str(kwargs['interleave']))
+    if interleave != src_interleave:
+        data = data.transpose(interleave_transpose(src_interleave, interleave))
     metadata['interleave'] = interleave
     if kwargs.get('byteswap', False):
         metadata['byte order'] = 1 * (not spectral.byte_order)
-        data = data.byteswap()
+        # Only swap bytes if we weren't going to already
+        if not swap:
+            data = data.byteswap()
     else:
         metadata['byte order'] = spectral.byte_order
+        if swap:
+            data = data.byteswap()
 
     write_envi_header(hdr_file, metadata, is_library=False)
     print 'Writing file', img_file
@@ -584,7 +595,10 @@ class SpectralLibrary:
 
 
 def _write_header_param(fout, paramName, paramVal):
-    if not isinstance(paramVal, str) and hasattr(paramVal, '__len__'):
+    if paramName.lower() == 'description':
+        valStr = '{\n%s}' % '\n'.join(['  ' + line for line
+                                       in paramVal.split('\n')])
+    elif not isinstance(paramVal, str) and hasattr(paramVal, '__len__'):
         valStr = '{ %s }' % (
             ' , '.join([str(v).replace(',', '-') for v in paramVal]),)
     else:

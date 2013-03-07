@@ -4,6 +4,14 @@
 
 2013-03-06	tboggs <tboggs@users.sourceforge.net>
 
+    Fixed writing of description parameter for ENVI file and possible incorrect
+    transpose in envi.save.
+    
+    io/envi.py:
+      (save_image): Handle correct transpose and byte-swapping of image data
+        when using memmaps.
+      (_write_header_param): Perform special handling of description parameter.
+
     Made speed improvement to envi.save_image.
     
     * io/envi.py (save_image): Write directly to file instead of using
