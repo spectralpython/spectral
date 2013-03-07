@@ -107,7 +107,8 @@ def _init():
         warn('Unable to import or configure pylab plotter.  Spectrum plots will be '
              'unavailable.', UserWarning)
 
-    import spectral
+    #import spectral
+    spectral = __import__(__name__.split('.')[0])
     from .utilities import status
     spectral.status = status.StatusDisplay()
 

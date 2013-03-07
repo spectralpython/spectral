@@ -161,6 +161,11 @@ class SpyFile(Image):
         
         except:
             raise
+    
+    def transform(self, xform):
+        '''Returns a SpyFile image with the linear transform applied.'''
+        # This allows a LinearTransform object to take the SpyFile as an arg.
+        return transform_image(xform, self)
 
     def __str__(self):
 	'''Prints basic parameters of the associated file.'''
@@ -574,7 +579,6 @@ class TransformedImage(Image):
 
         params = img.params()
         self.set_params(params, params.metadata)
-
 
         # If img is also a TransformedImage, then just modify the transform
         if isinstance(img, TransformedImage):

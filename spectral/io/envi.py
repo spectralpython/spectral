@@ -333,7 +333,7 @@ def save_image(hdr_file, image, **kwargs):
     import os
     import __builtin__
     import spectral
-    from spectral.io.spyfile import interleave_transpose
+    from spectral.io.spyfile import SpyFile, interleave_transpose
 
     metadata = kwargs.get('metadata', {}).copy()
     force = kwargs.get('force', False)
@@ -345,7 +345,7 @@ def save_image(hdr_file, image, **kwargs):
         data = image
         src_interleave = 'bip'
         swap = False
-    else:
+    elif isinstance(image, SpyFile):
         if image.memmap is not None:
             data = image.memmap
             src_interleave = {spectral.BSQ: 'bsq', spectral.BIL: 'bil',
@@ -357,6 +357,10 @@ def save_image(hdr_file, image, **kwargs):
             swap = False
         if image.scale_factor != 1:
             metadata['reflectance scale factor'] = image.scale_factor
+    else:
+        data = image.load()
+        src_interleave = 'bip'
+        swap = False
     dtype = np.dtype(kwargs.get('dtype', data.dtype)).char
     if dtype != data.dtype.char:
         data = data.astype(dtype)

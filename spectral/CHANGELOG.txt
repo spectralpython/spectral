@@ -2,6 +2,15 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2013-03-07	tboggs <tboggs@users.sourceforge.net>
+
+    Fixed setting `status` object in top-level package and allow
+    envi.save_image to handle TransformedImage objects.
+
+    * io/envi.py (save_image): Handle TransformedImage objects.
+    * io/spyfile/py (SpyFile.transform): New method.
+    * spectral.py (_init): Fixed setting `status` member in top-level package.
+    
 2013-03-06	tboggs <tboggs@users.sourceforge.net>
 
     Fixed writing of description parameter for ENVI file and possible incorrect
