@@ -639,7 +639,15 @@ class TransformedImage(Image):
         transformed = take(transformed_xy, bands, 2)
             
         return transformed.squeeze()
-
+    
+    def __str__(self):
+        s =  '\tTransformedImage object with output dimensions:\n'
+        s += '\t# Rows:         %6d\n' % (self.nrows)
+        s += '\t# Samples:      %6d\n' % (self.ncols)
+        s += '\t# Bands:        %6d\n\n' % (self.shape[2])
+        s += '\tThe linear transform is applied to the following image:\n\n'
+        s += str(self.image)
+        return s
 
     def read_pixel(self, row, col):
         return self.transform(self.image.read_pixel(row, col))                       

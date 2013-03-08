@@ -56,7 +56,7 @@ dtype_map = [('1', np.int8),                    # byte
              ('13', np.uint32),                 # 32-bit unsigned int
              ('14', np.int64),                  # 64-bit int
              ('15', np.uint64)]                 # 64-bit unsigned int
-envi_to_dtype = {k: np.dtype(v).char for (k, v) in dtype_map}
+envi_to_dtype = dict((k, np.dtype(v).char) for (k, v) in dtype_map)
 dtype_to_envi = dict(tuple(reversed(item)) for item in envi_to_dtype.items())
 
 

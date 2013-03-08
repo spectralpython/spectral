@@ -7,8 +7,12 @@
     Fixed setting `status` object in top-level package and allow
     envi.save_image to handle TransformedImage objects.
 
-    * io/envi.py (save_image): Handle TransformedImage objects.
-    * io/spyfile/py (SpyFile.transform): New method.
+    * io/envi.py:
+      (envi_to_dtype): Make dict creation compatible with python version < 2.7.
+      (save_image): Handle TransformedImage objects.
+    * io/spyfile/py
+      (SpyFile.transform): New method.
+      (TransformedImage.__str__): New method.
     * spectral.py (_init): Fixed setting `status` member in top-level package.
     
 2013-03-06	tboggs <tboggs@users.sourceforge.net>
