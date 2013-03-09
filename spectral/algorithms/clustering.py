@@ -13,7 +13,7 @@
 #   but WITHOUT ANY WARRANTY; without even the implied warranty of
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #   GNU General Public License for more details.
-#     
+#
 #   You should have received a copy of the GNU General Public License
 #   along with this software; if not, write to
 #
@@ -37,6 +37,7 @@ from classifiers import Classifier
 from exceptions import DeprecationWarning
 from warnings import warn
 
+
 def L1(v1, v2):
     'Returns L1 distance between 2 rank-1 arrays.'
     return numpy.sum(abs((v1 - v2)))
@@ -50,7 +51,8 @@ def L2(v1, v2):
 
 class KmeansClusterer(Classifier):
     '''An unsupervised classifier using an iterative clustering algorithm'''
-    def __init__(self, nclusters = 10, maxIter = 20, endCondition = None, distanceMeasure = L1):
+    def __init__(self, nclusters=10, maxIter=20, endCondition=None,
+                 distanceMeasure=L1):
         '''
         ARGUMENTS:
             nclusters       Number of clusters to create. Default is 8
@@ -69,8 +71,8 @@ class KmeansClusterer(Classifier):
         self.maxIterations = maxIter
         self.endCondition = endCondition
         self.distanceMeasure = distanceMeasure
-        
-    def classify_image(self, image, startClusters = None, iterations = None):
+
+    def classify_image(self, image, startClusters=None, iterations=None):
         '''
         Performs iterative self-organizing clustering of image data.
 
@@ -90,292 +92,296 @@ class KmeansClusterer(Classifier):
                             cluster for the corresponding element of image.
             centers         An nclusters x B array of cluster centers.
         '''
-        return isoCluster(image, self.nclusters, self.maxIterations, startClusters,
-                          self.endCondition, self.distanceMeasure, iterations)
-                
-    
-def kmeans(image, nclusters = 10, max_iterations = 20, **kwargs):
+        return isoCluster(
+            image, self.nclusters, self.maxIterations, startClusters,
+            self.endCondition, self.distanceMeasure, iterations)
+
+
+def kmeans(image, nclusters=10, max_iterations=20, **kwargs):
     '''
     Performs iterative clustering using the k-means algorithm.
 
     Arguments:
-    
+
         `image` (:class:`numpy.ndarray` or :class:`spectral.Image`):
-	
-	    The `MxNxB` image on which to perform clustering.
-	
+
+            The `MxNxB` image on which to perform clustering.
+
         `nclusters` (int) [default 10]:
-	
-	    Number of clusters to create.  The number produced may be less than
-	    `nclusters`.
-	
+
+            Number of clusters to create.  The number produced may be less than
+            `nclusters`.
+
         `max_iterations` (int) [default 20]:
-	
-	    Max number of iterations to perform.
-    
+
+            Max number of iterations to perform.
+
     Keyword Arguments:
-	
+
         `start_clusters` (:class:`numpy.ndarray`) [default None]:
-	
-	    `nclusters x B` array of initial cluster centers.  If not provided,
-	    initial cluster centers will be spaced evenly along the diagonal of
-	    the N-dimensional bounding box of the image data.
-			
+
+            `nclusters x B` array of initial cluster centers.  If not provided,
+            initial cluster centers will be spaced evenly along the diagonal of
+            the N-dimensional bounding box of the image data.
+
         `compare` (callable object) [default None]:
-	
-	    Optional comparison function. `compare` must be a callable object
-	    that takes 2 `MxN` :class:`numpy.ndarray` objects as its arguments
-	    and returns non-zero when clustering is to be terminated. The two
-	    arguments are the cluster maps for the previous and current cluster
-	    cycle, respectively.
-			
+
+            Optional comparison function. `compare` must be a callable object
+            that takes 2 `MxN` :class:`numpy.ndarray` objects as its arguments
+            and returns non-zero when clustering is to be terminated. The two
+            arguments are the cluster maps for the previous and current cluster
+            cycle, respectively.
+
         `distance` (callable object) [default :func:`~spectral.clustering.L2`]:
-	
-	    The distance measure to use for comparison. The default is to use
-	    **L2** (Euclidean) distance. For Manhattan distance, specify
-	    :func:`~spectral.clustering.L1`.
-			
+
+            The distance measure to use for comparison. The default is to use
+            **L2** (Euclidean) distance. For Manhattan distance, specify
+            :func:`~spectral.clustering.L1`.
+
         `frames` (list) [default None]:
-	
-	    If this argument is given and is a list object, each intermediate
-	    cluster map is appended to the list.
-			
+
+            If this argument is given and is a list object, each intermediate
+            cluster map is appended to the list.
+
     Returns a 2-tuple containing:
-    
+
         `class_map` (:class:`numpy.ndarray`):
-	
-	    An `MxN` array whos values are the indices of the cluster for the
-	    corresponding element of `image`.
-			
+
+            An `MxN` array whos values are the indices of the cluster for the
+            corresponding element of `image`.
+
         `centers` (:class:`numpy.ndarray`):
-	
-	    An `nclusters x B` array of cluster centers.
-    
+
+            An `nclusters x B` array of cluster centers.
+
     Iterations are performed until clusters converge (no pixels reassigned
-    between iterations), `maxIterations` is reached, or `compare` returns nonzero.
-    If :exc:`KeyboardInterrupt` is generated (i.e., CTRL-C pressed) while the
-    algorithm is executing, clusters are returned from the previously completed
-    iteration.
+    between iterations), `maxIterations` is reached, or `compare` returns
+    nonzero. If :exc:`KeyboardInterrupt` is generated (i.e., CTRL-C pressed)
+    while the algorithm is executing, clusters are returned from the previously
+    completed iteration.
     '''
     from spectral import status
     import numpy
-    
+
     if isinstance(image, numpy.ndarray):
-	return kmeans_ndarray(*(image, nclusters, max_iterations), **kwargs)
-    
+        return kmeans_ndarray(*(image, nclusters, max_iterations), **kwargs)
+
     # defaults for kwargs
     start_clusters = None
     compare = None
     distance = L2
     iterations = None
-    
+
     for (key, val) in kwargs.items():
-	if key == 'start_clusters':
-	    start_clusters = val
-	elif key == 'compare':
-	    compare = val
-	elif key == 'distance':
-	    if val in (L1, 'L1'):
-		distance = L1
-	    elif val in (L2, 'L2'):
-		distance = L2
-	    else:
-		raise ValueError('Unrecognized keyword argument.')
-	elif key == 'frames':
-	    if not hasattr(val, 'append'):
-		raise TypeError('"frames" keyword argument must have "append" attribute.')
-	    iterations = frames
-	else:
-	    raise NameError('Unsupported keyword argument.')
-	    
+        if key == 'start_clusters':
+            start_clusters = val
+        elif key == 'compare':
+            compare = val
+        elif key == 'distance':
+            if val in (L1, 'L1'):
+                distance = L1
+            elif val in (L2, 'L2'):
+                distance = L2
+            else:
+                raise ValueError('Unrecognized keyword argument.')
+        elif key == 'frames':
+            if not hasattr(val, 'append'):
+                raise TypeError('"frames" keyword argument must have "append"'
+                                'attribute.')
+            iterations = frames
+        else:
+            raise NameError('Unsupported keyword argument.')
+
     (nrows, ncols, nbands) = image.shape
     clusters = numpy.zeros((nrows, ncols), int)
     old_clusters = numpy.copy(clusters)
-    if start_clusters != None:
+    if start_clusters is not None:
         assert (start_clusters.shape[0] == nclusters), 'There must be \
         nclusters clusters in the startCenters array.'
         centers = numpy.array(start_clusters)
     else:
-	print 'Initializing clusters along diagonal of N-dimensional bounding box.'
-	centers = numpy.empty((nclusters, nbands), float)
-	boxMin = image[0,0]
-	boxMax = image[0,0]
-	for i in range(nrows):
-	    for j in range(ncols):
-		x = image[i,j]
-		boxMin = numpy.where(boxMin < x, boxMin, x)
-		boxMax = numpy.where(boxMax > x, boxMax, x)
-	boxMin = boxMin.astype(float)
-	boxMax = boxMax.astype(float)
-	delta = (boxMax - boxMin) / (nclusters - 1)
-	for i in range(nclusters):
-	    centers[i] = boxMin.astype(float) + i * delta
+        print 'Initializing clusters along diagonal of N-dimensional bounding box.'
+        centers = numpy.empty((nclusters, nbands), float)
+        boxMin = image[0, 0]
+        boxMax = image[0, 0]
+        for i in range(nrows):
+            for j in range(ncols):
+                x = image[i, j]
+                boxMin = numpy.where(boxMin < x, boxMin, x)
+                boxMax = numpy.where(boxMax > x, boxMax, x)
+        boxMin = boxMin.astype(float)
+        boxMax = boxMax.astype(float)
+        delta = (boxMax - boxMin) / (nclusters - 1)
+        for i in range(nclusters):
+            centers[i] = boxMin.astype(float) + i * delta
 
     print 'Starting iterations.'
 
     iter = 1
     while (iter <= max_iterations):
-	try:
-	    status.display_percentage('Iteration %d...' % iter)
-	    
-	    # Assign all pixels
-	    for i in range(nrows):
-		status.update_percentage(float(i) / nrows * 100.)
-		for j in range(ncols):
-		    minDist = 1.e30
-		    for k in range(nclusters):
-			dist = distance(image[i, j], centers[k])
-			if (dist < minDist):
-			    clusters[i, j] = k
-			    minDist = dist
-	    status.end_percentage()
+        try:
+            status.display_percentage('Iteration %d...' % iter)
 
-	    # Update cluster centers
-	    sums = numpy.zeros((nclusters, nbands), 'd')
-	    counts = ([0] * nclusters)
-	    for i in range(nrows):
-		for j in range(ncols):
-		    counts[clusters[i, j]] += 1
-		    sums[clusters[i, j]] += image[i, j]
-    
-	    old_centers = centers[:]
-	    for i in range(nclusters):
-		if (counts[i] > 0):
-		    centers[i] = sums[i] / counts[i]
-	    centers = numpy.array(centers)
-    
-	    if iterations != None:
-		iterations.append(clusters)
+            # Assign all pixels
+            for i in range(nrows):
+                status.update_percentage(float(i) / nrows * 100.)
+                for j in range(ncols):
+                    minDist = 1.e30
+                    for k in range(nclusters):
+                        dist = distance(image[i, j], centers[k])
+                        if (dist < minDist):
+                            clusters[i, j] = k
+                            minDist = dist
+            status.end_percentage()
 
-	    if compare and compare(old_clusters, clusters):
-		break
-	    else:
-		nChanged = numpy.sum(clusters != old_clusters)
-		if nChanged == 0:
-		    break
-		else:
-		    print >>status, '\t%d pixels reassigned.' % (nChanged)
-    
-	    old_clusters = clusters
-	    old_centers = centers
-	    clusters = numpy.zeros((nrows, ncols), int)
-	    iter += 1
-	    
+            # Update cluster centers
+            sums = numpy.zeros((nclusters, nbands), 'd')
+            counts = ([0] * nclusters)
+            for i in range(nrows):
+                for j in range(ncols):
+                    counts[clusters[i, j]] += 1
+                    sums[clusters[i, j]] += image[i, j]
+
+            old_centers = centers[:]
+            for i in range(nclusters):
+                if (counts[i] > 0):
+                    centers[i] = sums[i] / counts[i]
+            centers = numpy.array(centers)
+
+            if iterations is not None:
+                iterations.append(clusters)
+
+            if compare and compare(old_clusters, clusters):
+                break
+            else:
+                nChanged = numpy.sum(clusters != old_clusters)
+                if nChanged == 0:
+                    break
+                else:
+                    print >>status, '\t%d pixels reassigned.' % (nChanged)
+
+            old_clusters = clusters
+            old_centers = centers
+            clusters = numpy.zeros((nrows, ncols), int)
+            iter += 1
+
         except KeyboardInterrupt:
             print "KeyboardInterrupt: Returning clusters from previous iteration"
-	    return (old_clusters, old_centers)
+            return (old_clusters, old_centers)
 
     print >>status, 'kmeans terminated with', len(set(old_clusters.ravel())), \
-          'clusters after', iter - 1, 'iterations.'
+        'clusters after', iter - 1, 'iterations.'
     return (old_clusters, centers)
 
-def kmeans_ndarray(image, nclusters = 10, max_iterations = 20, **kwargs):
+
+def kmeans_ndarray(image, nclusters=10, max_iterations=20, **kwargs):
     '''
     Performs iterative clustering using the k-means algorithm.
 
     Arguments:
-    
+
         `image` (:class:`numpy.ndarray` or :class:`spectral.Image`):
-	
-	    The `MxNxB` image on which to perform clustering.
-	
+
+            The `MxNxB` image on which to perform clustering.
+
         `nclusters` (int) [default 10]:
-	
-	    Number of clusters to create.  The number produced may be less than
-	    `nclusters`.
-	
+
+            Number of clusters to create.  The number produced may be less than
+            `nclusters`.
+
         `max_iterations` (int) [default 20]:
-	
-	    Max number of iterations to perform.
-    
+
+            Max number of iterations to perform.
+
     Keyword Arguments:
-	
+
         `start_clusters` (:class:`numpy.ndarray`) [default None]:
-	
-	    `nclusters x B` array of initial cluster centers.  If not provided,
-	    initial cluster centers will be spaced evenly along the diagonal of
-	    the N-dimensional bounding box of the image data.
-			
+
+            `nclusters x B` array of initial cluster centers.  If not provided,
+            initial cluster centers will be spaced evenly along the diagonal of
+            the N-dimensional bounding box of the image data.
+
         `compare` (callable object) [default None]:
-	
-	    Optional comparison function. `compare` must be a callable object
-	    that takes 2 `MxN` :class:`numpy.ndarray` objects as its arguments
-	    and returns non-zero when clustering is to be terminated. The two
-	    arguments are the cluster maps for the previous and current cluster
-	    cycle, respectively.
-			
+
+            Optional comparison function. `compare` must be a callable object
+            that takes 2 `MxN` :class:`numpy.ndarray` objects as its arguments
+            and returns non-zero when clustering is to be terminated. The two
+            arguments are the cluster maps for the previous and current cluster
+            cycle, respectively.
+
         `distance` (callable object) [default :func:`~spectral.clustering.L2`]:
-	
-	    The distance measure to use for comparison. The default is to use
-	    **L2** (Euclidean) distance. For Manhattan distance, specify
-	    :func:`~spectral.clustering.L1`.
-			
+
+            The distance measure to use for comparison. The default is to use
+            **L2** (Euclidean) distance. For Manhattan distance, specify
+            :func:`~spectral.clustering.L1`.
+
         `frames` (list) [default None]:
-	
-	    If this argument is given and is a list object, each intermediate
-	    cluster map is appended to the list.
-			
+
+            If this argument is given and is a list object, each intermediate
+            cluster map is appended to the list.
+
     Returns a 2-tuple containing:
-    
+
         `class_map` (:class:`numpy.ndarray`):
-	
-	    An `MxN` array whos values are the indices of the cluster for the
-	    corresponding element of `image`.
-			
+
+            An `MxN` array whos values are the indices of the cluster for the
+            corresponding element of `image`.
+
         `centers` (:class:`numpy.ndarray`):
-	
-	    An `nclusters x B` array of cluster centers.
-    
+
+            An `nclusters x B` array of cluster centers.
+
     Iterations are performed until clusters converge (no pixels reassigned
-    between iterations), `max_iterations` is reached, or `compare` returns nonzero.
-    If :exc:`KeyboardInterrupt` is generated (i.e., CTRL-C pressed) while the
-    algorithm is executing, clusters are returned from the previously completed
-    iteration.
+    between iterations), `max_iterations` is reached, or `compare` returns
+    nonzero. If :exc:`KeyboardInterrupt` is generated (i.e., CTRL-C pressed)
+    while the algorithm is executing, clusters are returned from the previously
+    completed iteration.
     '''
     from spectral import status
     import numpy as np
-    
+
     # defaults for kwargs
     start_clusters = None
     compare = None
     distance = L2
     iterations = None
-    
+
     for (key, val) in kwargs.items():
-	if key == 'start_clusters':
-	    start_clusters = val
-	elif key == 'compare':
-	    compare = val
-	elif key == 'distance':
-	    if val in (L1, 'L1'):
-		distance = L1
-	    elif val in (L2, 'L2'):
-		distance = L2
-	    else:
-		raise ValueError('Unrecognized keyword argument.')
-	elif key == 'frames':
-	    if not hasattr(val, 'append'):
-		raise TypeError('"frames" keyword argument must have "append" attribute.')
-	    iterations = val
-	else:
-	    raise NameError('Unsupported keyword argument.')
-	    
+        if key == 'start_clusters':
+            start_clusters = val
+        elif key == 'compare':
+            compare = val
+        elif key == 'distance':
+            if val in (L1, 'L1'):
+                distance = L1
+            elif val in (L2, 'L2'):
+                distance = L2
+            else:
+                raise ValueError('Unrecognized keyword argument.')
+        elif key == 'frames':
+            if not hasattr(val, 'append'):
+                raise TypeError('"frames" keyword argument must have "append"'
+                                'attribute.')
+            iterations = val
+        else:
+            raise NameError('Unsupported keyword argument.')
+
     (nrows, ncols, nbands) = image.shape
     N = nrows * ncols
     image = image.reshape((N, nbands))
     clusters = numpy.zeros((N,), int)
-    if start_clusters != None:
+    if start_clusters is not None:
         assert (start_clusters.shape[0] == nclusters), 'There must be \
         nclusters clusters in the startCenters array.'
         centers = numpy.array(start_clusters)
     else:
-	print 'Initializing clusters along diagonal of N-dimensional bounding box.'
-	boxMin = np.amin(image, 0)
-	boxMax = np.amax(image, 0)
-	delta = (boxMax - boxMin) / (nclusters - 1)
-	centers = np.empty((nclusters, nbands), float)
-	for i in range(nclusters):
-	    centers[i] = boxMin + i * delta
+        print 'Initializing clusters along diagonal of N-dimensional bounding box.'
+        boxMin = np.amin(image, 0)
+        boxMax = np.amax(image, 0)
+        delta = (boxMax - boxMin) / (nclusters - 1)
+        centers = np.empty((nclusters, nbands), float)
+        for i in range(nclusters):
+            centers[i] = boxMin + i * delta
 
     print 'Starting iterations.'
 
@@ -385,68 +391,71 @@ def kmeans_ndarray(image, nclusters = 10, max_iterations = 20, **kwargs):
     old_clusters = np.copy(clusters)
     iter = 1
     while (iter <= max_iterations):
-	try:
-	    status.display_percentage('Iteration %d...' % iter)
+        try:
+            status.display_percentage('Iteration %d...' % iter)
 
-	    # Assign all pixels
-	    for i in range(nclusters):
-		diffs = np.subtract(image, centers[i])
-		if distance == L2:
-		    distances[:,i] = np.sum(np.square(diffs), 1)
-		else:
-		    distances[:,i] = np.sum(np.abs(diffs), 1)
-	    clusters[:] = np.argmin(distances, 1)
+            # Assign all pixels
+            for i in range(nclusters):
+                diffs = np.subtract(image, centers[i])
+                if distance == L2:
+                    distances[:, i] = np.sum(np.square(diffs), 1)
+                else:
+                    distances[:, i] = np.sum(np.abs(diffs), 1)
+            clusters[:] = np.argmin(distances, 1)
 
-	    status.end_percentage()
+            status.end_percentage()
 
-	    # Update cluster centers
-	    old_centers[:] = centers
-	    for i in range(nclusters):
-		inds = np.argwhere(clusters == i)[:,0]
-		if len(inds) > 0:
-		    centers[i] = np.mean(image[inds], 0, float)
-		    
-	    if iterations != None:
-		iterations.append(clusters.reshape(nrows, ncols))
+            # Update cluster centers
+            old_centers[:] = centers
+            for i in range(nclusters):
+                inds = np.argwhere(clusters == i)[:, 0]
+                if len(inds) > 0:
+                    centers[i] = np.mean(image[inds], 0, float)
 
-	    if compare and compare(old_clusters, clusters):
-		break
-	    else:
-		nChanged = numpy.sum(clusters != old_clusters)
-		if nChanged == 0:
-		    break
-		else:
-		    print >>status, '\t%d pixels reassigned.' % (nChanged)
-    
-	    old_clusters[:] = clusters
-	    old_centers[:] = centers
-	    iter += 1
+            if iterations is not None:
+                iterations.append(clusters.reshape(nrows, ncols))
+
+            if compare and compare(old_clusters, clusters):
+                break
+            else:
+                nChanged = numpy.sum(clusters != old_clusters)
+                if nChanged == 0:
+                    break
+                else:
+                    print >>status, '\t%d pixels reassigned.' % (nChanged)
+
+            old_clusters[:] = clusters
+            old_centers[:] = centers
+            iter += 1
 
         except KeyboardInterrupt:
             print "KeyboardInterrupt: Returning clusters from previous iteration."
-	    return (old_clusters.reshape(nrows, ncols), old_centers)
+            return (old_clusters.reshape(nrows, ncols), old_centers)
 
     print >>status, 'kmeans terminated with', len(set(old_clusters.ravel())), \
-          'clusters after', iter - 1, 'iterations.'
+        'clusters after', iter - 1, 'iterations.'
     return (old_clusters.reshape(nrows, ncols), centers)
+
 
 def isoCluster(*args, **kwargs):
     '''
-    This is a deprecated function because it previously refered to a function that
-    implemented the k-means clustering algorithm.  For backward compatibilty, this
-    function will act as a pass through (with a warning issued) to the \"kmeans\"
-    function, which is the correct name for the algorithm.  This \"isoCluster\"
-    function will likely be dropped in a future version, unless an actual implementation
-    of the ISO-Cluster algorithm is added.
+    This is a deprecated function because it previously refered to a function
+    that implemented the k-means clustering algorithm.  For backward
+    compatibilty, this function will act as a pass through (with a warning
+    issued) to the \"kmeans\" function, which is the correct name for the
+    algorithm.  This \"isoCluster\" function will likely be dropped in a future
+    version, unless an actual implementation of the ISO-Cluster algorithm is
+    added.
     '''
     import warnings
     msg = "The function name \"isoCluster\" is deprecated since the function " \
-	  "to which it refered is actually an implementation of the k-means " \
-	  "clustering algorithm.  Please call \"kmeans\" instead."
+          "to which it refered is actually an implementation of the k-means " \
+          "clustering algorithm.  Please call \"kmeans\" instead."
     warnings.warn(msg, DeprecationWarning)
     return kmeans(*args, **kwargs)
 
-def clusterOnePass(image, max_dist, nclusters = 10):
+
+def clusterOnePass(image, max_dist, nclusters=10):
     '''
     A one-pass clustering algorithm.
 
@@ -477,7 +486,7 @@ def clusterOnePass(image, max_dist, nclusters = 10):
     (nrows, ncols, nbands,) = (image.nrows, image.ncols, image.nbands)
     clusters = numpy.zeros((nrows, ncols), int)
     centers = [image[0, 0]]
-    
+
     for i in range(nrows):
         for j in range(ncols):
             minDist = 1000000000000.0
@@ -499,15 +508,16 @@ class OnePassClusterer(Classifier):
     '''
     A class to implement a one-pass clustering algorithm with replacement.
     '''
-    def __init__(self, max_clusters, max_distance = 0, dist = L2):
+    def __init__(self, max_clusters, max_distance=0, dist=L2):
         self.max_clusters = max_clusters
         self.max_dist = max_distance
         self.dist = dist
 
     def add_cluster(self, pixel):
         'Adds a new cluster center or replaces an existing one.'
-        self.cluster_map = numpy.choose(numpy.equal(self.cluster_map, self.cluster_to_go),
-                                       (self.cluster_map, self.cluster_to_go_to))
+        self.cluster_map = numpy.choose(
+            numpy.equal(self.cluster_map, self.cluster_to_go),
+            (self.cluster_map, self.cluster_to_go_to))
         self.clusters[self.cluster_to_go] = pixel
         self.calc_distances()
         self.calc_min_half_distances()
@@ -523,10 +533,10 @@ class OnePassClusterer(Classifier):
         for i in range(self.nclusters):
             if (i == 0):
                 self.min_half_dist[i] = self.dist(self.clusters[0],
-                                                    self.clusters[1])
+                                                  self.clusters[1])
             else:
                 self.min_half_dist[i] = self.dist(self.clusters[i],
-                                                    self.clusters[0])
+                                                  self.clusters[0])
             for j in range(1, self.nclusters):
                 if (j == i):
                     continue
@@ -569,12 +579,13 @@ class OnePassClusterer(Classifier):
         self.min_half_dist = numpy.zeros(self.nclusters, float)
         self.calc_min_half_distances()
 
-	########################################################################
-	# TO DO:  Need to see if there is a good reason why we're not just
-	# calling self.calcDistances instead of using the code below.
-	########################################################################
+        #######################################################################
+        # TO DO:  Need to see if there is a good reason why we're not just
+        # calling self.calcDistances instead of using the code below.
+        #######################################################################
 
-        self.distances = numpy.zeros((self.nclusters, self.nclusters), numpy.float)
+        self.distances = numpy.zeros(
+            (self.nclusters, self.nclusters), numpy.float)
         for i in range((self.nclusters - 1)):
             for j in range((i + 1), self.nclusters):
                 self.distances[i, j] = self.dist(self.clusters[i],
@@ -596,20 +607,20 @@ class OnePassClusterer(Classifier):
         a = argmin(mins)
         b = argsort(self.distances[a])[1]
 
-	if self.nclusters > 2:
-	    aNext = argsort(self.distances[a])[2]
-	    bNext = argsort(self.distances[b])[2]
-	    aNextDist = self.dist(self.clusters[a], self.clusters[aNext])
-	    bNextDist = self.dist(self.clusters[b], self.clusters[bNext])
-	    if (aNextDist > bNextDist):
-		self.cluster_to_go = b
-		self.cluster_to_go_to = a
-	    else:
-		self.cluster_to_go = a
-		self.cluster_to_go_to = b
-	else:
-	    self.cluster_to_go = a
-	    self.cluster_to_go_to = b
+        if self.nclusters > 2:
+            aNext = argsort(self.distances[a])[2]
+            bNext = argsort(self.distances[b])[2]
+            aNextDist = self.dist(self.clusters[a], self.clusters[aNext])
+            bNextDist = self.dist(self.clusters[b], self.clusters[bNext])
+            if (aNextDist > bNextDist):
+                self.cluster_to_go = b
+                self.cluster_to_go_to = a
+            else:
+                self.cluster_to_go = a
+                self.cluster_to_go_to = b
+        else:
+            self.cluster_to_go = a
+            self.cluster_to_go_to = b
 
     def classify_image(self, image):
         from spectral import status
@@ -617,7 +628,7 @@ class OnePassClusterer(Classifier):
         self.image = image
         self.cluster_map = numpy.zeros(self.image.shape[:2], int)
         self.clusters = numpy.zeros((self.max_clusters, self.image.shape[2]),
-				    self.image.dtype)
+                                    self.image.dtype)
         self.nclusters = 0
         clusters = self.clusters
         self.init_clusters()
@@ -642,37 +653,37 @@ class OnePassClusterer(Classifier):
         return (self.cluster_map, self.clusters)
 
 
-def cluster(data, nclusters = 10):
+def cluster(data, nclusters=10):
     '''
     An single-pass clustering algorithm with replacement.
 
     Arguments:
 
         `data` (:class:`numpy.ndarray` or :class:`spectral.Image`):
-	
-	    The `MxNxB` image on which to perform clustering.
+
+            The `MxNxB` image on which to perform clustering.
 
         `nclusters` (int) [default 10]:
-	
-	    Number of clusters to create.
+
+            Number of clusters to create.
 
     Returns a 2-tuple containing:
 
         `class_map` (:class:`numpy.ndarray`):
-	
-	    An `MxN` array of cluster indices.
+
+            An `MxN` array of cluster indices.
 
         `centers` (:class:`numpy.ndarray`):
-	
-	    A `nclusters x B` array of cluster centers corresponding to the
-	    indices in clMap
+
+            A `nclusters x B` array of cluster centers corresponding to the
+            indices in clMap
 
     This algorithm initializes the clusters with the first `nclusters`
     pixels from data.  Successive pixels are then assigned to the nearest
     cluster in `N`-space.  If the distance from a pixel to the nearest cluster
     is greater than the greatest inter-cluster distance, the pixel is added
-    as a new cluster and the two clusters nearest to eachother are combined into
-    a single cluster.
+    as a new cluster and the two clusters nearest to eachother are combined
+    into a single cluster.
 
     The advantages of this algorithm are that threshold distances need
     not be specified and the number of clusters remains fixed; however, results
@@ -680,5 +691,3 @@ def cluster(data, nclusters = 10):
     '''
     opc = OnePassClusterer(nclusters)
     return opc.classify_image(data)
-
-

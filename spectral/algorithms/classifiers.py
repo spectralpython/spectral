@@ -14,7 +14,7 @@
 #   but WITHOUT ANY WARRANTY; without even the implied warranty of
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #   GNU General Public License for more details.
-#     
+#
 #   You should have received a copy of the GNU General Public License
 #   along with this software; if not, write to
 #
@@ -28,14 +28,13 @@
 # Send comments to:
 # Thomas Boggs, tboggs@users.sourceforge.net
 #
-'''
-Base classes for classifiers and implementations of basic statistical classifiers.
-'''
+'''Base classes for classifiers and basic classifiers.'''
 
 import numpy
 
 from exceptions import DeprecationWarning
 from warnings import warn
+
 
 class Classifier:
     '''
@@ -44,21 +43,24 @@ class Classifier:
     '''
     def __init__(self):
         pass
+
     def classify_spectrum(self, *args, **kwargs):
-        raise NotImplementedError('Classifier.classify_spectrum must be overridden by a child class.')
+        raise NotImplementedError('Classifier.classify_spectrum must be '
+                                  'overridden by a child class.')
+
     def classify_image(self, image):
-	'''Classifies an entire image, returning a classification map.
-	
-	Arguments:
-	
-	    `image` (ndarray or :class:`spectral.Image`)
-	    
-		The `MxNxB` image to classify.
-	
-	Returns (ndarray):
-	
-	    An `MxN` ndarray of integers specifying the class for each pixel.
-	'''
+        '''Classifies an entire image, returning a classification map.
+
+        Arguments:
+
+            `image` (ndarray or :class:`spectral.Image`)
+
+                The `MxNxB` image to classify.
+
+        Returns (ndarray):
+
+            An `MxN` ndarray of integers specifying the class for each pixel.
+        '''
         from spectral import status
         from algorithms import ImageIterator
         from numpy import zeros
@@ -79,37 +81,41 @@ class Classifier:
     # Deprecated methods
     #-------------------
     def classifySpectrum(self, *args, **kwargs):
-	warn('Classifier.classifySpectrum has been deprecated. '\
-	     + 'Use Classifier.classify_spectrum.', DeprecationWarning)
-	return self.classifySpectrum(*args, **kwargs)
+        warn('Classifier.classifySpectrum has been deprecated. '
+             + 'Use Classifier.classify_spectrum.', DeprecationWarning)
+        return self.classifySpectrum(*args, **kwargs)
+
     def classifyImage(self, image):
-	warn('Classifier.addClass has been deprecated. '\
-	     + 'Use Classifier.classify_image.', DeprecationWarning)
-	return self.classify_image(image)
+        warn('Classifier.addClass has been deprecated. '
+             + 'Use Classifier.classify_image.', DeprecationWarning)
+        return self.classify_image(image)
+
 
 class SupervisedClassifier(Classifier):
     def __init__(self):
         pass
+
     def train(self):
         pass
 
+
 class GaussianClassifier(SupervisedClassifier):
     '''A Gaussian Maximum Likelihood Classifier'''
-    def __init__(self, training_data = None, min_samples = None):
-	'''Creates the classifier and optionally trains it with training data.
-	
-	Arguments:
-	
-	    `training_data` (:class:`~spectral.algorithms.TrainingClassSet`) [default None]:
-	    
-		 The training classes on which to train the classifier.
-	    
-	    `min_samples` (int) [default None]:
-	    
-		Minimum number of samples required from a training class to
-		include it in the classifier.
-	
-	'''
+    def __init__(self, training_data=None, min_samples=None):
+        '''Creates the classifier and optionally trains it with training data.
+
+        Arguments:
+
+            `training_data` (:class:`~spectral.algorithms.TrainingClassSet`):
+
+                 The training classes on which to train the classifier.
+
+            `min_samples` (int) [default None]:
+
+                Minimum number of samples required from a training class to
+                include it in the classifier.
+
+        '''
         if min_samples:
             self.min_samples = min_samples
         else:
@@ -118,14 +124,14 @@ class GaussianClassifier(SupervisedClassifier):
             self.train(training_data)
 
     def train(self, training_data):
-	'''Trains the classifier on the given training data.
-	
-	Arguments:
-	
-	    `training_data` (:class:`~spectral.algorithms.TrainingClassSet`):
-	    
-		Data for the training classes.
-	'''
+        '''Trains the classifier on the given training data.
+
+        Arguments:
+
+            `training_data` (:class:`~spectral.algorithms.TrainingClassSet`):
+
+                Data for the training classes.
+        '''
         from algorithms import log_det
         if not self.min_samples:
             # Set minimum number of samples to the number of bands in the image
@@ -135,7 +141,8 @@ class GaussianClassifier(SupervisedClassifier):
             if cl.size() >= self.min_samples:
                 self.classes.append(cl)
             else:
-                print '  Omitting class %3d : only %d samples present' % (cl.index, cl.size())
+                print '  Omitting class %3d : only %d samples present' % (
+                    cl.index, cl.size())
         for cl in self.classes:
             if not hasattr(cl, 'stats'):
                 cl.calc_stats()
@@ -146,19 +153,19 @@ class GaussianClassifier(SupervisedClassifier):
     def classify_spectrum(self, x):
         '''
         Classifies a pixel into one of the trained classes.
-	
-	Arguments:
-	
-	    `x` (list or rank-1 ndarray):
-	    
-		The unclassified spectrum.
-	
-	Returns:
-	
-	    `classIndex` (int):
-	    
-		The index for the :class:`~spectral.algorithms.TrainingClass`
-		to which `x` is classified.
+
+        Arguments:
+
+            `x` (list or rank-1 ndarray):
+
+                The unclassified spectrum.
+
+        Returns:
+
+            `classIndex` (int):
+
+                The index for the :class:`~spectral.algorithms.TrainingClass`
+                to which `x` is classified.
         '''
         from numpy import dot, transpose
         from numpy.oldnumeric import NewAxis
@@ -170,30 +177,31 @@ class GaussianClassifier(SupervisedClassifier):
 
         for cl in self.classes:
             delta = (x - cl.stats.mean)[:, NewAxis]
-            prob = log(cl.class_prob) - 0.5 * cl.stats.log_det_cov		\
-                    - 0.5 * dot(transpose(delta), dot(cl.stats.inv_cov, delta))
-            if first or prob[0,0] > max_prob:
+            prob = log(cl.class_prob) - 0.5 * cl.stats.log_det_cov \
+                - 0.5 * dot(transpose(delta), dot(cl.stats.inv_cov, delta))
+            if first or prob[0, 0] > max_prob:
                 first = False
-                max_prob = prob[0,0]
+                max_prob = prob[0, 0]
                 max_class = cl.index
         return max_class
 
     def classifySpectrum(self, *args, **kwargs):
-	warn('GaussianClassifier.classifySpectrum has been deprecated. '\
-	     + 'Use GaussianClassifier.classify_spectrum.', DeprecationWarning)
-	return self.classifySpectrum(*args, **kwargs)
+        warn('GaussianClassifier.classifySpectrum has been deprecated. '
+             + 'Use GaussianClassifier.classify_spectrum.', DeprecationWarning)
+        return self.classifySpectrum(*args, **kwargs)
+
 
 class MahalanobisDistanceClassifier(GaussianClassifier):
     '''A Classifier using Mahalanobis distance for class discrimination'''
     def train(self, trainingData):
-	'''Trains the classifier on the given training data.
-	
-	Arguments:
-	
-	    `trainingData` (:class:`~spectral.algorithms.TrainingClassSet`):
-	    
-		Data for the training classes.
-	'''
+        '''Trains the classifier on the given training data.
+
+        Arguments:
+
+            `trainingData` (:class:`~spectral.algorithms.TrainingClassSet`):
+
+                Data for the training classes.
+        '''
         GaussianClassifier.train(self, trainingData)
 
         covariance = numpy.zeros(self.classes[0].stats.cov.shape, numpy.float)
@@ -206,23 +214,23 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
     def classify_spectrum(self, x):
         '''
         Classifies a pixel into one of the trained classes.
-	
-	Arguments:
-	
-	    `x` (list or rank-1 ndarray):
-	    
-		The unclassified spectrum.
-	
-	Returns:
-	
-	    `classIndex` (int):
-	    
-		The index for the :class:`~spectral.algorithms.TrainingClass`
-		to which `x` is classified.
+
+        Arguments:
+
+            `x` (list or rank-1 ndarray):
+
+                The unclassified spectrum.
+
+        Returns:
+
+            `classIndex` (int):
+
+                The index for the :class:`~spectral.algorithms.TrainingClass`
+                to which `x` is classified.
         '''
         from numpy import dot, transpose
         from numpy.oldnumeric import NewAxis
- 
+
         max_class = -1
         d2_min = -1
         first = True
@@ -237,8 +245,8 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
         return max_class
 
     def classifySpectrum(self, *args, **kwargs):
-	warn('MahalanobisDistanceClassifier.classifySpectrum has been deprecated. '\
-	     + 'Use MahalanobisDistanceClassifier.classify_spectrum.', \
-	     DeprecationWarning)
-	return self.classify_pectrum(*args, **kwargs)
-
+        warn('MahalanobisDistanceClassifier.classifySpectrum has been '
+             + 'deprecated. Use '
+             + 'MahalanobisDistanceClassifier.classify_spectrum.',
+             DeprecationWarning)
+        return self.classify_pectrum(*args, **kwargs)

@@ -13,7 +13,7 @@
 #   but WITHOUT ANY WARRANTY; without even the implied warranty of
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #   GNU General Public License for more details.
-#     
+#
 #   You should have received a copy of the GNU General Public License
 #   along with this software; if not, write to
 #
@@ -37,7 +37,8 @@ import Gnuplot
 
 xyplot = Gnuplot.Gnuplot()
 
-def plot(data, source = None):
+
+def plot(data, source=None):
     '''
     Creates an x-y plot.
 
@@ -63,8 +64,8 @@ def plot(data, source = None):
     elif len(s) == 2:
         xvals = range(s[1])
         g('set xrange [0: %d]' % s[1])
-        g.plot(Gnuplot.Data(xvals, data[0,:]))
+        g.plot(Gnuplot.Data(xvals, data[0, :]))
         for i in range(1, s[0]):
-            g.replot(Gnuplot.Data(xvals, data[i,:]))
+            g.replot(Gnuplot.Data(xvals, data[i, :]))
     xyplot = g
     return g

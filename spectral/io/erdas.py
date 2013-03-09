@@ -13,7 +13,7 @@
 #   but WITHOUT ANY WARRANTY; without even the implied warranty of
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #   GNU General Public License for more details.
-#     
+#
 #   You should have received a copy of the GNU General Public License
 #   along with this software; if not, write to
 #
@@ -35,10 +35,10 @@ Functions for reading Erdas files.
 #    http://www.pcigeomatics.com/cgi-bin/pcihlp/ERDASWR|IMAGE+FORMAT
 #
 # The ERDAS image file format contains a header record (128 bytes), followed by
-# the image data. The image data is arranged in a Band Interleaved by Line (BIL)
-# format. Each file is virtually unlimited in size - the file structure allows
-# up to 274 billion bytes. The file consists of 512-byte records.
-# 
+# the image data. The image data is arranged in a Band Interleaved by Line
+# (BIL) format. Each file is virtually unlimited in size - the file structure
+# allows up to 274 billion bytes. The file consists of 512-byte records.
+#
 #                 ERDAS IMAGE FILE FORMAT
 #  +----------------------------------------------------------+
 #  |   Record 1 (bytes 1 to 128) Header                       |
@@ -72,7 +72,7 @@ Functions for reading Erdas files.
 #  |                                                          |
 #  |   Data files values begin in bytes 129 and cross over    |
 #  |   record boundaries as necessary.                        |
-#  |   Data are arranged in following order:                  |  
+#  |   Data are arranged in following order:                  |
 #  |                                                          |
 #  |   L - Lines;  C - Channels;  P - Pixels per line;        |
 #  |                                                          |
@@ -90,20 +90,20 @@ Functions for reading Erdas files.
 def open(file):
     '''
     Returns a SpyFile object for an ERDAS/Lan image file.
-    
+
     Arguments:
-    
+
         `file` (str):
-	
-	    Name of the ERDAS/Lan image data file.
-	
+
+            Name of the ERDAS/Lan image data file.
+
     Returns:
-    
-	A SpyFile object for the image file.
-	
+
+        A SpyFile object for the image file.
+
     Raises:
-    
-	IOError
+
+        IOError
     '''
 
     from bilfile import BilFile
@@ -112,8 +112,9 @@ def open(file):
 
     # ERDAS 7.5 headers do not specify byte order so we'll guess little endian.
     # If any of the parameters look weird, we'll try again with big endian.
-    
-    class Params: pass
+
+    class Params:
+        pass
     p = Params()
     p.byte_order = 0
 
@@ -121,10 +122,10 @@ def open(file):
 
     lh = read_erdas_lan_header(find_file_path(file))
     if lh["nbands"] < 0 or lh["nbands"] > 512 or \
-       lh["ncols"] < 0 or lh["ncols"] > 10000 or \
-       lh["nrows"] < 0 or lh["nrows"] > 10000:
-	  p.byte_order = 1
-	  lh = read_erdas_lan_header(file_path, 1)
+        lh["ncols"] < 0 or lh["ncols"] > 10000 or \
+            lh["nrows"] < 0 or lh["nrows"] > 10000:
+        p.byte_order = 1
+        lh = read_erdas_lan_header(file_path, 1)
 
     p.filename = file_path
     p.nbands = lh["nbands"]
@@ -132,28 +133,30 @@ def open(file):
     p.nrows = lh["nrows"]
     p.offset = 128
     if lh["packing"] == 2:
-	p.dtype = np.dtype('i2').char
+        p.dtype = np.dtype('i2').char
     elif lh["packing"] == 0:
-	p.dtype = np.dtype('i1').char
+        p.dtype = np.dtype('i1').char
     elif lh["packing"] == 1:
-	raise Exception('4-bit data type not supported in SPy ERDAS/Lan format handler.')
+        raise Exception(
+            '4-bit data type not supported in SPy ERDAS/Lan format handler.')
     else:
-	raise Exception('Unexpected data type specified in ERDAS/Lan header.')
-    
-    return BilFile(p, lh)    
+        raise Exception('Unexpected data type specified in ERDAS/Lan header.')
+
+    return BilFile(p, lh)
+
 
 def read_erdas_lan_header(fileName, byte_order=0):
     '''Read parameters from a lan file header.
-    
+
     Arguments:
-    
-	fileName (str):
-	
-	    File to open.
-	
-	byte_order (int) [default 0]:
-	
-	    Specifies whether to read as little (0) or big (1) endian.
+
+        fileName (str):
+
+            File to open.
+
+        byte_order (int) [default 0]:
+
+            Specifies whether to read as little (0) or big (1) endian.
     '''
     from exceptions import IOError
     from array import array
@@ -169,7 +172,7 @@ def read_erdas_lan_header(fileName, byte_order=0):
 
     h["type"] = f.read(6)
     if h["type"] not in ('HEAD74', 'HEADER'):
-        raise IOError, 'Does not look like an ERDAS Lan header.'
+        raise IOError('Does not look like an ERDAS Lan header.')
 
     # Read all header data into arrays
     word = array('h')
@@ -178,34 +181,34 @@ def read_erdas_lan_header(fileName, byte_order=0):
     word.fromfile(f, 2)
     f.seek(16)
     if h["type"] == 'HEAD74':
-	dword.fromfile(f, 4)
+        dword.fromfile(f, 4)
     else:
-	float.fromfile(f, 4)
+        float.fromfile(f, 4)
     f.seek(88)
     word.fromfile(f, 2)
     f.seek(106)
     word.fromfile(f, 1)
     float.fromfile(f, 5)
-    
+
     if byte_order != spectral.byte_order:
-	word.byteswap()
-	dword.byteswap()
-	float.byteswap()
+        word.byteswap()
+        dword.byteswap()
+        float.byteswap()
 
     # Unpack all header data
     h["packing"] = word.pop(0)
     h["nbands"] = word.pop(0)
 
     if h["type"] == 'HEAD74':
-	h["ncols"] = dword.pop(0)
-	h["nrows"] = dword.pop(0)
-	h["pixel_xcoord"] = dword.pop(0)
-	h["pixel_ycoord"] = dword.pop(0)
+        h["ncols"] = dword.pop(0)
+        h["nrows"] = dword.pop(0)
+        h["pixel_xcoord"] = dword.pop(0)
+        h["pixel_ycoord"] = dword.pop(0)
     else:
-	h["ncols"] = int(float.pop(0))
-	h["nrows"] = int(float.pop(0))
-	h["pixel_xcoord"] = float.pop(0)
-	h["pixel_ycoord"] = float.pop(0)
+        h["ncols"] = int(float.pop(0))
+        h["nrows"] = int(float.pop(0))
+        h["pixel_xcoord"] = float.pop(0)
+        h["pixel_ycoord"] = float.pop(0)
 
     h["map_type"] = word.pop(0)
     h["nclasses"] = word.pop(0)
@@ -220,8 +223,8 @@ def read_erdas_lan_header(fileName, byte_order=0):
 
     return h
 
+
 def readErdasLanHeader(fileName, byte_order=0):
     warn('readErdasLanHeader has been deprecated.  Use read_erdas_lan_header.',
-	 DeprecationWarning)
+         DeprecationWarning)
     return read_erdas_lan_header(fileName, byte_order)
-

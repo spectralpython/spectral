@@ -29,13 +29,13 @@
 #
 
 '''
-ENVI [#envi-trademark]_ is a popular commercial software package for processing and analyzing
-geospatial imagery.  SPy supports reading imagery with associated ENVI header files
-and reading & writing spectral libraries with ENVI headers.  ENVI files are opened
-automatically by the SPy :func:`~spectral.image` function but can also be called
-explicitly.  It may be necessary to open an ENVI file explicitly if the data file
-is in a separate directory from the header or if the data file has an unusual file
-extension that SPy can not identify.
+ENVI [#envi-trademark]_ is a popular commercial software package for processing
+and analyzing geospatial imagery.  SPy supports reading imagery with associated
+ENVI header files and reading & writing spectral libraries with ENVI headers.
+ENVI files are opened automatically by the SPy :func:`~spectral.image` function
+but can also be called explicitly.  It may be necessary to open an ENVI file
+explicitly if the data file is in a separate directory from the header or if
+the data file has an unusual file extension that SPy can not identify.
 
     >>> import spectral.io.envi as envi
     >>> img = envi.open('cup95eff.int.hdr', '/Users/thomas/spectral_data/cup95eff.int')
@@ -160,19 +160,20 @@ def open(file, image=None):
 
     Returns:
 
-        :class:`spectral.SpyFile` or :class:`spectral.io.envi.SpectralLibrary` object.
+        :class:`spectral.SpyFile` or :class:`spectral.io.envi.SpectralLibrary`
+        object.
 
     Raises:
 
         TypeError, IOError.
 
-    If the specified file is not found in the current directory, all directories
-    listed in the SPECTRAL_DATA environment variable will be searched until the
-    file is found.  Based on the name of the header file, this function will
-    search for the image file in the same directory as the header, looking for a
-    file with the same name as the header but different extension. Extensions
-    recognized are .img, .dat, .sli, and no extension.  Capitalized versions of
-    the file extensions are also searched.
+    If the specified file is not found in the current directory, all
+    directories listed in the SPECTRAL_DATA environment variable will be
+    searched until the file is found.  Based on the name of the header file,
+    this function will search for the image file in the same directory as the
+    header, looking for a file with the same name as the header but different
+    extension. Extensions recognized are .img, .dat, .sli, and no extension.
+    Capitalized versions of the file extensions are also searched.
     '''
 
     import os
@@ -264,11 +265,11 @@ def check_new_filename(hdr_file, img_ext, force):
     image_file = base + img_ext
     if not force:
         if os.path.isfile(hdr_file):
-            raise Exception('Header file %s already exists. Use `force` keyword'
-                            ' to force overwrite.' % hdr_file)
+            raise Exception('Header file %s already exists. Use `force` '
+                            'keyword to force overwrite.' % hdr_file)
         if os.path.isfile(image_file):
-            raise Exception('Image file %s already exists. Use `force` keyword '
-                            'to force overwrite.' % image_file)
+            raise Exception('Image file %s already exists. Use `force` '
+                            'keyword to force overwrite.' % image_file)
     return (hdr_file, image_file)
 
 
@@ -303,15 +304,15 @@ def save_image(hdr_file, image, **kwargs):
         `ext` (str):
 
             The extension to use for the image file.  If not specified, the
-            default extension ".img" will be used.  If `ext` is an empty string,
-            the image file will have the same name as the header but without
-            the ".hdr" extension.
+            default extension ".img" will be used.  If `ext` is an empty
+            string, the image file will have the same name as the header but
+            without the ".hdr" extension.
 
         `interleave` (str):
 
-            The band interleave format to use in the file.  This argument should
-            be one of "bil", "bip", or "bsq".  If not specified, the image will
-            be written in BIP interleave.
+            The band interleave format to use in the file.  This argument
+            should be one of "bil", "bip", or "bsq".  If not specified, the
+            image will be written in BIP interleave.
 
         `byteswap` (bool):
 
@@ -320,15 +321,15 @@ def save_image(hdr_file, image, **kwargs):
 
         `metadata` (dict):
 
-            A dict containing ENVI header parameters (e.g., parameters extracted
-            from a source image).
+            A dict containing ENVI header parameters (e.g., parameters
+            extracted from a source image).
 
-    If the source image being saved was already in ENVI format, then the SpyFile
-    object for that image will contain a `metadata` dict that can be passed as
-    the `metadata` keyword. However, care should be taken to ensure that all
-    the metadata fields from the source image are still accurate (e.g., band
-    names or wavelengths will no longer be correct if the data being saved are
-    from a principal components transformation).
+    If the source image being saved was already in ENVI format, then the
+    SpyFile object for that image will contain a `metadata` dict that can be
+    passed as the `metadata` keyword. However, care should be taken to ensure
+    that all the metadata fields from the source image are still accurate
+    (e.g., band names or wavelengths will no longer be correct if the data
+    being saved are from a principal components transformation).
     '''
     import os
     import __builtin__
@@ -365,7 +366,6 @@ def save_image(hdr_file, image, **kwargs):
     if dtype != data.dtype.char:
         data = data.astype(dtype)
     metadata['data type'] = dtype_to_envi[dtype]
-
     # A few header parameters need to be set independent of what is provided
     # in the supplied metadata.
 
@@ -440,9 +440,9 @@ def create_image(hdr_file, metadata, **kwargs):
         `ext` (str):
 
             The extension to use for the image file.  If not specified, the
-            default extension ".img" will be used.  If `ext` is an empty string,
-            the image file will have the same name as the header but without
-            the ".hdr" extension.
+            default extension ".img" will be used.  If `ext` is an empty
+            string, the image file will have the same name as the header but
+            without the ".hdr" extension.
 
         `memmap_mode` (str):
 
@@ -511,9 +511,10 @@ def create_image(hdr_file, metadata, **kwargs):
 
 class SpectralLibrary:
     '''
-    The envi.SpectralLibrary class holds data contained in an ENVI-formatted spectral
-    library file (.sli files), which stores data as specified by a corresponding .hdr
-    header file.  The primary members of an Envi.SpectralLibrary object are:
+    The envi.SpectralLibrary class holds data contained in an ENVI-formatted
+    spectral library file (.sli files), which stores data as specified by a
+    corresponding .hdr header file.  The primary members of an
+    Envi.SpectralLibrary object are:
 
         `spectra` (:class:`numpy.ndarray`):
 
@@ -570,7 +571,8 @@ class SpectralLibrary:
 
                 Optional text description of the library.
 
-        This method creates two files: `fileBaseName`.hdr and `fileBaseName`.sli.
+        This method creates two files: `fileBaseName`.hdr and
+        `fileBaseName`.sli.
         '''
         import spectral
         import __builtin__

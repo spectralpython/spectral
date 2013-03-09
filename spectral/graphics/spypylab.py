@@ -13,7 +13,7 @@
 #   but WITHOUT ANY WARRANTY; without even the implied warranty of
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #   GNU General Public License for more details.
-#     
+#
 #   You should have received a copy of the GNU General Public License
 #   along with this software; if not, write to
 #
@@ -33,7 +33,8 @@
 A module to use Gnuplot for creating x-y plots of pixel spectra.
 '''
 
-def plot(data, source = None):
+
+def plot(data, source=None):
     '''
     Creates an x-y plot.
 
@@ -49,28 +50,27 @@ def plot(data, source = None):
 
     s = shape(data)
 
-    if source != None and hasattr(source, 'bands'):
-	xvals = source.bands.centers
+    if source is not None and hasattr(source, 'bands'):
+        xvals = source.bands.centers
     else:
-	xvals = None
-    
+        xvals = None
+
     if len(s) == 1:
-	if not xvals:
-	    xvals = range(len(data))
-	p = pylab.plot(xvals, data)
+        if not xvals:
+            xvals = range(len(data))
+        p = pylab.plot(xvals, data)
     elif len(s) == 2:
-	if not xvals:
-	    xvals = range(s[1])
-        p =  pylab.plot(xvals, data[0,:])
+        if not xvals:
+            xvals = range(s[1])
+        p = pylab.plot(xvals, data[0, :])
         pylab.hold(1)
         for i in range(1, s[0]):
             p = pylab.plot(xvals, data[i, :])
     spectral._xyplot = p
     pylab.grid(1)
-    if source != None and hasattr(source, 'bands'):
-	xlabel = source.bands.band_quantity
-	if len(source.bands.band_unit) > 0:
-	    xlabel = xlabel + ' (' + source.bands.band_unit + ')'
-	pylab.xlabel(xlabel)  
+    if source is not None and hasattr(source, 'bands'):
+        xlabel = source.bands.band_quantity
+        if len(source.bands.band_unit) > 0:
+            xlabel = xlabel + ' (' + source.bands.band_unit + ')'
+        pylab.xlabel(xlabel)
     return p
-       

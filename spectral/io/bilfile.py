@@ -13,7 +13,7 @@
 #   but WITHOUT ANY WARRANTY; without even the implied warranty of
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #   GNU General Public License for more details.
-#     
+#
 #   You should have received a copy of the GNU General Public License
 #   along with this software; if not, write to
 #
@@ -35,63 +35,65 @@ Tools for handling files that are band interleaved by line (BIL).
 from spyfile import SpyFile
 import numpy as np
 
+
 class BilFile(SpyFile):
     '''
     A class to represent image files stored with bands interleaved
     by line.
     '''
 
-    def __init__(self, params, metadata = None):
-	import sys, os
-	import numpy as np
+    def __init__(self, params, metadata=None):
+        import sys
+        import os
+        import numpy as np
         import spectral
         self.interleave = spectral.BIL
-        if metadata == None:
+        if metadata is None:
             metadata = {}
-        SpyFile.__init__(self, params, metadata)        
+        SpyFile.__init__(self, params, metadata)
 
-	if (os.path.getsize(self.filename) < sys.maxint):
-	    (R, C, B) = self.shape
-	    self.memmap = np.memmap(self.filename, dtype=self.dtype, mode='r',
-				    offset=self.offset, shape=(R,B,C))
-	else:
-	    self.memmap = None
+        if (os.path.getsize(self.filename) < sys.maxint):
+            (R, C, B) = self.shape
+            self.memmap = np.memmap(self.filename, dtype=self.dtype, mode='r',
+                                    offset=self.offset, shape=(R, B, C))
+        else:
+            self.memmap = None
 
     def read_band(self, band):
         '''Reads a single band from the image.
-	
-	Arguments:
-	
-	    `band` (int):
-	    
-		Index of band to read.
-	
-	Returns:
-	
-	   :class:`numpy.ndarray`
-	   
-		An `MxN` array of values for the specified band.
-	'''
+
+        Arguments:
+
+            `band` (int):
+
+                Index of band to read.
+
+        Returns:
+
+           :class:`numpy.ndarray`
+
+                An `MxN` array of values for the specified band.
+        '''
 
         from array import array
         import numpy
-        
-	if self.memmap != None:
-	    data = np.array(self.memmap[:,band,:])
-	    if self.swap:
-		data.byteswap(True)
-	    if self.scale_factor != 1:
-		data = data / float(self.scale_factor)
-	    return data
+
+        if self.memmap is not None:
+            data = np.array(self.memmap[:, band, :])
+            if self.swap:
+                data.byteswap(True)
+            if self.scale_factor != 1:
+                data = data / float(self.scale_factor)
+            return data
 
         vals = array('b')
         offset = self.offset + band * self.sample_size * self.ncols
 
         f = self.fid
-        
+
         # Pixel format is BIL, so read an entire line at  time.
         for i in range(self.nrows):
-            f.seek(offset + i * self.sample_size * self.nbands * \
+            f.seek(offset + i * self.sample_size * self.nbands *
                    self.ncols, 0)
             vals.fromfile(f, self.ncols * self.sample_size)
 
@@ -100,95 +102,95 @@ class BilFile(SpyFile):
             arr.byteswap(True)
         arr = arr.reshape((self.nrows, self.ncols))
 
-	if self.scale_factor != 1:
-	    return arr / float(self.scale_factor)
+        if self.scale_factor != 1:
+            return arr / float(self.scale_factor)
         return arr
 
     def read_bands(self, bands):
         '''Reads multiple bands from the image.
-	
-	Arguments:
-	
-	    `bands` (list of ints):
-	    
-		Indices of bands to read.
-	
-	Returns:
-	
-	   :class:`numpy.ndarray`
-	   
-		An `MxNxL` array of values for the specified bands. `M` and `N`
-		are the number of rows & columns in the image and `L` equals
-		len(`bands`).
-	'''
+
+        Arguments:
+
+            `bands` (list of ints):
+
+                Indices of bands to read.
+
+        Returns:
+
+           :class:`numpy.ndarray`
+
+                An `MxNxL` array of values for the specified bands. `M` and `N`
+                are the number of rows & columns in the image and `L` equals
+                len(`bands`).
+        '''
 
         from array import array
         import numpy
 
- 	if self.memmap != None:
-	    data = np.array(self.memmap[:,bands,:]).transpose((0, 2, 1))
-	    if self.swap:
-		data.byteswap(True)
-	    if self.scale_factor != 1:
-		data = data / float(self.scale_factor)
-	    return data
+        if self.memmap is not None:
+            data = np.array(self.memmap[:, bands, :]).transpose((0, 2, 1))
+            if self.swap:
+                data.byteswap(True)
+            if self.scale_factor != 1:
+                data = data / float(self.scale_factor)
+            return data
 
-	f = self.fid
+        f = self.fid
 
         arr = numpy.empty((self.nrows, self.ncols, len(bands)), self.dtype)
 
         for j in range(len(bands)):
-  
+
             vals = array('b')
             offset = self.offset + (bands[j]) * self.sample_size * self.ncols
 
             # Pixel format is BIL, so read an entire line at  time.
             for i in range(self.nrows):
-                f.seek(offset + i * self.sample_size * self.nbands * \
+                f.seek(offset + i * self.sample_size * self.nbands *
                        self.ncols, 0)
                 vals.fromfile(f, self.ncols * self.sample_size)
 
-	    band = numpy.fromstring(vals.tostring(), dtype=self.dtype)
-            arr[:,:,j] = band.reshape((self.nrows, self.ncols))
-	if self.swap:
-	    arr.byteswap(True)
+            band = numpy.fromstring(vals.tostring(), dtype=self.dtype)
+            arr[:, :, j] = band.reshape((self.nrows, self.ncols))
+        if self.swap:
+            arr.byteswap(True)
 
-	if self.scale_factor != 1:
-	    return arr / float(self.scale_factor)
+        if self.scale_factor != 1:
+            return arr / float(self.scale_factor)
 
         return arr
 
     def read_pixel(self, row, col):
         '''Reads the pixel at position (row,col) from the file.
-	
-	Arguments:
-	
-	    `row`, `col` (int):
-	    
-		Indices of the row & column for the pixel
-	
-	Returns:
-	
-	   :class:`numpy.ndarray`
-	   
-		A length-`B` array, where `B` is the number of bands in the image.
-	'''
+
+        Arguments:
+
+            `row`, `col` (int):
+
+                Indices of the row & column for the pixel
+
+        Returns:
+
+           :class:`numpy.ndarray`
+
+                A length-`B` array, where `B` is the number of image bands.
+        '''
 
         from array import array
         import numpy
-        
-	if self.memmap != None:
-	    data = np.array(self.memmap[row, :, col])
-	    if self.swap:
-		data.byteswap(True)
-	    if self.scale_factor != 1:
-		data = data / float(self.scale_factor)
-	    return data
+
+        if self.memmap is not None:
+            data = np.array(self.memmap[row, :, col])
+            if self.swap:
+                data.byteswap(True)
+            if self.scale_factor != 1:
+                data = data / float(self.scale_factor)
+            return data
 
         vals = array('b')
         delta = self.sample_size * (self.nbands - 1)
         offset = self.offset + row * self.nbands * self.ncols \
-                 * self.sample_size + col * self.sample_size
+            * self.sample_size + col * self.sample_size
         f = self.fid
 
         ncols = self.ncols
@@ -202,52 +204,53 @@ class BilFile(SpyFile):
         if self.swap:
             pixel.byteswap(True)
 
-	if self.scale_factor != 1:
-	    return pixel / float(self.scale_factor)
+        if self.scale_factor != 1:
+            return pixel / float(self.scale_factor)
         return pixel
 
-    def read_subregion(self, row_bounds, col_bounds, bands = None):
+    def read_subregion(self, row_bounds, col_bounds, bands=None):
         '''
         Reads a contiguous rectangular sub-region from the image.
-	
-	Arguments:
-	
-	    `row_bounds` (2-tuple of ints):
-	    
-		(a, b) -> Rows a through b-1 will be read.
-	
-	    `col_bounds` (2-tuple of ints):
-	    
-		(a, b) -> Columnss a through b-1 will be read.
-	    
-	    `bands` (list of ints):
-	    
-		Optional list of bands to read.  If not specified, all bands
-		are read.
-	
-	Returns:
-	
-	   :class:`numpy.ndarray`
-	   
-		An `MxNxL` array.
+
+        Arguments:
+
+            `row_bounds` (2-tuple of ints):
+
+                (a, b) -> Rows a through b-1 will be read.
+
+            `col_bounds` (2-tuple of ints):
+
+                (a, b) -> Columnss a through b-1 will be read.
+
+            `bands` (list of ints):
+
+                Optional list of bands to read.  If not specified, all bands
+                are read.
+
+        Returns:
+
+           :class:`numpy.ndarray`
+
+                An `MxNxL` array.
         '''
 
         from array import array
         import numpy
 
-	if self.memmap != None:
-	    if bands == None:
-		data = np.array(self.memmap[row_bounds[0]: row_bounds[1], :,
-					    col_bounds[0]: col_bounds[1]])
-	    else:
-		data = np.array(self.memmap[row_bounds[0]: row_bounds[1], bands,
-					    col_bounds[0]: col_bounds[1]])
-	    data = data.transpose((0, 2, 1))
-	    if self.swap:
-		data.byteswap(True)
-	    if self.scale_factor != 1:
-		data = data / float(self.scale_factor)
-	    return data
+        if self.memmap is not None:
+            if bands is None:
+                data = np.array(self.memmap[row_bounds[0]: row_bounds[1], :,
+                                            col_bounds[0]: col_bounds[1]])
+            else:
+                data = np.array(
+                    self.memmap[row_bounds[0]: row_bounds[1], bands,
+                                col_bounds[0]: col_bounds[1]])
+            data = data.transpose((0, 2, 1))
+            if self.swap:
+                data.byteswap(True)
+            if self.scale_factor != 1:
+                data = data / float(self.scale_factor)
+            return data
 
         nSubRows = row_bounds[1] - row_bounds[0]  # Rows in sub-image
         nSubCols = col_bounds[1] - col_bounds[0]  # Cols in sub-image
@@ -256,9 +259,9 @@ class BilFile(SpyFile):
 
         f = self.fid
         f.seek(self.offset, 0)
-        
+
         # Increments between bands
-        if bands == None:
+        if bands is None:
             # Read all bands.
             bands = range(self.nbands)
 
@@ -281,54 +284,54 @@ class BilFile(SpyFile):
             subArray = subArray.reshape((nSubBands, nSubCols))
             if self.swap:
                 subArray.byteswap(True)
-            arr[i - row_bounds[0],:,:] = numpy.transpose(subArray)
+            arr[i - row_bounds[0], :, :] = numpy.transpose(subArray)
 
-	if self.scale_factor != 1:
-	    return arr / float(self.scale_factor)
+        if self.scale_factor != 1:
+            return arr / float(self.scale_factor)
         return arr
-    
 
-    def read_subimage(self, rows, cols, bands = None):
+    def read_subimage(self, rows, cols, bands=None):
         '''
-	Reads arbitrary rows, columns, and bands from the image.
-	
-	Arguments:
-	
-	    `rows` (list of ints):
-	    
-		Indices of rows to read.
-	
-	    `cols` (list of ints):
-	    
-		Indices of columns to read.
-	    
-	    `bands` (list of ints):
-	    
-		Optional list of bands to read.  If not specified, all bands
-		are read.
-	
-	Returns:
-	
-	   :class:`numpy.ndarray`
-	   
-		An `MxNxL` array, where `M` = len(`rows`), `N` = len(`cols`),
-		and `L` = len(bands) (or # of image bands if `bands` == None).
+        Reads arbitrary rows, columns, and bands from the image.
+
+        Arguments:
+
+            `rows` (list of ints):
+
+                Indices of rows to read.
+
+            `cols` (list of ints):
+
+                Indices of columns to read.
+
+            `bands` (list of ints):
+
+                Optional list of bands to read.  If not specified, all bands
+                are read.
+
+        Returns:
+
+           :class:`numpy.ndarray`
+
+                An `MxNxL` array, where `M` = len(`rows`), `N` = len(`cols`),
+                and `L` = len(bands) (or # of image bands if `bands` == None).
         '''
 
         from array import array
         import numpy
-        
-	if self.memmap != None:
-	    if bands == None:
-		data = np.array(self.memmap.take(rows, 0).take(cols, 2))
-	    else:
-		data = np.array(self.memmap.take(rows, 0).take(bands, 1).take(cols, 2))
-	    data = data.transpose((0, 2, 1))
-	    if self.swap:
-		data.byteswap(True)
-	    if self.scale_factor != 1:
-		data = data / float(self.scale_factor)
-	    return data
+
+        if self.memmap is not None:
+            if bands is None:
+                data = np.array(self.memmap.take(rows, 0).take(cols, 2))
+            else:
+                data = np.array(
+                    self.memmap.take(rows, 0).take(bands, 1).take(cols, 2))
+            data = data.transpose((0, 2, 1))
+            if self.swap:
+                data.byteswap(True)
+            if self.scale_factor != 1:
+                data = data / float(self.scale_factor)
+            return data
 
         nSubRows = len(rows)                        # Rows in sub-image
         nSubCols = len(cols)                        # Cols in sub-image
@@ -338,9 +341,9 @@ class BilFile(SpyFile):
 
         f = self.fid
         f.seek(self.offset, 0)
-        
+
         # Increments between bands
-        if bands == None:
+        if bands is None:
             # Read all bands.
             bands = range(self.nbands)
         nSubBands = len(bands)
@@ -349,15 +352,15 @@ class BilFile(SpyFile):
 
         offset = self.offset
         vals = array('b')
-	sample_size = self.sample_size
+        sample_size = self.sample_size
 
         # Pixel format is BIL
         for i in rows:
             for j in cols:
                 for k in bands:
-                    f.seek(offset +                 \
-                           i * d_row +        \
-                           j * d_col +        \
+                    f.seek(offset +
+                           i * d_row +
+                           j * d_col +
                            k * d_band, 0)
                     vals.fromfile(f, sample_size)
         subArray = numpy.fromstring(vals.tostring(), dtype=self.dtype)
@@ -365,31 +368,31 @@ class BilFile(SpyFile):
         if self.swap:
             subArray.byteswap(True)
 
-	if self.scale_factor != 1:
-	    return subArray / float(self.scale_factor)
+        if self.scale_factor != 1:
+            return subArray / float(self.scale_factor)
         return subArray
 
     def read_datum(self, i, j, k):
         '''Reads the band `k` value for pixel at row `i` and column `j`.
-	
-	Arguments:
-	
-	    `i`, `j`, `k` (integer):
-	    
-		Row, column and band index, respectively.
-	
-	Using this function is not an efficient way to iterate over bands or
-	pixels. For such cases, use readBands or readPixel instead.	
-	'''
+
+        Arguments:
+
+            `i`, `j`, `k` (integer):
+
+                Row, column and band index, respectively.
+
+        Using this function is not an efficient way to iterate over bands or
+        pixels. For such cases, use readBands or readPixel instead.
+        '''
         import array
 
-	if self.memmap != None:
-	    datum = self.memmap[i, k, j]
-	    if self.swap:
-		datum = datum.byteswap()
-	    if self.scale_factor != 1:
-		datum /= float(self.scale_factor)
-	    return datum
+        if self.memmap is not None:
+            datum = self.memmap[i, k, j]
+            if self.swap:
+                datum = datum.byteswap()
+            if self.scale_factor != 1:
+                datum /= float(self.scale_factor)
+            return datum
 
         d_col = self.sample_size
         d_band = d_col * self.ncols
@@ -401,5 +404,4 @@ class BilFile(SpyFile):
         arr = np.fromstring(vals.tostring(), dtype=self.dtype)
         if self.swap:
             arr.byteswap(True)
-	return arr.tolist()[0] / float(self.scale_factor)
-        
+        return arr.tolist()[0] / float(self.scale_factor)

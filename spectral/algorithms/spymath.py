@@ -14,7 +14,7 @@
 #   but WITHOUT ANY WARRANTY; without even the implied warranty of
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #   GNU General Public License for more details.
-#     
+#
 #   You should have received a copy of the GNU General Public License
 #   along with this software; if not, write to
 #
@@ -35,16 +35,17 @@ Miscellaneous math functions
 
 import numpy as np
 
+
 def matrix_sqrt(X, symmetric=False):
     '''Returns the matrix square root of X.
-    
+
     Arguments:
-    
+
         `X` (square class::`numpy.ndarrray`)
-	
-	`symmetric` (optional, False by default):
-	
-	    If True, `X` is assumed to be symmetric, which speeds up
+
+        `symmetric` (optional, False by default):
+
+            If True, `X` is assumed to be symmetric, which speeds up
             calculation of the square root.
 
     Returns a class::`numpy.ndarray` `S`, such that S.dot(S) = X
@@ -57,4 +58,3 @@ def matrix_sqrt(X, symmetric=False):
         return V.dot(SRV).dot(V.T)
     else:
         return V.dot(SRV).dot(np.linalg.inv(V))
-

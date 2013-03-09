@@ -13,7 +13,7 @@
 #   but WITHOUT ANY WARRANTY; without even the implied warranty of
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #   GNU General Public License for more details.
-#     
+#
 #   You should have received a copy of the GNU General Public License
 #   along with this software; if not, write to
 #
@@ -28,35 +28,36 @@
 # Thomas Boggs, tboggs@users.sourceforge.net
 #
 
+
 class ColorScale:
     '''
     A color scale class to map scalar values to rgb colors.  The class allows
-    associating colors with particular scalar values, setting a background color
-    (for values below threshold), andadjusting the scale limits. The
-    :meth:`__call__` operator takes a scalar input and returns the corresponding
-    color, interpolating between defined colors.
-    '''    
-    def __init__(self, levels, colors, num_tics = 256):
+    associating colors with particular scalar values, setting a background
+    color (for values below threshold), andadjusting the scale limits. The
+    :meth:`__call__` operator takes a scalar input and returns the
+    corresponding color, interpolating between defined colors.
+    '''
+    def __init__(self, levels, colors, num_tics=256):
         '''
         Creates the ColorScale.
 
         Arguments:
-	
+
             `levels` (list of numbers):
-	    
-		Scalar levels to which the `colors` argument will correspond.
-	    
+
+                Scalar levels to which the `colors` argument will correspond.
+
             `colors` (list of 3-tuples):
-	    
-		RGB 3-tuples that define the colors corresponding to `levels`.
-	    
-	    `num_tics` (int):
-	    
-		The total number of colors in the scale, not including the
-		background color.  This includes the colors given in the
-		`colors` argument, as well as interpolated color values.
+
+                RGB 3-tuples that define the colors corresponding to `levels`.
+
+            `num_tics` (int):
+
+                The total number of colors in the scale, not including the
+                background color.  This includes the colors given in the
+                `colors` argument, as well as interpolated color values.
         '''
-	import numpy as np
+        import numpy as np
         if len(colors.shape) != 2 or colors.shape[1] != 3:
             raise 'colors array has invalid shape.'
         if len(levels) != colors.shape[0]:
@@ -67,15 +68,16 @@ class ColorScale:
             levels = [float(x) for x in levels]
         elif isinstance(levels, np.ndarray):
             levels = levels.astype(np.float)
-            
+
         self.span = levels[-1] - levels[0]
         self.max = levels[-1]
         self.min = levels[0]
-        self.tics = np.array(range(num_tics), np.float) * (self.span / num_tics) + self.min
+        self.tics = np.array(
+            range(num_tics), np.float) * (self.span / num_tics) + self.min
         self.colorTics = np.zeros([self.tics.shape[0], 3], np.int)
         self.size = len(self.tics)
         self.bgColor = np.array([0, 0, 0])
-        
+
         j = 1
         dcolor = colors[1] - colors[0]
         dlevel = levels[1] - levels[0]
@@ -84,8 +86,8 @@ class ColorScale:
                 j += 1
                 dcolor = colors[j] - colors[j - 1]
                 dlevel = levels[j] - levels[j - 1]
-            self.colorTics[i] = (colors[j - 1] + (self.tics[i] - levels[j - 1]) \
-                                                 / dlevel * dcolor).astype(np.int)
+            self.colorTics[i] = (colors[j - 1] + (self.tics[i] - levels[j - 1])
+                                 / dlevel * dcolor).astype(np.int)
 
     def __call__(self, val):
         '''Returns the scale color associated with the given value.'''
@@ -94,15 +96,16 @@ class ColorScale:
         elif val >= self.max:
             return self.colorTics[-1]
         else:
-            return self.colorTics[int((float(val) - self.min) / self.span * self.size)]
+            return self.colorTics[int((float(val) - self.min)
+                                  / self.span * self.size)]
 
     def set_background_color(color):
         '''Sets RGB color used for values below the scale minimum.
-	
-	Arguments:
-	
-	    `color` (3-tuple): An RGB triplet
-	'''
+
+        Arguments:
+
+            `color` (3-tuple): An RGB triplet
+        '''
         if type(color) in (list, tuple):
             color = array(color)
         if len(color.shape) != 1 or color.shape[0] != 3:
@@ -111,9 +114,9 @@ class ColorScale:
 
     def set_range(self, min, max):
         '''Sets the min and max values of the color scale.
-	
-	The distribution of colors within the scale will stretch or shrink
-	accordingly.
+
+        The distribution of colors within the scale will stretch or shrink
+        accordingly.
         '''
         self.min = min
         self.max = max
@@ -123,11 +126,11 @@ class ColorScale:
 def create_default_color_scale():
     '''Returns a black-blue-green-red-white color scale.'''
     from numpy.oldnumeric import array
-    mycolors = array([[  0,   0,   0],
-                      [  0,   0, 255],
-                      [  0, 255,   0],
-                      [255,   0,   0],
-                      [255, 255,   0],
+    mycolors = array([[0, 0, 0],
+                      [0, 0, 255],
+                      [0, 255, 0],
+                      [255, 0, 0],
+                      [255, 255, 0],
                       [255, 255, 255]])
     levels = array([0., 10., 20., 30., 40., 50.])
     scale = ColorScale(levels, mycolors)

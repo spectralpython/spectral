@@ -13,7 +13,7 @@
 #   but WITHOUT ANY WARRANTY; without even the implied warranty of
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #   GNU General Public License for more details.
-#     
+#
 #   You should have received a copy of the GNU General Public License
 #   along with this software; if not, write to
 #
@@ -38,24 +38,26 @@ is in SpyWxPythonThread.py.
 
 viewer = None
 
+
 class SpyWxPythonThreadStarter:
     def start(self):
         '''Starts the GUI thread.'''
-        import thread,time
+        import thread
+        import time
         thread.start_new_thread(self.run, ())
 
     def run(self):
         '''
         This is the first function executed in the wxWindows thread.
         It creates the wxApp and starts the main event loop.
-        '''    
+        '''
         from spywxpythonthread import WxImageServer
         self.app = WxImageServer(0)
         self.app.MainLoop()
 
     def view(self, rgb, **kwargs):
         '''Sends a view request to the wxWindows thread.'''
-        
+
         import spywxpythonthread
         evt = spywxpythonthread.view_imageRequest(rgb, **kwargs)
         spywxpythonthread.wx.PostEvent(self.app.catcher, evt)
@@ -69,7 +71,7 @@ def init():
 
 def view(*args, **kwargs):
     '''Displays an image in a wxWindows frame.'''
-    
+
     import graphics
     from spectral import Image
     from numpy.oldnumeric import UnsignedInt8
@@ -81,9 +83,8 @@ def view(*args, **kwargs):
     if isinstance(args[0], Image):
         kwargs["data source"] = args[0]
 
-    if not kwargs.has_key("colors"):
+    if "colors" not in kwargs:
         rgb = (rgb * 255).astype(UnsignedInt8)
     else:
         rgb = rgb.astype(UnsignedInt8)
     viewer.view(rgb, **kwargs)
-    

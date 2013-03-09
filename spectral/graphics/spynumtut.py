@@ -13,7 +13,7 @@
 #   but WITHOUT ANY WARRANTY; without even the implied warranty of
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #   GNU General Public License for more details.
-#     
+#
 #   You should have received a copy of the GNU General Public License
 #   along with this software; if not, write to
 #
@@ -31,6 +31,7 @@
 
 '''A module for using the NumTut module to display SPy images.'''
 
+
 def view(*args, **kwargs):
     import NumTut
     import graphics
@@ -38,4 +39,3 @@ def view(*args, **kwargs):
 
     rgb = apply(Graphics.get_image_display_data, args, kwargs)
     NumTut.view(transpose(rgb, (1, 0, 2)))
-    

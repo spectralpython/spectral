@@ -13,7 +13,7 @@
 #   but WITHOUT ANY WARRANTY; without even the implied warranty of
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #   GNU General Public License for more details.
-#     
+#
 #   You should have received a copy of the GNU General Public License
 #   along with this software; if not, write to
 #
@@ -35,36 +35,39 @@ Functions for handling AVIRIS image files.
 from exceptions import DeprecationWarning
 from warnings import warn
 
-def open(file, band_file = None):
+
+def open(file, band_file=None):
     '''
     Returns a SpyFile object for an AVIRIS image file.
-    
+
     Arguments:
-    
+
         `file` (str):
-	
-	    Name of the AVIRIS data file.
-	
-	`band_file` (str):
-	
-	    Optional name of the AVIRIS spectral calibration file.
-	
+
+            Name of the AVIRIS data file.
+
+        `band_file` (str):
+
+            Optional name of the AVIRIS spectral calibration file.
+
     Returns:
-    
-	A SpyFile object for the image file.
-	
+
+        A SpyFile object for the image file.
+
     Raises:
-    
-	IOError
+
+        IOError
     '''
 
     import numpy as np
     from spectral.io.bipfile import BipFile
-    import os, glob
+    import os
+    import glob
     from exceptions import IOError
     from spyfile import find_file_path
 
-    class Params: pass
+    class Params:
+        pass
     p = Params()
 
     p.filename = find_file_path(file)
@@ -72,45 +75,47 @@ def open(file, band_file = None):
     p.ncols = 614
     fileSize = os.stat(p.filename)[6]
     if fileSize % 275072 != 0:
-        raise IOError, 'File size not consitent with Aviris format.'
+        raise IOError('File size not consitent with Aviris format.')
     p.nrows = int(fileSize / 275072)
     p.dtype = np.dtype('i2').char
     p.offset = 0
     p.byte_order = 1
-    metadata = {'default bands' : ['29', '18', '8']}
+    metadata = {'default bands': ['29', '18', '8']}
 
     img = BipFile(p, metadata)
     img.scale_factor = 10000.0
-    
+
     if band_file:
-	img.bands = read_aviris_bands(find_file_path(band_file))
+        img.bands = read_aviris_bands(find_file_path(band_file))
     else:
-	# Let user know if band cal files are available
-	fileDir = os.path.split(p.filename)[0]
-	calFiles = glob.glob(fileDir + '/*.spc')
-	if len(calFiles) > 0:
-	    print '\nThe following band calibration files are located in the same ' \
-	          'directory as the opened AVIRIS file:\n'
-	    for f in calFiles:
-		print "    " + os.path.split(f)[1]
-	    print '\nTo associate a band calibration file with an AVIRIS data file, ' \
-	          're-open the AVIRIS file with the following syntax:\n'
-	    print '    >>> img = aviris.open(fileName, calFileName)\n'
+        # Let user know if band cal files are available
+        fileDir = os.path.split(p.filename)[0]
+        calFiles = glob.glob(fileDir + '/*.spc')
+        if len(calFiles) > 0:
+            print '\nThe following band calibration files are located in ' \
+                'the same directory as the opened AVIRIS file:\n'
+            for f in calFiles:
+                print "    " + os.path.split(f)[1]
+            print '\nTo associate a band calibration file with an AVIRIS ' \
+                  'data file, re-open the AVIRIS file with the following ' \
+                  'syntax:\n'
+            print '    >>> img = aviris.open(fileName, calFileName)\n'
     return img
+
 
 def read_aviris_bands(cal_filename):
     '''
     Returns a BandInfo object for an AVIRIS spectral calibration file.
-    
+
     Arguments:
-    
+
         `cal_filename` (str):
-	
-	    Name of the AVIRIS spectral calibration file.
+
+            Name of the AVIRIS spectral calibration file.
 
     Returns:
-    
-	A :class:`spectral.BandInfo` object
+
+        A :class:`spectral.BandInfo` object
     '''
     import __builtin__
     from spectral import BandInfo
@@ -118,7 +123,7 @@ def read_aviris_bands(cal_filename):
     bands = BandInfo()
     bands.band_quantity = 'Wavelength'
     bands.band_unit = 'nm'
-    
+
     fin = __builtin__.open(find_file_path(cal_filename))
     rows = [line.split() for line in fin]
     rows = [[float(x) for x in row] for row in rows if len(row) == 5]
@@ -130,7 +135,8 @@ def read_aviris_bands(cal_filename):
     bands.band_unit = 'nm'
     return bands
 
+
 def readAvirisBands(calFilename):
     warn('readAvirisBands has been deprecated.  Use read_aviris_bands.',
-	 DeprecationWarning)
+         DeprecationWarning)
     return read_aviris_bands(cal_filename)

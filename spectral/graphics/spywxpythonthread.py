@@ -14,7 +14,7 @@
 #   but WITHOUT ANY WARRANTY; without even the implied warranty of
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #   GNU General Public License for more details.
-#     
+#
 #   You should have received a copy of the GNU General Public License
 #   along with this software; if not, write to
 #
@@ -47,8 +47,10 @@ from spectral.graphics import *
 #wxEVT_VIEW_IMAGE = wxID_HIGHEST + 1
 wxEVT_VIEW_IMAGE = 50002
 
+
 def EVT_VIEW_IMAGE(win, func):
     win.Connect(-1, -1, wxEVT_VIEW_IMAGE, func)
+
 
 class view_imageRequest(wx.PyEvent):
     '''A request for a new image.'''
@@ -58,22 +60,23 @@ class view_imageRequest(wx.PyEvent):
         self.rgb = rgb
         self.kwargs = kwargs
 
+
 class HiddenCatcher(wx.Frame):
     '''
         The "catcher" frame in the second thread.
         It is invisible.  It's only job is to receive
-        events from the main thread, and create 
+        events from the main thread, and create
         the appropriate windows.
-    ''' 
+    '''
     def __init__(self):
-        wx.Frame.__init__(self, None,-1,'')
-        
+        wx.Frame.__init__(self, None, -1, '')
+
         EVT_VIEW_IMAGE(self, self.view_image)
 #        self.bmp = wxBitmap("/dos/myphotos/roll2/can.bmp",
 #                            wxBITMAP_TYPE_BMP)
 
     def view_image(self, evt):
-        if evt.kwargs.has_key('function'):
+        if 'function' in evt.kwargs:
             frame = evt.kwargs['function']()
             frame.Show(True)
             self.app.SetTopWindow(frame)
@@ -91,7 +94,7 @@ class WxImageFrame(wx.Frame):
     displaying an x-y plot of the spectrum for the associated pixel.
     '''
     def __init__(self, parent, index, rgb, **kwargs):
-        if kwargs.has_key('title'):
+        if 'title' in kwargs:
             title = kwargs['title']
         else:
             title = 'SPy Image'
@@ -108,7 +111,6 @@ class WxImageFrame(wx.Frame):
         self.SetClientSizeWH(self.bmp.GetWidth(), self.bmp.GetHeight())
         EVT_PAINT(self, self.on_paint)
         EVT_LEFT_DCLICK(self, self.left_double_click)
-
 
     def on_paint(self, e):
         dc = wx.PaintDC(self)
@@ -128,9 +130,9 @@ class WxImageFrame(wx.Frame):
     def left_double_click(self, evt):
         print (evt.m_y, evt.m_x)
         from spectral import settings
-        if self.kwargs.has_key("data source"):
-            settings.plotter.plot(self.kwargs["data source"][evt.m_y, evt.m_x], \
-				  source = self.kwargs["data source"])
+        if "data source" in self.kwargs:
+            settings.plotter.plot(self.kwargs["data source"][evt.m_y, evt.m_x],
+                                  source=self.kwargs["data source"])
 
 
 class WxImageServer(wx.App):

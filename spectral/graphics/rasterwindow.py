@@ -2,6 +2,7 @@
 import wx
 from spectral.graphics.graphics import SpyWindow
 
+
 class RasterWindow(wx.Frame, SpyWindow):
     '''
     RasterWindow is the primary wxWindows object for displaying SPy
@@ -9,7 +10,7 @@ class RasterWindow(wx.Frame, SpyWindow):
     displaying an x-y plot of the spectrum for the associated pixel.
     '''
     def __init__(self, parent, index, rgb, **kwargs):
-        if kwargs.has_key('title'):
+        if 'title' in kwargs:
             title = kwargs['title']
         else:
             title = 'SPy Image'
@@ -27,7 +28,6 @@ class RasterWindow(wx.Frame, SpyWindow):
         wx.EVT_PAINT(self, self.on_paint)
         wx.EVT_LEFT_DCLICK(self, self.left_double_click)
 
-
     def on_paint(self, e):
         dc = wx.PaintDC(self)
         self.paint(dc)
@@ -41,8 +41,8 @@ class RasterWindow(wx.Frame, SpyWindow):
 
     def left_double_click(self, evt):
         from spectral import settings
-        if self.kwargs.has_key("data source"):
-	    print '(%d,%d)' % (evt.GetY(), evt.GetX())
-            settings.plotter.plot(self.kwargs["data source"] \
-				  [evt.GetY(), evt.GetX()], \
-				  source = self.kwargs["data source"])
+        if "data source" in self.kwargs:
+            print '(%d,%d)' % (evt.GetY(), evt.GetX())
+            settings.plotter.plot(self.kwargs["data source"]
+                                  [evt.GetY(), evt.GetX()],
+                                  source=self.kwargs["data source"])

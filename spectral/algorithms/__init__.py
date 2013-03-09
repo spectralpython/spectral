@@ -14,7 +14,7 @@
 #   but WITHOUT ANY WARRANTY; without even the implied warranty of
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #   GNU General Public License for more details.
-#     
+#
 #   You should have received a copy of the GNU General Public License
 #   along with this software; if not, write to
 #
@@ -30,9 +30,9 @@
 #
 
 from algorithms import (mean_cov, covariance, principal_components, bdist,
-		       linear_discriminant, create_training_classes, ndvi,
-		       orthogonalize, transform_image, unmix, spectral_angles,
-		       calc_stats)
+                        linear_discriminant, create_training_classes, ndvi,
+                        orthogonalize, transform_image, unmix, spectral_angles,
+                        calc_stats)
 from classifiers import GaussianClassifier, MahalanobisDistanceClassifier
 from clustering import L1, L2, kmeans, cluster, isoCluster
 from perceptron import PerceptronClassifier

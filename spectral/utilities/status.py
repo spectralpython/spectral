@@ -13,7 +13,7 @@
 #   but WITHOUT ANY WARRANTY; without even the implied warranty of
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #   GNU General Public License for more details.
-#     
+#
 #   You should have received a copy of the GNU General Public License
 #   along with this software; if not, write to
 #
@@ -28,6 +28,7 @@
 # Thomas Boggs, tboggs@users.sourceforge.net
 #
 
+
 class StatusDisplay:
     '''
     A class to sequentially display percentage completion of an iterative
@@ -40,7 +41,8 @@ class StatusDisplay:
         self.silent = False
         self.percentFormat = '% 5.1f'
         self.textLength = 0
-    def display_percentage(self, text, percent = 0.0, format = '% 5.1f'):
+
+    def display_percentage(self, text, percent=0.0, format='% 5.1f'):
         '''Called when initializing display of a process status.'''
         import sys
         self.overwriteLine = True
@@ -51,7 +53,8 @@ class StatusDisplay:
         self.textLength = len(text)
         if not self.silent:
             sys.stdout.write(text)
-	    sys.stdout.flush()
+            sys.stdout.flush()
+
     def update_percentage(self, percent):
         '''Called whenever an update of the displayed status is desired.'''
         import sys
@@ -60,7 +63,8 @@ class StatusDisplay:
         self.textLength = len(text)
         if not self.silent:
             sys.stdout.write(text)
-	    sys.stdout.flush()
+            sys.stdout.flush()
+
     def end_percentage(self, text='done'):
         '''Prints a final status and resumes normal text display.'''
         import sys
@@ -70,8 +74,9 @@ class StatusDisplay:
         self.textLength = len(text)
         if not self.silent:
             sys.stdout.write(fmt % text)
-	    sys.stdout.flush()
+            sys.stdout.flush()
         self.overwriteLine = False
+
     def write(self, text):
         '''
         Called to display text on a new line without interrupting
@@ -81,6 +86,4 @@ class StatusDisplay:
         if self.overwriteLine and text != '\n':
             sys.stdout.write('\n')
         sys.stdout.write(text)
-	sys.stdout.flush()
-            
-    
+        sys.stdout.flush()

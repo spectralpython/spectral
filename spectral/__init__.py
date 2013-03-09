@@ -14,7 +14,7 @@
 #   but WITHOUT ANY WARRANTY; without even the implied warranty of
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #   GNU General Public License for more details.
-#     
+#
 #   You should have received a copy of the GNU General Public License
 #   along with this software; if not, write to
 #
@@ -42,7 +42,7 @@ BIL = 1
 BIP = 2
 
 from spectral import image, load_training_sets, save_training_sets, settings, \
-     tile_image, spy_colors, BandInfo
+    tile_image, spy_colors, BandInfo
 from io import *
 from algorithms import *
 from graphics import *
