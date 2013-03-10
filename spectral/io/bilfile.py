@@ -80,8 +80,6 @@ class BilFile(SpyFile):
 
         if self.memmap is not None:
             data = np.array(self.memmap[:, band, :])
-            if self.swap:
-                data.byteswap(True)
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
             return data
@@ -98,8 +96,6 @@ class BilFile(SpyFile):
             vals.fromfile(f, self.ncols * self.sample_size)
 
         arr = numpy.fromstring(vals.tostring(), dtype=self.dtype)
-        if self.swap:
-            arr.byteswap(True)
         arr = arr.reshape((self.nrows, self.ncols))
 
         if self.scale_factor != 1:
@@ -129,8 +125,6 @@ class BilFile(SpyFile):
 
         if self.memmap is not None:
             data = np.array(self.memmap[:, bands, :]).transpose((0, 2, 1))
-            if self.swap:
-                data.byteswap(True)
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
             return data
@@ -152,8 +146,6 @@ class BilFile(SpyFile):
 
             band = numpy.fromstring(vals.tostring(), dtype=self.dtype)
             arr[:, :, j] = band.reshape((self.nrows, self.ncols))
-        if self.swap:
-            arr.byteswap(True)
 
         if self.scale_factor != 1:
             return arr / float(self.scale_factor)
@@ -181,8 +173,6 @@ class BilFile(SpyFile):
 
         if self.memmap is not None:
             data = np.array(self.memmap[row, :, col])
-            if self.swap:
-                data.byteswap(True)
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
             return data
@@ -201,8 +191,6 @@ class BilFile(SpyFile):
             vals.fromfile(f, sample_size)
 
         pixel = numpy.fromstring(vals.tostring(), dtype=self.dtype)
-        if self.swap:
-            pixel.byteswap(True)
 
         if self.scale_factor != 1:
             return pixel / float(self.scale_factor)
@@ -246,8 +234,6 @@ class BilFile(SpyFile):
                     self.memmap[row_bounds[0]: row_bounds[1], bands,
                                 col_bounds[0]: col_bounds[1]])
             data = data.transpose((0, 2, 1))
-            if self.swap:
-                data.byteswap(True)
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
             return data
@@ -282,8 +268,6 @@ class BilFile(SpyFile):
                 vals.fromfile(f, nSubCols * sampleSize)
             subArray = numpy.fromstring(vals.tostring(), dtype=self.dtype)
             subArray = subArray.reshape((nSubBands, nSubCols))
-            if self.swap:
-                subArray.byteswap(True)
             arr[i - row_bounds[0], :, :] = numpy.transpose(subArray)
 
         if self.scale_factor != 1:
@@ -327,8 +311,6 @@ class BilFile(SpyFile):
                 data = np.array(
                     self.memmap.take(rows, 0).take(bands, 1).take(cols, 2))
             data = data.transpose((0, 2, 1))
-            if self.swap:
-                data.byteswap(True)
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
             return data
@@ -365,8 +347,6 @@ class BilFile(SpyFile):
                     vals.fromfile(f, sample_size)
         subArray = numpy.fromstring(vals.tostring(), dtype=self.dtype)
         subArray = subArray.reshape((nSubRows, nSubCols, nSubBands))
-        if self.swap:
-            subArray.byteswap(True)
 
         if self.scale_factor != 1:
             return subArray / float(self.scale_factor)
@@ -388,8 +368,6 @@ class BilFile(SpyFile):
 
         if self.memmap is not None:
             datum = self.memmap[i, k, j]
-            if self.swap:
-                datum = datum.byteswap()
             if self.scale_factor != 1:
                 datum /= float(self.scale_factor)
             return datum
@@ -402,6 +380,4 @@ class BilFile(SpyFile):
         vals = array.array('b')
         vals.fromfile(self.fid, self.sample_size)
         arr = np.fromstring(vals.tostring(), dtype=self.dtype)
-        if self.swap:
-            arr.byteswap(True)
         return arr.tolist()[0] / float(self.scale_factor)

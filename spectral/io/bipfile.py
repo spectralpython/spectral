@@ -75,8 +75,6 @@ class BipFile(SpyFile):
 
         if self.memmap is not None:
             data = np.array(self.memmap[:, :, band])
-            if self.swap:
-                data.byteswap(True)
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
             return data
@@ -98,8 +96,6 @@ class BipFile(SpyFile):
 
         arr = np.fromstring(vals.tostring(), dtype=self.dtype)
         arr = arr.reshape(self.nrows, self.ncols)
-        if self.swap:
-            arr.byteswap(True)
 
         if self.scale_factor != 1:
             return arr / float(self.scale_factor)
@@ -126,8 +122,6 @@ class BipFile(SpyFile):
 
         if self.memmap is not None:
             data = np.array(self.memmap[:, :, bands])
-            if self.swap:
-                data.byteswap(True)
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
             return data
@@ -153,8 +147,6 @@ class BipFile(SpyFile):
                 vals.fromfile(f, sample_size)
         arr = np.fromstring(vals.tostring(), dtype=self.dtype)
         arr = arr.reshape(self.nrows, self.ncols, len(bands))
-        if self.swap:
-            arr.byteswap(True)
 
         if self.scale_factor != 1:
             return arr / float(self.scale_factor)
@@ -179,8 +171,6 @@ class BipFile(SpyFile):
 
         if self.memmap is not None:
             data = np.array(self.memmap[row, col, :])
-            if self.swap:
-                data.byteswap(True)
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
             return data
@@ -194,8 +184,6 @@ class BipFile(SpyFile):
         vals.fromfile(f, self.nbands * self.sample_size)
 
         pixel = np.fromstring(vals.tostring(), dtype=self.dtype)
-        if self.swap:
-            pixel.byteswap(True)
 
         if self.scale_factor != 1:
             return pixel / float(self.scale_factor)
@@ -236,8 +224,6 @@ class BipFile(SpyFile):
                 data = np.array(self.memmap[row_bounds[0]: row_bounds[1],
                                             col_bounds[0]: col_bounds[1],
                                             bands])
-            if self.swap:
-                data.byteswap(True)
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
             return data
@@ -283,8 +269,6 @@ class BipFile(SpyFile):
                         vals.fromfile(f, sample_size)
         arr = np.fromstring(vals.tostring(), dtype=self.dtype)
         arr = arr.reshape(nSubRows, nSubCols, nSubBands)
-        if self.swap:
-            arr.byteswap(True)
 
         if self.scale_factor != 1:
             return arr / float(self.scale_factor)
@@ -324,8 +308,6 @@ class BipFile(SpyFile):
             else:
                 data = np.array(
                     self.memmap.take(rows, 0).take(cols, 1).take(bands, 2))
-            if self.swap:
-                data.byteswap(True)
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
             return data
@@ -368,8 +350,6 @@ class BipFile(SpyFile):
 
         arr = np.fromstring(vals.tostring(), dtype=self.dtype)
         arr = arr.reshape(nSubRows, nSubCols, nSubBands)
-        if self.swap:
-            arr.byteswap(True)
 
         if self.scale_factor != 1:
             return arr / float(self.scale_factor)
@@ -391,8 +371,6 @@ class BipFile(SpyFile):
 
         if self.memmap is not None:
             datum = self.memmap[i, j, k]
-            if self.swap:
-                datum = datum.byteswap()
             if self.scale_factor != 1:
                 datum /= float(self.scale_factor)
             return datum
@@ -404,6 +382,4 @@ class BipFile(SpyFile):
         # Pixel format is BIP so read entire pixel.
         vals.fromfile(f, self.sample_size)
         arr = np.fromstring(vals.tostring(), dtype=self.dtype)
-        if self.swap:
-            arr.byteswap(True)
         return arr.tolist()[0] / float(self.scale_factor)

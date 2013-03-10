@@ -77,8 +77,6 @@ class BsqFile(SpyFile):
 
         if self.memmap is not None:
             data = np.array(self.memmap[band, :, :])
-            if self.swap:
-                data.byteswap(True)
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
             return data
@@ -95,8 +93,6 @@ class BsqFile(SpyFile):
 
         arr = np.fromstring(vals.tostring(), dtype=self.dtype)
         arr = arr.reshape(self.nrows, self.ncols)
-        if self.swap:
-            arr.byteswap(True)
 
         if self.scale_factor != 1:
             return arr / float(self.scale_factor)
@@ -124,8 +120,6 @@ class BsqFile(SpyFile):
 
         if self.memmap is not None:
             data = np.array(self.memmap[bands, :, :]).transpose((1, 2, 0))
-            if self.swap:
-                data.byteswap(True)
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
             return data
@@ -146,8 +140,6 @@ class BsqFile(SpyFile):
 
             band = np.fromstring(vals.tostring(), dtype=self.dtype)
             arr[:, :, j] = band.reshape(self.nrows, self.ncols)
-        if self.swap:
-            arr.byteswap(True)
 
         if self.scale_factor != 1:
             return arr / float(self.scale_factor)
@@ -173,8 +165,6 @@ class BsqFile(SpyFile):
 
         if self.memmap is not None:
             data = np.array(self.memmap[:, row, col])
-            if self.swap:
-                data.byteswap(True)
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
             return data
@@ -200,8 +190,6 @@ class BsqFile(SpyFile):
             vals.fromfile(f, sampleSize)
 
         pixel = np.fromstring(vals.tostring(), dtype=self.dtype)
-        if self.swap:
-            pixel.byteswap(True)
 
         if self.scale_factor != 1:
             return pixel / float(self.scale_factor)
@@ -244,8 +232,6 @@ class BsqFile(SpyFile):
                     self.memmap[bands, row_bounds[0]: row_bounds[1],
                                 col_bounds[0]: col_bounds[1]])
             data = data.transpose((1, 2, 0))
-            if self.swap:
-                data.byteswap(True)
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
             return data
@@ -286,8 +272,6 @@ class BsqFile(SpyFile):
                                      dtype=self.dtype).reshape((nSubRows,
                                                                 nSubCols))
             arr[:, :, i] = subArray
-            if self.swap:
-                arr.byteswap(True)
 
         if self.scale_factor != 1:
             return arr / float(self.scale_factor)
@@ -329,8 +313,6 @@ class BsqFile(SpyFile):
                 data = np.array(
                     self.memmap.take(bands, 0).take(rows, 1).take(cols, 2))
             data = data.transpose((1, 2, 0))
-            if self.swap:
-                data.byteswap(True)
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
             return data
@@ -375,8 +357,6 @@ class BsqFile(SpyFile):
         arr = np.fromstring(vals.tostring(), dtype=self.dtype)
         arr = arr.reshape(nSubBands, nSubRows, nSubCols)
         arr = np.transpose(arr, (1, 2, 0))
-        if self.swap:
-            arr.byteswap(True)
 
         if self.scale_factor != 1:
             return arr / float(self.scale_factor)
@@ -398,8 +378,6 @@ class BsqFile(SpyFile):
 
         if self.memmap is not None:
             datum = self.memmap[k, i, j]
-            if self.swap:
-                datum = datum.byteswap()
             if self.scale_factor != 1:
                 datum /= float(self.scale_factor)
             return datum
@@ -415,6 +393,4 @@ class BsqFile(SpyFile):
         vals = array.array('b')
         vals.fromfile(self.fid, sampleSize)
         arr = np.fromstring(vals.tostring(), dtype=self.dtype)
-        if self.swap:
-            arr.byteswap(True)
         return arr.tolist()[0] / float(self.scale_factor)

@@ -223,8 +223,6 @@ class SpyFile(Image):
         data.fromfile(self.fid, self.nrows * self.ncols *
                       self.nbands * self.sample_size)
         npArray = np.fromstring(data.tostring(), dtype=self.dtype)
-        if self.swap:
-            npArray.byteswap(True)
         if self.interleave == spectral.BIL:
             npArray.shape = (self.nrows, self.nbands, self.ncols)
             npArray = npArray.transpose([0, 2, 1])

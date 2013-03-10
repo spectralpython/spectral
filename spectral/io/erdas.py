@@ -106,9 +106,11 @@ def open(file):
         IOError
     '''
 
+    import numpy as np
+    import spectral
     from bilfile import BilFile
     from spyfile import find_file_path
-    import numpy as np
+
 
     # ERDAS 7.5 headers do not specify byte order so we'll guess little endian.
     # If any of the parameters look weird, we'll try again with big endian.
@@ -133,14 +135,16 @@ def open(file):
     p.nrows = lh["nrows"]
     p.offset = 128
     if lh["packing"] == 2:
-        p.dtype = np.dtype('i2').char
+        p.dtype = np.dtype('i2').str
     elif lh["packing"] == 0:
-        p.dtype = np.dtype('i1').char
+        p.dtype = np.dtype('i1').str
     elif lh["packing"] == 1:
         raise Exception(
             '4-bit data type not supported in SPy ERDAS/Lan format handler.')
     else:
         raise Exception('Unexpected data type specified in ERDAS/Lan header.')
+    if spectral.byte_order != 0:
+        p.dtype = np.dtype(p.dtype).newbyteorder().str
 
     return BilFile(p, lh)
 

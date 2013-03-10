@@ -121,8 +121,8 @@ def gen_params(envi_header):
 
         A dict or an `.hdr` file name
     '''
-
     from exceptions import TypeError
+    import spectral
 
     if not isinstance(envi_header, dict):
         from spyfile import find_file_path
@@ -139,7 +139,9 @@ def gen_params(envi_header):
     p.ncols = int(h["samples"])
     p.offset = int(h["header offset"])
     p.byte_order = int(h["byte order"])
-    p.dtype = envi_to_dtype[h["data type"]]
+    p.dtype = np.dtype(envi_to_dtype[h["data type"]]).str
+    if p.byte_order != spectral.byte_order:
+        p.dtype = np.dtype(p.dtype).newbyteorder().str
     p.filename = None
     return p
 
@@ -216,8 +218,6 @@ def open(file, image=None):
         # File is a spectral library
         data = numpy.fromfile(p.filename, p.dtype, p.ncols * p.nrows)
         data.shape = (p.nrows, p.ncols)
-        if (p.byte_order != spectral.byte_order):
-            data = data.byteswap()
         return SpectralLibrary(data, h, p)
 
     #  Create the appropriate object type for the interleave format.
@@ -390,11 +390,11 @@ def save_image(hdr_file, image, **kwargs):
     if kwargs.get('byteswap', False):
         metadata['byte order'] = 1 * (not spectral.byte_order)
         # Only swap bytes if we weren't going to already
-        if not swap:
+        if data.dtype.isnative:
             data = data.byteswap()
     else:
         metadata['byte order'] = spectral.byte_order
-        if swap:
+        if not data.dtype.isnative:
             data = data.byteswap()
 
     write_envi_header(hdr_file, metadata, is_library=False)
@@ -470,6 +470,9 @@ def create_image(hdr_file, metadata, **kwargs):
     metadata = metadata.copy()
     if kwargs.get('dtype'):
         metadata['data type'] = dtype_to_envi[dtype(kwargs['dtype']).char]
+        dt = np.dtype(kwargs['dtype']).char
+    else:
+        dt = np.dtype(params.dtype).char
     metadata['byte order'] = spectral.byte_order
     params = gen_params(metadata)
     params.filename = img_file
@@ -487,19 +490,19 @@ def create_image(hdr_file, metadata, **kwargs):
         raise ValueError('Invalid interleave specified: %s.' % str(inter))
     if inter.lower() == 'bil':
         from spectral.io.bilfile import BilFile
-        memmap = np.memmap(img_file, dtype=params.dtype, mode=memmap_mode,
+        memmap = np.memmap(img_file, dtype=dt, mode=memmap_mode,
                            offset=params.offset, shape=(R, B, C))
         img = BilFile(params, metadata)
         img.memmap = memmap
     elif inter.lower() == 'bip':
         from spectral.io.bipfile import BipFile
-        memmap = np.memmap(img_file, dtype=params.dtype, mode=memmap_mode,
+        memmap = np.memmap(img_file, dtype=dt, mode=memmap_mode,
                            offset=params.offset, shape=(R, C, B))
         img = BipFile(params, metadata)
         img.memmap = memmap
     else:
         from spectral.io.bsqfile import BsqFile
-        memmap = np.memmap(img_file, dtype=params.dtype, mode=memmap_mode,
+        memmap = np.memmap(img_file, dtype=dt, mode=memmap_mode,
                            offset=params.offset, shape=(B, R, C))
         img = BsqFile(params, metadata)
         img.memmap = memmap

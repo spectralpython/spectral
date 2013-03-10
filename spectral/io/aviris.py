@@ -65,6 +65,7 @@ def open(file, band_file=None):
     import glob
     from exceptions import IOError
     from spyfile import find_file_path
+    import spectral
 
     class Params:
         pass
@@ -77,10 +78,13 @@ def open(file, band_file=None):
     if fileSize % 275072 != 0:
         raise IOError('File size not consitent with Aviris format.')
     p.nrows = int(fileSize / 275072)
-    p.dtype = np.dtype('i2').char
-    p.offset = 0
     p.byte_order = 1
+    p.dtype = np.dtype('i2').str
+    if spectral.byte_order != 1:
+        print 'SWAPPING'
+        p.dtype = np.dtype(p.dtype).newbyteorder().str
     metadata = {'default bands': ['29', '18', '8']}
+    p.offset = 0
 
     img = BipFile(p, metadata)
     img.scale_factor = 10000.0

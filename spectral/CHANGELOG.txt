@@ -2,6 +2,22 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2013-03-09	tboggs <tboggs@users.sourceforge.net>
+
+    Applied autopep8 to all files.
+
+    Switched to using byte order in image dtypes (rather than swapping bytes
+    after reading data) for performance and simplification.
+
+    * io/aviris.py (open): Set byte order in dtype.
+    * io/bilfile.py (BilFile.read_*): Set byte order in dtype.
+    * io/bipfile.py (BilFile.read_*): Set byte order in dtype.
+    * io/bsqfile.py (BilFile.read_*): Set byte order in dtype.
+    * io/envi.py (open, gen_params, save_image, create_image): Set byte
+      order in dtype.
+    * io/erdas.py (open): Set byte order in dtype.
+    * io/spyfile.py (load): Set byte order in dtype.
+
 2013-03-07	tboggs <tboggs@users.sourceforge.net>
 
     Fixed setting `status` object in top-level package and allow
