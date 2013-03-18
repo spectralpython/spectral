@@ -339,13 +339,13 @@ def make_pil_image(*args, **kwargs):
     return im
 
 
-def save_image(*args, **kwargs):
+def save_rgb(*args, **kwargs):
     '''
     Saves a viewable image to a JPEG (or other format) file.
 
     Usage::
 
-        save_image(data, bands=None, **kwargs)
+        save_rgb(data, bands=None, **kwargs)
 
     Arguments:
 
@@ -617,3 +617,11 @@ def ndwindow(*args, **kwargs):
     warn('Function `ndwindow` has been deprecated.  Use `view_nd`.',
          UserWarning)
     return view_nd(*args, **kwargs)
+
+def save_image(*args, **kwargs):
+    '''See function `save_rgb`.'''
+    msg = 'Function `save_image` has been deprecated.  It has been' \
+         ' replaced by `save_rgb`.'
+    warn(msg, UserWarning)
+    return save_rgb(*args, **kwargs)
+    

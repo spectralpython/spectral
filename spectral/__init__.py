@@ -41,8 +41,8 @@ BSQ = 0
 BIL = 1
 BIP = 2
 
-from spectral import image, load_training_sets, save_training_sets, settings, \
-    tile_image, spy_colors, BandInfo
+from spectral import (open_image, load_training_sets, save_training_sets,
+                      settings, tile_image, spy_colors, BandInfo)
 from io import *
 from algorithms import *
 from graphics import *
@@ -50,6 +50,9 @@ from database import *
 
 # Import some submodules into top-level namespace
 import algorithms.detectors as detectors
+
+# Deprecated functions
+from spectral import image
 
 from spectral import _init
 _init()

@@ -270,7 +270,7 @@ class ImageArray(numpy.ndarray, Image):
         return self.read_datum(i, j, k)
 
 
-def image(file):
+def open_image(file):
     '''
     Locates & opens the specified hyperspectral image.
 
@@ -438,3 +438,10 @@ def loadTrainingSets(file, im=0):
     warn('load_training_sets has been deprecated.  Use load_training_sets.',
          DeprecationWarning)
     return load_training_sets(file, im)
+
+def image(*args, **kwargs):
+    '''See function `open_image`.'''
+    msg = 'Function `image` has been deprecated.  It has been ' \
+         'replaced by `open_image`.'
+    warn(msg, UserWarning)
+    return open_image(*args, **kwargs)
