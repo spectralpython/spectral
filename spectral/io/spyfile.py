@@ -112,6 +112,8 @@ import numpy
 import numpy as np
 from spectral.spectral import Image
 
+class FileNotFoundError(Exception):
+    pass
 
 def find_file_path(filename):
     '''
@@ -128,7 +130,10 @@ def find_file_path(filename):
             pathname = testpath
             break
     if not pathname:
-        raise IOError('Unable to locate file %s' % filename)
+        msg = 'Unable to locate file "%s". If the file exists, ' \
+          'use its full path or place its directory in the ' \
+          'SPECTRAL_DATA environment variable.'  % filename
+        raise FileNotFoundError(msg)
     return pathname
 
 
