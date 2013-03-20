@@ -41,7 +41,7 @@ Let's open our sample image.
 
     In [1]: from spectral import *
 
-    In [2]: img = image('92AV3C.lan')
+    In [2]: img = open_image('92AV3C.lan')
 
     In [3]: img.__class__
     Out[3]: spectral.io.bilfile.BilFile
