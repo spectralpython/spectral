@@ -1,0 +1,226 @@
+#########################################################################
+#
+#   spyfile.py - This file is part of the Spectral Python (SPy) package.
+#
+#   Copyright (C) 2013 Thomas Boggs
+#
+#   Spectral Python is free software; you can redistribute it and/
+#   or modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   Spectral Python is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this software; if not, write to
+#
+#               Free Software Foundation, Inc.
+#               59 Temple Place, Suite 330
+#               Boston, MA 02111-1307
+#               USA
+#
+#########################################################################
+#
+# Send comments to:
+# Thomas Boggs, tboggs@users.sourceforge.net
+#
+# spyfile.py
+
+import numpy as np
+from numpy.testing import assert_almost_equal
+from spytest import SpyTest, test_method
+
+class SpyFileTest(SpyTest):
+    '''Tests that SpyFile methods read data correctly from files.'''
+    def __init__(self, file, datum, value):
+        '''
+        Arguments:
+
+            `file` (str or `SpyFile`):
+
+                The SpyFile to be tested.  This can be either the name of the
+                file or a SpyFile object that has already been opened.
+
+            `datum` (3-tuple of ints):
+
+                (i, j, k) are the row, column and band of the datum to be
+                tested. 'i' and 'j' should be at least 10 pixels away from the
+                edge of the associated image and `k` should have at least 10
+                bands above and below it in the image.
+
+            `value` (int or float):
+
+                The scalar value associated with location (i, j, k) in
+                the image.
+        '''
+        self.file = file
+        self.datum = datum
+        self.value = value
+
+    def setup(self):
+        import spectral
+        if isinstance(self.file, spectral.SpyFile):
+            self.image = self.file
+        else:
+            self.image = spectral.open_image(self.file)
+
+    @test_method
+    def test_read_datum(self):
+        assert_almost_equal(self.image.read_datum(*self.datum),
+                            self.value)
+
+    @test_method
+    def test_read_pixel(self):
+        (i, j, k) = self.datum
+        assert_almost_equal(self.image.read_pixel(i, j)[k],
+                            self.value)
+        
+    @test_method
+    def test_read_band(self):
+        (i, j, k) = self.datum
+        assert_almost_equal(self.image.read_band(k)[i, j],
+                            self.value)
+    @test_method
+    def test_read_bands(self):
+        (i, j, k) = self.datum
+        bands = (k - 5, k - 2, k, k + 1)
+        assert_almost_equal(self.image.read_bands(bands)[i, j, 2],
+                            self.value)
+
+    @test_method
+    def test_read_subregion(self):
+        (i, j, k) = self.datum
+        region = self.image.read_subregion((i - 5, i + 9),
+                                           (j - 3, j + 4))
+        assert_almost_equal(region[5, 3, k], self.value)
+
+    @test_method
+    def test_read_subimage(self):
+        (i, j, k) = self.datum
+        subimage = self.image.read_subimage([0, 3, i, 5],
+                                            [1, j, 4, 7],
+                                            [3, 7, k])
+        assert_almost_equal(subimage[2, 1, 2], self.value)
+        subimage = self.image.read_subimage([0, 3, i, 5],
+                                            [1, j, 4, 7])
+        assert_almost_equal(subimage[2, 1, k], self.value)
+
+    @test_method
+    def test_load(self):
+        (i, j, k) = self.datum
+        data = self.image.load()
+        assert_almost_equal(data[i, j, k], self.value)
+        
+    @test_method
+    def test_getitem(self):
+        (i, j, k) = self.datum
+        assert_almost_equal(self.image[i, j][k], self.value)
+        assert_almost_equal(self.image[i, j, k], self.value)
+
+    def run(self):
+        '''Executes the test case.'''
+        self.setup()
+        self.test_read_datum()
+        self.test_read_pixel()
+        self.test_read_band()
+        self.test_read_bands()
+        self.test_read_subimage()
+        self.test_read_subregion()
+        self.test_getitem()
+        self.test_load()
+        self.finish()
+
+
+class SpyFileTestSuite(object):
+    '''Tests reading by byte orders, data types, and interleaves. For a
+    specified image file name, the test suite will verify proper reading of
+    data for various combinations of data type, interleave (BIL, BIP, BSQ),
+    and  byte order (little- and big-endian). A new file is created
+    for each combination of parameters for testing.
+    '''
+    def __init__(self, filename, datum, value, **kwargs):
+        '''
+        Arguments:
+
+            `filename` (str):
+
+                Name of the image file to be tested.
+
+            `datum` (3-tuple of ints):
+
+                (i, j, k) are the row, column and band of the datum  to be
+                tested. 'i' and 'j' should be at least 10 pixels away from the
+                edge of the associated image and `k` should have at least 10
+                bands above and below it in the image.
+
+            `value` (int or float):
+
+                The scalar value associated with location (i, j, k) in
+                the image.
+
+        Keyword Arguments:
+
+            `dtypes` (tuple of numpy dtypes):
+
+                The file will be tested for all of the dtypes given. If not
+                specified, only float32 an float64 will be tested.
+        '''
+        self.filename = filename
+        self.datum = datum
+        self.value = value
+        self.dtypes = kwargs.get('dtypes', ('f4', 'f8'))
+        self.dtypes = [np.dtype(d).name for d in self.dtypes]
+    def run(self):
+        import os
+        import itertools
+        import spectral
+        testdir = 'spectral_test_files'
+        if not os.path.isdir(testdir):
+            os.mkdir(testdir)
+        image = spectral.open_image(self.filename)
+        basename = os.path.join(testdir,
+                                os.path.splitext(self.filename)[0])
+        interleaves = ('bil', 'bip', 'bsq')
+        ends = ('big', 'little')
+        cases = itertools.product(interleaves, self.dtypes, ends)
+        for (inter, dtype, endian) in cases:
+            fname = '%s_%s_%s_%s.hdr' % (basename, inter, dtype,
+                                         endian)
+            spectral.envi.save_image(fname, image, interleave=inter,
+                                     dtype=dtype, byteorder=endian)
+            msg = 'Running tests on %s %s %s-endian file ' \
+              % (inter.upper(), np.dtype(dtype).name, endian)
+            testimg = spectral.open_image(fname)
+            if testimg.memmap is not None:
+                print msg + 'using memmap...'
+                test = SpyFileTest(testimg, self.datum, self.value)
+                test.run()
+                print msg + 'without memmap...'
+                testimg.memmap = None
+                test = SpyFileTest(testimg, self.datum, self.value)
+                test.run()
+            else:
+                print msg + 'without memmap...'
+                test = SpyFileTest(testimg, self.datum, self.value)
+                test.run()
+                
+def run():
+    from spectral.io.spyfile import find_file_path, FileNotFoundError
+    
+    tests = [('92AV3C.lan', (99, 99, 99), 2058.0),
+             ('f970619t01p02_r02_sc04.a.rfl',(99, 99, 99), 0.2311),
+             ('cup95eff.int.hdr', (99, 99, 33), 1.842)]
+    for (fname, datum, value) in tests:
+        try:
+            check = find_file_path(fname)
+            suite = SpyFileTestSuite(fname, datum, value,
+                                     dtypes=('i2', 'i4', 'f4', 'f8'))
+            suite.run()
+        except FileNotFoundError:
+            print 'File "%s" not found. Skipping.' % f
+
+if __name__ == '__main__':
+    run()

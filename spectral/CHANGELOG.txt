@@ -2,7 +2,26 @@
 # Spectral Python (SPy) package change log
 ################################################################################
 
+2013-03-20	tboggs <tboggs@users.sourceforge.net>
+
+    Added unit-testing sub-package.
+
+    * tests/__init__.py: New file.
+    * tests/run.py: New file to execute all standard unit tests.
+    * tests/spyfile.py: New file for testing SpyFile I/O.
+    * tests/spytest.py: New file with base class for unit tests.
+
+    Changed envi.save option from `byteswap` to `byteorder`.
+
+    * io/envi.py (save_image): Switched to `byteorder` keyword.
+
 2013-03-19	tboggs <tboggs@users.sourceforge.net>
+
+    * io/spyfile.py:
+      (FileNotFoundError): New class
+      (find_file_path): raise FileNotFoundError.
+
+2013-03-18	tboggs <tboggs@users.sourceforge.net>
 
     Replaced `image` and `save_image` with `open_image` and
     `save_rgb`, respectively.
