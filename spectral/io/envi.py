@@ -314,10 +314,13 @@ def save_image(hdr_file, image, **kwargs):
             should be one of "bil", "bip", or "bsq".  If not specified, the
             image will be written in BIP interleave.
 
-        `byteswap` (bool):
+        `byteorder` (bool):
 
-            If True, image data will be byteswapped before writing to disk.
-            Otherwise native byte order will be used.
+            Specifies the byte order (endian-ness) of the data as
+            writte to disk. For little endian, this value should be
+            either 0 or "little".  For big endian, it should be
+            either 1 or "big". If not specified, native byte order
+            will be used.
 
         `metadata` (dict):
 
@@ -332,6 +335,7 @@ def save_image(hdr_file, image, **kwargs):
     being saved are from a principal components transformation).
     '''
     import os
+    import sys
     import __builtin__
     import spectral
     from spectral.io.spyfile import SpyFile, interleave_transpose
@@ -339,6 +343,14 @@ def save_image(hdr_file, image, **kwargs):
     metadata = kwargs.get('metadata', {}).copy()
     force = kwargs.get('force', False)
     img_ext = kwargs.get('ext', '.img')
+    
+    endian_out = str(kwargs.get('byteorder', sys.byteorder)).lower()
+    if endian_out in ('0', 'little'):
+        endian_out = 'little'
+    elif endian_out in ('1', 'big'):
+        endian_out = 'big'
+    else:
+        raise ValueError('Invalid byte order: "%s".' % endian_out)
 
     (hdr_file, img_file) = check_new_filename(hdr_file, img_ext, force)
 
@@ -387,18 +399,13 @@ def save_image(hdr_file, image, **kwargs):
     if interleave != src_interleave:
         data = data.transpose(interleave_transpose(src_interleave, interleave))
     metadata['interleave'] = interleave
-    if kwargs.get('byteswap', False):
-        metadata['byte order'] = 1 * (not spectral.byte_order)
-        # Only swap bytes if we weren't going to already
-        if data.dtype.isnative:
-            data = data.byteswap()
-    else:
-        metadata['byte order'] = spectral.byte_order
-        if not data.dtype.isnative:
-            data = data.byteswap()
+    metadata['byte order'] = 1 if endian_out == 'big' else 0
+    if (endian_out == sys.byteorder and not data.dtype.isnative) or \
+      (endian_out != sys.byteorder and data.dtype.isnative):
+        data = data.byteswap()
 
     write_envi_header(hdr_file, metadata, is_library=False)
-    print 'Writing file', img_file
+    print 'Saving', img_file
     bufsize = data.shape[0] * data.shape[1] * np.dtype(dtype).itemsize
     fout = __builtin__.open(img_file, 'wb', bufsize)
     fout.write(data.tostring())
