@@ -413,7 +413,7 @@ def load_training_sets(file, im=0):
         if im:
             s.image = im
         else:
-            s.image = image(s.image)
+            s.image = open_image(s.image)
         sets.append(s)
 
     f.close()
