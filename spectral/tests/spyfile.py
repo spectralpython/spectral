@@ -33,6 +33,7 @@ import numpy as np
 from numpy.testing import assert_almost_equal
 from spytest import SpyTest, test_method
 
+
 class SpyFileTest(SpyTest):
     '''Tests that SpyFile methods read data correctly from files.'''
     def __init__(self, file, datum, value):
@@ -77,12 +78,13 @@ class SpyFileTest(SpyTest):
         (i, j, k) = self.datum
         assert_almost_equal(self.image.read_pixel(i, j)[k],
                             self.value)
-        
+
     @test_method
     def test_read_band(self):
         (i, j, k) = self.datum
         assert_almost_equal(self.image.read_band(k)[i, j],
                             self.value)
+
     @test_method
     def test_read_bands(self):
         (i, j, k) = self.datum
@@ -113,7 +115,7 @@ class SpyFileTest(SpyTest):
         (i, j, k) = self.datum
         data = self.image.load()
         assert_almost_equal(data[i, j, k], self.value)
-        
+
     @test_method
     def test_getitem(self):
         (i, j, k) = self.datum
@@ -173,6 +175,7 @@ class SpyFileTestSuite(object):
         self.value = value
         self.dtypes = kwargs.get('dtypes', ('f4', 'f8'))
         self.dtypes = [np.dtype(d).name for d in self.dtypes]
+
     def run(self):
         import os
         import itertools
@@ -192,7 +195,7 @@ class SpyFileTestSuite(object):
             spectral.envi.save_image(fname, image, interleave=inter,
                                      dtype=dtype, byteorder=endian)
             msg = 'Running tests on %s %s %s-endian file ' \
-              % (inter.upper(), np.dtype(dtype).name, endian)
+                % (inter.upper(), np.dtype(dtype).name, endian)
             testimg = spectral.open_image(fname)
             if testimg.memmap is not None:
                 print msg + 'using memmap...'
@@ -206,13 +209,14 @@ class SpyFileTestSuite(object):
                 print msg + 'without memmap...'
                 test = SpyFileTest(testimg, self.datum, self.value)
                 test.run()
-                
+
+
 def run():
     from spectral.io.spyfile import find_file_path, FileNotFoundError
-    
+
     tests = [('92AV3C.lan', (99, 99, 99), 2057.0),
-             ('f970619t01p02_r02_sc04.a.rfl',(99, 99, 99), 0.2311),
-             ('cup95eff.int.hdr', (99, 99, 33), 1.842)]
+             ('f970619t01p02_r02_sc04.a.rfl', (99, 99, 99), 0.2311),
+             ('cup95eff.int.hdr', (99, 99, 33), 0.1842)]
     for (fname, datum, value) in tests:
         try:
             check = find_file_path(fname)
