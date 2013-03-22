@@ -81,7 +81,6 @@ def open(file, band_file=None):
     p.byte_order = 1
     p.dtype = np.dtype('i2').str
     if spectral.byte_order != 1:
-        print 'SWAPPING'
         p.dtype = np.dtype(p.dtype).newbyteorder().str
     metadata = {'default bands': ['29', '18', '8']}
     p.offset = 0

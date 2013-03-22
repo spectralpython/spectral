@@ -314,10 +314,10 @@ def save_image(hdr_file, image, **kwargs):
             should be one of "bil", "bip", or "bsq".  If not specified, the
             image will be written in BIP interleave.
 
-        `byteorder` (bool):
+        `byteorder` (int or string):
 
             Specifies the byte order (endian-ness) of the data as
-            writte to disk. For little endian, this value should be
+            written to disk. For little endian, this value should be
             either 0 or "little".  For big endian, it should be
             either 1 or "big". If not specified, native byte order
             will be used.
