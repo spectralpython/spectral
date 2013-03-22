@@ -35,7 +35,7 @@ if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option('-c', '--continue', dest='continue_tests',
                       action='store_true', default=False,
-                      help='Continue with remaining tests after a '\
+                      help='Continue with remaining tests after a '
                            'failed test.')
     (options, args) = parser.parse_args()
     spectral.tests.abort_on_fail = not options.continue_tests
