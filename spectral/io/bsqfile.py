@@ -51,7 +51,6 @@ class BsqFile(SpyFile):
         SpyFile.__init__(self, params, metadata)
 
         if (os.path.getsize(self.filename) < sys.maxint):
-            print 'CREATING MEMMAP'
             (R, C, B) = self.shape
             self.memmap = np.memmap(self.filename, dtype=self.dtype, mode='r',
                                     offset=self.offset, shape=(B, R, C))
