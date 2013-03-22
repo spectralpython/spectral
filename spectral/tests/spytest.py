@@ -28,12 +28,15 @@
 # Thomas Boggs, tboggs@users.sourceforge.net
 #
 
+
 class SpyTest(object):
     '''Base class for test cases.'''
     def setup(self):
         pass
+
     def finish(self):
         pass
+
 
 def test_method(method):
     '''Decorator function for unit tests.'''
@@ -49,4 +52,3 @@ def test_method(method):
                 raise
             print 'FAILED'
     return meth
-
