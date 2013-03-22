@@ -10,6 +10,7 @@
     * tests/run.py: New file to execute all standard unit tests.
     * tests/spyfile.py: New file for testing SpyFile I/O.
     * tests/spytest.py: New file with base class for unit tests.
+    * tests/transforms.py: New file for testing LinearTransform objects.
 
     Changed envi.save option from `byteswap` to `byteorder`.
 
