@@ -32,6 +32,7 @@ import numpy as np
 from numpy.testing import assert_almost_equal
 from spytest import SpyTest, test_method
 
+
 class LinearTransformTest(SpyTest):
     '''Tests that LinearTransform objects produce correct values.'''
     def __init__(self, file, datum, value):
@@ -111,8 +112,8 @@ class LinearTransformTest(SpyTest):
         result = transform(self.image[i, j])[k]
         assert_almost_equal(result,
                             self.scalar * (self.pre + self.value)
-                              + self.post)
-###
+                            + self.post)
+
     @test_method
     def test_matrix_multiply(self):
         from spectral.algorithms.transforms import LinearTransform
@@ -149,7 +150,7 @@ class LinearTransformTest(SpyTest):
         result = transform(self.image[i, j])[k]
         assert_almost_equal(result,
                             self.scalar * (self.pre + self.value)
-                              + self.post)
+                            + self.post)
 
     def run(self):
         '''Executes the test case.'''
@@ -163,6 +164,7 @@ class LinearTransformTest(SpyTest):
         self.test_matrix_multiply_post()
         self.test_pre_matrix_multiply_post()
         self.finish()
+
 
 def run():
     import spectral as spy
@@ -179,4 +181,3 @@ def run():
 
 if __name__ == '__main__':
     run()
-
