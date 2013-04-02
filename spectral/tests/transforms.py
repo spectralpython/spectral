@@ -27,6 +27,17 @@
 # Send comments to:
 # Thomas Boggs, tboggs@users.sourceforge.net
 #
+'''Runs unit tests for linear transforms of spectral data & data files.
+
+The unit tests in this module assume the example file "92AV3C.lan" is in the
+spectral data path.  After the file is opened, unit tests verify that
+LinearTransform objects created with SpyFile and numpy.ndarray objects yield
+the correct values for known image data values.
+
+To run the unit tests, type the following from the system command line:
+
+    # python -m spectral.tests.transforms
+'''
 
 import numpy as np
 from numpy.testing import assert_almost_equal

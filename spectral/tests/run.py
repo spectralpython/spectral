@@ -27,7 +27,12 @@
 # Send comments to:
 # Thomas Boggs, tboggs@users.sourceforge.net
 #
-'''Runs a set of unit tests for the spectral package.'''
+'''Runs a set of unit tests for the spectral package.
+
+To run all unit tests, type the following from the system command line:
+
+    # python -m spectral.tests.run
+'''
 
 if __name__ == '__main__':
     import spectral.tests

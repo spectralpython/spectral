@@ -28,6 +28,18 @@
 # Thomas Boggs, tboggs@users.sourceforge.net
 #
 # spyfile.py
+'''Runs unit tests of spectral file I/O functions.
+
+The unit tests in this module assume the example file "92AV3C.lan" is in the
+spectral data path.  After the file is opened it is saved in various formats
+(different combinations of byte order, interleave, and data type) and for each
+file written, the new file is opened and known data values are read and checked
+to verify they are read properly.
+
+To run the unit tests, type the following from the system command line:
+
+    # python -m spectral.tests.spyfile
+'''
 
 import numpy as np
 from numpy.testing import assert_almost_equal
