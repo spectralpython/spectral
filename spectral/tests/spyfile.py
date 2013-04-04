@@ -236,7 +236,7 @@ def run():
                                      dtypes=('i2', 'i4', 'f4', 'f8'))
             suite.run()
         except FileNotFoundError:
-            print 'File "%s" not found. Skipping.' % f
+            print 'File "%s" not found. Skipping.' % fname
 
 if __name__ == '__main__':
     run()
