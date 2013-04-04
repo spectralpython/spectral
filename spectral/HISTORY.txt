@@ -4,6 +4,44 @@
 # This file contains release notes for various SPy releases
 ################################################################################
 
+SPy 0.11
+================================================================================
+Release date: 2013.04.03
+
+New Featues
+-----------
+
+* RX anomaly detector.
+
+* Ability to save and create images in ENVI format.
+
+* Added `GaussianStats` class (returned by `calc_stats`). This class can be
+  transformed by a `LinearTransform`.  It has a `get_whitening_transform`
+  method that returns a callable transform to whiten image data.
+
+* Added a unit-testing sub-package (`spectral.tests`)
+
+Changes
+-------
+
+* Changed severals function to accept GaussianStats objects instead of
+  sepaarate mean & covariance.
+
+* Changed names of several functions for consistency:
+
+  - `open_image` replaces `image`.
+
+  - `save_rgb` replaces `save_image`
+
+* Improved support for additional data types by reading byte strings into
+  numpy arrays with dtypes instead of using builtin array module.
+
+Bug Fixes
+---------
+
+* 32-bit integer image data  was not being read properly.
+
+
 SPy 0.10.1
 ================================================================================
 Release date: 2013.02.23

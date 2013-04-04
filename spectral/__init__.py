@@ -29,7 +29,7 @@
 # Thomas Boggs, tboggs@users.sourceforge.net
 #
 
-__version__ = '0.10.1'
+__version__ = '0.11'
 
 import sys
 if sys.byteorder == 'little':
