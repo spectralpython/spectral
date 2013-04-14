@@ -475,13 +475,13 @@ def create_image(hdr_file, metadata, **kwargs):
     (hdr_file, img_file) = check_new_filename(hdr_file, img_ext, force)
 
     metadata = metadata.copy()
+    params = gen_params(metadata)
     if kwargs.get('dtype'):
-        metadata['data type'] = dtype_to_envi[dtype(kwargs['dtype']).char]
+        metadata['data type'] = dtype_to_envi[np.dtype(kwargs['dtype']).char]
         dt = np.dtype(kwargs['dtype']).char
     else:
         dt = np.dtype(params.dtype).char
     metadata['byte order'] = spectral.byte_order
-    params = gen_params(metadata)
     params.filename = img_file
 
     is_library = False
