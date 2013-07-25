@@ -2,6 +2,10 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2013-07-24	tboggs <tboggs@users.sourceforge.net>
+
+    * algorithms/detectors.py (RX.__init__): Initialize background.
+
 2013-04-14	tboggs <tboggs@users.sourceforge.net>
 
     * io/envi.py (create_image): Applied Ferdinand Deger's bug fix patch.

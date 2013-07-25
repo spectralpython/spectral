@@ -143,6 +143,8 @@ class RX():
         from math import sqrt
         if background is not None:
             self.set_background(background)
+        else:
+            self.background = None
 
     def set_background(self, stats):
         '''Sets background statistics to be used when applying the detector.'''
