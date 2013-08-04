@@ -356,22 +356,6 @@ def tile_image(im, nrows, ncols):
     return tiles
 
 
-def help(x):
-    '''
-    Prints the __doc__ string for x.
-
-    USAGE: help(x)
-
-    Note that this produces the same output as 'print x.__doc__'.
-    '''
-
-    # TO DO:
-    # If the arg is a package/module name, make this also print out
-    # the names of its sub-items.
-
-    print x.__doc__
-
-
 def save_training_sets(sets, file):
     '''
     Saves a list of TrainingSet objects to a file.  This function assumes
