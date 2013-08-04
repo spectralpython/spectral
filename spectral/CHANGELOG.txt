@@ -2,6 +2,10 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2013-08-04	tboggs <tboggs@users.sourceforge.net>
+
+    * spectral/spectral.py (help): Removed legacy help function.
+
 2013-07-24	tboggs <tboggs@users.sourceforge.net>
 
     * algorithms/detectors.py (RX.__init__): Initialize background.
