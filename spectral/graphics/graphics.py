@@ -420,23 +420,42 @@ def save_rgb(*args, **kwargs):
 
 
 def get_image_display_data(source, bands=None, **kwargs):
-    '''
-    Extract RGB data to be displayed from a SpyImage or NumPy array.
+    '''Extract RGB data for display from a SpyFile object or numpy array.
 
     USAGE: rgb = get_image_display_data(source [, bands] [stretch = 1]
                     [stretch_all = 1] [bounds = (lower, upper)] )
 
-    source is the data source and can be either a SpyFile object or a
-    NumPy array.  bands is an optional list which specifies the RGB
-    channels to display. If bands is not present and source is a SpyFile
-    object, it's metadata dict will be checked if it contains a "default
-    bands" item.  Otherwise, the first, middle and last band will be
-    displayed. If stretch is defined, the contents of rgb will be scaled
-    so that the maximum value in the display data will be 1. If
-    stretch_all is defined, each color channel will be scaled separately
-    so that its maximum value is 1. If bounds is specified, the data will
-    be scaled so that lower and upper correspond to 0 and 1, respectively
-    . Any values outside of the range (lower, upper) will be clipped.
+    Arguments:
+
+        `source` (:class:`spectral.SpyFile` or :class:`numpy.ndarray`):
+
+            Data source from which to extract the RGB data.
+
+        `bands` (list of `int`) (optional):
+
+            Optional triplet of indices which specifies the bands to extract
+            for the red, green, and blue components, respectively. If this
+            arg is not given, SpyFile object, it's metadata dict will be
+            checked to see if it contains a "default bands" item.  If it does
+            not, then first, middle and last band will be returned.
+
+    Keyword Arguments:
+
+        `stretch` (bool, default True):
+
+            If the `stretch` keyword is True, the RGB values will be scaled
+            so the maximum value in the returned array will be 1.
+
+        `stretch_all` (bool, default False):
+
+            If this keyword is True, each color channel will be scaled
+            separately such that its maximum value is 1.
+
+        `bounds` (2-tuple of scalars):
+
+            If `bounds` is specified, the data will be scaled so that `lower`
+            and `upper` correspond to 0 and 1, respectively. Any values outside
+            of the range (`lower`, `upper`) will be clipped.
     '''
 
     from numpy import take, zeros, repeat, ravel, minimum, maximum, clip, \
