@@ -294,23 +294,12 @@ def view_indexed(*args, **kwargs):
 
 
 def make_pil_image(*args, **kwargs):
-    '''
-    Save data as a JPEG image file.
+    '''Creates a PIL Image object.
 
-    USAGE: view(source [, bands] [stretch = 1] [stretch_all = 1]
-                [bounds = (lower, upper)] )
+    USAGE: make_pil_image(source [, bands] [stretch = 1] [stretch_all = 1]
+                          [bounds = (lower, upper)] )
 
-    source is the data source and can be either a SpyFile object or a
-    NumPy array.  bands is an optional list which specifies the RGB
-    channels to display. If bands is not present and source is a SpyFile
-    object, it's metadata dict will be checked if it contains a "default
-    bands" item.  Otherwise, the first, middle and last band will be
-    displayed. If stretch is defined, the image data will be scaled
-    so that the maximum value in the display data will be 1. If
-    stretch_all is defined, each color channel will be scaled separately
-    so that its maximum value is 1. If bounds is specified, the data will
-    be scaled so that lower and upper correspond to 0 and 1, respectively
-    . Any values outside of the range (lower, upper) will be clipped.
+    See `get_image_display_data` for description of arguments.
     '''
 
     from graphics import get_image_display_data
