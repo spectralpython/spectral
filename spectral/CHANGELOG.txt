@@ -4,6 +4,12 @@
 
 2013-08-04	tboggs <tboggs@users.sourceforge.net>
 
+    Enable setting custom background color in hypercube window.
+
+    * graphics/graphics.py (view_cube): Include `background` in doc string.
+    * graphics/hypercube.py (HypercubeWindow.__init__): Set self.clear_color
+      based on keyword arg, if provided.
+
     * spectral/spectral.py (help): Removed legacy help function.
 
 2013-07-24	tboggs <tboggs@users.sourceforge.net>

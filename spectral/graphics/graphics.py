@@ -159,6 +159,11 @@ def view_cube(data, *args, **kwargs):
 
             Width and height (in pixels) for initial size of the new window.
 
+        `background` (3-tuple of floats):
+
+            Background RGB color of the scene. Each value should be in the
+            range [0, 1]. If not specified, the background will be black.
+
         `title` (str):
 
             Title text to display in the new window frame.

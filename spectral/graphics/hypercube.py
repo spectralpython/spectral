@@ -191,7 +191,8 @@ class HypercubeWindow(wx.Frame, SpyWindow):
         self.canvas.context = wx.glcanvas.GLContext(self.canvas)
 
         # These members can be modified before calling the show method.
-        self.clear_color = (0., 0., 0., 1.)
+        self.clear_color = tuple(kwargs.get('background', (0., 0., 0.))) \
+                           + (1.,)
         self.win_pos = (100, 100)
         self.fovy = 60.
         self.znear = 0.1
@@ -309,32 +310,24 @@ class HypercubeWindow(wx.Frame, SpyWindow):
         import OpenGL.GLU as glu
         self.load_textures()
         gl.glEnable(gl.GL_TEXTURE_2D)
-        gl.glClearColor(0.0, 0.0, 0.0, 0.0)
-                        # This Will Clear The Background Color To Black
-        gl.glClearDepth(
-            1.0)                    # Enables Clearing Of The Depth Buffer
-        gl.glDepthFunc(
-            gl.GL_LESS)                      # The Type Of Depth Test To Do
-        gl.glEnable(gl.GL_DEPTH_TEST)                   # Enables Depth Testing
-        gl.glShadeModel(
-            gl.GL_SMOOTH)                   # Enables Smooth Color Shading
+        gl.glClearColor(*self.clear_color)
+        gl.glClearDepth(1.0)
+        gl.glDepthFunc(gl.GL_LESS)
+        gl.glEnable(gl.GL_DEPTH_TEST)
+        gl.glShadeModel(gl.GL_SMOOTH)
 
         gl.glMatrixMode(gl.GL_PROJECTION)
-        gl.glLoadIdentity()                     # Reset The Projection Matrix
-        # Calculate The Aspect Ratio Of The Window
+        # Reset The projection matrix
+        gl.glLoadIdentity()
+        # Calculate aspect ratio of the window
         (width, height) = self.canvas.GetClientSize()
         glu.gluPerspective(45.0, float(width) / float(height), 0.1, 100.0)
 
         gl.glMatrixMode(gl.GL_MODELVIEW)
-
-        gl.glLightfv(gl.GL_LIGHT0, gl.GL_AMBIENT, (0.5, 0.5, 0.5,
-                     1.0))  # Setup The Ambient Light
-        gl.glLightfv(gl.GL_LIGHT0, gl.GL_DIFFUSE, (1.0, 1.0, 1.0,
-                     1.0))  # Setup The Diffuse Light
-        gl.glLightfv(gl.GL_LIGHT0, gl.GL_POSITION, (0.0, 0.0, 2.0,
-                     1.0))        # Position The Light
+        gl.glLightfv(gl.GL_LIGHT0, gl.GL_AMBIENT, (0.5, 0.5, 0.5, 1.0))
+        gl.glLightfv(gl.GL_LIGHT0, gl.GL_DIFFUSE, (1.0, 1.0, 1.0, 1.0))
+        gl.glLightfv(gl.GL_LIGHT0, gl.GL_POSITION, (0.0, 0.0, 2.0, 1.0))
         gl.glEnable(gl.GL_LIGHT0)
-                    # Enable Light One
 
     def on_paint(self, event):
         """Process the drawing event."""
@@ -353,10 +346,7 @@ class HypercubeWindow(wx.Frame, SpyWindow):
             gl.glDisable(gl.GL_LIGHTING)
 
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
-                   # Clear The Screen And The Depth Buffer
-        gl.glLoadIdentity(
-        )                                     # Reset The View
-
+        gl.glLoadIdentity()
         gl.glPushMatrix()
         glu.gluLookAt(*(list(rtp_to_xyz(
             *self.camera_pos_rtp)) + list(self.target_pos) + list(self.up)))
