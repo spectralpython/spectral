@@ -345,9 +345,13 @@ def save_rgb(*args, **kwargs):
 
     Usage::
 
-        save_rgb(data, bands=None, **kwargs)
+        save_rgb(filename, data, bands=None, **kwargs)
 
     Arguments:
+
+        `filename` (str):
+
+            Name of image file to save (e.g. "rgb.jpg")
 
         `data` (:class:`spectral.Image` or :class:`numpy.ndarray`):
 
@@ -404,7 +408,7 @@ def save_rgb(*args, **kwargs):
 
         Save the same image as **png**::
 
-            save_image('rgb.jpg', img, [29, 19, 9]], format='png')
+            save_image('rgb.png', img, [29, 19, 9]], format='png')
 
         Save classification results using the default color palette (note that
         the color palette must be passed explicitly for `clMap` to be

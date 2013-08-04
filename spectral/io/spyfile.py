@@ -550,9 +550,6 @@ def transform_image(transform, img):
     If `img` is an ndarray, then a `MxNxC` ndarray is returned.  If `img` is
     a :class:`spectral.SpyFile`, then a
     :class:`spectral.spyfile.TransformedImage` is returned.
-
-    If `img` is an ndarr
-
     '''
     import numpy as np
     from spectral.algorithms.transforms import LinearTransform

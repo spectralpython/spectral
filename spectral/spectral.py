@@ -276,7 +276,7 @@ def open_image(file):
 
     Arguments:
 
-        file (str):N
+        file (str):
             Name of the file to open.
 
     Returns:
