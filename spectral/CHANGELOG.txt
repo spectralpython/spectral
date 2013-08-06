@@ -4,6 +4,13 @@
 
 2013-08-06	tboggs <tboggs@users.sourceforge.net>
 
+    Turned `Image` into new-style class.
+
+    * spectral.py:
+      (Image): Now derived from object.
+      (ImageArray.__new__): Fixed to work as new-style class.
+      (ImageArray.__init__): New method.
+
     Renamed `get_image_display_data` to `get_rgb` and avoid exception due
     to missing attributes in ImageArray objects.
 

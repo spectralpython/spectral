@@ -139,7 +139,7 @@ class BandInfo:
         self.band_unit = ""
 
 
-class Image():
+class Image(object):
     '''spectral.Image is the common base class for spectral image objects.'''
 
     def __init__(self, params, metadata=None):
@@ -197,17 +197,20 @@ class ImageArray(numpy.ndarray, Image):
 
     format = 'f'        # Use 4-byte floats form data arrays
 
-    def __new__(subclass, data, spyFile):
+    def __new__(subclass, data, spyfile):
+        obj = numpy.asarray(data).view(subclass)
+        ImageArray.__init__(obj, data, spyfile)
+        return obj
+
+    def __init__(self, data, spyfile):
         from io.spyfile import SpyFile
 
-        obj = numpy.asarray(data).view(ImageArray)
         # Add param data to Image initializer
-        params = spyFile.params()
+        params = spyfile.params()
         params.dtype = data.dtype
         params.swap = 0
-        Image.__init__(obj, params, spyFile.metadata)
-        obj.bands = spyFile.bands
-        return obj
+        Image.__init__(self, params, spyfile.metadata)
+        self.bands = spyfile.bands
 
     def __repr__(self):
         return self.__str__()
