@@ -307,14 +307,12 @@ def make_pil_image(*args, **kwargs):
     See `get_rgb` for description of arguments.
     '''
 
-#    from graphics import get_rgb
     import numpy
     from numpy.oldnumeric import transpose
     import StringIO
     import Image
     import ImageDraw
 
-#    rgb = apply(get_rgb, args, kwargs)
     rgb = get_rgb(*args, **kwargs)
 
     if "colors" not in kwargs:
