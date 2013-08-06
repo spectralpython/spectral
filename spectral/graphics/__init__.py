@@ -29,7 +29,8 @@
 # Thomas Boggs, tboggs@users.sourceforge.net
 #
 
-from graphics import (save_rgb, view, view_indexed, view_cube, view_nd)
+from graphics import (save_rgb, view, view_indexed, view_cube, view_nd,
+                      get_rgb)
 from colorscale import ColorScale
 
 # Deprecated functions

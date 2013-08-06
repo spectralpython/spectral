@@ -108,7 +108,7 @@ def view(*args, **kwargs):
         warn_no_ipython()
     check_wx_app()
 
-    rgb = get_image_display_data(*args, **kwargs)
+    rgb = get_rgb(*args, **kwargs)
 
     # To plot pixel spectrum on double-click, create a reference
     # back to the original SpyFile object.
@@ -304,17 +304,18 @@ def make_pil_image(*args, **kwargs):
     USAGE: make_pil_image(source [, bands] [stretch = 1] [stretch_all = 1]
                           [bounds = (lower, upper)] )
 
-    See `get_image_display_data` for description of arguments.
+    See `get_rgb` for description of arguments.
     '''
 
-    from graphics import get_image_display_data
+#    from graphics import get_rgb
     import numpy
     from numpy.oldnumeric import transpose
     import StringIO
     import Image
     import ImageDraw
 
-    rgb = apply(get_image_display_data, args, kwargs)
+#    rgb = apply(get_rgb, args, kwargs)
+    rgb = get_rgb(*args, **kwargs)
 
     if "colors" not in kwargs:
         rgb = (rgb * 255).astype(numpy.ubyte)
@@ -409,10 +410,6 @@ def save_rgb(*args, **kwargs):
         interpreted as a color map)::
 
             save_image('results.jpg', clMap, colors=spectral.spy_colors)
-
-
-
-
     '''
     im = apply(make_pil_image, args[1:], kwargs)
 
@@ -424,11 +421,11 @@ def save_rgb(*args, **kwargs):
     im.save(args[0], fmt, quality=100)
 
 
-def get_image_display_data(source, bands=None, **kwargs):
+def get_rgb(source, bands=None, **kwargs):
     '''Extract RGB data for display from a SpyFile object or numpy array.
 
-    USAGE: rgb = get_image_display_data(source [, bands] [stretch = 1]
-                    [stretch_all = 1] [bounds = (lower, upper)] )
+    USAGE: rgb = get_rgb(source [, bands] [stretch = 1]
+                         [stretch_all = 1] [bounds = (lower, upper)] )
 
     Arguments:
 
@@ -478,16 +475,17 @@ def get_image_display_data(source, bands=None, **kwargs):
         # Figure out which bands to display
         if len(bands) == 0:
             # No bands specified. What should we show?
-            if 'default bands' in source.metadata:
+            if hasattr(source, 'metadata') and \
+              'default bands' in source.metadata:
                 try:
-                    bands = map(int, source.metadata['default bands'])
+                    bands = [int(b) for b in source.metadata['default bands']]
                 except:
                     pass
-            elif source.nbands == 1:
+            elif source.shape[-1] == 1:
                 bands = [0]
         if len(bands) == 0:
             # Pick the first, middle, and last bands
-            n = source.nbands
+            n = source.shape[-1]
             bands = [0, n / 2, n - 1]
         rgb = source.read_bands(bands).astype(float)
     else:
@@ -515,6 +513,20 @@ def get_image_display_data(source, bands=None, **kwargs):
         else:
             raise Exception('Invalid array shape for image display')
 
+    if 'colorScale' in kwargs:
+        color_scale = kwargs['colorScale']
+        warn('Keyword "colorScale" is deprecated. Use "color_scale"',
+             UserWarning)
+    else:
+        color_scale = kwargs.get('color_scale', None)
+
+    if 'autoScale' in kwargs:
+        auto_scale = kwargs['autoScale']
+        warn('Keyword "autoScale" is deprecated. Use "auto_scale"',
+             UserWarning)
+    else:
+        auto_scale = kwargs.get('auto_scale', False)
+
     # If it's either color-indexed or monochrome
     if rgb.shape[2] == 1:
         s = rgb.shape
@@ -526,12 +538,12 @@ def get_image_display_data(source, bands=None, **kwargs):
                 for j in range(s[1]):
                     rgb3[i, j] = pal[rgb[i, j, 0]]
             rgb = rgb3
-        elif "colorScale" in kwargs and kwargs["colorScale"]:
+        elif color_scale is not None:
             # Colors should be generated from the supplied color scale
             # This section assumes rgb colors in the range 0-255.
             rgb = rgb[:, :, 0]
-            scale = kwargs["colorScale"]
-            if "autoScale" in kwargs and kwargs["autoScale"]:
+            scale = color_scale
+            if auto_scale:
                 scale.set_range(min(rgb.ravel()), max(rgb.ravel()))
             rgb3 = zeros((s[0], s[1], 3), int)
             for i in range(s[0]):
@@ -642,3 +654,9 @@ def save_image(*args, **kwargs):
     warn(msg, UserWarning)
     return save_rgb(*args, **kwargs)
     
+def get_image_display_data(source, bands=None, **kwargs):
+    '''Deprecated function. Use `get_rgb` instead.'''
+    msg = 'Function `get_image_display_data` has been deprecated.  It has' \
+          ' been replaced by `get_rgb`.'
+    warn(msg, UserWarning)
+    return get_rgb(source, bands, **kwargs)

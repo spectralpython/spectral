@@ -74,9 +74,9 @@ def view(*args, **kwargs):
 
     import graphics
     from spectral import Image
-    from numpy.oldnumeric import UnsignedInt8
+    import numpy as np
 
-    rgb = apply(graphics.get_image_display_data, args, kwargs)
+    rgb = graphics.get_rgb(*args, **kwargs)
 
     # To plot pixel spectrum on double-click, create a reference
     # back to the original SpyFile object.
@@ -84,7 +84,7 @@ def view(*args, **kwargs):
         kwargs["data source"] = args[0]
 
     if "colors" not in kwargs:
-        rgb = (rgb * 255).astype(UnsignedInt8)
+        rgb = (rgb * 255).astype(np.uint8)
     else:
-        rgb = rgb.astype(UnsignedInt8)
+        rgb = rgb.astype(np.uint8)
     viewer.view(rgb, **kwargs)

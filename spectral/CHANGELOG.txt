@@ -2,6 +2,23 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2013-08-06	tboggs <tboggs@users.sourceforge.net>
+
+    Renamed `get_image_display_data` to `get_rgb` and avoid exception due
+    to missing attributes in ImageArray objects.
+
+    * graphics/__init__.py: import get_rgb
+    * graphics/graphics.py:
+      (view): get_image_display_data renamed get_rgb.
+      (make_pil_image): Ditto.
+      (get_image_display_data):
+      - Renamed get_rgb.
+      - Handle ImageArray object with missing attributes.
+      - Deprecate colorScale and autoScale kwargs.
+    * graphics/spywxpython.py (view):
+      - get_image_display_data renamed get_rgb.
+      - Replace oldnumeric imports.
+
 2013-08-04	tboggs <tboggs@users.sourceforge.net>
 
     Enable setting custom background color in hypercube window.
