@@ -32,30 +32,38 @@
 Tools for handling files that are band sequential (BSQ).
 '''
 
-from spyfile import SpyFile
+from spyfile import SpyFile, MemmapFile
 import numpy as np
 
 
-class BsqFile(SpyFile):
+class BsqFile(SpyFile, MemmapFile):
     '''
     A class to represent image files stored with bands sequential.
     '''
 
     def __init__(self, params, metadata=None):
-        import sys
-        import os
         import spectral
         self.interleave = spectral.BSQ
         if metadata is None:
             metadata = {}
         SpyFile.__init__(self, params, metadata)
 
+        self._memmap = self._open_memmap('r')
+
+    def _open_memmap(self, mode):
+        import os
+        import sys
         if (os.path.getsize(self.filename) < sys.maxint):
-            (R, C, B) = self.shape
-            self.memmap = np.memmap(self.filename, dtype=self.dtype, mode='r',
-                                    offset=self.offset, shape=(B, R, C))
+            try:
+                (R, C, B) = self.shape
+                return np.memmap(self.filename, dtype=self.dtype, mode=mode,
+                                 offset=self.offset, shape=(B, R, C))
+            except:
+                print 'Unable to create memmap interface.'
+                return None
         else:
-            self.memmap = None
+            return None
+
 
     def read_band(self, band):
         '''Reads a single band from the image.
@@ -74,8 +82,8 @@ class BsqFile(SpyFile):
         '''
         from array import array
 
-        if self.memmap is not None:
-            data = np.array(self.memmap[band, :, :])
+        if self._memmap is not None:
+            data = np.array(self._memmap[band, :, :])
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
             return data
@@ -117,8 +125,8 @@ class BsqFile(SpyFile):
 
         from array import array
 
-        if self.memmap is not None:
-            data = np.array(self.memmap[bands, :, :]).transpose((1, 2, 0))
+        if self._memmap is not None:
+            data = np.array(self._memmap[bands, :, :]).transpose((1, 2, 0))
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
             return data
@@ -162,8 +170,8 @@ class BsqFile(SpyFile):
 
         from array import array
 
-        if self.memmap is not None:
-            data = np.array(self.memmap[:, row, col])
+        if self._memmap is not None:
+            data = np.array(self._memmap[:, row, col])
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
             return data
@@ -222,14 +230,14 @@ class BsqFile(SpyFile):
 
         from array import array
 
-        if self.memmap is not None:
+        if self._memmap is not None:
             if bands is None:
-                data = np.array(self.memmap[:, row_bounds[0]: row_bounds[1],
-                                            col_bounds[0]: col_bounds[1]])
+                data = np.array(self._memmap[:, row_bounds[0]: row_bounds[1],
+                                             col_bounds[0]: col_bounds[1]])
             else:
                 data = np.array(
-                    self.memmap[bands, row_bounds[0]: row_bounds[1],
-                                col_bounds[0]: col_bounds[1]])
+                    self._memmap[bands, row_bounds[0]: row_bounds[1],
+                                 col_bounds[0]: col_bounds[1]])
             data = data.transpose((1, 2, 0))
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
@@ -305,12 +313,12 @@ class BsqFile(SpyFile):
 
         from array import array
 
-        if self.memmap is not None:
+        if self._memmap is not None:
             if bands is None:
-                data = np.array(self.memmap[:].take(rows, 1).take(cols, 2))
+                data = np.array(self._memmap[:].take(rows, 1).take(cols, 2))
             else:
                 data = np.array(
-                    self.memmap.take(bands, 0).take(rows, 1).take(cols, 2))
+                    self._memmap.take(bands, 0).take(rows, 1).take(cols, 2))
             data = data.transpose((1, 2, 0))
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
@@ -375,8 +383,8 @@ class BsqFile(SpyFile):
         '''
         import array
 
-        if self.memmap is not None:
-            datum = self.memmap[k, i, j]
+        if self._memmap is not None:
+            datum = self._memmap[k, i, j]
             if self.scale_factor != 1:
                 datum /= float(self.scale_factor)
             return datum

@@ -141,7 +141,6 @@ class SpyFile(Image):
     '''A base class for accessing spectral image files'''
 
     def __init__(self, params, metadata=None):
-        from spectral import Image
         Image.__init__(self, params, metadata)
         # Number by which to divide values read from file.
         self.scale_factor = 1.0
@@ -151,7 +150,7 @@ class SpyFile(Image):
         import array
         from exceptions import Exception
 
-        spectral.Image.set_params(self, params, metadata)
+        Image.set_params(self, params, metadata)
 
         try:
             self.filename = params.filename
@@ -339,7 +338,7 @@ class SpyFile(Image):
 
     def params(self):
         '''Return an object containing the SpyFile parameters.'''
-        from spectral import Image
+        from spectral.spectral import Image
 
         p = Image.params(self)
 
@@ -709,6 +708,75 @@ class TransformedImage(Image):
                 data[i, j] = self.read_pixel(i, j)[bands]
         return data
 
+class MemmapFile(object):
+    '''Interface class for SpyFile subclasses using `numpy.memmap` objects.'''
+
+    @property
+    def memmap(self):
+        '''Property method to return memmap (using deprecated interface).
+        Call `open_memmap` instead to return a memmap.
+        '''
+        from warnings import warn
+        from exceptions import UserWarning
+        warn('"memmap" member is deprecated. Use image.open_memmap().',
+             UserWarning)
+        return self._memmap
+
+    def _disable_memmap(self):
+        '''Disables memmap and reverts to direct file reads (slower).'''
+        self._memmap = None
+
+    @property
+    def using_memmap(self):
+        '''Returns True if object is using a `numpy.memmap` to read data.'''
+        return self._memmap is not None
+
+    def open_memmap(self, **kwargs):
+        '''Returns a new `numpy.memmap` object for image file data access.
+
+        Keyword Arguments:
+
+            interleave (str):
+
+                Specifies the shape/interleave of the returned object. Must be
+                one of ['bip', 'bil', 'bsq', 'source']. If not specified, the
+                memmap will be returned as 'bip'. If the interleave is
+                'source', the interleave of the memmap will be the same as the
+                source data file. If the number of rows, columns, and bands in
+                the file are R, C, and B, the shape of the returned memmap
+                array will be as follows:
+
+                    'bip' : (R, C, B)
+                    'bil' : (R, B, C)
+                    'bsq' : (B, R, C)
+
+            writable (bool, default False):
+
+                If `writable` is True, modifying values in the returned memmap
+                will result in corresponding modification to the image data
+                file.
+        '''        
+        import spectral as spy
+        from exceptions import ValueError
+        
+        src_inter = {spy.BIL: 'bil',
+                     spy.BIP: 'bip',
+                     spy.BSQ: 'bsq'}[self.interleave]
+        dst_inter = kwargs.get('interleave', 'bip').lower()
+        if dst_inter not in ['bip', 'bil', 'bsq', 'source']:
+            raise ValueError('Invalid interleave specified.')
+        if kwargs.get('writable', False) is True:
+            mode = 'r+'
+        else:
+            mode = 'r'
+        memmap = self._open_memmap(mode)
+        if dst_inter == 'source':
+            dst_inter = src_inter
+        if src_inter == dst_inter:
+            return memmap
+        else:
+            return np.transpose(memmap, interleave_transpose(src_inter,
+                                                             dst_inter))
 
 def interleave_transpose(int1, int2):
     '''Returns the 3-tuple of indices to transpose between interleaves.

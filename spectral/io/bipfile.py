@@ -32,28 +32,36 @@
 Tools for handling files that are band interleaved by pixel (BIP).
 '''
 
-from spyfile import SpyFile
+from spyfile import SpyFile, MemmapFile
 import numpy as np
 
 
-class BipFile(SpyFile):
+class BipFile(SpyFile, MemmapFile):
     '''
     A class to interface image files stored with bands interleaved by pixel.
     '''
     def __init__(self, params, metadata=None):
-        import sys
-        import os
         import spectral
         self.interleave = spectral.BIP
         if metadata is None:
             metadata = {}
         SpyFile.__init__(self, params, metadata)
 
+        self._memmap = self._open_memmap('r')
+
+    def _open_memmap(self, mode):
+        import os
+        import sys
         if (os.path.getsize(self.filename) < sys.maxint):
-            self.memmap = np.memmap(self.filename, dtype=self.dtype, mode='r',
-                                    offset=self.offset, shape=self.shape)
+            try:
+                (R, C, B) = self.shape
+                return np.memmap(self.filename, dtype=self.dtype, mode=mode,
+                                 offset=self.offset, shape=self.shape)
+            except:
+                print 'Unable to create memmap interface.'
+                return None
         else:
-            self.memmap = None
+            return None
 
     def read_band(self, band):
         '''Reads a single band from the image.
@@ -73,8 +81,8 @@ class BipFile(SpyFile):
 
         from array import array
 
-        if self.memmap is not None:
-            data = np.array(self.memmap[:, :, band])
+        if self._memmap is not None:
+            data = np.array(self._memmap[:, :, band])
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
             return data
@@ -120,8 +128,8 @@ class BipFile(SpyFile):
         '''
         from array import array
 
-        if self.memmap is not None:
-            data = np.array(self.memmap[:, :, bands])
+        if self._memmap is not None:
+            data = np.array(self._memmap[:, :, bands])
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
             return data
@@ -169,8 +177,8 @@ class BipFile(SpyFile):
         '''
         from array import array
 
-        if self.memmap is not None:
-            data = np.array(self.memmap[row, col, :])
+        if self._memmap is not None:
+            data = np.array(self._memmap[row, col, :])
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
             return data
@@ -216,14 +224,14 @@ class BipFile(SpyFile):
         '''
         import array
 
-        if self.memmap is not None:
+        if self._memmap is not None:
             if bands is None:
-                data = np.array(self.memmap[row_bounds[0]: row_bounds[1],
-                                            col_bounds[0]: col_bounds[1], :])
+                data = np.array(self._memmap[row_bounds[0]: row_bounds[1],
+                                             col_bounds[0]: col_bounds[1], :])
             else:
-                data = np.array(self.memmap[row_bounds[0]: row_bounds[1],
-                                            col_bounds[0]: col_bounds[1],
-                                            bands])
+                data = np.array(self._memmap[row_bounds[0]: row_bounds[1],
+                                             col_bounds[0]: col_bounds[1],
+                                             bands])
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
             return data
@@ -302,12 +310,12 @@ class BipFile(SpyFile):
         '''
         import array
 
-        if self.memmap is not None:
+        if self._memmap is not None:
             if bands is None:
-                data = np.array(self.memmap.take(rows, 0).take(cols, 1))
+                data = np.array(self._memmap.take(rows, 0).take(cols, 1))
             else:
                 data = np.array(
-                    self.memmap.take(rows, 0).take(cols, 1).take(bands, 2))
+                    self._memmap.take(rows, 0).take(cols, 1).take(bands, 2))
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
             return data
@@ -369,8 +377,8 @@ class BipFile(SpyFile):
         '''
         from array import array
 
-        if self.memmap is not None:
-            datum = self.memmap[i, j, k]
+        if self._memmap is not None:
+            datum = self._memmap[i, j, k]
             if self.scale_factor != 1:
                 datum /= float(self.scale_factor)
             return datum

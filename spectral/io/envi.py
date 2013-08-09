@@ -359,8 +359,8 @@ def save_image(hdr_file, image, **kwargs):
         src_interleave = 'bip'
         swap = False
     elif isinstance(image, SpyFile):
-        if image.memmap is not None:
-            data = image.memmap
+        if image.using_memmap is True:
+            data = image._memmap
             src_interleave = {spectral.BSQ: 'bsq', spectral.BIL: 'bil',
                               spectral.BIP: 'bip'}[image.interleave]
             swap = image.swap
@@ -460,9 +460,8 @@ def create_image(hdr_file, metadata, **kwargs):
 
         `SpyFile` object:
 
-            The returned SpyFile subclass object will have a `numpy.memmmap`
-            object member named `memmap`, which can be used for direct access
-            to the memory-mapped file data.
+            To access a `numpy.memmap` for the return `SpyFile` object, call
+            the `open_memmap` method of the returned object.
     '''
     from exceptions import NotImplementedError, TypeError
     import numpy as np
@@ -500,19 +499,19 @@ def create_image(hdr_file, metadata, **kwargs):
         memmap = np.memmap(img_file, dtype=dt, mode=memmap_mode,
                            offset=params.offset, shape=(R, B, C))
         img = BilFile(params, metadata)
-        img.memmap = memmap
+        img._memmap = memmap
     elif inter.lower() == 'bip':
         from spectral.io.bipfile import BipFile
         memmap = np.memmap(img_file, dtype=dt, mode=memmap_mode,
                            offset=params.offset, shape=(R, C, B))
         img = BipFile(params, metadata)
-        img.memmap = memmap
+        img._memmap = memmap
     else:
         from spectral.io.bsqfile import BsqFile
         memmap = np.memmap(img_file, dtype=dt, mode=memmap_mode,
                            offset=params.offset, shape=(B, R, C))
         img = BsqFile(params, metadata)
-        img.memmap = memmap
+        img._memmap = memmap
 
     # Write the header file after the image to assure write success
     write_envi_header(hdr_file, metadata, is_library=is_library)
