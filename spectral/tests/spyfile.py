@@ -75,7 +75,8 @@ class SpyFileTest(SpyTest):
 
     def setup(self):
         import spectral
-        if isinstance(self.file, spectral.SpyFile):
+        from spectral.io.spyfile import SpyFile
+        if isinstance(self.file, SpyFile):
             self.image = self.file
         else:
             self.image = spectral.open_image(self.file)
@@ -192,6 +193,11 @@ class SpyFileTestSuite(object):
         import os
         import itertools
         import spectral
+
+        print '\n' + '-' * 72
+        print 'Running SpyFile read tests.'
+        print '-' * 72
+
         testdir = 'spectral_test_files'
         if not os.path.isdir(testdir):
             os.mkdir(testdir)
@@ -206,19 +212,25 @@ class SpyFileTestSuite(object):
                                          endian)
             spectral.envi.save_image(fname, image, interleave=inter,
                                      dtype=dtype, byteorder=endian)
-            msg = 'Running tests on %s %s %s-endian file ' \
+            msg = 'Running SpyFile read tests on %s %s %s-endian file ' \
                 % (inter.upper(), np.dtype(dtype).name, endian)
             testimg = spectral.open_image(fname)
-            if testimg.memmap is not None:
+            if testimg.using_memmap is True:
+                print '\n' + '-' * 72
                 print msg + 'using memmap...'
+                print '-' * 72
                 test = SpyFileTest(testimg, self.datum, self.value)
                 test.run()
+                print '\n' + '-' * 72
                 print msg + 'without memmap...'
-                testimg.memmap = None
+                print '-' * 72
+                testimg._disable_memmap()
                 test = SpyFileTest(testimg, self.datum, self.value)
                 test.run()
             else:
+                print '\n' + '-' * 72
                 print msg + 'without memmap...'
+                print '-' * 72
                 test = SpyFileTest(testimg, self.datum, self.value)
                 test.run()
 
