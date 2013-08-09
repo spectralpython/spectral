@@ -74,7 +74,8 @@ class LinearTransformTest(SpyTest):
     def setup(self):
         import numpy as np
         import spectral
-        if isinstance(self.file, spectral.SpyFile):
+        from spectral.io.spyfile import SpyFile
+        if isinstance(self.file, SpyFile):
             self.image = self.file
         elif isinstance(self.file, np.ndarray):
             self.image = self.file
@@ -181,12 +182,21 @@ def run():
     import spectral as spy
     (fname, datum, value) = ('92AV3C.lan', (99, 99, 99), 2057.0)
     image = spy.open_image(fname)
+    print '\n' + '-' * 72
+    print 'Running LinearTransform tests on SpyFile object.'
+    print '-' * 72
     test = LinearTransformTest(image, datum, value)
     test.run()
     data = image.load()
+    print '\n' + '-' * 72
+    print 'Running LinearTransform tests on ImageArray object.'
+    print '-' * 72
     test = LinearTransformTest(data, datum, value)
     test.run()
     image.scale_factor = 10000.0
+    print '\n' + '-' * 72
+    print 'Running LinearTransform tests on SpyFile object with scale factor.'
+    print '-' * 72
     test = LinearTransformTest(image, datum, value / 10000.0)
     test.run()
 
