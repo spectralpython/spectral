@@ -29,7 +29,7 @@
 #
 
 
-from spyfile import *
+from spyfile import SpyFile
 import aviris
 import erdas
 import envi
