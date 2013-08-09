@@ -101,7 +101,7 @@ def view(*args, **kwargs):
     `bands` is specified.
     '''
     import graphics
-    from spectral import Image
+    from spectral.spectral import Image
     from spectral.graphics.rasterwindow import RasterWindow
 
     if not running_ipython():
@@ -458,9 +458,9 @@ def get_rgb(source, bands=None, **kwargs):
             of the range (`lower`, `upper`) will be clipped.
     '''
 
-    from numpy import take, zeros, repeat, ravel, minimum, maximum, clip, \
-        float, int, newaxis
-    from spectral import Image
+    from numpy import (take, zeros, repeat, ravel, minimum, maximum, clip,
+                       float, int, newaxis)
+    from spectral.spectral import Image
     from exceptions import TypeError
 
     if not bands:

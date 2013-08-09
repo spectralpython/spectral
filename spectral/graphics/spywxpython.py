@@ -73,7 +73,7 @@ def view(*args, **kwargs):
     '''Displays an image in a wxWindows frame.'''
 
     import graphics
-    from spectral import Image
+    from spectral.spectral import Image
     import numpy as np
 
     rgb = graphics.get_rgb(*args, **kwargs)
