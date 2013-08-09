@@ -41,6 +41,7 @@ abort_on_fail = True
 
 import spyfile
 import transforms
+import memmap
 
 # List of all submodules to be run from the `run` submodule.
-all_tests = [spyfile, transforms]
+all_tests = [spyfile, memmap, transforms]
