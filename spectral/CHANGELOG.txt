@@ -2,6 +2,27 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2013-08-10	tboggs <tboggs@users.sourceforge.net>
+
+    Accept ndarray as `top` keyword in view_cube.
+
+    * graphics/graphics.py:
+      (view_cube): Update doc string.
+      (get_rgb): Handle case where an ImageArray may have len(shape) < 3.
+      This can happen with the result of calling __getitem__ on an ImageArray.
+    * graphics/hypercube.py (HypercubeWindow.load_textures): Check if `top`
+      keyword is an ndarray.
+
+    Cast ImageArray method results to non-ImageArray types. This prevents
+    misinterpretation by other functions regarding the content of these data
+    items
+
+    * spectral/spectral.py:
+      (ImageArray.read_band): Cast result to ndarray.
+      (ImageArray.read_bands): Cast result to ndarray.
+      (ImageArray.read_pixel): Cast result to ndarray.
+      (ImageArray.read_datum): Cast result to scalar.
+    
 2013-08-09	tboggs <tboggs@users.sourceforge.net>
 
     Added new memmap interface for SpyFile objects.

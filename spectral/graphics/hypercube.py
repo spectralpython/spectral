@@ -221,9 +221,9 @@ class HypercubeWindow(wx.Frame, SpyWindow):
 
     def load_textures(self):
         import numpy as np
-        from Image import open
         import OpenGL.GL as gl
         import spectral
+        from spectral.spectral import Image
         import graphics
         from spectral.graphics.colorscale import default_color_scale
 
@@ -245,6 +245,8 @@ class HypercubeWindow(wx.Frame, SpyWindow):
         # Create image for top of cube
         if 'top' in self.kwargs:
             image = self.kwargs['top']
+            if isinstance(image, np.ndarray):
+                image = graphics.make_pil_image(image)
         else:
             if 'bands' in self.kwargs:
                 bands = self.kwargs['bands']

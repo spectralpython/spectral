@@ -218,19 +218,19 @@ class ImageArray(numpy.ndarray, Image):
 
     def read_band(self, i):
         '''For compatibility with SpyFile objects. Returns arr[:,:,i]'''
-        return self[:, :, i]
+        return numpy.asarray(self[:, :, i])
 
     def read_bands(self, bands):
         '''For SpyFile compatibility. Equivlalent to arr.take(bands, 2)'''
-        return self.take(bands, 2)
+        return numpy.asarray(self.take(bands, 2))
 
     def read_pixel(self, row, col):
         '''For SpyFile compatibility. Equivlalent to arr[row, col]'''
-        return self[row, col]
+        return numpy.asarray(self[row, col])
 
     def read_datum(self, i, j, k):
         '''For SpyFile compatibility. Equivlalent to arr[i, j, k]'''
-        return self[i, j, k]
+        return np.asscalar(self[i, j, k])
 
     def load(self):
         '''For compatibility with SpyFile objects. Returns self'''

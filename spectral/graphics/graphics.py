@@ -145,9 +145,10 @@ def view_cube(data, *args, **kwargs):
             3-tuple specifying which bands from the image data should be
             displayed on top of the cube.
 
-        `top` (:class:`PIL.Image`):
+        `top` (:class:`numpy.ndarray` or :class:`PIL.Image`):
 
-            An alternate bitmap to display on top of the cube.
+            Data to display on top of the cube. This will supercede the
+            `bands` keyword.
 
         `scale` (:class:`spectral.ColorScale`)
 
@@ -469,7 +470,7 @@ def get_rgb(source, bands=None, **kwargs):
         raise Exception("Invalid number of bands specified.")
     monochrome = 0
 
-    if isinstance(source, Image):
+    if isinstance(source, Image) and len(source.shape) == 3:
         # Figure out which bands to display
         if len(bands) == 0:
             # No bands specified. What should we show?
