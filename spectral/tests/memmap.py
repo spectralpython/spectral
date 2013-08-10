@@ -43,11 +43,11 @@ To run the unit tests, type the following from the system command line:
 import numpy as np
 from numpy.testing import assert_almost_equal
 from spytest import SpyTest, test_method
-
+from spectral.tests import testdir
 
 class SpyFileMemmapTest(SpyTest):
     '''Tests that SpyFile memmap interfaces read and write properly.'''
-    def __init__(self, file, datum, value):
+    def __init__(self, file, datum, value, src_inter):
         '''
         Arguments:
 
@@ -67,19 +67,28 @@ class SpyFileMemmapTest(SpyTest):
 
                 The scalar value associated with location (i, j, k) in
                 the image.
+
+            `src_inter` (str):
+
+                Interleave with which to save the source file
         '''
         self.file = file
         self.datum = tuple(datum)
         self.value = value
+        self.src_inter = src_inter
 
     def setup(self):
+        import os
         import spectral
         from spectral.io.spyfile import SpyFile
-        if isinstance(self.file, SpyFile):
-            self.image = self.file
-        else:
-            self.image = spectral.open_image(self.file)
-
+        img = spectral.open_image(self.file)
+        fname = os.path.join(testdir, 'memmap_test_%s.hdr' % self.src_inter)
+        spectral.envi.save_image(fname,
+                                 img,
+                                 dtype = img.dtype,
+                                 interleave = self.src_inter)
+        self.image = spectral.open_image(fname)
+        
     @test_method
     def test_spyfile_has_memmap(self):
         assert(self.image.using_memmap == True)
@@ -175,17 +184,13 @@ class SpyFileMemmapTestSuite(object):
         print '\n' + '-' * 72
         print 'Running memmap tests.'
         print '-' * 72
-        testdir = 'spectral_test_files'
         if not os.path.isdir(testdir):
             os.mkdir(testdir)
-        image = spectral.open_image(self.filename)
-        basename = os.path.join(testdir, 'memmap_test_')
         interleaves = ('bil', 'bip', 'bsq')
         for inter in interleaves:
             print 'Testing memmaps with %s image file.' % inter.upper()
-            fname = basename + inter + '.hdr'
-            spectral.envi.save_image(fname, image, interleave=inter)
-            test = SpyFileMemmapTest(fname, self.datum, self.value)
+            test = SpyFileMemmapTest(self.filename, self.datum, self.value,
+                                     inter)
             test.run()
 
 

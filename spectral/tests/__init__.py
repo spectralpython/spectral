@@ -39,6 +39,9 @@ To run all unit tests, type the following from the system command line:
 # continue.
 abort_on_fail = True
 
+# Subdirectory to be created for unit test files
+testdir = 'spectral_test_files'
+
 import spyfile
 import transforms
 import memmap
