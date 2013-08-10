@@ -238,9 +238,10 @@ class SpyFileTestSuite(object):
 def run():
     from spectral.io.spyfile import find_file_path, FileNotFoundError
 
-    tests = [('92AV3C.lan', (99, 99, 99), 2057.0),
-             ('f970619t01p02_r02_sc04.a.rfl', (99, 99, 99), 0.2311),
-             ('cup95eff.int.hdr', (99, 99, 33), 0.1842)]
+    tests = [('92AV3C.lan', (99, 99, 99), 2057.0)]
+#    tests = [('92AV3C.lan', (99, 99, 99), 2057.0),
+#             ('f970619t01p02_r02_sc04.a.rfl', (99, 99, 99), 0.2311),
+#             ('cup95eff.int.hdr', (99, 99, 33), 0.1842)]
     for (fname, datum, value) in tests:
         try:
             check = find_file_path(fname)
