@@ -193,12 +193,12 @@ class SpyFileTestSuite(object):
         import os
         import itertools
         import spectral
+        from spectral.tests import testdir
 
         print '\n' + '-' * 72
         print 'Running SpyFile read tests.'
         print '-' * 72
 
-        testdir = 'spectral_test_files'
         if not os.path.isdir(testdir):
             os.mkdir(testdir)
         image = spectral.open_image(self.filename)

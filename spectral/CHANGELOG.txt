@@ -2,6 +2,43 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2013-08-09	tboggs <tboggs@users.sourceforge.net>
+
+    Added new memmap interface for SpyFile objects.
+
+    * io/spyfile.py: (MemmapFile): New class for memmap interface.
+    * io/bilfile.py:
+      (BilFile): Class now also derived from MemmapFile.
+      (BilFile.memmap): Renamed to BilFile._memmap.
+      (BilFile._open_memmap): New method for creating new memmaps.
+    * io/bipfile.py:
+      (BipFile): Class now also derived from MemmapFile.
+      (BipFile.memmap): Renamed to BipFile._memmap.
+      (BipFile._open_memmap): New method for creating new memmaps.
+    * io/bsqfile.py:
+      (BsqFile): Class now also derived from MemmapFile.
+      (BsqFile.memmap): Renamed to BsqFile._memmap.
+      (BsqFile._open_memmap): New method for creating new memmaps.
+    * io/envi.py:
+      (save_image): Use new memmap interface.
+      (create_image): Use new memmap interface.
+    * tests/__init__.py: Include memmap unit tests.
+    * tests/memmap.py: New file.
+    * tests/run.py: Include memmap unit tests.
+
+    Print summary stats for unit test results.
+
+    * tests/__init__.py:
+      (_num_tests_run, _num_tests_failed): New members for summary stats.
+      (testdir): Name of directory to create for unit test files.
+    * tests/run.py:
+      (parse_args, reset_stats, print_summary): Common functions for test
+      modules.
+    * tests/spytest.py (test_method): Track success/failure of tests.
+    * tests/memmap.py: Handle command-line args and track stats.
+    * tests/spyfile.py: Ditto
+    * tests/transforms.py: Ditto
+
 2013-08-06	tboggs <tboggs@users.sourceforge.net>
 
     Turned `Image` into new-style class.

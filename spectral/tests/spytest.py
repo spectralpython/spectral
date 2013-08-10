@@ -41,14 +41,17 @@ class SpyTest(object):
 def test_method(method):
     '''Decorator function for unit tests.'''
     def meth(self):
+        import spectral.tests as tests
         from spectral.tests import abort_on_fail
         print format('Testing ' + method.__name__.split('_', 1)[-1],
                      '.<40'),
         try:
             method(self)
             print 'OK'
+            tests._num_tests_run += 1
         except AssertionError:
-            if abort_on_fail:
-                raise
             print 'FAILED'
+            tests._num_tests_failed += 1
+            if tests.abort_on_fail:
+                raise
     return meth

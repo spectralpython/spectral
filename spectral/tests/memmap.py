@@ -200,4 +200,8 @@ def run():
     suite.run()
 
 if __name__ == '__main__':
+    from spectral.tests.run import parse_args, reset_stats, print_summary
+    parse_args()
+    reset_stats()
     run()
+    print_summary()

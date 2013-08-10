@@ -39,6 +39,10 @@ To run all unit tests, type the following from the system command line:
 # continue.
 abort_on_fail = True
 
+# Summary stats of unit test execution
+_num_tests_run = 0
+_num_tests_failed = 0
+
 # Subdirectory to be created for unit test files
 testdir = 'spectral_test_files'
 
