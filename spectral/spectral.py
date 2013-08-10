@@ -209,6 +209,7 @@ class ImageArray(numpy.ndarray, Image):
         params = spyfile.params()
         params.dtype = data.dtype
         params.swap = 0
+
         Image.__init__(self, params, spyfile.metadata)
         self.bands = spyfile.bands
 
@@ -234,10 +235,6 @@ class ImageArray(numpy.ndarray, Image):
     def load(self):
         '''For compatibility with SpyFile objects. Returns self'''
         return self
-
-    def __getitem__(self, key):
-        import numpy
-        return numpy.array(numpy.ndarray.__getitem__(self, key))
 
     def info(self):
         s = '\t# Rows:         %6d\n' % (self.nrows)

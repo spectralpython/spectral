@@ -39,6 +39,11 @@
     * tests/spyfile.py: Ditto
     * tests/transforms.py: Ditto
 
+    Removed ImageArray.__getitem__. This method was uneccessary and turned
+    scalar values into ndarray objects, which caused various problems.
+
+    * spectral.py (ImageArray.__getitem__): Removed method.
+
 2013-08-06	tboggs <tboggs@users.sourceforge.net>
 
     Turned `Image` into new-style class.
