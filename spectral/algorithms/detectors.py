@@ -33,7 +33,7 @@
 Spectral target detection algorithms
 '''
 
-__all__ = ['MatchedFilter', 'RX']
+__all__ = ['MatchedFilter', 'RX', 'RXW', 'rx']
 
 import numpy as np
 from spectral.algorithms.transforms import LinearTransform as _LinearTransform
@@ -192,3 +192,296 @@ class RX():
         X = self.C_1_2.dot(X.T)
         r = np.sum(X * X, 0)
         return r.reshape(shape[:-1])
+
+class RXW():
+    r'''An RX anomaly detector using windowed background statistics. Given the
+     mean and covariance of the background, this detector returns the squared
+    Mahalanobis distance of a spectrum according to
+
+    .. math::
+
+        y=(x-\mu_b)^T\Sigma^{-1}(x-\mu_b)
+
+    where `x` is the unknown pixel spectrum, :math:`\mu_b` is the background
+    mean, and :math:`\Sigma` is the background covariance.
+
+    References:
+
+    Reed, I.S. and Yu, X., "Adaptive multiple-band CFAR detection of an optical
+    pattern with unknown spectral distribution," IEEE Trans. Acoust.,
+    Speech, Signal Processing, vol. 38, pp. 1760-1770, Oct. 1990.
+    '''
+
+    def __init__(self, window):
+        '''Creates a detector with the given inner/outer window.
+
+        Arguments:
+
+            `window` (2-tuple of odd integers):
+
+            `window` must have the form (`inner`, `outer`), where inner and
+            outer are both odd-valued integers with `inner` < `outer`.
+        '''
+        from exceptions import ValueError
+        (inner, outer) = window
+        if inner % 2 == 0 or outer % 2 == 0:
+            raise ValueError('Inner and outer window widths must be odd.')
+        if inner >= outer:
+            raise ValueError('Inner window must be smaller than outer.')
+
+        self.window = window[:]
+
+    def __call__(self, image):
+        '''Applies the RX anomaly detector to X.
+
+        Arguments:
+
+            `image` (numpy.ndarray):
+
+                An image with shape (R, C, B).
+
+        Returns numpy.ndarray:
+
+            The return value will be the RX detector score (squared Mahalanobis
+            distance) for each pixel given in `image`.
+        '''
+
+        window = self.window
+        (R, C, B) = image.shape
+        (R_in, R_out) = window[:]
+        (a, b) = [(x - 1) / 2 for x in window]
+
+        x = np.ones((R, C), dtype=np.float32) * -1.0
+
+        if R_out**2 - R_in**2 < B:
+            raise ValueError('Window size provides too few samples for ' \
+                             'image data dimensionality.')
+
+        create_mask = window_mask_creator(image.shape, (window))
+        interior_mask = create_mask(R / 2, C / 2)[1].ravel()
+        interior_indices = np.argwhere(interior_mask == 0).squeeze()
+
+        (i_interior_start, i_interior_stop) = (b, R - b)
+        (j_interior_start, j_interior_stop) = (b, C - b)
+
+        for i in range(C):
+            if i % 10 == 0:
+                print i,
+            for j in range(R):
+                if i_interior_start <= i < i_interior_stop and \
+                   j_interior_start <= j < j_interior_stop:
+                    X = image[i - b : i + b + 1, j - b : j + b + 1, :]
+                    indices = interior_indices
+                else:
+                    ((i0, i1, j0, j1), mask) = create_mask(i, j)
+                    indices = np.argwhere(mask.ravel() == 0).squeeze()
+                    X = image[i0 : i1, j0 : j1, :]
+                X = np.take(X.reshape((-1, B)), indices, axis=0)
+                m = np.mean(X, axis=0)
+                C = np.cov(X, rowvar=False)
+                r = image[i, j] - m
+                x[i, j] = r.dot(np.linalg.inv(C)).dot(r)
+        return x
+
+def rx(X, **kwargs):
+    r'''Computes RX anomaly detector scores.
+
+    Usage:
+
+        y = rx(X [, background=bg]
+
+        y = rx(X, window=(inner, outer))
+
+    The RX anomaly detector produces a detection statistic equal to the 
+    mean and covariance of the background, this detector returns the squared
+    Mahalanobis distance of a spectrum from a background distribution
+    according to
+
+    .. math::
+
+        y=(x-\mu_b)^T\Sigma^{-1}(x-\mu_b)
+
+    where `x` is the pixel spectrum, :math:`\mu_b` is the background
+    mean, and :math:`\Sigma` is the background covariance.
+
+    Arguments:
+
+        `X` (numpy.ndarray):
+
+            For the first calling method shown, `X` can be an image with
+            shape (R, C, B) or an ndarray of shape (R * C, B). If the
+            `background` keyword is given, it will be used for the image
+            background statistics; otherwise, background statistics will be
+            computed from `X`.
+
+            If the `window` keyword is given, `X` must be a 3-dimensional
+            array and background statistics will be computed for each point
+            in the image using a local window defined by the keyword.
+
+    Keyword Arguments:
+
+        `background` (`GaussianStats`):
+
+            The Gaussian statistics for the background (e.g., the result
+            of calling :func:`calc_stats`). If no background stats are
+            provided, they will be estimated based on data passed to the
+            detector.
+
+        `window` (2-tuple of odd integers):
+
+            Must have the form (`inner`, `outer`), where the two values
+            specify the widths (in pixels) of inner and outer windows centered
+            about the pixel being evaulated. Both values must be odd integers.
+            The background mean and covariance will be estimated from pixels
+            in the outer window, excluding pixels within the inner window. For
+            example, if (`inner`, `outer`) = (5, 21), then the number of
+            pixels used to estimate background statistics will be
+            :math:`21^2 - 5^2 = 416`.
+
+            The window are modified near image borders, where full, centered
+            windows cannot be created. The outer window will be shifted, as
+            needed, to ensure that the outer window still has height and width
+            `outer` (in this situation, the pixel being evaluated will not be
+            at the center of the outer window). The inner window will be
+            clipped, as needed, near image borders. For example, assume an
+            image with 145 rows and columns. If the window used is
+            (5, 21), then for the image pixel at (0, 0) (upper left corner),
+            the the inner window will cover `image[:3, :3]` and the outer
+            window will cover `image[:21, :21]`. For the pixel at (50, 1), the
+            inner window will cover `image[48:53, :4]` and the outer window
+            will cover `image[40:51, :21]`.
+            
+    Returns numpy.ndarray:
+
+        The return value will be the RX detector score (squared Mahalanobis
+        distance) for each pixel given.  If `X` has shape (R, C, B), the
+        returned ndarray will have shape (R, C)..
+    
+    References:
+
+    Reed, I.S. and Yu, X., "Adaptive multiple-band CFAR detection of an optical
+    pattern with unknown spectral distribution," IEEE Trans. Acoust.,
+    Speech, Signal Processing, vol. 38, pp. 1760-1770, Oct. 1990.
+    '''
+    from exceptions import ValueError
+    if 'background' in kwargs  and 'window' in kwargs:
+        raise ValueError('`background` and `window` keywords are mutually ' \
+                         'exclusive.')
+    if 'window' in kwargs:
+        return RXW(kwargs['window'])(X)
+    return RX(kwargs.get('background', None))(X)
+
+
+def window_mask_creator(image_shape, window):
+    '''Returns a function to give  inner/outer windows.
+
+    Arguments:
+
+        `image_shape` (tuple of integers):
+
+            Specifies the dimensions of the image for which windows are to be
+            produced. Only the first two dimensions (rows, columns) is used.
+
+        `window` (2-tuple of integers):
+
+            Specifies the sizes of the inner & outer windows. Both values
+            must be odd integers.
+
+    Return value:
+
+        A function that accepts row and column indices as inputs and returns
+        a 2-tuples with the following elements:
+
+            1. The limits of the outer window:
+
+                (row_start, row_stop, col_start, col_stop)
+
+            2. A square ndarray that defines the inner/outer pixel mask for
+               the window. The mask array contains zeros in the outer window
+               and ones in the inner window.
+    '''
+    (R, C) = image_shape[:2]
+    (R_in, R_out) = window
+    assert(R_in % 2 + R_out % 2 == 2)
+    (a, b) = [(x - 1) / 2 for x in window]
+    def create_mask(i, j):
+        istart_in = max(i - a, 0)
+        istop_in = min(i + a + 1, R)
+        jstart_in = max(j - a, 0)
+        jstop_in = min(j + a + 1, C)
+        istart_out = max(i - b, 0)
+        istop_out = min(istart_out + R_out, R)
+        if istop_out == R:
+            istart_out = R - R_out
+        jstart_out = max(j - b, 0)
+        jstop_out = min(jstart_out + R_out, C)
+        if jstop_out == C:
+            jstart_out = C - R_out
+        mask = np.zeros((R_out, R_out), dtype=np.int)
+        mask[istart_in - istart_out : istop_in - istart_out,
+             jstart_in - jstart_out : jstop_in - jstart_out] = 1
+        return ((istart_out, istop_out, jstart_out, jstop_out), mask)
+    return create_mask
+
+
+def rx_numpy_masked_arrays(data, windows):
+    '''An RX implementation that uses numpy masked arrays.'''
+    (R, C, B) = data.shape
+    (a, b) = windows
+
+    x = np.ones((R, C), dtype=np.float32) * -1.0
+    
+    (R_in, R_out) = ((1 + 2 * a), (1 + 2 * b))
+    assert (R_out**2 - R_in**2 > B)
+
+    create_mask = window_mask_creator_numpy_masked_arrays(data.shape,
+                                                          (windows))
+    interior_mask = create_mask(R / 2, C / 2)[1]
+    
+    (i_interior_start, i_interior_stop) = (b, R - b)
+    (j_interior_start, j_interior_stop) = (b, C - b)
+    
+    for i in range(C):
+        if i % 10 == 0:
+            print i,
+        for j in range(R):
+            if i_interior_start <= i < i_interior_stop and \
+               j_interior_start <= j < j_interior_stop:
+                X = data[i - b : i + b + 1, j - b : j + b + 1, :]
+                mask = interior_mask
+            else:
+                ((i0, i1, j0, j1), mask) = create_mask(i, j)
+                X = data[i0 : i1, j0 : j1, :]
+            X = np.ma.masked_array(X, mask).reshape((-1, B))
+            m = X.mean(axis=0)
+            C = np.ma.cov(X, rowvar=False)
+            r = data[i, j] - m
+            x[i, j] = r.dot(np.linalg.inv(C)).dot(r)
+    return x
+
+
+def window_mask_creator_numpy_masked_arrays(image_shape, window):
+    '''Creates window masks using numpy masked arrays.'''
+    (R, C, B) = image_shape
+    (a, b) = window
+    width_in = 2 * a + 1
+    width_out = 2 * b + 1
+    def create_mask(i, j):
+        istart_in = max(i - a, 0)
+        istop_in = min(i + a + 1, R)
+        jstart_in = max(j - a, 0)
+        jstop_in = min(j + a + 1, C)
+        istart_out = max(i - b, 0)
+        istop_out = min(istart_out + width_out, R)
+        if istop_out == R:
+            istart_out = R - width_out
+        jstart_out = max(j - b, 0)
+        jstop_out = min(jstart_out + width_out, C)
+        if jstop_out == C:
+            jstart_out = C - width_out
+        mask = np.zeros((width_out, width_out, B), dtype=np.int)
+        mask[istart_in - istart_out : istop_in - istart_out,
+             jstart_in - jstart_out : jstop_in - jstart_out, :] = 1
+        return ((istart_out, istop_out, jstart_out, jstop_out), mask)
+    return create_mask
+

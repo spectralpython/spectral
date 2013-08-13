@@ -2,6 +2,22 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2013-08-12	tboggs <tboggs@users.sourceforge.net>
+
+    Added windowed mode to the RX anomaly detector.
+
+    * algorithms/__init__.py: Import `MatchedFilter` and `rx`.
+    * algorithms/detectors.py:
+      (RXW): New class for windowed RX algorithm.
+      (rx): New function for implementing RX, creating an `RX` or `RXW`
+      object, as needed.
+      (window_mask_creator): New function for creating image window masks.
+      (rx_numpy_masked_arrays): A new file, promptly deleted, which used
+      numpy.ma for masked arrays but was ~8x slower than just extracting
+      pixels from the window.
+      (window_mask_creator_numpy_masked_arrays): Mask creator for the
+      `rx_numpy_masked_arrays` function.
+
 2013-08-10	tboggs <tboggs@users.sourceforge.net>
 
     Accept ndarray as `top` keyword in view_cube.
