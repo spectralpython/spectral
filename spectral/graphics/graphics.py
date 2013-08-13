@@ -397,7 +397,7 @@ def make_pil_image(*args, **kwargs):
     return im
 
 
-def save_rgb(*args, **kwargs):
+def save_rgb(filename, data, bands=None, **kwargs):
     '''
     Saves a viewable image to a JPEG (or other format) file.
 
@@ -474,14 +474,12 @@ def save_rgb(*args, **kwargs):
 
             save_image('results.jpg', clMap, colors=spectral.spy_colors)
     '''
-    im = apply(make_pil_image, args[1:], kwargs)
+    im = make_pil_image(*(data, bands), **kwargs)
 
     if "format" in kwargs:
-        fmt = kwargs["format"]
+        im.save(filename, kwargs['format'], quality=100)
     else:
-        fmt = "JPEG"
-
-    im.save(args[0], fmt, quality=100)
+        im.save(filename)
 
 
 def get_rgb(source, bands=None, **kwargs):
