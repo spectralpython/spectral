@@ -2,6 +2,13 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2013-08-13	tboggs <tboggs@users.sourceforge.net>
+
+    Added `imshow` wrapper around matplotlib's imshow.
+
+    * graphics/__init__.py: Import `imshow`.
+    * graphics/graphics.py(imshow): New function.
+
 2013-08-12	tboggs <tboggs@users.sourceforge.net>
 
     Added windowed mode to the RX anomaly detector.

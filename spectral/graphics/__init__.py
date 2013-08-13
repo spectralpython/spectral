@@ -30,7 +30,7 @@
 #
 
 from graphics import (save_rgb, view, view_indexed, view_cube, view_nd,
-                      get_rgb)
+                      get_rgb, imshow)
 from colorscale import ColorScale
 
 # Deprecated functions

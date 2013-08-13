@@ -298,6 +298,70 @@ def view_indexed(*args, **kwargs):
 
     return view(*args, **kwargs)
 
+def imshow(data, bands=None, **kwargs):
+    '''A wrapper around matplotlib's imshow for multi-band images.
+
+    Arguments:
+
+        `data` (SpyFile or ndarray):
+
+            Can have shape (R, C) or (R, C, B).
+
+        `bands` (tuple of integers, optional)
+
+            If `bands` has 3 values, the bands specified are extracted from
+            `data` to be plotted as the red, green, and blue colors,
+            respectively. If it contains a single value, then a single band
+            will be extracted from the image.
+
+    Keyword Arguments:
+
+        show_xaxis (bool, default True):
+
+            Indicates whether to display x-axis ticks and labels.
+
+        show_yaxis (bool, default True):
+
+            Indicates whether to display y-axis ticks and labels.
+
+    This function is a wrapper around
+    :func:`~spectral.graphics.graphics.get_rgb` and matplotlib's imshow.
+    All keyword arguments other than those described above are passed on to
+    the wrapped functions.
+
+    This function defaults the color scale (imshow's "cmap" keyword) to
+    "gray". To use imshow's default color scale, call this function with
+    keyword `cmap=None`.
+    '''
+    import matplotlib.pyplot as plt
+
+    show_xaxis = True
+    show_yaxis = True
+    if 'show_xaxis' in kwargs:
+        show_xaxis = kwargs.pop('show_xaxis')
+    if 'show_yaxis' in kwargs:
+        show_yaxis = kwargs.pop('show_yaxis')
+
+    rgb_kwargs = {}
+    for k in ['stretch', 'stretch_all', 'bounds']:
+        if k in kwargs:
+            rgb_kwargs[k] = kwargs.pop(k)
+    
+    imshow_kwargs = {'cmap': 'gray'}
+    imshow_kwargs.update(kwargs)
+
+    rgb = get_rgb(data, bands, **rgb_kwargs)
+
+    # Allow matplotlib.imshow to apply a color scale to single-band image.
+    if len(data.shape) == 2:
+        rgb = rgb[:, :, 0]
+
+    ax = plt.imshow(rgb, **imshow_kwargs)
+    if show_xaxis == False:
+        plt.gca().xaxis.set_visible(False)
+    if show_yaxis == False:
+        plt.gca().yaxis.set_visible(False)
+    return ax
 
 def make_pil_image(*args, **kwargs):
     '''Creates a PIL Image object.
