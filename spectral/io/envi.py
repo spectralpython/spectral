@@ -247,7 +247,7 @@ def open(file, image=None):
         except:
             pass
     img.bands.band_unit = h.get('wavelength units', "")
-    img.bands.bandQuantity = "Wavelength"
+    img.bands.band_quantity = "Wavelength"
 
     return img
 
@@ -403,6 +403,9 @@ def save_image(hdr_file, image, **kwargs):
     if (endian_out == sys.byteorder and not data.dtype.isnative) or \
       (endian_out != sys.byteorder and data.dtype.isnative):
         data = data.byteswap()
+
+    if hasattr(image, 'bands'):
+        add_band_info_to_metadata(image.bands, metadata)
 
     write_envi_header(hdr_file, metadata, is_library=False)
     print 'Saving', img_file
@@ -560,7 +563,7 @@ class SpectralLibrary:
         else:
             self.names = [''] * self.bands.shape[0]
         self.bands.band_unit = header.get('wavelength units', "")
-        self.bands.bandQuantity = "Wavelength"
+        self.bands.band_quantity = "Wavelength"
         self.params = params
         self.metadata = {}
         self.metadata.update(header)
@@ -608,7 +611,21 @@ class SpectralLibrary:
         self.spectra.astype('f').tofile(fout)
         fout.close()
 
+def add_band_info_to_metadata(bands, metadata, overwrite=False):
+    '''Adds BandInfo data to the metadata dict.
 
+    Data is only added if not already present, unless `overwrite` is True.
+    '''
+    if bands.centers is not None and (overwrite is True or
+                                      'wavelength' not in metadata):
+        metadata['wavelength'] = bands.centers
+    if bands.bandwidths is not None and (overwrite is True or
+                                      'fwhm' not in metadata):
+        metadata['fwhm'] = bands.bandwidths
+    if len(bands.band_unit) > 0 and (overwrite is True or
+                                     'wavelength units' not in metadata):
+        metadata['wavelength units'] = bands.band_unit
+        
 def _write_header_param(fout, paramName, paramVal):
     if paramName.lower() == 'description':
         valStr = '{\n%s}' % '\n'.join(['  ' + line for line

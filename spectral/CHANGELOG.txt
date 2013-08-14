@@ -13,6 +13,15 @@
 
     * graphics/graphics(save_rgb): Let PIL determine image format.
 
+    Add image band info to saved file. Corrected band_quantity member name.
+
+    * io/envi.pi:
+      (open): BandInfo member changed from "bandQuantity" to "band_quantity".
+      (SpectralLibrary.__init__): Ditto
+      (save_image): Include band info from image being saved, unless metadata
+      arg already contains the values.
+      (add_band_info_to_metadata): New function.
+
 2013-08-12	tboggs <tboggs@users.sourceforge.net>
 
     Added windowed mode to the RX anomaly detector.
