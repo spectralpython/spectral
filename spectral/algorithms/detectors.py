@@ -264,9 +264,9 @@ class RXW():
         (i_interior_start, i_interior_stop) = (b, R - b)
         (j_interior_start, j_interior_stop) = (b, C - b)
 
+        from spectral import status
+        status.display_percentage('Calculating RX scores: ')
         for i in range(C):
-            if i % 10 == 0:
-                print i,
             for j in range(R):
                 if i_interior_start <= i < i_interior_stop and \
                    j_interior_start <= j < j_interior_stop:
@@ -278,9 +278,12 @@ class RXW():
                     X = image[i0 : i1, j0 : j1, :]
                 X = np.take(X.reshape((-1, B)), indices, axis=0)
                 m = np.mean(X, axis=0)
-                C = np.cov(X, rowvar=False)
+                Cov = np.cov(X, rowvar=False)
                 r = image[i, j] - m
-                x[i, j] = r.dot(np.linalg.inv(C)).dot(r)
+                x[i, j] = r.dot(np.linalg.inv(Cov)).dot(r)
+            if i % (C / 10) == 0:
+                status.update_percentage(100. * i / C)
+        status.end_percentage()
         return x
 
 def rx(X, **kwargs):
