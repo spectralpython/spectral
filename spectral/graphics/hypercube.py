@@ -229,11 +229,6 @@ class HypercubeWindow(wx.Frame, SpyWindow):
 
         global DEFAULT_TEXTURE_SIZE
 
-        if 'textureSize' in self.kwargs:
-            (dimX, dimY) = self.kwargs['textureSize']
-        else:
-            (dimX, dimY) = DEFAULT_TEXTURE_SIZE
-
         if 'scale' in self.kwargs:
             scale = self.kwargs['scale']
         else:
@@ -269,10 +264,9 @@ class HypercubeWindow(wx.Frame, SpyWindow):
         # Create images for sides of cube
         scaleMin = min([min(side.ravel()) for side in sides])
         scaleMax = max([max(side.ravel()) for side in sides])
-        scale = default_color_scale
         scale.set_range(scaleMin, scaleMax)
-        sideImages = [graphics.make_pil_image(side, colorScale=scale,
-                                              autoScale=1, format='bmp')
+        sideImages = [graphics.make_pil_image(side, color_scale=scale,
+                                              auto_scale=1, format='bmp')
                       for side in sides]
         images = [image] + sideImages
 
@@ -281,17 +275,23 @@ class HypercubeWindow(wx.Frame, SpyWindow):
         (a, b, c) = data.shape
         texSizes = [(b, a), (b, c), (a, c), (b, c), (a, c), (b, a)]
         for i in range(len(images)):
-            img = images[i].resize((dimX, dimY))
-            img = img.tostring("raw", "RGBX", 0, -1)
+            img = images[i].tostring("raw", "RGBX", 0, -1)
+            (dim_x, dim_y) = images[i].size
             texImages.append(img)
 
             # Create Linear Filtered Texture
             gl.glBindTexture(gl.GL_TEXTURE_2D, long(self.textures[i]))
             gl.glTexParameteri(
                 gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
-            gl.glTexParameteri(
-                gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
-            gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, 3, dimX, dimY,
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER,
+                               gl.GL_LINEAR)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_R,
+                               gl.GL_CLAMP)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S,
+                               gl.GL_CLAMP)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T,
+                               gl.GL_CLAMP)
+            gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, 3, dim_x, dim_y,
                             0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, texImages[i])
 
     def GetGLExtents(self):

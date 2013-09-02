@@ -44,6 +44,12 @@
     * algorithms/detectors.py: (RXW): ditto
     * algorithms/perceptron.py (Perceptron): ditto
 
+
+    Fixed cube texture edge display issue
+
+    * graphics.hypercube.py:
+      (HypercubeWindow.load_textures): Set texture wrap parameter to GL_CLAMP.
+      
 2013-08-13	tboggs <tboggs@users.sourceforge.net>
 
     Added `imshow` wrapper around matplotlib's imshow.
