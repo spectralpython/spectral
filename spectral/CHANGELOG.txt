@@ -2,6 +2,13 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2013-09-02	tboggs <tboggs@users.sourceforge.net>
+
+    Default WX_GL_DEPTH_SIZE to 24 bits.
+
+    * spectra.py (SpySettings): Changed WX_GL_DEPTH_SIZE to 24.
+
+    
 2013-08-13	tboggs <tboggs@users.sourceforge.net>
 
     Added `imshow` wrapper around matplotlib's imshow.

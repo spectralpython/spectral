@@ -49,7 +49,7 @@ class SpySettings:
 
         # Parameter used by GLCanvas objects in view_cube and view_nd. If the
         # canvas does not render, try changing reducing this value (e.g., 16).
-        self.WX_GL_DEPTH_SIZE = 32
+        self.WX_GL_DEPTH_SIZE = 24
 
 settings = SpySettings()
 
