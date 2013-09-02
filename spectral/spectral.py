@@ -114,7 +114,7 @@ def _init():
 
     spectral = __import__(__name__.split('.')[0])
     from .utilities import status
-    spectral.status = status.StatusDisplay()
+    spectral._status = status.StatusDisplay()
 
 
 class BandInfo:

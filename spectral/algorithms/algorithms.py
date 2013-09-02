@@ -73,7 +73,6 @@ class ImageIterator(Iterator):
         return self.image.shape[2]
 
     def __iter__(self):
-        from spectral import status
         (M, N) = self.image.shape[:2]
         count = 0
         for i in range(M):
@@ -104,7 +103,6 @@ class ImageMaskIterator(Iterator):
         return self.image.shape[2]
 
     def __iter__(self):
-        from spectral import status
         from numpy import transpose, indices, reshape, compress, not_equal
         (nrows, ncols, nbands) = self.image.shape
 
@@ -210,9 +208,10 @@ def mean_cov(image, mask=None, index=None):
     can be an Iterator, a SpyFile object, or an `MxNxB` array.
     '''
     import spectral
-    from spectral import status
     import numpy as np
     from numpy import zeros, transpose, dot, newaxis
+
+    status = spectral._status
 
     if isinstance(image, np.ndarray):
         X = image.astype(np.float64)
@@ -365,7 +364,9 @@ class PrincipalComponents:
                 will be retained (starting from greatest to smallest) until
                 `fraction` of total image variance is retained.
         '''
-        from spectral import status
+        import spectral
+
+        status = spectral._status
 
         num = kwargs.get('num', None)
         eigs = kwargs.get('eigs', None)

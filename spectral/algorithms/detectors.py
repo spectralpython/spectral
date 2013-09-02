@@ -245,7 +245,7 @@ class RXW():
             The return value will be the RX detector score (squared Mahalanobis
             distance) for each pixel given in `image`.
         '''
-
+        import spectral
         window = self.window
         (R, C, B) = image.shape
         (R_in, R_out) = window[:]
@@ -264,7 +264,7 @@ class RXW():
         (i_interior_start, i_interior_stop) = (b, R - b)
         (j_interior_start, j_interior_stop) = (b, C - b)
 
-        from spectral import status
+        status = spectral._status
         status.display_percentage('Calculating RX scores: ')
         for i in range(C):
             for j in range(R):

@@ -61,9 +61,10 @@ class Classifier:
 
             An `MxN` ndarray of integers specifying the class for each pixel.
         '''
-        from spectral import status
+        import spectral
         from algorithms import ImageIterator
         from numpy import zeros
+        status = spectral._status
         status.display_percentage('Classifying image...')
         it = ImageIterator(image)
         class_map = zeros(image.shape[:2])

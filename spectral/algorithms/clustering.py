@@ -160,11 +160,13 @@ def kmeans(image, nclusters=10, max_iterations=20, **kwargs):
     while the algorithm is executing, clusters are returned from the previously
     completed iteration.
     '''
-    from spectral import status
+    import spectral
     import numpy
 
     if isinstance(image, numpy.ndarray):
         return kmeans_ndarray(*(image, nclusters, max_iterations), **kwargs)
+
+    status = spectral._status
 
     # defaults for kwargs
     start_clusters = None
@@ -215,8 +217,6 @@ def kmeans(image, nclusters=10, max_iterations=20, **kwargs):
         for i in range(nclusters):
             centers[i] = boxMin.astype(float) + i * delta
 
-    print 'Starting iterations.'
-
     iter = 1
     while (iter <= max_iterations):
         try:
@@ -232,7 +232,6 @@ def kmeans(image, nclusters=10, max_iterations=20, **kwargs):
                         if (dist < minDist):
                             clusters[i, j] = k
                             minDist = dist
-            status.end_percentage()
 
             # Update cluster centers
             sums = numpy.zeros((nclusters, nbands), 'd')
@@ -258,7 +257,8 @@ def kmeans(image, nclusters=10, max_iterations=20, **kwargs):
                 if nChanged == 0:
                     break
                 else:
-                    print >>status, '\t%d pixels reassigned.' % (nChanged)
+                    status.end_percentage('%d pixels reassigned.' \
+                                          % (nChanged))
 
             old_clusters = clusters
             old_centers = centers
@@ -337,9 +337,11 @@ def kmeans_ndarray(image, nclusters=10, max_iterations=20, **kwargs):
     while the algorithm is executing, clusters are returned from the previously
     completed iteration.
     '''
-    from spectral import status
+    import spectral
     import numpy as np
 
+    status = spectral._status
+    
     # defaults for kwargs
     start_clusters = None
     compare = None
@@ -383,8 +385,6 @@ def kmeans_ndarray(image, nclusters=10, max_iterations=20, **kwargs):
         for i in range(nclusters):
             centers[i] = boxMin + i * delta
 
-    print 'Starting iterations.'
-
     distances = np.empty((N, nclusters), float)
     old_centers = np.array(centers)
     clusters = np.zeros((N,), int)
@@ -403,7 +403,6 @@ def kmeans_ndarray(image, nclusters=10, max_iterations=20, **kwargs):
                     distances[:, i] = np.sum(np.abs(diffs), 1)
             clusters[:] = np.argmin(distances, 1)
 
-            status.end_percentage()
 
             # Update cluster centers
             old_centers[:] = centers
@@ -422,7 +421,8 @@ def kmeans_ndarray(image, nclusters=10, max_iterations=20, **kwargs):
                 if nChanged == 0:
                     break
                 else:
-                    print >>status, '\t%d pixels reassigned.' % (nChanged)
+                    status.end_percentage('%d pixels reassigned.' \
+                                          % (nChanged))
 
             old_clusters[:] = clusters
             old_centers[:] = centers
@@ -623,8 +623,9 @@ class OnePassClusterer(Classifier):
             self.cluster_to_go_to = b
 
     def classify_image(self, image):
-        from spectral import status
+        import spectral
         from spectral.io.spyfile import SpyFile
+        status = spectral._status
         self.image = image
         self.cluster_map = numpy.zeros(self.image.shape[:2], int)
         self.clusters = numpy.zeros((self.max_clusters, self.image.shape[2]),

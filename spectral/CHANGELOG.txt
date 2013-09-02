@@ -31,6 +31,18 @@
       (write): ditto
 
     
+    Encapsulate status object:
+
+    * algorithms/algorithms.py:
+      (mean_cov): Use spectral._status
+      (PrincipalComponents): ditto
+    * algorithms/classifiers:
+      (Classifier): ditto
+    * algorithms/clustering:
+      (kmeans): ditto
+      (kmeans_ndarray): ditto
+    * algorithms/detectors.py: (RXW): ditto
+    * algorithms/perceptron.py (Perceptron): ditto
 
 2013-08-13	tboggs <tboggs@users.sourceforge.net>
 

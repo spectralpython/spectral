@@ -194,7 +194,9 @@ class Perceptron:
                                 max_iterations isn't reached first).
         '''
         from numpy import array, dot, transpose, zeros, repeat
-        from spectral import status
+        import spectral
+
+        status = spectral._status
 
         try:
 
