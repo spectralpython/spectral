@@ -454,16 +454,11 @@ def create_image(hdr_file, metadata, **kwargs):
             string, the image file will have the same name as the header but
             without the ".hdr" extension.
 
-        `memmap_mode` (str):
-
-            Mode of img.memmap ("w+" by default). See numpy.memmap for further
-            information.
-
     Returns:
 
         `SpyFile` object:
 
-            To access a `numpy.memmap` for the return `SpyFile` object, call
+            To access a `numpy.memmap` for the returned `SpyFile` object, call
             the `open_memmap` method of the returned object.
     '''
     from exceptions import NotImplementedError, TypeError
