@@ -35,7 +35,6 @@ class StatusDisplay:
     process on a single line.
     '''
     def __init__(self):
-        self.silent = False
         self._pretext = ''
         self._overwrite = False
         self._percent_fmt = '% 5.1f'
@@ -44,19 +43,21 @@ class StatusDisplay:
     def display_percentage(self, text, percent=0.0, format='% 5.1f'):
         '''Called when initializing display of a process status.'''
         import sys
+        from spectral import settings
         self._overwrite = True
         self._pretext = text
         self._percent_fmt = format
         text = self._pretext + self._percent_fmt % percent + '%'
         self._text_len = len(text)
-        if not self.silent:
+        if settings.show_progress:
             sys.stdout.write(text)
             sys.stdout.flush()
 
     def update_percentage(self, percent):
         '''Called whenever an update of the displayed status is desired.'''
         import sys
-        if self.silent:
+        from spectral import settings
+        if not settings.show_progress:
             return
         text = self._pretext + self._percent_fmt % percent + '%'
         sys.stdout.write('\b' * self._text_len)
@@ -67,11 +68,12 @@ class StatusDisplay:
     def end_percentage(self, text='done'):
         '''Prints a final status and resumes normal text display.'''
         import sys
+        from spectral import settings
         text = self._pretext + text
         sys.stdout.write('\b' * self._text_len)
         fmt = '%%-%ds\n' % self._text_len
         self._text_len = len(text)
-        if not self.silent:
+        if settings.show_progress:
             sys.stdout.write(fmt % text)
             sys.stdout.flush()
         self._overwrite = False

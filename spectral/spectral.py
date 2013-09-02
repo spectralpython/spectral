@@ -51,6 +51,9 @@ class SpySettings:
         # canvas does not render, try changing reducing this value (e.g., 16).
         self.WX_GL_DEPTH_SIZE = 24
 
+        # Should algorithms show completion progress of algorithms?
+        self.show_progress = True
+
 settings = SpySettings()
 
 # Default color table

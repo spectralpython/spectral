@@ -8,6 +8,16 @@
 
     * spectra.py (SpySettings): Changed WX_GL_DEPTH_SIZE to 24.
 
+    Added `show_progress` to settings object.
+
+    * spectral.spectral.SpySettings:
+      (show_progress): New member
+    * utilities/status:
+      (__init__): Remove self.silent and use settings.show_progress instead.
+      (display_percentage): ditto
+      (update_percentage): ditto
+      (end_percentage): ditto
+
     Encapsulate Status members.
 
     * utilities/status.py:
@@ -19,6 +29,8 @@
       (update_percentage): member name changes
       (end_percentage): ditto
       (write): ditto
+
+    
 
 2013-08-13	tboggs <tboggs@users.sourceforge.net>
 
