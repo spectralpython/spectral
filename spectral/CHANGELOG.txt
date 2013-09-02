@@ -8,7 +8,18 @@
 
     * spectra.py (SpySettings): Changed WX_GL_DEPTH_SIZE to 24.
 
-    
+    Encapsulate Status members.
+
+    * utilities/status.py:
+      - pre-Text -> _pretext
+      - percentage -> _percentage
+      - overwriteLine -> _overwrite
+      - percentFormat -> _percent_fmt
+      - textLength -> _text_len
+      (update_percentage): member name changes
+      (end_percentage): ditto
+      (write): ditto
+
 2013-08-13	tboggs <tboggs@users.sourceforge.net>
 
     Added `imshow` wrapper around matplotlib's imshow.

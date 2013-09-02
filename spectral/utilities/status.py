@@ -35,22 +35,20 @@ class StatusDisplay:
     process on a single line.
     '''
     def __init__(self):
-        self.preText = ''
-        self.percentage = 0.0
-        self.overwriteLine = False
         self.silent = False
-        self.percentFormat = '% 5.1f'
-        self.textLength = 0
+        self._pretext = ''
+        self._overwrite = False
+        self._percent_fmt = '% 5.1f'
+        self._text_len = 0
 
     def display_percentage(self, text, percent=0.0, format='% 5.1f'):
         '''Called when initializing display of a process status.'''
         import sys
-        self.overwriteLine = True
-        self.preText = text
-        self.percentage = percent
-        self.percentFormat = format
-        text = self.preText + self.percentFormat % percent + '%'
-        self.textLength = len(text)
+        self._overwrite = True
+        self._pretext = text
+        self._percent_fmt = format
+        text = self._pretext + self._percent_fmt % percent + '%'
+        self._text_len = len(text)
         if not self.silent:
             sys.stdout.write(text)
             sys.stdout.flush()
@@ -58,24 +56,25 @@ class StatusDisplay:
     def update_percentage(self, percent):
         '''Called whenever an update of the displayed status is desired.'''
         import sys
-        text = self.preText + self.percentFormat % percent + '%'
-        sys.stdout.write('\b' * self.textLength)
-        self.textLength = len(text)
-        if not self.silent:
-            sys.stdout.write(text)
-            sys.stdout.flush()
+        if self.silent:
+            return
+        text = self._pretext + self._percent_fmt % percent + '%'
+        sys.stdout.write('\b' * self._text_len)
+        self._text_len = len(text)
+        sys.stdout.write(text)
+        sys.stdout.flush()
 
     def end_percentage(self, text='done'):
         '''Prints a final status and resumes normal text display.'''
         import sys
-        text = self.preText + text
-        sys.stdout.write('\b' * self.textLength)
-        fmt = '%%-%ds\n' % self.textLength
-        self.textLength = len(text)
+        text = self._pretext + text
+        sys.stdout.write('\b' * self._text_len)
+        fmt = '%%-%ds\n' % self._text_len
+        self._text_len = len(text)
         if not self.silent:
             sys.stdout.write(fmt % text)
             sys.stdout.flush()
-        self.overwriteLine = False
+        self._overwrite = False
 
     def write(self, text):
         '''
@@ -83,7 +82,7 @@ class StatusDisplay:
         progress display.
         '''
         import sys
-        if self.overwriteLine and text != '\n':
+        if self._overwrite and text != '\n':
             sys.stdout.write('\n')
         sys.stdout.write(text)
         sys.stdout.flush()
