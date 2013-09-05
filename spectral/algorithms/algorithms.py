@@ -345,7 +345,7 @@ class PrincipalComponents:
         return self.stats.cov
 
     def reduce(self, N=0, **kwargs):
-        '''Reduces the number or principal components.
+        '''Reduces the number of principal components.
 
         Keyword Arguments (one of the following must be specified):
 
@@ -358,7 +358,7 @@ class PrincipalComponents:
 
                 A list of indices of eigenvalues/eigenvectors to be retained.
 
-            'fraction' (float):
+            `fraction` (float):
 
                 The fraction of total image variance to retain.  Eigenvalues
                 will be retained (starting from greatest to smallest) until
@@ -416,7 +416,8 @@ def principal_components(image):
 
             An `MxNxB` image
 
-    Returns a `PrincipalComponents` object with the following members:
+    Returns a :class:`~spectral.algorithms.algorithms.PrincipalComponents`
+    object with the following members:
 
         `eigenvalues`:
 
@@ -434,6 +435,10 @@ def principal_components(image):
 
             A callable function to transform data to the space of the
             principal components.
+
+        `reduce`:
+
+            A method to reduce the number of eigenvalues.
     '''
     from numpy import sqrt, sum
 
