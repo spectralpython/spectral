@@ -49,6 +49,7 @@ testdir = 'spectral_test_files'
 import spyfile
 import transforms
 import memmap
+import envi
 
 # List of all submodules to be run from the `run` submodule.
-all_tests = [spyfile, memmap, transforms]
+all_tests = [spyfile, memmap, transforms, envi]

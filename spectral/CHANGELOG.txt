@@ -4,6 +4,17 @@
 
 2013-09-02	tboggs <tboggs@users.sourceforge.net>
 
+    Allow calling `envi.create_image` with keyword args instead of a metadata
+    dict using ENVI-specific parameter names.
+
+    * io/envi.py:
+      (gen_params): Cast data type to str.
+      (create_image): Make `metadata` arg optional and accept keywords.
+    * tests/__init__.py: Added ENVI tests
+    * tests/envi.py: New file
+
+2013-09-02	tboggs <tboggs@users.sourceforge.net>
+
     Default WX_GL_DEPTH_SIZE to 24 bits.
 
     * spectra.py (SpySettings): Changed WX_GL_DEPTH_SIZE to 24.
@@ -63,7 +74,7 @@
 
     Add image band info to saved file. Corrected band_quantity member name.
 
-    * io/envi.pi:
+    * io/envi.py:
       (open): BandInfo member changed from "bandQuantity" to "band_quantity".
       (SpectralLibrary.__init__): Ditto
       (save_image): Include band info from image being saved, unless metadata

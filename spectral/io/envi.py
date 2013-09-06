@@ -139,7 +139,7 @@ def gen_params(envi_header):
     p.ncols = int(h["samples"])
     p.offset = int(h["header offset"])
     p.byte_order = int(h["byte order"])
-    p.dtype = np.dtype(envi_to_dtype[h["data type"]]).str
+    p.dtype = np.dtype(envi_to_dtype[str(h["data type"])]).str
     if p.byte_order != spectral.byte_order:
         p.dtype = np.dtype(p.dtype).newbyteorder().str
     p.filename = None
@@ -327,6 +327,14 @@ def save_image(hdr_file, image, **kwargs):
             A dict containing ENVI header parameters (e.g., parameters
             extracted from a source image).
 
+    Example::
+
+        >>> # Save the first 10 principal components of an image
+        >>> data = open_image('92AV3C.lan').load()
+        >>> pc = principal_components(data)
+        >>> pcdata = pc.reduce(num=10).transform(data)
+        >>> envi.save_image('pcimage.hdr', pcdata, dtype=np.float32)
+
     If the source image being saved was already in ENVI format, then the
     SpyFile object for that image will contain a `metadata` dict that can be
     passed as the `metadata` keyword. However, care should be taken to ensure
@@ -415,7 +423,7 @@ def save_image(hdr_file, image, **kwargs):
     fout.close()
 
 
-def create_image(hdr_file, metadata, **kwargs):
+def create_image(hdr_file, metadata=None, **kwargs):
     '''
     Creates an image file and ENVI header with a memmep array for write access.
 
@@ -427,9 +435,10 @@ def create_image(hdr_file, metadata, **kwargs):
 
         `metadata` (dict):
 
-            Metadata to specify the image file format.  The following paramters
-            (in ENVI header format) are required: "bands", "lines", "samples",
-            "header offset", and "data type".
+            Metadata to specify the image file format. The following parameters
+            (in ENVI header format) are required, if not specified via
+            corresponding keyword arguments: "bands", "lines", "samples",
+            and "data type".
 
     Keyword Arguments:
 
@@ -454,12 +463,58 @@ def create_image(hdr_file, metadata, **kwargs):
             string, the image file will have the same name as the header but
             without the ".hdr" extension.
 
+        `interleave` (str):
+
+            Must be one of "bil", "bip", or "bsq". This keyword supercedes the
+            value of "interleave" in the metadata argument, if given. If no
+            interleave is specified (via keyword or `metadata`), "bip" is
+            assumed.
+
+        `shape` (tuple of integers):
+
+            Specifies the number of rows, columns, and bands in the image.
+            This keyword should be either of the form (R, C, B) or (R, C),
+            where R, C, and B specify the number or rows, columns, and bands,
+            respectively. If B is omitted, the number of bands is assumed to
+            be one. If this keyword is given, its values supercede the values
+            of "bands", "lines", and "samples" if they are present in the
+            `metadata` argument.
+
+        `offset` (integer, default 0):
+
+            The offset (in bytes) of image data from the beginning of the file.
+            This value supercedes the value of "header offset" in the metadata
+            argument (if given).
+
     Returns:
 
         `SpyFile` object:
 
             To access a `numpy.memmap` for the returned `SpyFile` object, call
             the `open_memmap` method of the returned object.
+
+    Examples:
+
+        Creating a new image from metadata::
+
+            >>> md = {'lines': 30,
+                      'samples': 40,
+                      'bands': 50,
+                      'data type': 12}
+            >>> img = envi.create_image('new_image.hdr', md)
+
+        Creating a new image via keywords::
+
+            >>> img = envi.create_image('new_image2.hdr',
+                                        shape=(30, 40, 50),
+                                        dtype=np.uint16)
+
+        Writing to the new image using a memmap interface::
+
+            >>> # Set all band values for a single pixel to 100.
+            >>> mm = img.open_memmap(writable=True)
+            >>> mm[30, 30] = 100
+
     '''
     from exceptions import NotImplementedError, TypeError
     import numpy as np
@@ -471,16 +526,46 @@ def create_image(hdr_file, metadata, **kwargs):
     memmap_mode = kwargs.get('memmap_mode', 'w+')
     (hdr_file, img_file) = check_new_filename(hdr_file, img_ext, force)
 
-    metadata = metadata.copy()
-    params = gen_params(metadata)
-    if kwargs.get('dtype'):
-        metadata['data type'] = dtype_to_envi[np.dtype(kwargs['dtype']).char]
-        dt = np.dtype(kwargs['dtype']).char
+    default_metadata = {'header offset': 0, 'interleave': 'bip'}
+    
+    if metadata is None:
+        metadata = default_metadata
     else:
-        dt = np.dtype(params.dtype).char
-    metadata['byte order'] = spectral.byte_order
-    params.filename = img_file
+        default_metadata.update(metadata)
+        metadata = default_metadata
 
+    # Keyword args supercede metadata dict
+    if 'shape' in kwargs:
+        shape = kwargs['shape']
+        metadata['lines'] = shape[0]
+        metadata['samples'] = shape[1]
+        if len(shape) == 3:
+            metadata['bands'] = shape[2]
+        else:
+            metadata['bands'] = 1
+    if 'offset' in kwargs:
+        metadata['offset'] = kwargs['offset']
+    if 'dtype' in kwargs:
+        metadata['data type'] = dtype_to_envi[np.dtype(kwargs['dtype']).char]
+
+    metadata['byte order'] = spectral.byte_order
+
+    # Verify minimal set of parameters have been provided
+    if 'lines' not in metadata:
+        raise Exception('Number of image rows is not defined.')
+    elif 'samples' not in metadata:
+        raise Exception('Number of image columns is not defined.')
+    elif 'bands' not in metadata:
+        raise Exception('Number of image bands is not defined.')
+    elif 'samples' not in metadata:
+        raise Exception('Number of image columns is not defined.')
+    elif 'data type' not in metadata:
+        raise Exception('Image data type is not defined.')
+
+    params = gen_params(metadata)
+    dt = np.dtype(params.dtype).char
+    params.filename = img_file
+        
     is_library = False
     if metadata.get('file type') == 'ENVI Spectral Library':
         is_library = True
