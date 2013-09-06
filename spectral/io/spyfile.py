@@ -736,7 +736,7 @@ class MemmapFile(object):
 
         Keyword Arguments:
 
-            interleave (str):
+            `interleave` (str, default 'bip'):
 
                 Specifies the shape/interleave of the returned object. Must be
                 one of ['bip', 'bil', 'bsq', 'source']. If not specified, the
@@ -746,11 +746,17 @@ class MemmapFile(object):
                 the file are R, C, and B, the shape of the returned memmap
                 array will be as follows:
 
-                    'bip' : (R, C, B)
-                    'bil' : (R, B, C)
-                    'bsq' : (B, R, C)
+                .. table::
 
-            writable (bool, default False):
+                    ========== ===========
+                    interleave array shape
+                    ========== ===========
+                    'bip'      (R, C, B)
+                    'bil'      (R, B, C)
+                    'bsq'      (B, R, C)
+                    ========== ===========
+
+            `writable` (bool, default False):
 
                 If `writable` is True, modifying values in the returned memmap
                 will result in corresponding modification to the image data

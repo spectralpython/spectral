@@ -39,6 +39,23 @@ from warnings import warn
 
 
 class SpySettings:
+    '''Run-time settings for the `spectral` module.
+
+    After importing `spectral`, the settings object is referenced as
+    `spectral.settings`.
+    
+    Noteworthy members:
+
+        `WX_GL_DEPTH_SIZE` (integer, default 24):
+            Sets the depth (in number of bits) for the OpenGL depth buffer.
+            If calls to `view_cube` or `view_nd` result in windows with blank
+            canvases, try reducing this value.
+
+        `show_progress` (bool, default True):
+            Indicates whether long-running algorithms should display progress
+            to sys.stdout. It can be useful to set this value to False when
+            SPy is embedded in another application (e.g., IPython Notebook).
+    '''
     def __init__(self):
         self.viewer = None
         self.plotter = None
@@ -48,7 +65,7 @@ class SpySettings:
         self.START_WX_APP = True
 
         # Parameter used by GLCanvas objects in view_cube and view_nd. If the
-        # canvas does not render, try changing reducing this value (e.g., 16).
+        # canvas does not render, try reducing this value (e.g., 16).
         self.WX_GL_DEPTH_SIZE = 24
 
         # Should algorithms show completion progress of algorithms?
