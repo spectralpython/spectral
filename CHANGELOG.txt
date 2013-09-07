@@ -4,6 +4,10 @@
 
 2013-09-06	tboggs <tboggs@users.sourceforge.net>
 
+    Updated version to 0.12
+
+2013-09-06	tboggs <tboggs@users.sourceforge.net>
+
     Allow calling `envi.create_image` with keyword args instead of a metadata
     dict using ENVI-specific parameter names.
 

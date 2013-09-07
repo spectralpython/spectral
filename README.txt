@@ -4,9 +4,64 @@ Installation Instructions
 
 To install SPy, unpack the source distribution archive, `cd` into the
 directory created when the archive is unpacked (e.g., "spectral.x.y"), and
-type the following:
+type the following::
 
     python setup.py install
+
+================================================================================
+SPy 0.12
+================================================================================
+Release date: 2013.09.06
+
+New Featues
+-----------
+
+* Added a wrapper around matplotlib's `imshow` to easily display HSI data.
+
+* A new memmap interface is provided for SpyFile objects
+  (via the `open_memmap` method), including the ability to open writable
+  memmaps.
+
+* Algorithm progress display can be enabled/disabled via the settings object.
+
+* RX anomaly detection can be performed using local statistics by specifying
+  an inner/outer window.
+
+* A custom background color can be specified when calling `view_cube`.
+
+* Summary statistics are printed for unit test execution.
+
+Changes
+-------
+
+* `get_image_display_data` has been renamed `get_rgb`.
+
+* `view_cube` will also accept an ndaray as the "top" keyword.
+
+* If present, image band info is saved when `envi.save_image` is called.
+
+* Allow calling :func:`~spectral.oi.envi.create_image` using keyword args
+  instead of ENVI-specific header paramter names.
+
+* `save_rgb` automatically determines the output file type, based on the
+  filename extension.
+
+* Results of several ImageArray methods will be cast to an ndarray.
+
+* The Image base class is now a new-style class.
+
+
+Bug Fixes
+---------
+
+* Eliminated texture-wrapping display artifact near edges of displayed image
+  cubes (called via `view_cube`).
+
+* RX.__call__ was failing when image statistics were not provided to class
+  constructor.
+
+* Applied Ferdinand Deger's bugfix for `envi.create_image`.
+
 
 
 ================================================================================
