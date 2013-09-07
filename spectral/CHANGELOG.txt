@@ -2,7 +2,7 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
-2013-09-02	tboggs <tboggs@users.sourceforge.net>
+2013-09-06	tboggs <tboggs@users.sourceforge.net>
 
     Allow calling `envi.create_image` with keyword args instead of a metadata
     dict using ENVI-specific parameter names.
