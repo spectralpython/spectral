@@ -212,15 +212,24 @@ class RXW():
     Speech, Signal Processing, vol. 38, pp. 1760-1770, Oct. 1990.
     '''
 
-    def __init__(self, window):
+    def __init__(self, window, **kwargs):
         '''Creates a detector with the given inner/outer window.
 
         Arguments:
 
             `window` (2-tuple of odd integers):
 
-            `window` must have the form (`inner`, `outer`), where inner and
-            outer are both odd-valued integers with `inner` < `outer`.
+                 `window` must have the form (`inner`, `outer`), where inner
+                 and outer are both odd-valued integers with `inner` < `outer`.
+
+        Keyword Arguments:
+
+            `cov` (ndarray):
+
+                An optional covariance to use. If this parameter is given,
+                `cov` will be used for all RX calculations (background
+                covariance will not be recomputed in each window). Only the
+                background mean will be recomputed in each window).
         '''
         from exceptions import ValueError
         (inner, outer) = window
@@ -228,8 +237,13 @@ class RXW():
             raise ValueError('Inner and outer window widths must be odd.')
         if inner >= outer:
             raise ValueError('Inner window must be smaller than outer.')
-
         self.window = window[:]
+
+        self.cov = kwargs.get('cov', None)
+
+        for k in kwargs:
+            if k not in ['cov']:
+                raise ValueError('Unexpected keyword: %s.' % str(k))
 
     def __call__(self, image):
         '''Applies the RX anomaly detector to X.
@@ -253,7 +267,7 @@ class RXW():
 
         x = np.ones((R, C), dtype=np.float32) * -1.0
 
-        if R_out**2 - R_in**2 < B:
+        if self.cov is None and R_out**2 - R_in**2 < B:
             raise ValueError('Window size provides too few samples for ' \
                              'image data dimensionality.')
 
@@ -278,7 +292,10 @@ class RXW():
                     X = image[i0 : i1, j0 : j1, :]
                 X = np.take(X.reshape((-1, B)), indices, axis=0)
                 m = np.mean(X, axis=0)
-                Cov = np.cov(X, rowvar=False)
+                if self.cov == None:
+                    Cov = np.cov(X, rowvar=False)
+                else:
+                    Cov = self.cov
                 r = image[i, j] - m
                 x[i, j] = r.dot(np.linalg.inv(Cov)).dot(r)
             if i % (C / 10) == 0:
@@ -293,7 +310,7 @@ def rx(X, **kwargs):
 
         y = rx(X [, background=bg]
 
-        y = rx(X, window=(inner, outer))
+        y = rx(X, window=(inner, outer) [, cov=C])
 
     The RX anomaly detector produces a detection statistic equal to the 
     mean and covariance of the background, this detector returns the squared
@@ -354,6 +371,13 @@ def rx(X, **kwargs):
             inner window will cover `image[48:53, :4]` and the outer window
             will cover `image[40:51, :21]`.
             
+        `cov` (ndarray):
+
+            An optional covariance to use. If this parameter is given, `cov`
+            will be used for all RX calculations (background covariance
+            will not be recomputed in each window). Only the background
+            mean will be recomputed in each window).
+
     Returns numpy.ndarray:
 
         The return value will be the RX detector score (squared Mahalanobis
@@ -371,7 +395,8 @@ def rx(X, **kwargs):
         raise ValueError('`background` and `window` keywords are mutually ' \
                          'exclusive.')
     if 'window' in kwargs:
-        return RXW(kwargs['window'])(X)
+        window = kwargs.pop('window')
+        return RXW(window, **kwargs)(X)
     return RX(kwargs.get('background', None))(X)
 
 
