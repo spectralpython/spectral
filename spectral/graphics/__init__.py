@@ -30,7 +30,8 @@
 #
 
 from graphics import (save_rgb, view, view_indexed, view_cube, view_nd,
-                      get_rgb, imshow)
+                      get_rgb)
+from spypylab import imshow
 from colorscale import ColorScale
 
 # Deprecated functions

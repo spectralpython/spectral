@@ -2,6 +2,23 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2013-11-02	tboggs <tboggs@users.sourceforge.net>
+
+    Added `cov` keyword to `rx` function.
+
+    * algorithms/detectors.py:
+      (RXW.__init__): Accept `cov` keyword
+      (RXW.__call__): Use optional covariance.
+      (rx): Accept `cov` keyword.
+
+    Added ImageView class for imshow wrapper.
+
+    * graphics/__init__.py: Import imshow from spypylab.
+    * graphics/spypylab.py:
+      (ImageView): New class
+      (imshow): Moved from graphics.py. Added `parent` keyword for
+        implementing zoom windows.
+
 2013-09-06	tboggs <tboggs@users.sourceforge.net>
 
     Updated version to 0.12
