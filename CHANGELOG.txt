@@ -2,6 +2,14 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2013-11-05	tboggs <tboggs@users.sourceforge.net>
+
+    Minor improvement to matrix_sqrt and added associated unit tests.
+
+    * algorithms/spymath.py (matrix_sqrt): added optional `inverse` arg.
+    * tests/__init__.py: Include spymath testing module
+    * tests/spymath.py: New file.
+
 2013-11-02	tboggs <tboggs@users.sourceforge.net>
 
     Added `cov` keyword to `rx` function.
