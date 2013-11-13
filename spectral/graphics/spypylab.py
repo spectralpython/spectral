@@ -684,7 +684,7 @@ def imshow(data=None, bands=None, classes=None, source=None, **kwargs):
     Show a true color image of a hyperspectral image:
 
         >>> data = open_image('92AV3C.lan').load()
-        >>> view = imshow(data, bands=(30, 20, 10)
+        >>> view = imshow(data, bands=(30, 20, 10))
 
     Show ground truth in a separate window:
 
