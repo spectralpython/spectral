@@ -1,4 +1,4 @@
-#########################################################################
+########################################################################
 #
 #   spypylab.py - This file is part of the Spectral Python (SPy) package.
 #
@@ -33,70 +33,592 @@
 A module to use matplotlib for creating raster and spectral views.
 '''
 
+import numpy as np
+from exceptions import UserWarning, ValueError
+import warnings
+
+def xy_to_rowcol(x, y):
+    '''Converts image (x, y) coordinate to pixel (row, col).'''
+    return (int(y + 0.5), int(x + 0.5))
+
+def rowcol_to_xy(r, c):
+    '''Converts pixel (row, col) coordinate to (x, y) of pixel center.'''
+    return (float(c), float(r))
+
+class MplCallback(object):
+    '''Base class for callbacks using matplotlib's CallbackRegistry.
+
+    Behavior of MplCallback objects can be customized by providing a callable
+    object to the constructor (or `connect` method) or by defining a
+    `handle_event` method in a subclass.
+    '''
+    def __init__(self, registry=None, event=None, callback=None):
+        '''
+         Arguments:
+
+            registry (ImageView, CallbackRegistry, or FigureCanvas):
+
+                The object that will generate the callback. If the argument is
+                an ImageView, the callback will be bound to the associated
+                FigureCanvas.
+
+            event (str):
+
+                The event type for which callbacks should be generated.
+
+            callback (callable):
+
+                An optional callable object to handle the event. If not
+                provided, the `handle_event` method of the MplCallback will
+                be called to handle the event (this method must be defined by
+                a derived class if `callback` is not provided.
+
+        Note that these arguments can be deferred until `MplCallback.connect`
+        is called.
+        '''
+        self.set_registry(registry)
+        self.event = event
+        self.callback = callback
+        self.cid = None
+        self.is_connected = False
+
+    def set_registry(self, registry=None):
+        '''
+        Arguments:
+
+            registry (ImageView, CallbackRegistry, or FigureCanvas):
+
+                The object that will generate the callback. If the argument is
+                an ImageView, the callback will be bound to the associated
+                FigureCanvas.
+        '''
+        from matplotlib.cbook import CallbackRegistry
+        if isinstance(registry, CallbackRegistry):
+            self.registry = registry
+        elif isinstance(registry, ImageView):
+            self.registry = registry.axes.figure.canvas
+        else:
+            self.registry = registry
+        
+    def connect(self, registry=None, event=None, callback=None):
+        '''Binds the callback to the registry and begins receiving event.
+        
+         Arguments:
+
+            registry (ImageView, CallbackRegistry, or FigureCanvas):
+
+                The object that will generate the callback. If the argument is
+                an ImageView, the callback will be bound to the associated
+                FigureCanvas.
+
+            event (str):
+
+                The event type for which callbacks should be generated.
+
+            callback (callable):
+
+                An optional callable object to handle the event. If not
+                provided, the `handle_event` method of the MplCallback will
+                be called to handle the event (this method must be defined by
+                a derived class if `callback` is not provided.
+
+        Note that these arguments can also be provided to the constructor.
+        '''
+        from matplotlib.cbook import CallbackRegistry
+        if self.is_connected:
+            raise Exception('Callback is already connected.')
+        if registry is not None:
+            self.set_registry(registry)
+        if event is not None:
+            self.event = event
+        if callback is not None:
+            self.callback = callback
+        if self.callback is None:
+            cb = self
+        else:
+            cb = self.callback
+        if isinstance(self.registry, CallbackRegistry):
+            self.cid = self.registry.connect(self.event, cb)
+        elif isinstance(self.registry, ImageView):
+            self.cid = self.registry.connect(self.event, cb)
+        else:
+            # Assume registry is an MPL canvas
+            self.cid = self.registry.mpl_connect(self.event, cb)
+        self.is_connected = True
+
+    def disconnect(self):
+        '''Stops the callback from receiving events.'''
+        from matplotlib.cbook import CallbackRegistry
+        if isinstance(self.registry, CallbackRegistry):
+            self.registry.disconnect(self.cid)
+        else:
+            # Assume registry is an MPL canvas
+            self.registry.mpl_disconnect(self.cid)
+        self.is_connected = False
+        self.cid = None
+
+    def __call__(self, *args, **kwargs):
+        if self.callback is not None:
+            try:
+                self.callback(*args, **kwargs)
+            except:
+                print 'MplCallback callable raised exception. Disconnecting.'
+                self.disconnect()
+        else:
+            try:
+                self.handle_event(*args, **kwargs)
+            except:
+                print 'MplCallback.handle_event raised exception. ' \
+                  'Disconnecting.'
+                self.disconnect()
+
+class ImageViewCallback(MplCallback):
+    '''Base class for callbacks that operate on ImageView objects.'''
+    def __init__(self, view, *args, **kwargs):
+        super(ImageViewCallback, self).__init__(*args, **kwargs)
+        self.view = view
+
+class ParentViewPanCallback(ImageViewCallback):
+    '''A callback to pan an image based on a click in another image.'''
+    def __init__(self, child, parent, *args, **kwargs):
+        '''
+        Arguments:
+
+            `child` (ImageView):
+
+                The view that will be panned based on a parent click event.
+
+            `parent` (ImageView):
+
+                The view whose click location will cause the child to pan.
+
+        See ImageViewCallback and MplCallback for additional arguments.
+        '''
+        super(ParentViewPanCallback, self).__init__(parent, *args, **kwargs)
+        self.child = child
+
+    def handle_event(self, event):
+        if event.inaxes is not self.view.axes:
+            return
+        (r, c) = xy_to_rowcol(event.xdata, event.ydata)
+        (nrows, ncols) = self.view._image_shape
+        if r < 0 or r >= nrows or c < 0 or c >= ncols:
+            return
+        if event.button == 1 and event.key == 'control':
+            self.child.pan_to(event.ydata, event.xdata)
+
+    def connect(self):
+        super(ParentViewPanCallback, self).connect(registry=self.view,
+                                                   event='button_press_event')
+                                                   
+class ImageViewKeyboardHandler(ImageViewCallback):
+    '''Default handler for keyboard events in an ImageView.'''
+    def __init__(self, view, *args, **kwargs):
+        super(ImageViewKeyboardHandler, self).__init__(view,
+                                                       registry=view,
+                                                       event='key_press_event',
+                                                       *args, **kwargs)
+
+    def handle_event(self, event):
+        key = event.key
+        if key == 'a':
+            self.view.class_alpha = max(self.view.class_alpha - 0.05, 0)
+        elif key == 'A':
+            self.view.class_alpha = min(self.view.class_alpha + 0.05, 1)
+        elif key == 'c':
+            if self.view.class_axes is not None:
+                self.view.set_display_mode('classes')
+        elif key == 'C':
+            if self.view.class_axes is not None \
+              and self.view.data_axes is not None:
+                self.view.set_display_mode('overlay')
+        elif key == 'd':
+            if self.view.data_axes is not None:
+                self.view.set_display_mode('data')
+        elif key == 'h':
+            self.print_help()
+        elif key == 'z':
+            self.view.open_zoom()
+
+    def print_help(self):
+        print
+        print 'Mouse Functions:'
+        print '----------------'
+        print 'CTRL+left-click          ->   pan zoom window to pixel'
+        print 'left-dblclick            ->   plot pixel spectrum'
+
+        print
+        print 'Keybinds:'
+        print '---------'
+        print 'a/A     -> decrease/increase class overlay alpha value'
+        print 'c       -> set display mode to "classes" (if classes set)'
+        print 'C       -> set display mode to "overlay" (if data and ' \
+                          'classes set)'
+        print 'd       -> set display mode to "data" (if data set)'
+        print 'h       -> print help message'
+        print 'z       -> open zoom window'
+        print
+        print 'See matplotlib imshow documentation for addition key binds.'
+        print
+
+    
 class ImageView(object):
-    '''Class to manage events and data associated with `spectral.imshow`.'''
+    '''Class to manage events and data associated with image raster views.
+    '''
 
-    def __init__(self, data, bands=None, **kwargs):
+    def __init__(self, data=None, bands=None, classes=None, source=None,
+                 **kwargs):
 
-        import matplotlib.pyplot as plt
-        from .graphics import get_rgb
+        import spectral
+        self.is_shown = False
+        self.imshow_data_kwargs = {'cmap': 'gray'}
+        self.imshow_class_kwargs = {'zorder': 1}
 
-        self.data = data
+        self.data = None
+        self.classes = None
+        self.class_rgb = None
+        self.source = None
+        self.data_axes = None
+        self.class_axes = None
+        self.axes = None
+        self._image_shape = None
+        self.display_mode = None
+        
+        if data is not None:
+            self.set_data(data, bands, **kwargs)
         self.bands = bands
-        self.kwargs = kwargs
+        if classes is not None:
+            self.set_classes(classes)
+        if source is not None:
+            self.set_source(source)
 
-        (self.nrows, self.ncols) = self.data.shape[:2]
-
+        self.class_colors = spectral.spy_colors
+ 
         self.spectrum_plot_fig_id = None
         self.parent = None
         self._on_parent_click_cid = None
+        self._class_alpha = 0.5
 
-    def show(self):
-        '''Displays the image.'''
-        import matplotlib.pyplot as plt
-        from .graphics import get_rgb
-        show_xaxis = True
-        show_yaxis = True
-        kwargs = self.kwargs.copy()
+    def set_data(self, data, bands=None, **kwargs):
+        '''Sets the data to be shown in the RGB channels.
         
-        if 'show_xaxis' in kwargs:
-            show_xaxis = kwargs.pop('show_xaxis')
-        if 'show_yaxis' in kwargs:
-            show_yaxis = kwargs.pop('show_yaxis')
-        rgb_kwargs = {}
-        for k in ['stretch', 'stretch_all', 'bounds']:
-            if k in kwargs:
-                rgb_kwargs[k] = kwargs.pop(k)
+        Arguments:
 
-        imshow_kwargs = {'cmap': 'gray', 'interpolation': 'none'}
-        imshow_kwargs.update(kwargs)
+            `data` (ndarray or SpyImage):
 
-        rgb = get_rgb(self.data, self.bands, **rgb_kwargs)
+                If `data` has more than 3 bands, the `bands` argument can be
+                used to specify which 3 bands to display. `data` will be
+                passed to `get_rgb` prior to display.
 
-        # Allow matplotlib.imshow to apply a color scale to single-band image.
-        if len(self.data.shape) == 2:
-            rgb = rgb[:, :, 0]
+            `bands` (3-tuple of int):
 
-        self.axesimage = plt.imshow(rgb, **imshow_kwargs)
-        if show_xaxis == False:
-            plt.gca().xaxis.set_visible(False)
-        if show_yaxis == False:
-            plt.gca().yaxis.set_visible(False)
+                Indices of the 3 bands to display from `data`.
 
-        self._on_click_cid = self.axesimage.figure.canvas.mpl_connect(
-            'button_press_event',
-            self.on_click)
+        Keyword Arguments:
+
+            Any valid keyword for `get_rgb` or `matplotlib.imshow` can be
+            given.
+        '''
+        import spectral as spy
+        rgb_kwargs = dict([item for item in kwargs.items() \
+                           if item[0] in ('stretch', 'stretch_all', 'bounds')])
+        self.data = spy.get_rgb(data, bands, **rgb_kwargs)
+        if self._image_shape is None:
+            self._image_shape = data.shape[:2]
+        elif data.shape[:2] != self._image_shape:
+            raise ValueError('Image shape is inconsistent with previously ' \
+                             'set data.')
+        self.imshow_data_kwargs.update(kwargs)
+        if len(kwargs) > 0 and self.is_shown:
+            msg = 'Keyword args to set_data only have an effect if ' \
+              'given before the image is shown.'
+            warnings.warn(UserWarning(msg))
+        if self.is_shown:
+            self.refresh()
+
+    def set_classes(self, classes, colors=None, **kwargs):
+        '''Sets the array of class values associated with the image data.
+
+        Arguments:
+
+            `classes` (ndarray of int):
+
+                `classes` must be an integer-valued array with the same
+                number rows and columns as the display data (if set).
+
+            `colors`: (array or 3-tuples):
+
+                Color triplets (with values in the range [0, 255]) that
+                define the colors to be associatd with the integer indices
+                in `classes.
+
+        Keyword Arguments:
+
+            Any valid keyword for `matplotlib.imshow` can be provided.
+        '''
+        self.classes = classes
+        if classes is None:
+            return
+        if self._image_shape is None:
+            self._image_shape = classes.shape[:2]
+        elif classes.shape[:2] != self._image_shape:
+            raise ValueError('Class data shape is inconsistent with ' \
+                             'previously set data.')
+        if colors is not None:
+            self.class_colors = colors
+        self.imshow_class_kwargs.update(kwargs)
+        if len(kwargs) > 0 and self.is_shown:
+            msg = 'Keyword args to set_classes only have an effect if ' \
+              'given before the image is shown.'
+            warnings.warn(UserWarning(msg))
+        if self.is_shown:
+            self.refresh()
+
+    def set_source(self, source):
+        '''Sets the image data source (used for accessing spectral data).'''
+        self.source = source
+    
+    def show(self, mode=None, fignum=None):
+        '''Renders the image data.
+
+        Arguments:
+
+            `mode` (str):
+
+                Must be one of:
+
+                    "data":          Show the data RGB
+
+                    "classes":       Shows indexed color for `classes`
+
+                    "overlay":       Shows class colors overlaid on data RGB.
+
+                If `mode` is not provided, a mode will be automatically
+                selected, based on the data set in the ImageView.
+
+            `fignum` (int):
+
+                Figure number of the matplotlib figure in which to display
+                the ImageView. If not provided, a new figure will be created.
+        '''
+        import matplotlib.pyplot as plt
+        if self.is_shown:
+            msg = 'ImageView.show should only be called once.'
+            warnings.warn(UserWarning(msg))
+            return
+        
+        if fignum is not None:
+            plt.figure(num=fignum)
+        else:
+            plt.figure()
+            
+        if self.data is not None:
+            self.show_data()
+        if self.classes is not None:
+            self.show_classes()
+
+        if mode is None:
+            self._guess_mode()
+        else:
+            self.set_display_mode(mode)
+
+        self.axes.format_coord = self.format_coord
+        self.cb_mouse = MplCallback(self.axes.figure.canvas,
+                                    'button_press_event', self.on_click)
+        self.cb_mouse.connect()
+        self.cb_keyboard = ImageViewKeyboardHandler(self)
+        self.cb_keyboard.connect()
+        
+        self.is_shown = True
+
+    def _guess_mode(self):
+        '''Select an appropriate display mode, based on current data.'''
+        if self.data is not None:
+            self.set_display_mode('data')
+        elif self.classes is not None:
+            self.set_display_mode('classes')
+        else:
+            raise Exception('Unable to display image: no data set.')
+
+    def show_data(self):
+        '''Show the image data.'''
+        import matplotlib.pyplot as plt
+        if self.data_axes is not None:
+            msg = 'ImageView.show_data should only be called once.'
+            warnings.warn(UserWarning(msg))
+            return
+        elif self.data is None:
+            raise Exception('Unable to display data: data array not set.')
+        if self.axes is not None:
+            # A figure has already been created for the view. Make it current.
+            plt.figure(self.axes.figure.number)
+        self.data_axes = plt.imshow(self.data, **self.imshow_data_kwargs)
+        if self.axes is None:
+            self.axes = self.data_axes.axes
+
+    def show_classes(self):
+        '''Show the class values.'''
+        import matplotlib.pyplot as plt
+        from matplotlib.colors import ListedColormap, NoNorm
+        from spectral import get_rgb
+
+        if self.class_axes is not None:
+            msg = 'ImageView.show_classes should only be called once.'
+            warnings.warn(UserWarning(msg))
+            return
+        elif self.classes is None:
+            raise Exception('Unable to display classes: class array not set.')
+
+        cm = ListedColormap(np.array(self.class_colors) / 255.)
+        self._update_class_rgb()
+        kwargs = self.imshow_class_kwargs.copy()
+
+        kwargs.update({'cmap': cm, 'vmin': 0, 'norm': NoNorm()})
+        if self.axes is not None:
+            # A figure has already been created for the view. Make it current.
+            plt.figure(self.axes.figure.number)
+        self.class_axes = plt.imshow(self.class_rgb, **kwargs)
+        if self.axes is None:
+            self.axes = self.class_axes.axes
+        self.class_axes.set_zorder(1)
+        if self.display_mode == 'overlay':
+            self.class_axes.set_alpha(self._class_alpha)
+        else:
+            self.class_axes.set_alpha(1)
+        #self.class_axes.axes.set_axis_bgcolor('black')
+
+    def refresh(self):
+        '''Updates the displayed data (if it has been shown).'''
+        if self.is_shown:
+            self._update_class_rgb()
+            if self.class_axes is not None:
+                self.class_axes.set_data(self.class_rgb)
+            elif self.display_mode in ('classes', 'overlay'):
+                self.show_classes()
+            if self.data_axes is not None:
+                self.data_axes.set_data(self.data)
+            elif self.display_mode in ('data', 'overlay'):
+                self.show_data()
+            self.axes.figure.canvas.draw()
+
+    def _update_class_rgb(self):
+        if self.display_mode is 'overlay':
+            self.class_rgb = np.ma.array(self.classes, mask=(self.classes==0))
+        else:
+            self.class_rgb = np.array(self.classes)
+        
+    def set_display_mode(self, mode):
+        '''`mode` must be one of ("data", "classes", "overlay").'''
+        if mode not in ('data', 'classes', 'overlay'):
+            raise ValueError('Invalid display mode: ' + repr(mode))
+        self.display_mode = mode
+        show_data = mode in ('data', 'overlay')
+        if self.data_axes is not None:
+            self.data_axes.set_visible(show_data)
+        show_classes = mode in ('classes', 'overlay')
+        if self.class_axes is not None:
+            self.class_axes.set_visible(show_classes)
+            if mode is 'classes':
+                self.class_axes.set_alpha(1)
+            else:
+                self.class_axes.set_alpha(self._class_alpha)
+        self.refresh()
+
+    @property
+    def class_alpha(self):
+        '''Sets alpha transparency for the class overlay.'''
+        return self._class_alpha
+
+    @class_alpha.setter
+    def class_alpha(self, alpha):
+        if alpha < 0 or alpha > 1:
+            raise ValueError('Alpha value must be in range [0, 1].')
+        self._class_alpha = alpha
+        if self.class_axes is not None:
+            self.class_axes.set_alpha(alpha)
+        if self.is_shown:
+            self.refresh()
+
+    def open_zoom(self, center=None, size=None):
+        '''Opens a separate window with a zoomed view.
+        If a ctrl-lclick event occurs in the original view, the zoomed window
+        will pan to the location of the click event.
+
+        Arguments:
+
+            `center` (two-tuple of int):
+
+                Initial (row, col) of the zoomed view.
+
+            `size` (int):
+
+                Width and height (in source image pixels) of the initial
+                zoomed view.
+
+        Returns:
+
+        A new ImageView object for the zoomed view.
+        '''
+        import matplotlib.pyplot as plt
+        if size is None:
+            size = 50
+        (nrows, ncols) = self._image_shape
+        kwargs = {'interpolation': 'none',
+                  'extent': (-0.5, ncols - 0.5, nrows - 0.5, -0.5)}
+        fig = plt.figure(figsize=(4,4))
+        view = ImageView(data=self.data, classes=self.classes,
+                         source=self.source)
+        view.imshow_data_kwargs = self.imshow_data_kwargs.copy()
+        view.imshow_data_kwargs.update(kwargs)
+        view.imshow_class_kwargs = self.imshow_class_kwargs.copy()
+        view.imshow_class_kwargs.update(kwargs)
+        view.set_display_mode(self.display_mode)
+        view.show(fignum=fig.number, mode=self.display_mode)
+        view.axes.set_xlim(0, size)
+        view.axes.set_ylim(size, 0)
+        if center is not None:
+            view.pan_to(*center)
+        view.cb_parent_pan = ParentViewPanCallback(view, self)
+        view.cb_parent_pan.connect()
+        return view
+
+    def pan_to(self, row, col):
+        '''Centers view on pixel coordinate (x, y).'''
+        if self.axes is None:
+            raise Exception('Cannot pan image until it is shown.')
+        (xmin, xmax) = self.axes.get_xlim()
+        (ymin, ymax) = self.axes.get_ylim()
+        xrange_2 = (xmax - xmin) / 2.0
+        yrange_2 = (ymax - ymin) / 2.0
+        self.axes.set_xlim(col - xrange_2, col + xrange_2)
+        self.axes.set_ylim(row - yrange_2, row + yrange_2)
+        self.axes.figure.canvas.draw()
+
+    def zoom(self, scale):
+        '''Zooms view in/out (`scale` > 1 zooms in).'''
+        (xmin, xmax) = self.axes.get_xlim()
+        (ymin, ymax) = self.axes.get_ylim()
+        x = (xmin + xmax) / 2.0
+        y = (ymin + ymax) / 2.0
+        dx = (xmax - xmin) / 2.0 / scale
+        dy = (ymax - ymin) / 2.0 / scale
+
+        self.axes.set_xlim(x - dx, x + dx)
+        self.axes.set_ylim(y - dy, y + dy)
+        self.refresh()
+
 
     def on_click(self, event):
         '''Callback for click event in the image display.'''
-        if event.inaxes is not self.axesimage.axes:
+        if event.inaxes is not self.axes:
             return
         (r, c) = (int(event.ydata + 0.5), int(event.xdata + 0.5))
-        if r < 0 or r >= self.nrows or c < 0 or c >= self.ncols:
+        (nrows, ncols) = self._image_shape
+        if r < 0 or r >= nrows or c < 0 or c >= ncols:
             return
         if event.button == 1:
-            if event.key == 'control':
-                if event.dblclick:
+            if event.dblclick and event.key is None:
+                if self.source is not None:
                     from spectral import settings
                     import matplotlib.pyplot as plt
                     if self.spectrum_plot_fig_id is None:
@@ -107,77 +629,23 @@ class ImageView(object):
                     except:
                         f = plt.figure()
                         self.spectrum_plot_fig_id = f.number
-                    settings.plotter.plot(self.data[r, c], self.data)
-                else:
-                    self.print_pixel_info(r, c)
-                
-    def print_pixel_info(self, r, c):
-        print '(row, col) = (%d, %d)' % (r, c)
+                    settings.plotter.plot(self.source[r, c], self.data)
 
-    def set_parent(self, imageview):
-        '''Makes the window dependent on mouse events in the parent window.'''
-        self.unset_parent()
-        self.parent = imageview
-        self._on_parent_click_cid = \
-            self.parent.axesimage.figure.canvas.mpl_connect(
-                'button_press_event', self.on_parent_click)
+    def format_coord(self, x, y):
+        '''Formats pixel coorinate string displayed in the window.'''
+        (nrows, ncols) = self._image_shape
+        if x < -0.5 or x > ncols - 0.5 or y < -0.5 or y > ncols - 0.5:
+            return ""
+        (r, c) = xy_to_rowcol(x, y)
+        s = 'pixel=[%d,%d]' % (r, c)
+        if self.classes is not None:
+            try:
+                s += ' class=%d' % self.classes[r, c]
+            except:
+                pass
+        return s
 
-    def unset_parent(self):
-        if self.parent is not None:
-            self.parent.axesimage.figure.canvas.mpl_disconnect(
-                self._on_parent_click_cid)
-            self.parent = None
-
-    def on_parent_click(self, event):
-        '''Callback for clicks in the image's parent window.'''
-        try:
-            if event.inaxes is not self.parent.axesimage.axes:
-                return
-            (r, c) = (int(event.ydata + 0.5), int(event.xdata + 0.5))
-            if r < 0 or r >= self.nrows or c < 0 or c >= self.ncols:
-                return
-            if event.key == 'shift':
-                self.pan_to(event.xdata, event.ydata)
-        except:
-            self.unset_parent()
-        
-    def pan_to(self, x, y):
-        '''Centers view on pixel coordinate (x, y).'''
-        (xmin, xmax) = self.axesimage.axes.get_xlim()
-        (ymin, ymax) = self.axesimage.axes.get_ylim()
-        xrange_2 = (xmax - xmin) / 2.0
-        yrange_2 = (ymax - ymin) / 2.0
-        self.axesimage.axes.set_xlim(x - xrange_2, x + xrange_2)
-        self.axesimage.axes.set_ylim(y - yrange_2, y + yrange_2)
-        self.axesimage.figure.canvas.draw()
-
-    def open_zoom(self):
-        import matplotlib.pyplot as plt
-        kwargs = {'interpolation': 'none',
-                  'extent': (-0.5, self.ncols - 0.5, self.nrows - 0.5, -0.5)}
-        kwargs.update(self.kwargs)
-        fig = plt.figure(figsize=(4,4))
-        view = ImageView(self.data, self.bands, **kwargs)
-        view.show()
-        view.axesimage.axes.set_xlim(0, 50)
-        view.axesimage.axes.set_ylim(50, 0)
-        view.set_parent(self)
-        return view
-
-    def zoom(self, scale):
-        '''Zooms view in/out (`scale` > 1 zooms in).'''
-        (xmin, xmax) = self.axesimage.axes.get_xlim()
-        (ymin, ymax) = self.axesimage.axes.get_ylim()
-        x = (xmin + xmax) / 2.0
-        y = (ymin + ymax) / 2.0
-        dx = (xmax - xmin) / 2.0 / scale
-        dy = (ymax - ymin) / 2.0 / scale
-
-        self.axesimage.axes.set_xlim(x - dx, x + dx)
-        self.axesimage.axes.set_ylim(y - dy, y + dy)
-        self.axesimage.figure.canvas.draw()
-
-def imshow(data, bands=None, **kwargs):
+def imshow(data=None, bands=None, classes=None, source=None, **kwargs):
     '''A wrapper around matplotlib's imshow for multi-band images.
 
     Arguments:
@@ -193,105 +661,57 @@ def imshow(data, bands=None, **kwargs):
             respectively. If it contains a single value, then a single band
             will be extracted from the image.
 
-    Keyword Arguments:
+    Keywords:
 
-        `show_xaxis` (bool, default True):
-
-            Indicates whether to display x-axis ticks and labels.
-
-        `show_yaxis` (bool, default True):
-
-            Indicates whether to display y-axis ticks and labels.
-
-        `parent` (ImageView):
-
-            If this keyword is given, events generated in `parent` can be
-            used to affect the newly created ImageView. For example, if a
-            shift+left-click event occurs in the parent window, the child
-            window will be re-centered on the clicked pixel. This allows one
-            to create a zoom window by using the matplotlib imshow zoom tool
-            to zoom in on the child window, then shift+left-clicking in the
-            parent window to adjust the zoomed location. `parent` should be
-            an object returned by a previous call to `spectral.imshow`.
-
-    This function is a wrapper around
-    :func:`~spectral.graphics.graphics.get_rgb` and matplotlib's imshow.
-    All keyword arguments other than those described above are passed on to
-    the wrapped functions.
+        If provided, the keywords, "stretch", "stretch_all", and "bounds"
+        will be passed as keywords to `get_rgb` for extracting RGB values
+        from `data`. All keyword arguments other than those described above
+        will be passed on to `matplotlib.imshow`.
 
     This function defaults the color scale (imshow's "cmap" keyword) to
     "gray". To use imshow's default color scale, call this function with
     keyword `cmap=None`.
+
+    Returns:
+
+        An `ImageView` object, which can be subsequently used to refine the
+        image display.
+
+    See :class:`~spectral.graphics.spypylab.ImageView` for additional details.
+
+    Examples:
+
+    Show a true color image of a hyperspectral image:
+
+        >>> data = open_image('92AV3C.lan').load()
+        >>> view = imshow(data, bands=(30, 20, 10)
+
+    Show ground truth in a separate window:
+
+        >>> classes = open_image('92AV3GT.GIS').read_band(0)
+        >>> cview = imshow(classes=classes)
+    
+    Overlay ground truth data on the data display:
+
+        >>> view.set_classes(classes)
+        >>> view.set_display_mode('overlay')
+
+    Show RX anomaly detector results in the view and a zoom window showing
+    true color data:
+
+        >>> x = rx(data)
+        >>> zoom = view.open_zoom()
+        >>> view.set_data(x)
+
+    Note that pressing ctrl-lclick with the mouse in the main window will
+    cause the zoom window to pan to the clicked location.
+
+    Opening zoom windows, changing display modes, and other functions can
+    also be achieved via keys mapped directly to the displayed image. Press
+    "h" with focus on the displayed image to print a summary of mouse/
+    keyboard commands accepted by the display.
     '''
-    if 'parent' in kwargs:
-        parent = kwargs.pop('parent')
-    else:
-        parent = None
-    view = ImageView(data, bands, **kwargs)
-    if parent is not None:
-        view.set_parent(parent)
-    view.show()
-    return view
-
-def imshow_orig(data, bands=None, **kwargs):
-    '''A wrapper around matplotlib's imshow for multi-band images.
-
-    Arguments:
-
-        `data` (SpyFile or ndarray):
-
-            Can have shape (R, C) or (R, C, B).
-
-        `bands` (tuple of integers, optional)
-
-            If `bands` has 3 values, the bands specified are extracted from
-            `data` to be plotted as the red, green, and blue colors,
-            respectively. If it contains a single value, then a single band
-            will be extracted from the image.
-
-    Keyword Arguments:
-
-        `show_xaxis` (bool, default True):
-
-            Indicates whether to display x-axis ticks and labels.
-
-        `show_yaxis` (bool, default True):
-
-            Indicates whether to display y-axis ticks and labels.
-
-        `parent` (ImageView):
-
-            If this keyword is given, events generated in `parent` can be
-            used to affect the newly created ImageView. For example, if a
-            shift+left-click event occurs in the parent window, the child
-            window will be re-centered on the clicked pixel. This allows one
-            to create a zoom window by using the matplotlib imshow zoom tool
-            to zoom in on the child window, then shift+left-clicking in the
-            parent window to adjust the zoomed location. `parent` should be
-            an object returned by a previous call to `spectral.imshow`.
-
-    This function is a wrapper around
-    :func:`~spectral.graphics.graphics.get_rgb` and matplotlib's imshow.
-    All keyword arguments other than those described above are passed on to
-    the wrapped functions.
-
-    This function defaults the color scale (imshow's "cmap" keyword) to
-    "gray". To use imshow's default color scale, call this function with
-    keyword `cmap=None`.
-    '''
-    import matplotlib.pyplot as plt
     from .graphics import get_rgb
-
-    show_xaxis = True
-    show_yaxis = True
-    if 'show_xaxis' in kwargs:
-        show_xaxis = kwargs.pop('show_xaxis')
-    if 'show_yaxis' in kwargs:
-        show_yaxis = kwargs.pop('show_yaxis')
-    if 'parent' in kwargs:
-        parent = kwargs.pop('parent')
-    else:
-        parent = None
 
     rgb_kwargs = {}
     for k in ['stretch', 'stretch_all', 'bounds']:
@@ -301,21 +721,24 @@ def imshow_orig(data, bands=None, **kwargs):
     imshow_kwargs = {'cmap': 'gray', 'interpolation': 'none'}
     imshow_kwargs.update(kwargs)
 
-    rgb = get_rgb(data, bands, **rgb_kwargs)
+    view = ImageView()
+    if data is not None:
+        rgb = get_rgb(data, bands, **rgb_kwargs)
+        # Allow matplotlib.imshow to apply a color scale to single-band image.
+        if len(data.shape) == 2:
+            rgb = rgb[:, :, 0]
+        view.set_data(rgb, **imshow_kwargs)
+        view.set_classes(classes)
+    else:
+        view.set_classes(classes, **imshow_kwargs)
+    if source is not None:
+        view.set_source(source)
+    elif data is not None and len(data.shape) == 3 and data.shape[2] > 3:
+        view.set_source(data)
 
-    # Allow matplotlib.imshow to apply a color scale to single-band image.
-    if len(data.shape) == 2:
-        rgb = rgb[:, :, 0]
-    
-    axesimage = plt.imshow(rgb, **imshow_kwargs)
-    if show_xaxis == False:
-        plt.gca().xaxis.set_visible(False)
-    if show_yaxis == False:
-        plt.gca().yaxis.set_visible(False)
-    imageview = ImageView(axesimage, data)
-    if parent is not None:
-        imageview.set_parent(parent)
-    return imageview
+    view.show()
+    return view
+        
 
 def plot(data, source=None):
     '''

@@ -2,6 +2,21 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2013-11-13	tboggs <tboggs@users.sourceforge.net>
+
+    Major change to `imshow` and `ImageView` to support additional display
+    modes and interactivity (e.g. zoom windows, adjustable class alpha
+    transparency).
+
+    * graphics/spypylab.py:
+      (MplCallback): New base class for callback classes.
+      (ImageViewCallback): New base class for ImageView callbacks.
+      (ParentViewPanCallback): New class to pan an image, based on click
+      events in another image window.
+      (ImageView): Support showing data, classes, or data with overlayed
+      classes. Supports mouse and keyboard event handlers.
+      (imshow): Supports updated ImageView class.
+
 2013-11-05	tboggs <tboggs@users.sourceforge.net>
 
     Minor improvement to matrix_sqrt and added associated unit tests.
