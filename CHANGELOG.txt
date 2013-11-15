@@ -2,6 +2,18 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2013-11-15	tboggs <tboggs@users.sourceforge.net>
+
+    Huge improvment in speed for windowed RX when covariance is specified.
+
+    * algorithms/detectors.py
+      (RXW.__init__): Compute inverse covariance
+      (RXW.__call__): Use cached covariance
+
+    Fixed a bug causing an exception in windowed RX for non-square images.
+
+    * algorithms/detectors.py (RXW.__call__): Swap C/R iteration variables.
+
 2013-11-13	tboggs <tboggs@users.sourceforge.net>
 
     Major change to `imshow` and `ImageView` to support additional display

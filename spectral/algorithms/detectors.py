@@ -240,6 +240,8 @@ class RXW():
         self.window = window[:]
 
         self.cov = kwargs.get('cov', None)
+        if self.cov is not None:
+            self.cov_1 = np.linalg.inv(self.cov)
 
         for k in kwargs:
             if k not in ['cov']:
@@ -294,10 +296,12 @@ class RXW():
                 m = np.mean(X, axis=0)
                 if self.cov == None:
                     Cov = np.cov(X, rowvar=False)
+                    Cov_1 = np.linalg.inv(Cov)
                 else:
                     Cov = self.cov
+                    Cov_1 = self.cov_1
                 r = image[i, j] - m
-                x[i, j] = r.dot(np.linalg.inv(Cov)).dot(r)
+                x[i, j] = r.dot(Cov_1).dot(r)
             if i % (R / 10) == 0:
                 status.update_percentage(100. * i / R)
         status.end_percentage()
