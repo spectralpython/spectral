@@ -280,8 +280,8 @@ class RXW():
 
         status = spectral._status
         status.display_percentage('Calculating RX scores: ')
-        for i in range(C):
-            for j in range(R):
+        for i in range(R):
+            for j in range(C):
                 if i_interior_start <= i < i_interior_stop and \
                    j_interior_start <= j < j_interior_stop:
                     X = image[i - b : i + b + 1, j - b : j + b + 1, :]
@@ -298,8 +298,8 @@ class RXW():
                     Cov = self.cov
                 r = image[i, j] - m
                 x[i, j] = r.dot(np.linalg.inv(Cov)).dot(r)
-            if i % (C / 10) == 0:
-                status.update_percentage(100. * i / C)
+            if i % (R / 10) == 0:
+                status.update_percentage(100. * i / R)
         status.end_percentage()
         return x
 
