@@ -4,6 +4,18 @@
 
 2013-11-15	tboggs <tboggs@users.sourceforge.net>
 
+    Added class attribute to MplCallback for debugging exceptions and created
+    a KeyParser class for safer parsing of matplotlib event key values.
+
+    * graphics/spypylab.py:
+      (MplCallback.raise_event_exceptions): New class attribute.
+      (MplCallback.__call__): Raise exceptions, when appropriate.
+      (ImageViewCallback): Use KeyParser class.
+      (KeyParser): New class to parse matplotlib event key strings.
+      (ImageView.on_click): Use KeyParser class.
+
+2013-11-15	tboggs <tboggs@users.sourceforge.net>
+
     Huge improvment in speed for windowed RX when covariance is specified.
 
     * algorithms/detectors.py

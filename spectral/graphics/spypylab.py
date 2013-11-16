@@ -52,6 +52,12 @@ class MplCallback(object):
     object to the constructor (or `connect` method) or by defining a
     `handle_event` method in a subclass.
     '''
+    # If the following class attribute is False, callbacks will silently
+    # disconnect when an exception is encountered during event processing
+    # (e.g., if an associated window has been closed) . If it is True, the
+    # associated exception will be rethrown.
+    raise_event_exceptions = False
+    
     def __init__(self, registry=None, event=None, callback=None):
         '''
          Arguments:
@@ -161,15 +167,16 @@ class MplCallback(object):
         if self.callback is not None:
             try:
                 self.callback(*args, **kwargs)
-            except:
-                print 'MplCallback callable raised exception. Disconnecting.'
-                self.disconnect()
+            except Exception as e:
+                if self.raise_event_exceptions:
+                    raise e
+            self.disconnect()
         else:
             try:
                 self.handle_event(*args, **kwargs)
-            except:
-                print 'MplCallback.handle_event raised exception. ' \
-                  'Disconnecting.'
+            except Exception as e:
+                if self.raise_event_exceptions:
+                    raise e
                 self.disconnect()
 
 class ImageViewCallback(MplCallback):
@@ -204,7 +211,8 @@ class ParentViewPanCallback(ImageViewCallback):
         (nrows, ncols) = self.view._image_shape
         if r < 0 or r >= nrows or c < 0 or c >= ncols:
             return
-        if event.button == 1 and event.key == 'control':
+        kp = KeyParser(event.key)
+        if event.button == 1 and kp.mods_are('ctrl'):
             self.child.pan_to(event.ydata, event.xdata)
 
     def connect(self):
@@ -220,7 +228,10 @@ class ImageViewKeyboardHandler(ImageViewCallback):
                                                        *args, **kwargs)
 
     def handle_event(self, event):
-        key = event.key
+        kp = KeyParser(event.key)
+        key = kp.key
+        if len(kp.modifiers) > 0:
+            return
         if key == 'a':
             self.view.class_alpha = max(self.view.class_alpha - 0.05, 0)
         elif key == 'A':
@@ -261,6 +272,57 @@ class ImageViewKeyboardHandler(ImageViewCallback):
         print 'See matplotlib imshow documentation for addition key binds.'
         print
 
+class KeyParser(object):
+    '''Class to handle ambiguities in matplotlib event key values.'''
+    aliases = {'ctrl': ['ctrl', 'control'],
+               'alt': ['alt'],
+               'shift': ['shift'],
+               'super': ['super']}
+    def __init__(self, key_str=None):
+        self.reset()
+        if key_str is not None:
+            self.parse(key_str)
+
+    def reset(self):
+        self.key = None
+        self.modifiers = set()
+        
+    def parse(self, key_str):
+        '''Extracts the key value and modifiers from a string.'''
+        self.reset()
+        if key_str is None:
+            return
+        tokens = key_str.split('+')
+        for token in tokens[:-1]:
+            mods = self.get_token_modifiers(token)
+            if len(mods) == 0:
+                raise ValueError('Unrecognized modifier: %s' % repr(token))
+            self.modifiers.update(mods)
+        # For the final token, need to determine if it is a key or modifier
+        mods = self.get_token_modifiers(tokens[-1])
+        if len(mods) > 0:
+            self.modifiers.update(mods)
+        else:
+            self.key = tokens[-1]
+
+    def has_mod(self, m):
+        '''Returns True if `m` is one of the modifiers.'''        
+        return m in self.modifiers
+
+    def mods_are(self, *args):
+        '''Return True if modifiers are exactly the ones specified.'''
+        for a in args:
+            if a not in self.modifiers:
+                return False
+        return True
+        
+    def get_token_modifiers(self, token):
+        mods = set()
+        for (modifier, aliases) in self.aliases.items():
+            if token in aliases:
+                mods.add(modifier)
+        return mods
+        
     
 class ImageView(object):
     '''Class to manage events and data associated with image raster views.
@@ -616,8 +678,9 @@ class ImageView(object):
         (nrows, ncols) = self._image_shape
         if r < 0 or r >= nrows or c < 0 or c >= ncols:
             return
+        kp = KeyParser(event.key)
         if event.button == 1:
-            if event.dblclick and event.key is None:
+            if event.dblclick and kp.key is None:
                 if self.source is not None:
                     from spectral import settings
                     import matplotlib.pyplot as plt
