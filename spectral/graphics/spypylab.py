@@ -144,12 +144,12 @@ class MplCallback(object):
         else:
             cb = self.callback
         if isinstance(self.registry, CallbackRegistry):
-            self.cid = self.registry.connect(self.event, cb)
+            self.cid = self.registry.connect(self.event, self)
         elif isinstance(self.registry, ImageView):
-            self.cid = self.registry.connect(self.event, cb)
+            self.cid = self.registry.connect(self.event, self)
         else:
             # Assume registry is an MPL canvas
-            self.cid = self.registry.mpl_connect(self.event, cb)
+            self.cid = self.registry.mpl_connect(self.event, self)
         self.is_connected = True
 
     def disconnect(self):
@@ -168,16 +168,16 @@ class MplCallback(object):
             try:
                 self.callback(*args, **kwargs)
             except Exception as e:
+                self.disconnect()
                 if self.raise_event_exceptions:
                     raise e
-            self.disconnect()
         else:
             try:
                 self.handle_event(*args, **kwargs)
             except Exception as e:
+                self.disconnect()
                 if self.raise_event_exceptions:
                     raise e
-                self.disconnect()
 
 class ImageViewCallback(MplCallback):
     '''Base class for callbacks that operate on ImageView objects.'''
@@ -322,8 +322,11 @@ class KeyParser(object):
             if token in aliases:
                 mods.add(modifier)
         return mods
-        
-    
+
+class SpyMplEvent(object):
+    def __init__(self, name):
+        self.name = name
+
 class ImageView(object):
     '''Class to manage events and data associated with image raster views.
     '''

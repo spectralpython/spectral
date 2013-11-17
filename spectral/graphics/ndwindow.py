@@ -301,6 +301,14 @@ class NDWindowProxy(WindowProxy):
             raise Exception('The window no longer exists.')
         self._window.set_features(*args, **kwargs)
 
+    def view_class_image(self, *args, **kwargs):
+        '''Show a dynamically updated view of image class values.
+
+        The class IDs displayed are those currently associated with the ND
+        window. `args` and `kwargs` are additional arguments passed on to the
+        `ImageView` constructor. Return value is the ImageView object.
+        '''
+        return self._window.view_class_image(*args, **kwargs)
 
 class NDWindow(wx.Frame):
     '''A widow class for displaying N-dimensional data points.'''
@@ -363,16 +371,14 @@ class NDWindow(wx.Frame):
         self.canvas.Bind(wx.EVT_CLOSE, self.on_event_close)
 
         self.data = data
-        classes = kwargs.get('classes', None)
-        if classes is None:
-            self.classes = np.zeros(data.shape[:2], dtype=np.int8)
-        else:
-            self.classes = np.array(classes)
-
-        self.classes = kwargs.get(
-            'classes', np.zeros(data.shape[:-1], np.uint))
+        self.classes = kwargs.get('classes',
+                                  np.zeros(data.shape[:-1], np.int))
         self.features = kwargs.get('features', range(6))
         self.max_menu_class = int(np.max(self.classes.ravel() + 1))
+
+        from matplotlib.cbook import CallbackRegistry
+        self.callbacks = CallbackRegistry()
+
 
     def on_event_close(self, event=None):
         pass
@@ -721,6 +727,14 @@ class NDWindow(wx.Frame):
         self._selection_box = None
         if nreassigned_tot > 0 and new_class == self.max_menu_class:
             self.max_menu_class += 1
+
+        if nreassigned_tot > 0:
+            from .spypylab import SpyMplEvent
+            event = SpyMplEvent('spy_classes_modified')
+            event.classes = self.classes
+            event.nchanged = nreassigned_tot
+            self.callbacks.process('spy_classes_modified', event)
+
         return nreassigned_tot
 
     def get_points_in_selection_box(self, **kwargs):
@@ -922,6 +936,8 @@ class NDWindow(wx.Frame):
         # See `print_help` method for explanation of keybinds.
         if key == 'a':
             self.show_axes_tf = not self.show_axes_tf
+        elif key == 'c':
+            self.view_class_image()
         elif key == 'd':
             if self.data.shape[2] < 6:
                 print 'Only single-quadrant mode is supported for %d features.' % \
@@ -956,7 +972,7 @@ class NDWindow(wx.Frame):
             self._show_unassigned = not self._show_unassigned
             print 'SHOW UNASSIGNED =', self._show_unassigned
             self._refresh_display_lists = True
-
+ 
         self.canvas.Refresh()
 
     def update_window_title(self):
@@ -967,6 +983,25 @@ class NDWindow(wx.Frame):
     def get_proxy(self):
         '''Returns a proxy object to access data from the window.'''
         return NDWindowProxy(self)
+
+    def view_class_image(self, *args, **kwargs):
+        '''Opens a dynamic raster image of class values.
+
+        The class IDs displayed are those currently associated with the ND
+        window. `args` and `kwargs` are additional arguments passed on to the
+        `ImageView` constructor. Return value is the ImageView object.
+        '''
+        from .spypylab import ImageView, MplCallback
+        view = ImageView(classes=self.classes, *args, **kwargs)
+        view.show()
+        def updater(*args, **kwargs):
+            view.refresh()
+        callback = MplCallback(registry=self.callbacks,
+                               event='spy_classes_modified',
+                               callback=updater)
+        callback.connect()
+        view.cb_parent_classes_modified = callback
+        return view
 
     def print_help(self):
         '''Prints a list of accepted keyboard/mouse inputs.'''
@@ -982,6 +1017,7 @@ Right-click             -->     Open GLUT menu for pixel reassignment
 Keyboard functions:
 -------------------
 a       -->     Toggle axis display
+c       -->     View dynamic raster image of class values
 d       -->     Cycle display mode between single-quadrant, mirrored octants,
                 and independent octants (display will not change until features
                 are randomzed again)

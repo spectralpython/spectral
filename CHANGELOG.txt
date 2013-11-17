@@ -2,6 +2,25 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2013-11-17	tboggs <tboggs@users.sourceforge.net>
+
+    The ND window created by `view_nd` can now open a dynamic raster image of
+    class values that is updated whenever classes are modified in the ND view.
+
+    * graphics/spypylab:
+      (MplCallback.connect): Connect self instead of the callback function.
+      (MplCallback.__call__): When an exception is encountered, disconnect
+      regardless of whether or not the exception is rethrown.
+      (SpyMplEvent): New SPy event base class.
+    * graphics/ndwindow.py:
+      (NDWindowProxy.view_class_image): New method.
+      (NDWindow.__init__):
+      - Remove duplicative setting of self.classes.
+      - Create new self.classes array as np.int (not np.uint).
+      - Set callback registry member for class raster view window.
+      (NDWindow.reassign_selection): Create callback event in registry.
+      (NDWindow.view_class_image): New method.
+      
 2013-11-15	tboggs <tboggs@users.sourceforge.net>
 
     Added class attribute to MplCallback for debugging exceptions and created
