@@ -36,7 +36,7 @@ Miscellaneous math functions
 import numpy as np
 
 
-def matrix_sqrt(X, symmetric=False, inverse=False):
+def matrix_sqrt(X=None, symmetric=False, inverse=False, eigs=None):
     '''Returns the matrix square root of X.
 
     Arguments:
@@ -52,9 +52,21 @@ def matrix_sqrt(X, symmetric=False, inverse=False):
 
             If True, computes the matrix square root of inv(X).
 
+        `eigs` (2-tuple):
+
+            `eigs` must be a 2-tuple whose first element is an array of
+            eigenvalues and whose second element is an ndarray of eigenvectors
+            (individual eigenvectors are in columns). If this argument is
+            provided, computation of the matrix square root is much faster. If
+            this argument is provided, the `X` argument is ignored (in this
+            case, it can be set to None).
+
     Returns a class::`numpy.ndarray` `S`, such that S.dot(S) = X
     '''
-    (vals, V) = np.linalg.eig(X)
+    if eigs is not None:
+        (vals, V) = eigs
+    else:
+        (vals, V) = np.linalg.eig(X)
     k = len(vals)
     if inverse is False:
         SRV = np.diag(np.sqrt(vals))
