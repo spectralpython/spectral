@@ -583,13 +583,92 @@ def log_det(x):
                           if eigv > 0]))
 
 
-class GaussianStats:
+class GaussianStats(object):
+    '''A class for storing Gaussian statistics for a data set.
 
-    def __init__(self, **kwargs):
-        self.nsamples = kwargs.get('nsamples', 0)
-        self.mean = kwargs.get('mean', None)
-        self.cov = kwargs.get('cov', None)
+    Several derived statistics are computed on-demand (and cached) and are
+    available as property attributes. These include:
 
+        inv_cov:
+
+            Inverse of the covariance
+
+        sqrt_cov:
+
+            Matrix square root of covariance: sqrt_cov.dot(sqrt_cov) == cov
+
+        sqrt_inv_cov:
+
+            Matrix square root of the inverse of covariance
+
+        principal_components:
+
+            The principal components of the data, based on mean and cov.
+    '''            
+
+    def __init__(self, mean=None, cov=None, nsamples=None, inv_cov=None):
+        self.cov = cov
+        self._inv_cov = inv_cov
+        self.mean = mean
+        self.nsamples = nsamples
+
+    @property
+    def cov(self):
+        '''Property method returning the covariance matrix.'''
+        return self._cov
+
+    @cov.setter
+    def cov(self, C):
+        self.reset()
+        self._cov = C
+
+    @property
+    def inv_cov(self):
+        '''Property method returning the inverse of the covariance matrix.'''
+        if self._inv_cov is None:
+            self._inv_cov = np.linalg.inv(self._cov)
+        return self._inv_cov
+    
+    def reset(self):
+        self._cov = self.mean = self.nsamples = self._inv_cov = None
+        self._sqrt_cov = self._sqrt_inv_cov = self._pcs = None
+
+    @property
+    def sqrt_cov(self):
+        '''Property method returning the matrix square root of the covariance.
+        If `C` is the covariance, then the returned value is a matrix `S`
+        such that S.dot(S) == C.
+        '''
+        if self._sqrt_cov is None:
+            from spectral.algorithms.spymath import matrix_sqrt
+            pcs = self.principal_components
+            self._sqrt_cov = matrix_sqrt(eigs=(pcs.eigenvalues,
+                                               pcs.eigenvectors.T),
+                                         symmetric=True)
+        return self._sqrt_cov
+        
+    @property
+    def sqrt_inv_cov(self):
+        '''Property method returning matrix square root of inverse of cov.
+        If `C` is the covariance, then the returned value is a matrix `S`
+        such that S.dot(S) == inv(C).
+        '''
+        if self._sqrt_inv_cov is None:
+            from spectral.algorithms.spymath import matrix_sqrt
+            pcs = self.principal_components
+            self._sqrt_inv_cov = matrix_sqrt(eigs=(pcs.eigenvalues,
+                                                   pcs.eigenvectors.T),
+                                             symmetric=True,
+                                             inverse=True)
+        return self._sqrt_inv_cov
+        
+    @property
+    def principal_components(self):
+        if self._pcs is None:
+            (evals, evecs) = np.linalg.eigh(self._cov)
+            self._pcs = PrincipalComponents(evals, evecs.T, self)
+        return self._pcs
+    
     def transform(self, xform):
         '''Returns a version of the stats transformed by a linear transform.'''
         from spectral.algorithms.transforms import LinearTransform

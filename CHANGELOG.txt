@@ -4,6 +4,17 @@
 
 2013-11-17	tboggs <tboggs@users.sourceforge.net>
 
+    Add property methods to Gaussian stats to compute (and cache) derived
+    statistics on-demand.
+
+    * algorithms/algorithms.py:
+      (GaussianStats): Added several property methods for derived stats.
+      (GaussianStats.__init__): Converted keyword args to positional.
+
+    Added optional `eigs` argument to matrix_sqrt to speed up computation.
+
+    * algorithms/spymath.py (matrix_sqrt): Accept optional `eigs` keyword.
+
     The ND window created by `view_nd` can now open a dynamic raster image of
     class values that is updated whenever classes are modified in the ND view.
 
