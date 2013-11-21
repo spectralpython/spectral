@@ -308,11 +308,11 @@ class PrincipalComponents:
 
         `eigenvalues`:
 
-            A length B array of eigenvalues
+            A length B array of eigenvalues sorted in descending order
 
         `eigenvectors`:
 
-            A `BxB` array of normalized eigenvectors
+            A `BxB` array of normalized eigenvectors (in columns)
 
         `stats` (:class:`GaussianStats`):
 
@@ -334,7 +334,7 @@ class PrincipalComponents:
         self.eigenvalues = vals
         self.eigenvectors = vecs
         self.stats = stats
-        self.transform = LinearTransform(self.eigenvectors, pre=-self.mean)
+        self.transform = LinearTransform(self.eigenvectors.T, pre=-self.mean)
 
     @property
     def mean(self):
@@ -373,11 +373,11 @@ class PrincipalComponents:
         fraction = kwargs.get('fraction', None)
         if num is not None:
             return PrincipalComponents(self.eigenvalues[:num],
-                                       self.eigenvectors[:num],
+                                       self.eigenvectors[:, :num],
                                        self.stats)
         elif eigs is not None:
             vals = self.eigenvalues[eigs]
-            vecs = self.eigenvectors[eigs]
+            vecs = self.eigenvectors[:, eigs]
             return PrincipalComponents(vals, vecs, self.stats)
         elif fraction is not None:
             if not 0 < fraction <= 1:
@@ -395,7 +395,7 @@ class PrincipalComponents:
                 return self
 
             vals = self.eigenvalues[:i + 1]
-            vecs = self.eigenvectors[:i + 1, :]
+            vecs = self.eigenvectors[:, :i + 1]
             return PrincipalComponents(vals, vecs, self.stats)
         else:
             raise Exception('Must specify one of the following keywords:'
@@ -448,27 +448,27 @@ def principal_components(image):
 
     (L, V) = numpy.linalg.eig(stats.cov)
 
-    #  Normalize eigenvectors
-    V = V / sqrt(sum(V * V, 0))
-
-    # numpy stores eigenvectors in columns
-    V = V.transpose()
+    # numpy says eigenvalues may not be sorted so we'll sort them, if needed.
+    if not np.alltrue(np.diff(L) <= 0):
+        ii = list(reversed(np.argsort(L)))
+        L = L[ii]
+        V = V[:, ii]
 
     return PrincipalComponents(L, V, stats)
 
 
 class FisherLinearDiscriminant:
     '''
-    An object for storing a data set's principal components.  The
-    object has the following members:
+    An object for storing a data set's linear discriminant data.  For `C`
+    classes with `B`-dimensional data, the object has the following members:
 
         `eigenvalues`:
 
-            A length B array of eigenvalues
+            A length `C-1` array of eigenvalues
 
         `eigenvectors`:
 
-            A `BxB` array of normalized eigenvectors
+            A `BxC` array of normalized eigenvectors
 
         `mean`:
 
@@ -494,10 +494,10 @@ class FisherLinearDiscriminant:
         self.mean = mean
         self.cov_b = cov_b
         self.cov_w = cov_w
-        self.transform = LinearTransform(self.eigenvectors, pre=-self.mean)
+        self.transform = LinearTransform(self.eigenvectors.T, pre=-self.mean)
 
 
-def linear_discriminant(classes):
+def linear_discriminant(classes, whiten=True):
     '''
     Solve Fisher's linear discriminant for eigenvalues and eigenvectors.
 
@@ -563,14 +563,14 @@ def linear_discriminant(classes):
     (vals, vecs) = eig(dot(cwInv, cov_b))
 
     vals = vals[:rank]
-    vecs = transpose(vecs)[:rank, :]
+    vecs = vecs[:, :rank]
 
-    # Diagonalize cov_within in the new space
-    v = dot(vecs, dot(cov_w, transpose(vecs)))
-#    d = diagonal(v)
-    d = numpy.sqrt(diagonal(v) * diagonal(v).conj())
-    for i in range(vecs.shape[0]):
-        vecs[i, :] /= math.sqrt(d[i].real)
+    if whiten:
+        # Diagonalize cov_within in the new space
+        v = vecs.T.dot(cov_w).dot(vecs)
+        d = np.sqrt(np.diag(v) * np.diag(v).conj())
+        for i in range(vecs.shape[1]):
+            vecs[:, i] /= math.sqrt(d[i].real)
 
     return FisherLinearDiscriminant(vals.real, vecs.real, mean, cov_b, cov_w)
 
@@ -601,6 +601,10 @@ class GaussianStats(object):
 
             Matrix square root of the inverse of covariance
 
+        log_det_cov:
+
+            The log of the determinant of the covariance matrix
+
         principal_components:
 
             The principal components of the data, based on mean and cov.
@@ -619,7 +623,7 @@ class GaussianStats(object):
 
     @cov.setter
     def cov(self, C):
-        self.reset()
+        self.reset_derived_stats()
         self._cov = C
 
     @property
@@ -629,9 +633,10 @@ class GaussianStats(object):
             self._inv_cov = np.linalg.inv(self._cov)
         return self._inv_cov
     
-    def reset(self):
-        self._cov = self.mean = self.nsamples = self._inv_cov = None
+    def reset_derived_stats(self):
+        self._cov = self._inv_cov = None
         self._sqrt_cov = self._sqrt_inv_cov = self._pcs = None
+        self._log_det_cov = None
 
     @property
     def sqrt_cov(self):
@@ -643,7 +648,7 @@ class GaussianStats(object):
             from spectral.algorithms.spymath import matrix_sqrt
             pcs = self.principal_components
             self._sqrt_cov = matrix_sqrt(eigs=(pcs.eigenvalues,
-                                               pcs.eigenvectors.T),
+                                               pcs.eigenvectors),
                                          symmetric=True)
         return self._sqrt_cov
         
@@ -657,7 +662,7 @@ class GaussianStats(object):
             from spectral.algorithms.spymath import matrix_sqrt
             pcs = self.principal_components
             self._sqrt_inv_cov = matrix_sqrt(eigs=(pcs.eigenvalues,
-                                                   pcs.eigenvectors.T),
+                                                   pcs.eigenvectors),
                                              symmetric=True,
                                              inverse=True)
         return self._sqrt_inv_cov
@@ -666,9 +671,16 @@ class GaussianStats(object):
     def principal_components(self):
         if self._pcs is None:
             (evals, evecs) = np.linalg.eigh(self._cov)
-            self._pcs = PrincipalComponents(evals, evecs.T, self)
+            self._pcs = PrincipalComponents(evals, evecs, self)
         return self._pcs
-    
+
+    @property
+    def log_det_cov(self):
+        if self._log_det_cov is None:
+            evals = self.principal_components.eigenvalues
+            self._log_det_cov = np.sum(np.log([v for v in evals if v > 0]))
+        return self._log_det_cov
+
     def transform(self, xform):
         '''Returns a version of the stats transformed by a linear transform.'''
         from spectral.algorithms.transforms import LinearTransform
@@ -812,8 +824,6 @@ class TrainingClass:
         from numpy.linalg import inv, det
 
         self.stats = calc_stats(self.image, self.mask, self.index)
-        self.stats.inv_cov = inv(self.stats.cov)
-        self.stats.log_det_cov = log_det(self.stats.cov)
         self._size = self.stats.nsamples
         self._stats_valid = 1
 
@@ -841,10 +851,7 @@ class TrainingClass:
         self.stats.mean = transform(self.stats.mean)
         self.stats.cov = np.dot(
             transform._A, self.stats.cov).dot(transform._A.T)
-        self.stats.inv_cov = inv(self.stats.cov)
         self.nbands = transform.dim_out
-
-        self.stats.log_det_cov = log_det(self.stats.cov)
 
     def dump(self, fp):
         '''
@@ -862,8 +869,6 @@ class TrainingClass:
         DumpArray(self.mask, fp)
         DumpArray(self.stats.mean, fp)
         DumpArray(self.stats.cov, fp)
-        DumpArray(self.stats.inv_cov, fp)
-        pickle.dump(self.stats.log_det_cov, fp)
 
     def load(self, fp):
         '''
@@ -883,8 +888,6 @@ class TrainingClass:
         self.mask = LoadArray(fp)
         self.stats.mean = LoadArray(fp)
         self.stats.cov = LoadArray(fp)
-        self.stats.inv_cov = LoadArray(fp)
-        self.stats.log_det_cov = pickle.load(fp)
         self.stats.num_samples = self._size
 
     # Deprecated methods

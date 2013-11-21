@@ -2,6 +2,30 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2013-11-20	tboggs <tboggs@users.sourceforge.net>
+
+    Store PCA/LDA eigenvectors in columns, consistent with numpy. Ensure that
+    eigen{values,vectors} are in descending order.
+
+    * algorithms/algorithms.py:
+      (PrincipalComponents): Eigenvectors are now stored in columns.
+      (principal_components): Make sure eigen{values,vectors} are sorted.
+      (FisherLinearDiscriminant): Store eigenvectors in columns
+      (linear_discriminant):
+      - Store eigenvectors in columns
+      - Make whitening optional
+      (GaussianStats): Store eigenvectors in columns
+      (GaussianStats.log_det_cov): New property method
+      (TrainingClass):
+      - Don't explicitly compute derived stats.
+      - Don't save/load derived stats
+
+    Added new tests for PCA and LDA.
+
+    * tests/spymath.py:
+      (PCATest): New test for PCA
+      (LDATest): New tests for linear discriminant
+
 2013-11-17	tboggs <tboggs@users.sourceforge.net>
 
     Add property methods to Gaussian stats to compute (and cache) derived
