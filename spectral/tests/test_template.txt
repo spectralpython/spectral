@@ -1,6 +1,6 @@
 #########################################################################
 #
-#   __init__.py - This file is part of the Spectral Python (SPy) package.
+#   test.py - This file is part of the Spectral Python (SPy) package.
 #
 #   Copyright (C) 2013 Thomas Boggs
 #
@@ -27,31 +27,46 @@
 # Send comments to:
 # Thomas Boggs, tboggs@users.sourceforge.net
 #
-'''Package containing unit test modules for various functionality.
+'''Runs unit tests for XXX
 
-To run all unit tests, type the following from the system command line:
+To run the unit tests, type the following from the system command line:
 
-    # python -m spectral.tests.run
+    # python -m spectral.tests.XXX
 '''
 
-# If abort_on_fail is True, an AssertionError will be raised when a unit test
-# fails; otherwise, the failure will be printed to stdout and testing will
-# continue.
-abort_on_fail = True
+import numpy as np
+from numpy.testing import assert_allclose
+from spytest import SpyTest, test_method
 
-# Summary stats of unit test execution
-_num_tests_run = 0
-_num_tests_failed = 0
 
-# Subdirectory to be created for unit test files
-testdir = 'spectral_test_files'
+class FooTest(SpyTest):
+    '''Tests various math functions.'''
 
-from . import spyfile
-from . import transforms
-from . import memmap
-from . import envi
-from . import spymath
-from . import detectors
+    def setup(self):
+        pass
 
-# List of all submodules to be run from the `run` submodule.
-all_tests = [spyfile, memmap, transforms, envi, spymath, detectors]
+    @test_method
+    def test_foo(self):
+        assert_allclose(1, 1)
+
+
+    def run(self):
+        '''Executes the test case.'''
+        self.setup()
+        self.test_foo()
+        self.finish()
+
+
+def run():
+    print '\n' + '-' * 72
+    print 'Running XXX tests.'
+    print '-' * 72
+    test = FooTest()
+    test.run()
+
+if __name__ == '__main__':
+    from spectral.tests.run import parse_args, reset_stats, print_summary
+    parse_args()
+    reset_stats()
+    run()
+    print_summary()

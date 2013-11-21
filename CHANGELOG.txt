@@ -4,6 +4,12 @@
 
 2013-11-20	tboggs <tboggs@users.sourceforge.net>
 
+    Added detector unit tests.
+
+    * tests/__init__.py: Include detector tests.
+    * tests/detectors.py: New file for detector tests.
+    * test_template.txt: Template file for creating new tests.
+
     Store PCA/LDA eigenvectors in columns, consistent with numpy. Ensure that
     eigen{values,vectors} are in descending order.
 
