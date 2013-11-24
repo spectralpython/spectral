@@ -133,7 +133,7 @@ class MatchedFilterWrapper(object):
     def __call__(self, X):
         return self.mf(X)
 
-def matched_filter(target, background=None, window=None, cov=None):
+def matched_filter(X, target, background=None, window=None, cov=None):
     '''Computes a linear matched filter target detector score.
 
     Usage:
@@ -153,6 +153,18 @@ def matched_filter(target, background=None, window=None, cov=None):
     mean, and :math:`\Sigma` is the covariance.
 
     Arguments:
+
+        `X` (numpy.ndarray):
+
+            For the first calling method shown, `X` can be an image with
+            shape (R, C, B) or an ndarray of shape (R * C, B). If the
+            `background` keyword is given, it will be used for the image
+            background statistics; otherwise, background statistics will be
+            computed from `X`.
+
+            If the `window` keyword is given, `X` must be a 3-dimensional
+            array and background statistics will be computed for each point
+            in the image using a local window defined by the keyword.
 
         `target` (ndarray):
 
@@ -203,9 +215,21 @@ def matched_filter(target, background=None, window=None, cov=None):
         The return value will be the matched filter scores distance) for each
         pixel given.  If `X` has shape (R, C, K), the returned ndarray will
         have shape (R, C)..
-
     '''
-    pass
+    from exceptions import ValueError
+    if background is not None and window is not None:
+        raise ValueError('`background` and `window` are mutually ' \
+                         'exclusive arguments.')
+    if window is not None:
+        mf = MatchedFilterWrapper(target, background)
+        wmf = WindowedGaussianBackgroundMapper(window=window,
+                                               function=mf,
+                                               cov=cov,
+                                               dim_out=1)
+        return wmf(X)
+    else:
+        return MatchedFilter(background, target)(X)
+
 
 class RX():
     r'''An implementation of the RX anomaly detector. Given the mean and
@@ -225,6 +249,7 @@ class RX():
     pattern with unknown spectral distribution," IEEE Trans. Acoust.,
     Speech, Signal Processing, vol. 38, pp. 1760-1770, Oct. 1990.
     '''
+    dim_out=1
 
     def __init__(self, background=None):
         '''Creates the detector, given optional background/target stats.
