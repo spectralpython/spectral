@@ -79,21 +79,16 @@ class MatchedFilterTest(SpyTest):
 
 class RXTest(SpyTest):
     def setup(self):
-        from spectral.algorithms.detectors import rx, RX, RXW
         self.data = spy.open_image('92AV3C.lan').load()
         self.background = spy.calc_stats(self.data)
 
     @test_method
     def test_rx_bg_eq_zero(self):
-        from spectral.algorithms.detectors import rx, RX, RXW
+        from spectral.algorithms.detectors import rx, RX
         d = rx(self.data)
         stats = spy.calc_stats(self.data)
         np.testing.assert_approx_equal(rx(stats.mean, background=stats), 0)
         
-    @test_method
-    def test_mf_target_eq_one(self):
-        np.testing.assert_approx_equal(self.mf(self.target), 1)
-
     def run(self):
         '''Executes the test case.'''
         self.setup()

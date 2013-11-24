@@ -2,6 +2,31 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2013-11-24	tboggs <tboggs@users.sourceforge.net>
+
+    Created a WindowedGaussianBackgroundMapper class, which applies algorithms
+    to an image, updating the background statistics for each image pixel,
+    using an inner/outer window. The RXW class was eliminated but the same
+    calculations are performed by passing an RX object to a
+    WindowedGaussianBackgroundMapper object. This new class can also be used
+    with a wrapped MatchedFilter object.
+
+    Use `np.einsum` in RX for faster calculation.
+
+    * algorithms/detectors.py:
+      (MatchedFilter): Use property methods of the GaussianStats class.
+      (MatchedFilterWrapper): A wrapper class to make a MatchedFilter object
+      compatible with a WindowedGaussianBackgroundMapper.
+      (matched_filter): New function to execute a matched filter (with or
+      without a windowed background).
+      (RX): Use property methods of the GaussianStats class.
+      (RX.__call__): Use einsum or faster computation.
+      (RXW): Class eliminated (`rx` can now use an RX object with a
+      WindowedGaussianBackgroundMapper object.
+      (WindowedGaussianBackgroundMapper): New class
+      (window_mask_creator): Returned function now returns both inner and
+      outer window limits and, optionally, the window mask.
+
 2013-11-20	tboggs <tboggs@users.sourceforge.net>
 
     Added detector unit tests.
@@ -13,6 +38,8 @@
     Store PCA/LDA eigenvectors in columns, consistent with numpy. Ensure that
     eigen{values,vectors} are in descending order.
 
+    * algorithms/__init__.py: Import * from detectors (__all__ is defined
+      locally in the file).
     * algorithms/algorithms.py:
       (PrincipalComponents): Eigenvectors are now stored in columns.
       (principal_components): Make sure eigen{values,vectors} are sorted.
@@ -25,6 +52,7 @@
       (TrainingClass):
       - Don't explicitly compute derived stats.
       - Don't save/load derived stats
+    * test/detectors.py: Update tests for detector changes above.
 
     Added new tests for PCA and LDA.
 

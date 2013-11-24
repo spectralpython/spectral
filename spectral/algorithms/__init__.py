@@ -38,4 +38,4 @@ from clustering import L1, L2, kmeans, cluster, isoCluster
 from perceptron import PerceptronClassifier
 from resampling import BandResampler
 from transforms import LinearTransform
-from detectors import MatchedFilter, rx
+from detectors import *
