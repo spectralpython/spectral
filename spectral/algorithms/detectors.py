@@ -487,7 +487,7 @@ class WindowedGaussianBackgroundMapper(object):
         status.end_percentage()
         return x
 
-def rx(X, **kwargs):
+def rx(X, background=None, window=None, cov=None):
     r'''Computes RX anomaly detector scores.
 
     Usage:
@@ -522,7 +522,6 @@ def rx(X, **kwargs):
             array and background statistics will be computed for each point
             in the image using a local window defined by the keyword.
 
-    Keyword Arguments:
 
         `background` (`GaussianStats`):
 
@@ -575,13 +574,18 @@ def rx(X, **kwargs):
     Speech, Signal Processing, vol. 38, pp. 1760-1770, Oct. 1990.
     '''
     from exceptions import ValueError
-    if 'background' in kwargs  and 'window' in kwargs:
+    if background is not None and window is not None:
         raise ValueError('`background` and `window` keywords are mutually ' \
                          'exclusive.')
-    if 'window' in kwargs:
-        window = kwargs.pop('window')
-        return RXW(window, **kwargs)(X)
-    return RX(kwargs.get('background', None))(X)
+    if window is not None:
+        rx = RX()
+        wrx = WindowedGaussianBackgroundMapper(window=window,
+                                               function=rx,
+                                               cov=cov,
+                                               dim_out=1)
+        return wrx(X)
+    else:
+        return RX(background)(X)
 
 
 def window_mask_creator(image_shape, window):
