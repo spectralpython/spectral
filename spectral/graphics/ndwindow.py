@@ -993,14 +993,8 @@ class NDWindow(wx.Frame):
         '''
         from .spypylab import ImageView, MplCallback
         view = ImageView(classes=self.classes, *args, **kwargs)
+        view.callbacks_common = self.callbacks
         view.show()
-        def updater(*args, **kwargs):
-            view.refresh()
-        callback = MplCallback(registry=self.callbacks,
-                               event='spy_classes_modified',
-                               callback=updater)
-        callback.connect()
-        view.cb_parent_classes_modified = callback
         return view
 
     def print_help(self):

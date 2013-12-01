@@ -2,6 +2,28 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2013-11-30	tboggs <tboggs@users.sourceforge.net>
+
+    Added a common callback event registry in the ImageView class to enable a
+    group of windows to respond to a common event (e.g., class labels modified).
+
+    * graphics/ndwindow.py:
+      (NDWindow.view_class_image): Share callback registry with class view.
+    * graphics/spypylab.py:
+      (ImageView.__init__): Initialize `callbacks` and `callbacks_common`.
+      (ImageView.show): Call init_callbacks.
+      (ImageView.init_callbacks): Initialize callback registry and default
+      callbacks.
+      (ImageView.open_zoom): Share callbacks_common with zoom window.
+
+    Use "nearest" pixel interpolation by default instead of "none" since some
+    backends don't support the latter.
+
+    * graphics/spypylab.py:
+      (ImageView.open_zoom): Use "nearest" interpolation, by default.
+      (imshow): Use "nearest" interpolation, by default.
+
+
 2013-11-24	tboggs <tboggs@users.sourceforge.net>
 
     Created a WindowedGaussianBackgroundMapper class, which applies algorithms

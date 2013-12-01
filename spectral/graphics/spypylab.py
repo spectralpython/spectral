@@ -364,6 +364,16 @@ class ImageView(object):
         self._on_parent_click_cid = None
         self._class_alpha = 0.5
 
+        # Callbacks for events associated specifically with this window.
+        self.callbacks = None
+        
+        # A sharable callback registry for related windows. If this
+        # CallbackRegistry is set prior to calling ImageView.show (e.g., by
+        # setting it equal to the `callbacks_common` member of another
+        # ImageView object), then the registry will be shared. Otherwise, a new
+        # callback registry will be created for this ImageView.
+        self.callbacks_common = None
+
     def set_data(self, data, bands=None, **kwargs):
         '''Sets the data to be shown in the RGB channels.
         
@@ -488,14 +498,38 @@ class ImageView(object):
             self.set_display_mode(mode)
 
         self.axes.format_coord = self.format_coord
+
+        self.init_callbacks()
+        self.is_shown = True
+
+    def init_callbacks(self):
+        '''Creates the object's callback registry and default callbacks.'''
+        from matplotlib.cbook import CallbackRegistry
+        
+        self.callbacks = CallbackRegistry()
+
+        # callbacks_common may have been set to a shared external registry
+        # (e.g., to the callbacks_common member of another ImageView object). So
+        # don't create it if it has already been set.
+        if self.callbacks_common is None:
+            self.callbacks_common = CallbackRegistry()
+
+        # Callback to handle mouse events
         self.cb_mouse = MplCallback(self.axes.figure.canvas,
                                     'button_press_event', self.on_click)
         self.cb_mouse.connect()
         self.cb_keyboard = ImageViewKeyboardHandler(self)
         self.cb_keyboard.connect()
-        
-        self.is_shown = True
 
+        # Callback for class update event
+        def updater(*args, **kwargs):
+            self.refresh()
+        callback = MplCallback(registry=self.callbacks_common,
+                               event='spy_classes_modified',
+                               callback=updater)
+        callback.connect()
+        self.cb_classes_modified = callback
+        
     def _guess_mode(self):
         '''Select an appropriate display mode, based on current data.'''
         if self.data is not None:
@@ -628,7 +662,7 @@ class ImageView(object):
         if size is None:
             size = 50
         (nrows, ncols) = self._image_shape
-        kwargs = {'interpolation': 'none',
+        kwargs = {'interpolation': 'nearest',
                   'extent': (-0.5, ncols - 0.5, nrows - 0.5, -0.5)}
         fig = plt.figure(figsize=(4,4))
         view = ImageView(data=self.data, classes=self.classes,
@@ -638,6 +672,7 @@ class ImageView(object):
         view.imshow_class_kwargs = self.imshow_class_kwargs.copy()
         view.imshow_class_kwargs.update(kwargs)
         view.set_display_mode(self.display_mode)
+        view.callbacks_common = self.callbacks_common
         view.show(fignum=fig.number, mode=self.display_mode)
         view.axes.set_xlim(0, size)
         view.axes.set_ylim(size, 0)
@@ -784,7 +819,7 @@ def imshow(data=None, bands=None, classes=None, source=None, **kwargs):
         if k in kwargs:
             rgb_kwargs[k] = kwargs.pop(k)
     
-    imshow_kwargs = {'cmap': 'gray', 'interpolation': 'none'}
+    imshow_kwargs = {'cmap': 'gray', 'interpolation': 'nearest'}
     imshow_kwargs.update(kwargs)
 
     view = ImageView()
