@@ -138,9 +138,9 @@ def matched_filter(X, target, background=None, window=None, cov=None):
 
     Usage:
 
-        y = rx(X, target, background)
+        y = matched_filter(X, target, background)
 
-        y = rx(X, target, window=<win> [, cov=<cov>])
+        y = matched_filter(X, target, window=<win> [, cov=<cov>])
         
     Given target/background means and a common covariance matrix, the matched
     filter response is given by:
