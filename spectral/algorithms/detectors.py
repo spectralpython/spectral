@@ -134,13 +134,13 @@ class MatchedFilterWrapper(object):
         return self.mf(X)
 
 def matched_filter(X, target, background=None, window=None, cov=None):
-    '''Computes a linear matched filter target detector score.
+    r'''Computes a linear matched filter target detector score.
 
     Usage:
 
-        y = rx(target, background)
+        y = rx(X, target, background)
 
-        y = rx(target, window=<win> [, cov=<cov>])
+        y = rx(X, target, window=<win> [, cov=<cov>])
         
     Given target/background means and a common covariance matrix, the matched
     filter response is given by:
@@ -214,7 +214,7 @@ def matched_filter(X, target, background=None, window=None, cov=None):
 
         The return value will be the matched filter scores distance) for each
         pixel given.  If `X` has shape (R, C, K), the returned ndarray will
-        have shape (R, C)..
+        have shape (R, C).
     '''
     from exceptions import ValueError
     if background is not None and window is not None:
@@ -492,13 +492,12 @@ def rx(X, background=None, window=None, cov=None):
 
     Usage:
 
-        y = rx(X [, background=bg]
+        y = rx(X [, background=bg])
 
         y = rx(X, window=(inner, outer) [, cov=C])
 
     The RX anomaly detector produces a detection statistic equal to the 
-    mean and covariance of the background, this detector returns the squared
-    Mahalanobis distance of a spectrum from a background distribution
+    squared Mahalanobis distance of a spectrum from a background distribution
     according to
 
     .. math::
