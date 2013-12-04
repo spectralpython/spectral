@@ -59,8 +59,20 @@ class MatchedFilterTest(SpyTest):
     @test_method
     def test_mf_target_eq_one(self):
         '''Matched Filter response of target should be one.'''
+        from spectral.algorithms.detectors import matched_filter
         (i, j) = self.target_ij
-        np.testing.assert_approx_equal(self.mf(self.data[i, j]), 1)
+        target = self.data[i, j]
+        mf = matched_filter(self.data, target, self.background)
+        np.testing.assert_approx_equal(mf[i, j], 1)
+
+    @test_method
+    def test_mf_target_no_bg_eq_one(self):
+        '''Matched Filter response of target should be one.'''
+        from spectral.algorithms.detectors import matched_filter
+        (i, j) = self.target_ij
+        target = self.data[i, j]
+        mf = matched_filter(self.data, target)
+        np.testing.assert_approx_equal(mf[i, j], 1)
 
     @test_method
     def test_mf_target_pixel_eq_one(self):
@@ -73,6 +85,7 @@ class MatchedFilterTest(SpyTest):
         self.setup()
         self.test_mf_bg_eq_zero()
         self.test_mf_target_eq_one()
+        self.test_mf_target_no_bg_eq_one()
         self.test_mf_target_pixel_eq_one()
         self.finish()
 

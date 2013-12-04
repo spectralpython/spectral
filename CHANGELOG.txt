@@ -2,6 +2,15 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2013-12-03	tboggs <tboggs@users.sourceforge.net>
+
+    Allow matched_filter to be called without specifying background stats.
+
+    * algorithms/detectors.py(matched_filter): Handle missing background stats
+      (compute from data).
+    * tests/detectors.py(MatchedFilterTest.test_mf_target_no_bg_eq_one): New
+      test.
+
 2013-11-30	tboggs <tboggs@users.sourceforge.net>
 
     Added a common callback event registry in the ImageView class to enable a

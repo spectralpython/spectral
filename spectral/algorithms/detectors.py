@@ -228,6 +228,9 @@ def matched_filter(X, target, background=None, window=None, cov=None):
                                                dim_out=1)
         return wmf(X)
     else:
+        from spectral.algorithms.algorithms import calc_stats
+        if background is None:
+            background = calc_stats(X)
         return MatchedFilter(background, target)(X)
 
 
