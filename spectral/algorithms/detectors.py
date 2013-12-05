@@ -274,7 +274,6 @@ class RX():
 
     def set_background(self, stats):
         '''Sets background statistics to be used when applying the detector.'''
-        from spectral.algorithms.spymath import matrix_sqrt
         self.background = stats
 
     def __call__(self, X):
