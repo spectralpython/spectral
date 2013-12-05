@@ -4,6 +4,18 @@
 
 2013-12-03	tboggs <tboggs@users.sourceforge.net>
 
+    Simplified unit test interface.
+
+    * tests/spytest.py:
+      (SpyTest.run): New method that elimiates need for `run` method or
+      `test_method` decorators in subclasses.
+    * tests/detectors.py: Remove `test_method` decorators and `run` methods.
+    * tests/envi.py: ditto
+    * tests/memmap.py: ditto
+    * tests/spyfile.py: ditto
+    * tests/spymath.py: ditto
+    * tests/transforms.py: ditto
+
     Allow matched_filter to be called without specifying background stats.
 
     * algorithms/detectors.py(matched_filter): Handle missing background stats

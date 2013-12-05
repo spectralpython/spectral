@@ -30,13 +30,46 @@
 
 
 class SpyTest(object):
-    '''Base class for test cases.'''
+    '''Base class for test cases.
+
+    Test classes are created by sub-classing SpyTest and defining methods
+    whose names start with "test_".
+    '''
     def setup(self):
+        '''Method to be run before derived class test methods are called.'''
         pass
 
     def finish(self):
+        '''Method run after all test methods have run.'''
         pass
 
+    def run(self):
+        '''Runs all "test_*" methods in a derived class.
+
+        Before running subclass test_ methods, the `startup` method will be
+        called. After all test_ methods have been run, the `finish` method
+        is called.
+        '''
+        import spectral.tests as tests
+        from spectral.tests import abort_on_fail
+        self.setup()
+        methods = [getattr(self, s) for s in sorted(dir(self)) if s.startswith('test_')]
+        methods = [m for m in methods if callable(m)]
+        for method in methods:
+            print format('Testing ' + method.__name__.split('_', 1)[-1],
+                         '.<40'),
+            tests._num_tests_run += 1
+            try:
+                method()
+                print 'OK'
+            except AssertionError:
+                print 'FAILED'
+                tests._num_tests_failed += 1
+                if tests.abort_on_fail:
+                    raise
+        self.finish()
+
+# The following test method is now deprecated and should no longer be used.
 
 def test_method(method):
     '''Decorator function for unit tests.'''

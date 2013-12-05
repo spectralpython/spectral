@@ -42,7 +42,7 @@ To run the unit tests, type the following from the system command line:
 
 import numpy as np
 from numpy.testing import assert_almost_equal
-from spytest import SpyTest, test_method
+from spytest import SpyTest
 from spectral.tests import testdir
 
 class SpyFileMemmapTest(SpyTest):
@@ -78,78 +78,68 @@ class SpyFileMemmapTest(SpyTest):
         self.src_inter = src_inter
 
     def setup(self):
+        import spectral
+        self.create_test_image_file()
+
+    def create_test_image_file(self):
         import os
         import spectral
-        from spectral.io.spyfile import SpyFile
         img = spectral.open_image(self.file)
         fname = os.path.join(testdir, 'memmap_test_%s.hdr' % self.src_inter)
         spectral.envi.save_image(fname,
                                  img,
                                  dtype = img.dtype,
-                                 interleave = self.src_inter)
+                                 interleave = self.src_inter,
+                                 force=True)
         self.image = spectral.open_image(fname)
         
-    @test_method
     def test_spyfile_has_memmap(self):
         assert(self.image.using_memmap == True)
 
-    @test_method
     def test_bip_memmap_read(self):
+        self.create_test_image_file()
         (i, j, k) = self.datum
         mm = self.image.open_memmap(interleave='bip')
         assert_almost_equal(mm[i, j, k], self.value)
 
-    @test_method
     def test_bil_memmap_read(self):
+        self.create_test_image_file()
         (i, j, k) = self.datum
         mm = self.image.open_memmap(interleave='bil')
         assert_almost_equal(mm[i, k, j], self.value)
 
-    @test_method
     def test_bsq_memmap_read(self):
+        self.create_test_image_file()
         (i, j, k) = self.datum
         mm = self.image.open_memmap(interleave='bsq')
         assert_almost_equal(mm[k, i, j], self.value)
 
-    @test_method
     def test_bip_memmap_write(self):
         from spectral import open_image
+        self.create_test_image_file()
         (i, j, k) = self.datum
         mm = self.image.open_memmap(interleave='bip', writable=True)
         mm[i, j, k] = 2 * self.value
         mm.flush()
         assert_almost_equal(self.image.open_memmap()[i, j, k], 2 * self.value)
 
-    @test_method
     def test_bil_memmap_write(self):
         from spectral import open_image
+        self.create_test_image_file()
         (i, j, k) = self.datum
         mm = self.image.open_memmap(interleave='bil', writable=True)
         mm[i, k, j] = 3 * self.value
         mm.flush()
         assert_almost_equal(self.image.open_memmap()[i, j, k], 3 * self.value)
 
-    @test_method
     def test_bsq_memmap_write(self):
         from spectral import open_image
+        self.create_test_image_file()
         (i, j, k) = self.datum
         mm = self.image.open_memmap(interleave='bsq', writable=True)
         mm[k, i, j] = 3 * self.value
         mm.flush()
         assert_almost_equal(self.image.open_memmap()[i, j, k], 3 * self.value)
-
-
-    def run(self):
-        '''Executes the test case.'''
-        self.setup()
-        self.test_spyfile_has_memmap()
-        self.test_bip_memmap_read()
-        self.test_bil_memmap_read()
-        self.test_bsq_memmap_read()
-        self.test_bip_memmap_write()
-        self.test_bil_memmap_write()
-        self.test_bsq_memmap_write()
-        self.finish()
 
 
 class SpyFileMemmapTestSuite(object):

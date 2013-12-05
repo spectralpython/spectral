@@ -36,7 +36,7 @@ To run the unit tests, type the following from the system command line:
 
 import numpy as np
 from numpy.testing import assert_allclose
-from spytest import SpyTest, test_method
+from spytest import SpyTest
 
 
 class SpyMathTest(SpyTest):
@@ -48,31 +48,26 @@ class SpyMathTest(SpyTest):
         self.C = spy.calc_stats(self.data).cov
         self.X = np.random.rand(100, 100)
 
-    @test_method
     def test_matrix_sqrt(self):
         from spectral.algorithms.spymath import matrix_sqrt
         S = matrix_sqrt(self.X)
         assert_allclose(S.dot(S), self.X)
 
-    @test_method
     def test_matrix_sqrt_inv(self):
         from spectral.algorithms.spymath import matrix_sqrt
         S = matrix_sqrt(self.X, inverse=True)
         assert_allclose(S.dot(S), np.linalg.inv(self.X))
 
-    @test_method
     def test_matrix_sqrt_sym(self):
         from spectral.algorithms.spymath import matrix_sqrt
         S = matrix_sqrt(self.C, symmetric=True)
         assert_allclose(S.dot(S), self.C, atol=1e-8)
 
-    @test_method
     def test_matrix_sqrt_sym_inv(self):
         from spectral.algorithms.spymath import matrix_sqrt
         S = matrix_sqrt(self.C, symmetric=True, inverse=True)
         assert_allclose(S.dot(S), np.linalg.inv(self.C), atol=1e-8)
 
-    @test_method
     def test_matrix_sqrt_eigs(self):
         import spectral as spy
         from spectral.algorithms.spymath import matrix_sqrt
@@ -81,7 +76,6 @@ class SpyMathTest(SpyTest):
         S = matrix_sqrt(eigs=(evals, evecs))
         assert_allclose(S.dot(S), self.C, atol=1e-8)
 
-    @test_method
     def test_stats_property_sqrt_cov(self):
         import spectral as spy
         from spectral.algorithms.spymath import matrix_sqrt
@@ -89,7 +83,6 @@ class SpyMathTest(SpyTest):
         s = stats.sqrt_cov.dot(stats.sqrt_cov)
         assert_allclose(s, stats.cov, atol=1e-8)
 
-    @test_method
     def test_stats_property_sqrt_inv_cov(self):
         import spectral as spy
         from spectral.algorithms.spymath import matrix_sqrt
@@ -97,7 +90,6 @@ class SpyMathTest(SpyTest):
         s = stats.sqrt_inv_cov.dot(stats.sqrt_inv_cov)
         assert_allclose(s, stats.inv_cov, atol=1e-8)
 
-    @test_method
     def test_whiten_data(self):
         '''Test that whitening transform produce unit diagonal covariance.'''
         import spectral as spy
@@ -107,19 +99,6 @@ class SpyMathTest(SpyTest):
         assert_allclose(wstats.cov, np.eye(wstats.cov.shape[0]), atol=1e-8)
 
 
-    def run(self):
-        '''Executes the test case.'''
-        self.setup()
-        self.test_matrix_sqrt()
-        self.test_matrix_sqrt_inv()
-        self.test_matrix_sqrt_sym()
-        self.test_matrix_sqrt_sym_inv()
-        self.test_matrix_sqrt_eigs()
-        self.test_stats_property_sqrt_cov()
-        self.test_stats_property_sqrt_inv_cov()
-        self.test_whiten_data()
-        self.finish()
-
 class PCATest(SpyTest):
     '''Tests Principal Components transformation.'''
 
@@ -128,23 +107,15 @@ class PCATest(SpyTest):
         self.data = spy.open_image('92AV3C.lan').open_memmap()
         self.pc = spy.principal_components(self.data)
 
-    @test_method
     def test_evals_sorted(self):
         '''Eigenvalues should be sorted in descending order.'''
         assert(np.alltrue(np.diff(self.pc.eigenvalues) <= 0))
 
-    @test_method
     def test_evecs_orthonormal(self):
         '''Eigenvectors should be orthonormal.'''
         evecs = self.pc.eigenvectors
         assert(np.allclose(evecs.T.dot(evecs), np.eye(evecs.shape[0])))
 
-    def run(self):
-        '''Executes the test case.'''
-        self.setup()
-        self.test_evals_sorted()
-        self.test_evecs_orthonormal()
-        self.finish()
 
 class LDATest(SpyTest):
     '''Tests various math functions.'''
@@ -154,7 +125,6 @@ class LDATest(SpyTest):
         self.data = spy.open_image('92AV3C.lan').open_memmap()
         self.classes = spy.open_image('92AV3GT.GIS').read_band(0)
 
-    @test_method
     def test_lda_covw_whitened(self):
         '''cov_w should be whitened in the transformed space.'''
         import spectral as spy
@@ -164,12 +134,6 @@ class LDATest(SpyTest):
         classes.transform(fld.transform)
         fld2 = spy.linear_discriminant(classes)
         assert_allclose(np.eye(fld2.cov_w.shape[0]), fld2.cov_w, atol=1e-8)
-
-    def run(self):
-        '''Executes the test case.'''
-        self.setup()
-        self.test_lda_covw_whitened()
-        self.finish()
 
 
 def run():

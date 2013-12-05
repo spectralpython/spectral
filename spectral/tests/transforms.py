@@ -41,7 +41,7 @@ To run the unit tests, type the following from the system command line:
 
 import numpy as np
 from numpy.testing import assert_almost_equal
-from spytest import SpyTest, test_method
+from spytest import SpyTest
 
 
 class LinearTransformTest(SpyTest):
@@ -88,7 +88,6 @@ class LinearTransformTest(SpyTest):
         self.pre = 37.
         self.post = 51.
 
-    @test_method
     def test_scalar_multiply(self):
         from spectral.algorithms.transforms import LinearTransform
         (i, j, k) = self.datum
@@ -97,7 +96,6 @@ class LinearTransformTest(SpyTest):
         assert_almost_equal(result,
                             self.scalar * self.value)
 
-    @test_method
     def test_pre_scalar_multiply(self):
         from spectral.algorithms.transforms import LinearTransform
         (i, j, k) = self.datum
@@ -106,7 +104,6 @@ class LinearTransformTest(SpyTest):
         assert_almost_equal(result,
                             self.scalar * (self.pre + self.value))
 
-    @test_method
     def test_scalar_multiply_post(self):
         from spectral.algorithms.transforms import LinearTransform
         (i, j, k) = self.datum
@@ -115,7 +112,6 @@ class LinearTransformTest(SpyTest):
         assert_almost_equal(result,
                             self.scalar * self.value + self.post)
 
-    @test_method
     def test_pre_scalar_multiply_post(self):
         from spectral.algorithms.transforms import LinearTransform
         (i, j, k) = self.datum
@@ -126,7 +122,6 @@ class LinearTransformTest(SpyTest):
                             self.scalar * (self.pre + self.value)
                             + self.post)
 
-    @test_method
     def test_matrix_multiply(self):
         from spectral.algorithms.transforms import LinearTransform
         (i, j, k) = self.datum
@@ -135,7 +130,6 @@ class LinearTransformTest(SpyTest):
         assert_almost_equal(result,
                             self.scalar * self.value)
 
-    @test_method
     def test_pre_matrix_multiply(self):
         from spectral.algorithms.transforms import LinearTransform
         (i, j, k) = self.datum
@@ -144,7 +138,6 @@ class LinearTransformTest(SpyTest):
         assert_almost_equal(result,
                             self.scalar * (self.pre + self.value))
 
-    @test_method
     def test_matrix_multiply_post(self):
         from spectral.algorithms.transforms import LinearTransform
         (i, j, k) = self.datum
@@ -153,7 +146,6 @@ class LinearTransformTest(SpyTest):
         assert_almost_equal(result,
                             self.scalar * self.value + self.post)
 
-    @test_method
     def test_pre_matrix_multiply_post(self):
         from spectral.algorithms.transforms import LinearTransform
         (i, j, k) = self.datum
@@ -163,19 +155,6 @@ class LinearTransformTest(SpyTest):
         assert_almost_equal(result,
                             self.scalar * (self.pre + self.value)
                             + self.post)
-
-    def run(self):
-        '''Executes the test case.'''
-        self.setup()
-        self.test_scalar_multiply()
-        self.test_pre_scalar_multiply()
-        self.test_scalar_multiply_post()
-        self.test_pre_scalar_multiply_post()
-        self.test_matrix_multiply()
-        self.test_pre_matrix_multiply()
-        self.test_matrix_multiply_post()
-        self.test_pre_matrix_multiply_post()
-        self.finish()
 
 
 def run():

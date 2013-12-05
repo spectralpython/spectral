@@ -37,7 +37,7 @@ To run the unit tests, type the following from the system command line:
 
 import numpy as np
 from numpy.testing import assert_almost_equal
-from spytest import SpyTest, test_method
+from spytest import SpyTest
 from spectral.tests import testdir
 
 class ENVIWriteTest(SpyTest):
@@ -50,7 +50,6 @@ class ENVIWriteTest(SpyTest):
         if not os.path.isdir(testdir):
             os.makedirs(testdir)
         
-    @test_method
     def test_save_image_ndarray(self):
         '''Test saving an ENVI formated image from a numpy.ndarray.'''
         import os
@@ -65,7 +64,6 @@ class ENVIWriteTest(SpyTest):
         img = spectral.open_image(fname)
         assert_almost_equal(img[r, b, c], datum)
 
-    @test_method
     def test_save_image_spyfile(self):
         '''Test saving an ENVI formatted image from a SpyFile object.'''
         import os
@@ -77,7 +75,6 @@ class ENVIWriteTest(SpyTest):
         img = spectral.open_image(fname)
         assert_almost_equal(src[r, b, c], img[r, b, c])
 
-    @test_method
     def test_create_image_metadata(self):
         '''Test calling `envi.create_image` using a metadata dict.'''
         import os
@@ -98,7 +95,6 @@ class ENVIWriteTest(SpyTest):
         img = spectral.open_image(fname)
         assert_almost_equal(img[r, b, c], datum)
 
-    @test_method
     def test_create_image_keywords(self):
         '''Test calling `envi.create_image` using keyword args.'''
         import os
@@ -116,15 +112,6 @@ class ENVIWriteTest(SpyTest):
         mm.flush()
         img = spectral.open_image(fname)
         assert_almost_equal(img[r, b, c], datum)
-
-    def run(self):
-        '''Executes the test case.'''
-        self.setup()
-        self.test_save_image_ndarray()
-        self.test_save_image_spyfile()
-        self.test_create_image_metadata()
-        self.test_create_image_keywords()
-        self.finish()
 
 
 def run():

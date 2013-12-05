@@ -36,7 +36,7 @@ To run the unit tests, type the following from the system command line:
 
 import numpy as np
 from numpy.testing import assert_allclose
-from spytest import SpyTest, test_method
+from spytest import SpyTest
 import spectral as spy
 
 
@@ -50,13 +50,11 @@ class MatchedFilterTest(SpyTest):
         (i, j) = self.target_ij
         self.mf = MatchedFilter(self.background, self.data[i, j])
 
-    @test_method
     def test_mf_bg_eq_zero(self):
         '''Matched Filter response of background should be zero.'''
         (i, j) = self.target_ij
         np.testing.assert_approx_equal(self.mf(self.background.mean), 0)
         
-    @test_method
     def test_mf_target_eq_one(self):
         '''Matched Filter response of target should be one.'''
         from spectral.algorithms.detectors import matched_filter
@@ -65,7 +63,6 @@ class MatchedFilterTest(SpyTest):
         mf = matched_filter(self.data, target, self.background)
         np.testing.assert_approx_equal(mf[i, j], 1)
 
-    @test_method
     def test_mf_target_no_bg_eq_one(self):
         '''Matched Filter response of target should be one.'''
         from spectral.algorithms.detectors import matched_filter
@@ -74,20 +71,10 @@ class MatchedFilterTest(SpyTest):
         mf = matched_filter(self.data, target)
         np.testing.assert_approx_equal(mf[i, j], 1)
 
-    @test_method
     def test_mf_target_pixel_eq_one(self):
         '''Matched Filter response of target pixel should be one.'''
         (i, j) = self.target_ij
         np.testing.assert_approx_equal(self.mf(self.data)[i, j], 1)
-
-    def run(self):
-        '''Executes the test case.'''
-        self.setup()
-        self.test_mf_bg_eq_zero()
-        self.test_mf_target_eq_one()
-        self.test_mf_target_no_bg_eq_one()
-        self.test_mf_target_pixel_eq_one()
-        self.finish()
 
 
 class RXTest(SpyTest):
@@ -95,20 +82,12 @@ class RXTest(SpyTest):
         self.data = spy.open_image('92AV3C.lan').load()
         self.background = spy.calc_stats(self.data)
 
-    @test_method
     def test_rx_bg_eq_zero(self):
         from spectral.algorithms.detectors import rx, RX
         d = rx(self.data)
         stats = spy.calc_stats(self.data)
         np.testing.assert_approx_equal(rx(stats.mean, background=stats), 0)
         
-    def run(self):
-        '''Executes the test case.'''
-        self.setup()
-        self.test_rx_bg_eq_zero()
-        self.finish()
-
-
 
 def run():
     print '\n' + '-' * 72

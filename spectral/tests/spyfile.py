@@ -43,7 +43,7 @@ To run the unit tests, type the following from the system command line:
 
 import numpy as np
 from numpy.testing import assert_almost_equal
-from spytest import SpyTest, test_method
+from spytest import SpyTest
 
 
 class SpyFileTest(SpyTest):
@@ -81,38 +81,32 @@ class SpyFileTest(SpyTest):
         else:
             self.image = spectral.open_image(self.file)
 
-    @test_method
     def test_read_datum(self):
         assert_almost_equal(self.image.read_datum(*self.datum),
                             self.value)
 
-    @test_method
     def test_read_pixel(self):
         (i, j, k) = self.datum
         assert_almost_equal(self.image.read_pixel(i, j)[k],
                             self.value)
 
-    @test_method
     def test_read_band(self):
         (i, j, k) = self.datum
         assert_almost_equal(self.image.read_band(k)[i, j],
                             self.value)
 
-    @test_method
     def test_read_bands(self):
         (i, j, k) = self.datum
         bands = (k - 5, k - 2, k, k + 1)
         assert_almost_equal(self.image.read_bands(bands)[i, j, 2],
                             self.value)
 
-    @test_method
     def test_read_subregion(self):
         (i, j, k) = self.datum
         region = self.image.read_subregion((i - 5, i + 9),
                                            (j - 3, j + 4))
         assert_almost_equal(region[5, 3, k], self.value)
 
-    @test_method
     def test_read_subimage(self):
         (i, j, k) = self.datum
         subimage = self.image.read_subimage([0, 3, i, 5],
@@ -123,30 +117,15 @@ class SpyFileTest(SpyTest):
                                             [1, j, 4, 7])
         assert_almost_equal(subimage[2, 1, k], self.value)
 
-    @test_method
     def test_load(self):
         (i, j, k) = self.datum
         data = self.image.load()
         assert_almost_equal(data[i, j, k], self.value)
 
-    @test_method
     def test_getitem(self):
         (i, j, k) = self.datum
         assert_almost_equal(self.image[i, j][k], self.value)
         assert_almost_equal(self.image[i, j, k], self.value)
-
-    def run(self):
-        '''Executes the test case.'''
-        self.setup()
-        self.test_read_datum()
-        self.test_read_pixel()
-        self.test_read_band()
-        self.test_read_bands()
-        self.test_read_subimage()
-        self.test_read_subregion()
-        self.test_getitem()
-        self.test_load()
-        self.finish()
 
 
 class SpyFileTestSuite(object):
