@@ -366,7 +366,7 @@ def imshow(data, bands=None, **kwargs):
 def make_pil_image(*args, **kwargs):
     '''Creates a PIL Image object.
 
-    USAGE: make_pil_image(source [, bands] [stretch = 1] [stretch_all = 1]
+    USAGE: make_pil_image(source [, bands] [stretch=True] [stretch_all=False],
                           [bounds = (lower, upper)] )
 
     See `get_rgb` for description of arguments.
@@ -485,8 +485,8 @@ def save_rgb(filename, data, bands=None, **kwargs):
 def get_rgb(source, bands=None, **kwargs):
     '''Extract RGB data for display from a SpyFile object or numpy array.
 
-    USAGE: rgb = get_rgb(source [, bands] [stretch = 1]
-                         [stretch_all = 1] [bounds = (lower, upper)] )
+    USAGE: rgb = get_rgb(source [, bands] [stretch=True]
+                         [stretch_all=False] [bounds = (lower, upper)] )
 
     Arguments:
 
@@ -625,13 +625,13 @@ def get_rgb(source, bands=None, **kwargs):
             (lower, upper) = kwargs["bounds"]
             rgb = (rgb - lower) / (upper - lower)
             rgb = clip(rgb, 0, 1)
-        elif "stretch_all" in kwargs:
+        elif kwargs.get("stretch_all", False):
             # Stretch each color over its full range
             for i in range(rgb.shape[2]):
                 mmin = minimum.reduce(ravel(rgb[:, :, i]))
                 mmax = maximum.reduce(ravel(rgb[:, :, i]))
                 rgb[:, :, i] = (rgb[:, :, i] - mmin) / (mmax - mmin)
-        elif stretch or ("stretch_all" in kwargs and monochrome):
+        elif stretch or (kwargs.get("stretch_all", False) and monochrome):
             # Stretch so highest color channel value is 1
             mmin = minimum.reduce(ravel(rgb))
             mmax = maximum.reduce(ravel(rgb))

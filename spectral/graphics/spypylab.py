@@ -33,6 +33,8 @@
 A module to use matplotlib for creating raster and spectral views.
 '''
 
+__all__ = ['ImageView', 'imshow']
+
 import numpy as np
 from exceptions import UserWarning, ValueError
 import warnings
@@ -426,13 +428,15 @@ class ImageView(object):
             given.
         '''
         import spectral as spy
-        rgb_kwargs = dict([item for item in kwargs.items() \
-                           if item[0] in ('stretch', 'stretch_all', 'bounds')])
+        rgb_kwargs = {}
+        for k in ('stretch', 'stretch_all', 'bounds'):
+            if k in kwargs:
+                rgb_kwargs[k] = kwargs.pop(k)
 
         # If it is a gray-scale image, only keep the first RGB component so
         # matplotlib imshow's cmap can still be used.
         self.data = spy.get_rgb(data, bands, **rgb_kwargs)
-        if data.ndim == 2 or len(bands) == 1:
+        if data.ndim == 2 or (bands is not None and len(bands) == 1):
             self.data = self.data[:, :, 0]
 
         if self._image_shape is None:
@@ -482,7 +486,11 @@ class ImageView(object):
                              'previously set data.')
         if colors is not None:
             self.class_colors = colors
+
+        kwargs = dict([item for item in kwargs.items() if item[0] not in \
+                       ('stretch', 'stretch_all', 'bounds')])
         self.imshow_class_kwargs.update(kwargs)
+
         if 'interpolation' in self.imshow_class_kwargs:
             self.interpolation = self.imshow_class_kwargs['interpolation']
             self.imshow_class_kwargs.pop('interpolation')
@@ -821,7 +829,8 @@ class ImageView(object):
                 pass
         return s
 
-def imshow(data=None, bands=None, classes=None, source=None, **kwargs):
+def imshow(data=None, bands=None, classes=None, source=None, colors=None,
+           **kwargs):
     '''A wrapper around matplotlib's imshow for multi-band images.
 
     Arguments:
@@ -836,6 +845,19 @@ def imshow(data=None, bands=None, classes=None, source=None, **kwargs):
             `data` to be plotted as the red, green, and blue colors,
             respectively. If it contains a single value, then a single band
             will be extracted from the image.
+
+        `source` (optional, SpyImage or ndarray):
+
+            Object used for accessing image source data. If this argument is
+            not provided, events such as double-clicking will have no effect
+            (i.e., a spectral plot will not be created).
+
+        `colors` (optional, array of ints):
+
+            Custom colors to be used for class image view. If provided, this
+            argument should be an array of 3-element arrays, each of which
+            specifies an RGB triplet with integer color components in the
+            range [0, 256).
 
     Keywords:
 
@@ -890,31 +912,15 @@ def imshow(data=None, bands=None, classes=None, source=None, **kwargs):
     from spectral import settings
     from .graphics import get_rgb
 
-    rgb_kwargs = {}
-    for k in ['stretch', 'stretch_all', 'bounds']:
-        if k in kwargs:
-            rgb_kwargs[k] = kwargs.pop(k)
-    
-    imshow_kwargs = {'cmap': settings.imshow_float_cmap,
-                     'interpolation': settings.imshow_interpolation}
-    imshow_kwargs.update(kwargs)
-
     view = ImageView()
     if data is not None:
-        rgb = get_rgb(data, bands, **rgb_kwargs)
-        # Allow matplotlib.imshow to apply a color scale to single-band image.
-        if len(data.shape) == 2:
-            rgb = rgb[:, :, 0]
-        view.set_data(rgb, **imshow_kwargs)
-        imshow_kwargs.pop('cmap')
-        view.set_classes(classes, **imshow_kwargs)
-    else:
-        view.set_classes(classes, **imshow_kwargs)
+        view.set_data(data, bands, **kwargs)
+    if classes is not None:
+        view.set_classes(classes, colors, **kwargs)
     if source is not None:
         view.set_source(source)
     elif data is not None and len(data.shape) == 3 and data.shape[2] > 3:
         view.set_source(data)
-
     view.show()
     return view
         

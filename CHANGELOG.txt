@@ -4,6 +4,23 @@
 
 2013-12-05	tboggs <tboggs@users.sourceforge.net>
 
+    Fixed error when bands not specified in `imshow` and incorrect handling of
+    `stretch_all` keyword to get_rgb).
+
+    * graphics/__init__.py: Import ImageView from spypylab
+    * graphics/graphics.py(get_rgb): Corrected handling of `stretch_all`
+      kwarg (was stretching when strech_all was provided but False (or 0)).
+    * graphics/spypylab:
+      (ImageView.set_data):
+      - Separate get_rgb and mpl.imshow keywords.
+      - Avoid exception when bands not specified.
+      (ImageView.set_classes): Filter get_rgb keywords.
+      (imshow):
+      - Make `colors` a positional argument.
+      - Simplified setup of ImageView object.
+
+2013-12-05	tboggs <tboggs@users.sourceforge.net>
+
     Provide settings for spectral.imshow windows.
 
     * spectral.py (SpySettings):
