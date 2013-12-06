@@ -2,6 +2,27 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2013-12-05	tboggs <tboggs@users.sourceforge.net>
+
+    Provide settings for spectral.imshow windows.
+
+    * spectral.py (SpySettings):
+      - Converted attributes to class attributes
+      - Added imshow settings
+
+    Disable matplotlib key event handlers that conflict with SPy handlers.
+    Use common interpolation for data and class layers.
+
+    * graphics/spypylab.py:
+      (check_disable_mpl_callbacks): New function.
+      (ImageViewKeyboardHandler.handle_event): "i" toggles pixel interpolation.
+      (ImageView.interpolation): New property method.
+      (ImageView.__init__): disable mpl callbacks. Use common interpolation.
+      (ImageView.set_data): Use common interpolation
+      (ImageView.set_classes): ditto
+      (ImageView.refresh): ditto
+      (ImageView.open_zoom): ditto
+
 2013-12-03	tboggs <tboggs@users.sourceforge.net>
 
     Simplified unit test interface.

@@ -47,29 +47,77 @@ class SpySettings:
     Noteworthy members:
 
         `WX_GL_DEPTH_SIZE` (integer, default 24):
+    
             Sets the depth (in number of bits) for the OpenGL depth buffer.
             If calls to `view_cube` or `view_nd` result in windows with blank
             canvases, try reducing this value.
 
         `show_progress` (bool, default True):
+    
             Indicates whether long-running algorithms should display progress
             to sys.stdout. It can be useful to set this value to False when
             SPy is embedded in another application (e.g., IPython Notebook).
+
+        `imshow_figure_size` (2-tuple of integers, default `None`):
+
+            Width and height (in inches) of windows opened with `imshow`. If
+            this value is `None`, matplotlib's default size is used.
+    
+        `imshow_interpolation` (str, default `None`):
+
+            Pixel interpolation to be used in imshow windows. If this value
+            is `None`, matplotlib's default interpolation is used. Note that
+            zoom windows always use "nearest" interpolation.
+    
+        `imshow_zoom_figure_width` (int, default `None`):
+    
+            Width of zoom windows opened from an imshow window. Since zoom
+            windows are always square, this is also the window height. If this
+            value is `None`, matplotlib's default window size is used.
+    
+        `imshow_zoom_pixel_width` (int, default 50):
+
+            Number of source image pixel rows and columns to display in a
+            zoom window.
+
+        `imshow_float_cmap` (str, default "gray"):
+
+            imshow color map to use with floating point arrays.
+
+        `imshow_class_alpha` (float, default 0.5):
+
+            alpha blending value to use for imshow class overlays
+
+        `imshow_disable_mpl_callbacks` (bool, default True):
+
+            If True, several matplotlib keypress event callbacks will be
+            disabled to prevent conflicts with callbacks from SPy.  The
+            matplotlib callbacks can be set back to their defaults by
+            calling `matplotlib.rcdefaults()`.
     '''
-    def __init__(self):
-        self.viewer = None
-        self.plotter = None
+    viewer = None
+    plotter = None
 
-        # If START_WX_APP is True and there is no current wx.App object when a
-        # GUI function is called, then an app object will be created.
-        self.START_WX_APP = True
+    # If START_WX_APP is True and there is no current wx.App object when a
+    # GUI function is called, then an app object will be created.
+    START_WX_APP = True
 
-        # Parameter used by GLCanvas objects in view_cube and view_nd. If the
-        # canvas does not render, try reducing this value (e.g., 16).
-        self.WX_GL_DEPTH_SIZE = 24
+    # Parameter used by GLCanvas objects in view_cube and view_nd. If the
+    # canvas does not render, try reducing this value (e.g., 16).
+    WX_GL_DEPTH_SIZE = 24
 
-        # Should algorithms show completion progress of algorithms?
-        self.show_progress = True
+    # Should algorithms show completion progress of algorithms?
+    show_progress = True
+
+    # imshow settings
+    imshow_figure_size = None
+    imshow_interpolation = None
+    imshow_zoom_figure_width = None
+    imshow_zoom_pixel_width = 50
+    imshow_float_cmap = 'gray'
+    imshow_class_alpha = 0.5
+    imshow_disable_mpl_callbacks = True
+        
 
 settings = SpySettings()
 

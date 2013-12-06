@@ -37,6 +37,23 @@ import numpy as np
 from exceptions import UserWarning, ValueError
 import warnings
 
+_mpl_callbacks_checked = False
+
+def check_disable_mpl_callbacks():
+    '''Disables matplotlib key event handlers, if appropriate.'''
+    import matplotlib as mpl
+    from spectral import settings
+    global _mpl_callbacks_checked
+    if _mpl_callbacks_checked is True or \
+      settings.imshow_disable_mpl_callbacks is False:
+        return
+    _mpl_callbacks_checked = True
+    mpl.rcParams['keymap.back'] = ''
+    mpl.rcParams['keymap.xscale'] = ''
+    mpl.rcParams['keymap.yscale'] = ''
+    mpl.rcParams['keymap.home'] = 'r'
+    mpl.rcParams['keymap.all_axes'] = ''
+
 def xy_to_rowcol(x, y):
     '''Converts image (x, y) coordinate to pixel (row, col).'''
     return (int(y + 0.5), int(x + 0.5))
@@ -228,13 +245,14 @@ class ImageViewKeyboardHandler(ImageViewCallback):
                                                        *args, **kwargs)
 
     def handle_event(self, event):
+        from spectral import settings
         kp = KeyParser(event.key)
         key = kp.key
         if len(kp.modifiers) > 0:
             return
-        if key == 'a':
+        if key == 'a' and self.view.display_mode == 'overlay':
             self.view.class_alpha = max(self.view.class_alpha - 0.05, 0)
-        elif key == 'A':
+        elif key == 'A' and self.view.display_mode == 'overlay':
             self.view.class_alpha = min(self.view.class_alpha + 0.05, 1)
         elif key == 'c':
             if self.view.class_axes is not None:
@@ -248,6 +266,11 @@ class ImageViewKeyboardHandler(ImageViewCallback):
                 self.view.set_display_mode('data')
         elif key == 'h':
             self.print_help()
+        elif key == 'i':
+            if self.view.interpolation == 'nearest':
+                self.view.interpolation = settings.imshow_interpolation
+            else:
+                self.view.interpolation = 'nearest'
         elif key == 'z':
             self.view.open_zoom()
 
@@ -267,6 +290,8 @@ class ImageViewKeyboardHandler(ImageViewCallback):
                           'classes set)'
         print 'd       -> set display mode to "data" (if data set)'
         print 'h       -> print help message'
+        print 'i       -> toggle pixel interpolation between "nearest" and ' \
+                          'SPy default.'
         print 'z       -> open zoom window'
         print
         print 'See matplotlib imshow documentation for addition key binds.'
@@ -335,8 +360,9 @@ class ImageView(object):
                  **kwargs):
 
         import spectral
+        from spectral import settings
         self.is_shown = False
-        self.imshow_data_kwargs = {'cmap': 'gray'}
+        self.imshow_data_kwargs = {'cmap': settings.imshow_float_cmap}
         self.imshow_class_kwargs = {'zorder': 1}
 
         self.data = None
@@ -348,12 +374,15 @@ class ImageView(object):
         self.axes = None
         self._image_shape = None
         self.display_mode = None
+        self._interpolation = None
+        self.interpolation = kwargs.get('interpolation',
+                                        settings.imshow_interpolation)
         
         if data is not None:
             self.set_data(data, bands, **kwargs)
         self.bands = bands
         if classes is not None:
-            self.set_classes(classes)
+            self.set_classes(classes, **kwargs)
         if source is not None:
             self.set_source(source)
 
@@ -362,7 +391,7 @@ class ImageView(object):
         self.spectrum_plot_fig_id = None
         self.parent = None
         self._on_parent_click_cid = None
-        self._class_alpha = 0.5
+        self._class_alpha = settings.imshow_class_alpha
 
         # Callbacks for events associated specifically with this window.
         self.callbacks = None
@@ -373,6 +402,8 @@ class ImageView(object):
         # ImageView object), then the registry will be shared. Otherwise, a new
         # callback registry will be created for this ImageView.
         self.callbacks_common = None
+
+        check_disable_mpl_callbacks()
 
     def set_data(self, data, bands=None, **kwargs):
         '''Sets the data to be shown in the RGB channels.
@@ -397,13 +428,23 @@ class ImageView(object):
         import spectral as spy
         rgb_kwargs = dict([item for item in kwargs.items() \
                            if item[0] in ('stretch', 'stretch_all', 'bounds')])
+
+        # If it is a gray-scale image, only keep the first RGB component so
+        # matplotlib imshow's cmap can still be used.
         self.data = spy.get_rgb(data, bands, **rgb_kwargs)
+        if data.ndim == 2 or len(bands) == 1:
+            self.data = self.data[:, :, 0]
+
         if self._image_shape is None:
             self._image_shape = data.shape[:2]
         elif data.shape[:2] != self._image_shape:
             raise ValueError('Image shape is inconsistent with previously ' \
                              'set data.')
         self.imshow_data_kwargs.update(kwargs)
+        if 'interpolation' in self.imshow_data_kwargs:
+            self.interpolation = self.imshow_data_kwargs['interpolation']
+            self.imshow_data_kwargs.pop('interpolation')
+
         if len(kwargs) > 0 and self.is_shown:
             msg = 'Keyword args to set_data only have an effect if ' \
               'given before the image is shown.'
@@ -442,6 +483,10 @@ class ImageView(object):
         if colors is not None:
             self.class_colors = colors
         self.imshow_class_kwargs.update(kwargs)
+        if 'interpolation' in self.imshow_class_kwargs:
+            self.interpolation = self.imshow_class_kwargs['interpolation']
+            self.imshow_class_kwargs.pop('interpolation')
+
         if len(kwargs) > 0 and self.is_shown:
             msg = 'Keyword args to set_classes only have an effect if ' \
               'given before the image is shown.'
@@ -477,15 +522,18 @@ class ImageView(object):
                 the ImageView. If not provided, a new figure will be created.
         '''
         import matplotlib.pyplot as plt
+        from spectral import settings
         if self.is_shown:
             msg = 'ImageView.show should only be called once.'
             warnings.warn(UserWarning(msg))
             return
-        
+
+        kwargs = {}
         if fignum is not None:
-            plt.figure(num=fignum)
-        else:
-            plt.figure()
+            kwargs['num'] = fignum
+        if settings.imshow_figure_size is not None:
+            kwargs['figsize'] = settings.imshow_figure_size
+        plt.figure(**kwargs)
             
         if self.data is not None:
             self.show_data()
@@ -551,6 +599,7 @@ class ImageView(object):
         if self.axes is not None:
             # A figure has already been created for the view. Make it current.
             plt.figure(self.axes.figure.number)
+        self.imshow_data_kwargs['interpolation'] = self._interpolation
         self.data_axes = plt.imshow(self.data, **self.imshow_data_kwargs)
         if self.axes is None:
             self.axes = self.data_axes.axes
@@ -572,7 +621,8 @@ class ImageView(object):
         self._update_class_rgb()
         kwargs = self.imshow_class_kwargs.copy()
 
-        kwargs.update({'cmap': cm, 'vmin': 0, 'norm': NoNorm()})
+        kwargs.update({'cmap': cm, 'vmin': 0, 'norm': NoNorm(),
+                       'interpolation': self._interpolation})
         if self.axes is not None:
             # A figure has already been created for the view. Make it current.
             plt.figure(self.axes.figure.number)
@@ -592,10 +642,12 @@ class ImageView(object):
             self._update_class_rgb()
             if self.class_axes is not None:
                 self.class_axes.set_data(self.class_rgb)
+                self.class_axes.set_interpolation(self._interpolation)
             elif self.display_mode in ('classes', 'overlay'):
                 self.show_classes()
             if self.data_axes is not None:
                 self.data_axes.set_data(self.data)
+                self.data_axes.set_interpolation(self._interpolation)
             elif self.display_mode in ('data', 'overlay'):
                 self.show_data()
             self.axes.figure.canvas.draw()
@@ -625,7 +677,7 @@ class ImageView(object):
 
     @property
     def class_alpha(self):
-        '''Sets alpha transparency for the class overlay.'''
+        '''alpha transparency for the class overlay.'''
         return self._class_alpha
 
     @class_alpha.setter
@@ -638,6 +690,24 @@ class ImageView(object):
         if self.is_shown:
             self.refresh()
 
+    @property
+    def interpolation(self):
+        '''matplotlib pixel interpolation to use in the image display.'''
+        return self._interpolation
+
+    @interpolation.setter
+    def interpolation(self, interpolation):
+        if interpolation == self._interpolation:
+            return
+        self._interpolation = interpolation
+        if not self.is_shown:
+            return
+        if self.data_axes is not None:
+            self.data_axes.set_interpolation(interpolation)
+        if self.class_axes is not None:
+            self.class_axes.set_interpolation(interpolation)
+        self.refresh()
+        
     def open_zoom(self, center=None, size=None):
         '''Opens a separate window with a zoomed view.
         If a ctrl-lclick event occurs in the original view, the zoomed window
@@ -658,13 +728,17 @@ class ImageView(object):
 
         A new ImageView object for the zoomed view.
         '''
+        from spectral import settings
         import matplotlib.pyplot as plt
         if size is None:
-            size = 50
+            size = settings.imshow_zoom_pixel_width
         (nrows, ncols) = self._image_shape
-        kwargs = {'interpolation': 'nearest',
-                  'extent': (-0.5, ncols - 0.5, nrows - 0.5, -0.5)}
-        fig = plt.figure(figsize=(4,4))
+        kwargs = {'extent': (-0.5, ncols - 0.5, nrows - 0.5, -0.5)}
+        fig_kwargs = {}
+        if settings.imshow_zoom_figure_width is not None:
+            width = settings.imshow_zoom_figure_width
+            fig_kwargs['figsize'] = (width, width)
+        fig = plt.figure(**fig_kwargs)
         view = ImageView(data=self.data, classes=self.classes,
                          source=self.source)
         view.imshow_data_kwargs = self.imshow_data_kwargs.copy()
@@ -676,6 +750,7 @@ class ImageView(object):
         view.show(fignum=fig.number, mode=self.display_mode)
         view.axes.set_xlim(0, size)
         view.axes.set_ylim(size, 0)
+        view.interpolation = 'nearest'
         if center is not None:
             view.pan_to(*center)
         view.cb_parent_pan = ParentViewPanCallback(view, self)
@@ -812,6 +887,7 @@ def imshow(data=None, bands=None, classes=None, source=None, **kwargs):
     "h" with focus on the displayed image to print a summary of mouse/
     keyboard commands accepted by the display.
     '''
+    from spectral import settings
     from .graphics import get_rgb
 
     rgb_kwargs = {}
@@ -819,7 +895,8 @@ def imshow(data=None, bands=None, classes=None, source=None, **kwargs):
         if k in kwargs:
             rgb_kwargs[k] = kwargs.pop(k)
     
-    imshow_kwargs = {'cmap': 'gray', 'interpolation': 'nearest'}
+    imshow_kwargs = {'cmap': settings.imshow_float_cmap,
+                     'interpolation': settings.imshow_interpolation}
     imshow_kwargs.update(kwargs)
 
     view = ImageView()
@@ -829,7 +906,8 @@ def imshow(data=None, bands=None, classes=None, source=None, **kwargs):
         if len(data.shape) == 2:
             rgb = rgb[:, :, 0]
         view.set_data(rgb, **imshow_kwargs)
-        view.set_classes(classes)
+        imshow_kwargs.pop('cmap')
+        view.set_classes(classes, **imshow_kwargs)
     else:
         view.set_classes(classes, **imshow_kwargs)
     if source is not None:
