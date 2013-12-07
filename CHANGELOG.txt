@@ -4,6 +4,10 @@
 
 2013-12-05	tboggs <tboggs@users.sourceforge.net>
 
+    Performance improvements.
+
+    * algorithms/clustering.py (kmeans_ndarray): Up to 3x speedup using einsum.
+
     Added `figsize` argument to imshow.
 
     * graphics/spypylab (imshow): Accept figsize arg.

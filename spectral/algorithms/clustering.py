@@ -389,6 +389,7 @@ def kmeans_ndarray(image, nclusters=10, max_iterations=20, **kwargs):
     old_centers = np.array(centers)
     clusters = np.zeros((N,), int)
     old_clusters = np.copy(clusters)
+    diffs = np.empty_like(image, dtype=np.float64)
     iter = 1
     while (iter <= max_iterations):
         try:
@@ -396,13 +397,13 @@ def kmeans_ndarray(image, nclusters=10, max_iterations=20, **kwargs):
 
             # Assign all pixels
             for i in range(nclusters):
-                diffs = np.subtract(image, centers[i])
+                diffs = np.subtract(image, centers[i], out=diffs)
                 if distance == L2:
-                    distances[:, i] = np.sum(np.square(diffs), 1)
+                    distances[:, i] = np.einsum('ij,ij->i', diffs, diffs)
                 else:
-                    distances[:, i] = np.sum(np.abs(diffs), 1)
+                    diffs = np.abs(diffs, out=diffs)
+                    distances[:, i] = np.einsum('ij->i', diffs)
             clusters[:] = np.argmin(distances, 1)
-
 
             # Update cluster centers
             old_centers[:] = centers
