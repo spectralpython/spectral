@@ -31,16 +31,24 @@
 '''Base classes for classifiers and basic classifiers.'''
 
 import numpy
+import numpy as np
 
 from exceptions import DeprecationWarning
 from warnings import warn
 
 
-class Classifier:
+class Classifier(object):
     '''
     Base class for Classifiers.  Child classes must implement the
     classify_spectrum method.
     '''
+    # It is often faster to compute the detector/classifier scores for the
+    # entire image for each class, rather than for each class on a per-pixel
+    # basis. However, this significantly increases memory requirements. If
+    # the following parameter is True, class scores will be computed for the
+    # entire image.
+    cache_class_scores = True
+
     def __init__(self):
         pass
 
@@ -203,6 +211,7 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
 
                 Data for the training classes.
         '''
+        from .algorithms import GaussianStats
         GaussianClassifier.train(self, trainingData)
 
         covariance = numpy.zeros(self.classes[0].stats.cov.shape, numpy.float)
@@ -210,7 +219,7 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
         for cl in self.classes:
             covariance += cl.stats.nsamples * cl.stats.cov
             nsamples += cl.stats.nsamples
-        self.inv_cov = numpy.linalg.inv(covariance / nsamples)
+        self.background = GaussianStats(cov=covariance)
 
     def classify_spectrum(self, x):
         '''
@@ -238,12 +247,49 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
 
         for cl in self.classes:
             delta = (x - cl.stats.mean)[:, NewAxis]
-            d2 = dot(transpose(delta), dot(self.inv_cov, delta))
+            d2 = dot(transpose(delta), dot(self.background.inv_cov, delta))
             if first or d2 < d2_min:
                 first = False
                 d2_min = d2
                 max_class = cl.index
         return max_class
+
+    def classify_image(self, image):
+        '''Classifies an entire image, returning a classification map.
+
+        Arguments:
+
+            `image` (ndarray or :class:`spectral.Image`)
+
+                The `MxNxB` image to classify.
+
+        Returns (ndarray):
+
+            An `MxN` ndarray of integers specifying the class for each pixel.
+        '''
+        from .detectors import RX
+        if not self.cache_class_scores:
+            return super(MahalanobisDistanceClassifier,
+                         self).classify_image(image)
+
+        # We can cheat here and just compute RX scores for the image for each
+        # class, keeping the background covariance constant and setting the
+        # background mean to the mean of the particular class being evaluated.
+
+        scores = np.empty(image.shape[:2] + (len(self.classes),), np.float64)
+        import spectral
+        status = spectral._status
+        status.display_percentage('Processing...')
+        rx = RX()
+        for (i, c) in enumerate(self.classes):
+            self.background.mean = c.stats.mean
+            rx.set_background(self.background)
+            scores[:, :, i] = rx(image)
+            status.update_percentage(float(i) / len(self.classes))
+        status.end_percentage()
+        inds = np.array([c.index for c in self.classes])
+        mins = np.argmin(scores, axis=-1)
+        return inds[mins]
 
     def classifySpectrum(self, *args, **kwargs):
         warn('MahalanobisDistanceClassifier.classifySpectrum has been '
@@ -251,3 +297,4 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
              + 'MahalanobisDistanceClassifier.classify_spectrum.',
              DeprecationWarning)
         return self.classify_pectrum(*args, **kwargs)
+

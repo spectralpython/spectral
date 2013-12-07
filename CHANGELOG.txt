@@ -6,6 +6,14 @@
 
     Performance improvements.
 
+    * algorithms/classifiers.py:
+      (Classifier): Converted to new-style class (derived from `object`).
+      (Classifier.cache_class_scores): Class attribute that indicates whether
+      to compute classifier scores for each class for the entire image and
+      cache the result prior to selecting the best match. This can yield big
+      speed improvements but could cause problems on systems with lower RAM.
+      (MahalanobisDistanceClassifier.classify_image): Overloading base class
+      method to use `RX` class to compute result. Over 7x speedup.
     * algorithms/clustering.py (kmeans_ndarray): Up to 3x speedup using einsum.
 
     Added `figsize` argument to imshow.
