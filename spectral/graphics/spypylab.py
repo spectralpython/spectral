@@ -830,7 +830,7 @@ class ImageView(object):
         return s
 
 def imshow(data=None, bands=None, classes=None, source=None, colors=None,
-           **kwargs):
+           figsize=None, **kwargs):
     '''A wrapper around matplotlib's imshow for multi-band images.
 
     Arguments:
@@ -858,6 +858,12 @@ def imshow(data=None, bands=None, classes=None, source=None, colors=None,
             argument should be an array of 3-element arrays, each of which
             specifies an RGB triplet with integer color components in the
             range [0, 256).
+
+        `figsize` (optional, 2-tuple of scalar):
+
+            Specifies the width and height (in inches) of the figure window
+            to be created. If this value is not provided, the value specified
+            in `spectral.settings.imshow_figure_size` will be used.
 
     Keywords:
 
@@ -909,6 +915,7 @@ def imshow(data=None, bands=None, classes=None, source=None, colors=None,
     "h" with focus on the displayed image to print a summary of mouse/
     keyboard commands accepted by the display.
     '''
+    import matplotlib.pyplot as plt
     from spectral import settings
     from .graphics import get_rgb
 
@@ -921,7 +928,11 @@ def imshow(data=None, bands=None, classes=None, source=None, colors=None,
         view.set_source(source)
     elif data is not None and len(data.shape) == 3 and data.shape[2] > 3:
         view.set_source(data)
-    view.show()
+    if figsize is not None:
+        fig = plt.figure(figsize=figsize)
+        view.show(fignum=fig.number)
+    else:
+        view.show()
     return view
         
 

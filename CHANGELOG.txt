@@ -4,6 +4,10 @@
 
 2013-12-05	tboggs <tboggs@users.sourceforge.net>
 
+    Added `figsize` argument to imshow.
+
+    * graphics/spypylab (imshow): Accept figsize arg.
+
     Fixed error when bands not specified in `imshow` and incorrect handling of
     `stretch_all` keyword to get_rgb).
 
