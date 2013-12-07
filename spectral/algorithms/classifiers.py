@@ -141,7 +141,6 @@ class GaussianClassifier(SupervisedClassifier):
 
                 Data for the training classes.
         '''
-        from algorithms import log_det
         if not self.min_samples:
             # Set minimum number of samples to the number of bands in the image
             self.min_samples = training_data.nbands
@@ -155,9 +154,6 @@ class GaussianClassifier(SupervisedClassifier):
         for cl in self.classes:
             if not hasattr(cl, 'stats'):
                 cl.calc_stats()
-            if not hasattr(cl.stats, 'inv_cov'):
-                cl.stats.inv_cov = numpy.linalg.inv(cl.stats.cov)
-                cl.stats.log_det_cov = log_det(cl.stats.cov)
 
     def classify_spectrum(self, x):
         '''
@@ -193,6 +189,44 @@ class GaussianClassifier(SupervisedClassifier):
                 max_prob = prob[0, 0]
                 max_class = cl.index
         return max_class
+
+    def classify_image(self, image):
+        '''Classifies an entire image, returning a classification map.
+
+        Arguments:
+
+            `image` (ndarray or :class:`spectral.Image`)
+
+                The `MxNxB` image to classify.
+
+        Returns (ndarray):
+
+            An `MxN` ndarray of integers specifying the class for each pixel.
+        '''
+        import math
+        import spectral
+        if not self.cache_class_scores:
+            return super(GaussianClassifier, self).classify_image(image)
+
+        status = spectral._status
+        status.display_percentage('Processing...')
+        shape = image.shape
+        image = image.reshape(-1, shape[-1])
+        scores = np.empty((image.shape[0], len(self.classes)), np.float64)
+        delta = np.empty_like(image, dtype=np.float64)
+        Y = np.empty_like(delta)
+
+        for (i, c) in enumerate(self.classes):
+            scalar = math.log(c.class_prob) - 0.5 * c.stats.log_det_cov
+            delta = np.subtract(image, c.stats.mean, out=delta)
+            Y = delta.dot(c.stats.inv_cov, out=Y)
+            scores[:, i] = -0.5 * np.einsum('ij,ij->i', Y, delta)
+            scores[:, i] += scalar
+            status.update_percentage(float(i) / len(self.classes))
+        status.end_percentage()
+        inds = np.array([c.index for c in self.classes])
+        mins = np.argmax(scores, axis=-1)
+        return inds[mins].reshape(shape[:2])
 
     def classifySpectrum(self, *args, **kwargs):
         warn('GaussianClassifier.classifySpectrum has been deprecated. '

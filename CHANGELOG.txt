@@ -4,10 +4,13 @@
 
 2013-12-05	tboggs <tboggs@users.sourceforge.net>
 
-    Performance improvements.
+    Performance improvements for kmeans, GaussianClassifier, and
+    MahalanobisDistanceClassifier.
 
     * algorithms/classifiers.py:
       (Classifier): Converted to new-style class (derived from `object`).
+      (GaussianClassifier.classify_image): Override classify_image using
+      cached class scores to provide 14x speedup on test image.
       (Classifier.cache_class_scores): Class attribute that indicates whether
       to compute classifier scores for each class for the entire image and
       cache the result prior to selecting the best match. This can yield big
