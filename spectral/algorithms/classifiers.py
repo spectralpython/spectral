@@ -75,7 +75,7 @@ class Classifier(object):
         status = spectral._status
         status.display_percentage('Classifying image...')
         it = ImageIterator(image)
-        class_map = zeros(image.shape[:2])
+        class_map = zeros(image.shape[:2], np.int16)
         N = it.get_num_elements()
         i, inc = (0, N / 100)
         for spectrum in it:
@@ -219,12 +219,12 @@ class GaussianClassifier(SupervisedClassifier):
         for (i, c) in enumerate(self.classes):
             scalar = math.log(c.class_prob) - 0.5 * c.stats.log_det_cov
             delta = np.subtract(image, c.stats.mean, out=delta)
-            Y = delta.dot(c.stats.inv_cov, out=Y)
-            scores[:, i] = -0.5 * np.einsum('ij,ij->i', Y, delta)
+            Y = delta.dot(-0.5 * c.stats.inv_cov, out=Y)
+            scores[:, i] = np.einsum('ij,ij->i', Y, delta)
             scores[:, i] += scalar
             status.update_percentage(float(i) / len(self.classes))
         status.end_percentage()
-        inds = np.array([c.index for c in self.classes])
+        inds = np.array([c.index for c in self.classes], dtype=np.int16)
         mins = np.argmax(scores, axis=-1)
         return inds[mins].reshape(shape[:2])
 
@@ -321,7 +321,7 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
             scores[:, :, i] = rx(image)
             status.update_percentage(float(i) / len(self.classes))
         status.end_percentage()
-        inds = np.array([c.index for c in self.classes])
+        inds = np.array([c.index for c in self.classes], np.int16)
         mins = np.argmin(scores, axis=-1)
         return inds[mins]
 
@@ -330,5 +330,5 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
              + 'deprecated. Use '
              + 'MahalanobisDistanceClassifier.classify_spectrum.',
              DeprecationWarning)
-        return self.classify_pectrum(*args, **kwargs)
+        return self.classify_spectrum(*args, **kwargs)
 
