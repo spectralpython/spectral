@@ -350,6 +350,39 @@ class KeyParser(object):
                 mods.add(modifier)
         return mods
 
+class ImageViewMouseHandler(ImageViewCallback):
+    def __init__(self, view, *args, **kwargs):
+        super(ImageViewMouseHandler, self).__init__(view,
+                                                    registry=view,
+                                                    event='button_press_event',
+                                                    *args, **kwargs)
+
+    def handle_event(self, event):
+        '''Callback for click event in the image display.'''
+        if event.inaxes is not self.view.axes:
+            return
+        (r, c) = (int(event.ydata + 0.5), int(event.xdata + 0.5))
+        (nrows, ncols) = self.view._image_shape
+        if r < 0 or r >= nrows or c < 0 or c >= ncols:
+            return
+        kp = KeyParser(event.key)
+        if event.button == 1:
+            if event.dblclick and kp.key is None:
+                if self.view.source is not None:
+                    from spectral import settings
+                    import matplotlib.pyplot as plt
+                    if self.view.spectrum_plot_fig_id is None:
+                        f = plt.figure()
+                        self.view.spectrum_plot_fig_id = f.number
+                    try:
+                        f = plt.figure(self.view.spectrum_plot_fig_id)
+                    except:
+                        f = plt.figure()
+                        self.view.spectrum_plot_fig_id = f.number
+                    settings.plotter.plot(self.view.source[r, c],
+                                          self.view.data)
+
+
 class SpyMplEvent(object):
     def __init__(self, name):
         self.name = name
@@ -570,14 +603,15 @@ class ImageView(object):
         if self.callbacks_common is None:
             self.callbacks_common = CallbackRegistry()
 
-        # Callback to handle mouse events
-        self.cb_mouse = MplCallback(self.axes.figure.canvas,
-                                    'button_press_event', self.on_click)
+        # Keyboard callback
+        self.cb_mouse = ImageViewMouseHandler(self)
         self.cb_mouse.connect()
+
+        # Mouse callback
         self.cb_keyboard = ImageViewKeyboardHandler(self)
         self.cb_keyboard.connect()
 
-        # Callback for class update event
+        # Class update event callback
         def updater(*args, **kwargs):
             self.refresh()
         callback = MplCallback(registry=self.callbacks_common,
@@ -790,30 +824,6 @@ class ImageView(object):
         self.axes.set_ylim(y - dy, y + dy)
         self.refresh()
 
-
-    def on_click(self, event):
-        '''Callback for click event in the image display.'''
-        if event.inaxes is not self.axes:
-            return
-        (r, c) = (int(event.ydata + 0.5), int(event.xdata + 0.5))
-        (nrows, ncols) = self._image_shape
-        if r < 0 or r >= nrows or c < 0 or c >= ncols:
-            return
-        kp = KeyParser(event.key)
-        if event.button == 1:
-            if event.dblclick and kp.key is None:
-                if self.source is not None:
-                    from spectral import settings
-                    import matplotlib.pyplot as plt
-                    if self.spectrum_plot_fig_id is None:
-                        f = plt.figure()
-                        self.spectrum_plot_fig_id = f.number
-                    try:
-                        f = plt.figure(self.spectrum_plot_fig_id)
-                    except:
-                        f = plt.figure()
-                        self.spectrum_plot_fig_id = f.number
-                    settings.plotter.plot(self.source[r, c], self.data)
 
     def format_coord(self, x, y):
         '''Formats pixel coorinate string displayed in the window.'''

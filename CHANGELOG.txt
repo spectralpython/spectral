@@ -4,6 +4,13 @@
 
 2013-12-10	tboggs <tboggs@users.sourceforge.net>
 
+    Made ImageView mouse handler an external callback object.
+
+    * spectral/graphics/spypylab.py:
+      (ImageViewMouseHandler): New class
+      (ImageView.init_callbacks): Use ImageViewMouseHandler.
+      (ImageView.on_click): Replaced by ImageViewMouseHandler
+
     Fixed a bug in linear_discriminant (not dividing num num classes). Also,
     make cov_w an unbiased estimator.
 
