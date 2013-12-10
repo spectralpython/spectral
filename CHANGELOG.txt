@@ -2,6 +2,39 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2013-12-10	tboggs <tboggs@users.sourceforge.net>
+
+    Fixed saving/loading training class data. Saving training data is now done
+    using `TrainingClassSet.save`. Loading can be done with either
+    `TrainingClassSet.load` or `load_training_sets`.
+
+    * algorithms/algorithms.py:
+      (linear_discriminant):
+      - Call classes.calc_stats
+      - Get nbands from training data.
+      (TrainingClass.__init__): Don't assume `image` is not None.
+      (TrainingClass._size): Removed member.
+      (TrainingClass.stats_valid): If called with no arg, return current value.
+      (TrainingClass.dump): Removed method.
+      (TrainingClass.load): Removed method.
+      (TrainingClassSet.calc_stats): New method. Only calcs stats if needed.
+      (TrainingClassSet.save): New method.
+      (TrainingClassSet.load): New method.
+      (create_training_classes): Changed `calc_stats` arg to bool.
+    * algorithms/classifiers.py:
+      (Classifier.classify): New method. Calls classify_spectrum or
+      classify_image, as appropriate.
+      (GaussianClassifier.classify_spectrum): Simplified logic.
+      (GaussianClassifier.classify_image): Catch potential exception in np.dot
+      when array is not contiguous.
+      (MahalanobisDistanceClassifier.classify_spectrum): Simplified logic.
+    * spectral.py (load_training_sets): Use TrainingClassSet.load.
+    * tests/__init__.py: Include classifiers tests.
+    * tests/classifiers.py: New file.
+    * tests/spytest.py (SpyTest.run): Supress sys.stdout while running tests.
+    * tests/test_template.txt: Reflect recent changes to SpyTest.
+
+
 2013-12-05	tboggs <tboggs@users.sourceforge.net>
 
     Performance improvements for kmeans, GaussianClassifier, and

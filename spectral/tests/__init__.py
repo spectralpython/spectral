@@ -52,6 +52,8 @@ from . import memmap
 from . import envi
 from . import spymath
 from . import detectors
+from . import classifiers
 
 # List of all submodules to be run from the `run` submodule.
-all_tests = [spyfile, memmap, transforms, envi, spymath, detectors]
+all_tests = [spyfile, memmap, transforms, envi, spymath, detectors,
+             classifiers]

@@ -535,17 +535,14 @@ def linear_discriminant(classes, whiten=True):
     C = len(classes)            # Number of training sets
     rank = len(classes) - 1
 
+    classes.calc_stats()
+
     # Calculate total # of training pixels and total mean
     N = 0
-    B = None            # Don't know number of bands yet
-    mean = None
+    B = classes.nbands
+    mean = np.zeros(B, dtype=np.float64)
     for s in classes:
-        if mean is None:
-            B = s.nbands
-            mean = zeros(B, float)
         N += s.size()
-        if not hasattr(s, 'stats'):
-            s.calc_stats()
         mean += s.size() * s.stats.mean
     mean /= float(N)
 
@@ -755,7 +752,7 @@ class TrainingClass:
                 with the class.  If `index` is nonzero, all elements of `mask`
                 equal to `index` are associated with the class.
 
-            `classProb` (float) [default 1.0]:
+            `class_prob` (float) [default 1.0]:
 
                 Defines the prior probability associated with the class, which
                 is used in maximum likelihood classification.  If `classProb`
@@ -763,13 +760,15 @@ class TrainingClass:
                 all class equal weighting.
         '''
         self.image = image
-        self.nbands = image.shape[2]
+        if image is not None:
+            self.nbands = image.shape[2]
+        self.nbands = None
         self.mask = mask
         self.index = index
         self.class_prob = class_prob
+        self.stats = None
 
-        self._stats_valid = 0
-        self._size = 0
+        self._stats_valid = False
 
     def __iter__(self):
         '''Returns an iterator over all samples for the class.'''
@@ -777,17 +776,21 @@ class TrainingClass:
         for i in it:
             yield i
 
-    def stats_valid(self, tf):
+    def stats_valid(self, tf=None):
         '''
         Sets statistics for the TrainingClass to be valid or invalid.
 
         Arguments:
 
-            `tf` (bool):
+            `tf` (bool or None):
 
-                A value evaluating to True indicates that statistics should be
-                recalculated prior to being used.
+                A value evaluating to False indicates that statistics should be
+                recalculated prior to being used. If the argument is `None`,
+                a value will be returned indicating whether stats need to be
+                recomputed.
         '''
+        if tf is None:
+            return self._stats_valid
         self._stats_valid = tf
 
     def size(self):
@@ -797,13 +800,14 @@ class TrainingClass:
         # If the stats are invalid, the number of pixels in the
         # training set may have changed.
         if self._stats_valid:
-            return self._size
+            return self.stats.nsamples
 
         if self.index:
             return sum(equal(self.mask, self.index).ravel())
         else:
             return sum(not_equal(self.mask, 0).ravel())
 
+        
     def calc_stats(self):
         '''
         Calculates statistics for the class.
@@ -820,12 +824,9 @@ class TrainingClass:
         `log_det_cov`  float                    Natural log of determinant of `cov`
         =============  ======================   ===================================
         '''
-        import math
-        from numpy.linalg import inv, det
-
         self.stats = calc_stats(self.image, self.mask, self.index)
-        self._size = self.stats.nsamples
-        self._stats_valid = 1
+        self.nbands = self.image.shape[-1]
+        self._stats_valid = True
 
     def transform(self, transform):
         '''
@@ -852,43 +853,6 @@ class TrainingClass:
         self.stats.cov = np.dot(
             transform._A, self.stats.cov).dot(transform._A.T)
         self.nbands = transform.dim_out
-
-    def dump(self, fp):
-        '''
-        Dumps the TrainingClass object to a file stream.  Note that the
-        image reference is replaced by the images file name.  It the
-        responsibility of the loader to verify that the file name
-        is replaced with an actual image object.
-        '''
-        import pickle
-
-        pickle.dump(self.image.file_name, fp)
-        pickle.dump(self.index, fp)
-        pickle.dump(self._size, fp)
-        pickle.dump(self.classProb, fp)
-        DumpArray(self.mask, fp)
-        DumpArray(self.stats.mean, fp)
-        DumpArray(self.stats.cov, fp)
-
-    def load(self, fp):
-        '''
-        Loads the TrainingClass object from a file stream.  The image
-        member was probably replaced by the name of the image's source
-        file before serialization.  The member should be replaced by
-        the caller with an actual image object.
-        '''
-        import pickle
-
-        self.stats = GaussianStats()
-
-        self.image = pickle.load(fp)
-        self.index = pickle.load(fp)
-        self._size = pickle.load(fp)
-        self.class_prob = pickle.load(fp)
-        self.mask = LoadArray(fp)
-        self.stats.mean = LoadArray(fp)
-        self.stats.cov = LoadArray(fp)
-        self.stats.num_samples = self._size
 
     # Deprecated methods
     def calcStatistics(self):
@@ -962,6 +926,58 @@ class TrainingClassSet:
         '''An iterator over all samples in all classes.'''
         return SampleIterator(self)
 
+    def calc_stats(self):
+        '''Computes statistics for each class, if not already computed.'''
+        for c in self.classes.values():
+            if not c.stats_valid():
+                c.calc_stats()
+        self.nbands = self.classes.values()[0].nbands
+
+    def save(self, filename, calc_stats=False):
+        import pickle
+        for c in self.classes.values():
+            if c.stats is None:
+                if calc_stats == False:
+                    msg = 'Class statistics are missing from at least one ' \
+                      'class and are required to save the training class ' \
+                      'data. Call the `save` method with keyword ' \
+                      '`calc_stats=True` if you want to compute them and ' \
+                      'then save the class data.'
+                    raise Exception (msg)
+                else:
+                    c.calc_stats()
+        f = open(filename, 'w')
+        ids = sorted(self.classes.keys())
+        pickle.dump(self.classes[ids[0]].mask, f)        
+        pickle.dump(len(self), f)
+        for id in ids:
+            c = self.classes[id]
+            pickle.dump(c.index, f)
+            pickle.dump(c.stats.cov, f)
+            pickle.dump(c.stats.mean, f)
+            pickle.dump(c.stats.nsamples, f)
+            pickle.dump(c.class_prob, f)
+        f.close()
+
+    def load(self, filename, image):
+        import pickle
+        f = open(filename, 'rb')
+        mask = pickle.load(f)
+        nclasses = pickle.load(f)
+        for i in range(nclasses):
+            index = pickle.load(f)
+            cov = pickle.load(f)
+            mean = pickle.load(f)
+            nsamples = pickle.load(f)
+            class_prob = pickle.load(f)
+            c = TrainingClass(image, mask, index, class_prob)
+            c.stats = GaussianStats(mean=mean, cov=cov, nsamples=nsamples)
+            if None not in (cov, mean, nsamples):
+                c.stats_valid(True)
+                c.nbands = len(mean)
+            self.add_class(c)
+        f.close
+            
     #-------------------
     # Deprecated methods
     #-------------------
@@ -972,13 +988,14 @@ class TrainingClassSet:
         return self.add_class(cl)
 
     def allSamples(self):
+
         '''DEPRECATED METHOD'''
         warn('TrainingClassSet.calcStatistics has been deprecated. '
              + 'Use TrainingClassSet.all_samples.', DeprecationWarning)
         return self.all_samples()
 
 
-def create_training_classes(image, class_mask, calc_stats=0, indices=None):
+def create_training_classes(image, class_mask, calc_stats=False, indices=None):
     '''
     Creates a :class:spectral.algorithms.TrainingClassSet: from an indexed array.
 
@@ -997,7 +1014,7 @@ def create_training_classes(image, class_mask, calc_stats=0, indices=None):
             classes.  if `class_mask[i,j]` == `k`, then `image[i,j]` is
             assumed to belong to class `k`.
 
-        `calc_stats`:
+        `calc_stats` (bool):
 
             An optional parameter which, if True, causes statistics to be
             calculated for all training classes.
@@ -1013,6 +1030,7 @@ def create_training_classes(image, class_mask, calc_stats=0, indices=None):
 
     class_indices = set(class_mask.ravel())
     classes = TrainingClassSet()
+    classes.nbands = image.shape[-1]
     for i in class_indices:
         if i == 0:
             # Index 0 denotes unlabled pixel

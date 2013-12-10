@@ -52,21 +52,32 @@ class SpyTest(object):
         '''
         import spectral.tests as tests
         from spectral.tests import abort_on_fail
+        import sys
         self.setup()
+        class NullStdOut(object):
+            def write(*args, **kwargs):
+                pass
+            def flush(self):
+                pass
+        null = NullStdOut()
         methods = [getattr(self, s) for s in sorted(dir(self)) if s.startswith('test_')]
         methods = [m for m in methods if callable(m)]
+        stdout = sys.stdout
         for method in methods:
             print format('Testing ' + method.__name__.split('_', 1)[-1],
-                         '.<40'),
+                         '.<60'),
             tests._num_tests_run += 1
             try:
+                sys.stdout = null
                 method()
-                print 'OK'
+                stdout.write('OK\n')
             except AssertionError:
-                print 'FAILED'
+                stdout.write('FAILED\n')
                 tests._num_tests_failed += 1
                 if tests.abort_on_fail:
                     raise
+            finally:
+                sys.stdout = stdout
         self.finish()
 
 # The following test method is now deprecated and should no longer be used.

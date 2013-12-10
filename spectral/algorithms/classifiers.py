@@ -86,6 +86,12 @@ class Classifier(object):
         status.end_percentage()
         return class_map
 
+    def classify(self, X, **kwargs):
+        if X.ndim == 1:
+            return self.classify_spectrum(X, **kwargs)
+        else:
+            return self.classify_image(X, **kwargs)
+
     #-------------------
     # Deprecated methods
     #-------------------
@@ -144,6 +150,7 @@ class GaussianClassifier(SupervisedClassifier):
         if not self.min_samples:
             # Set minimum number of samples to the number of bands in the image
             self.min_samples = training_data.nbands
+            print 'Setting min samples to', self.min_samples
         self.classes = []
         for cl in training_data:
             if cl.size() >= self.min_samples:
@@ -152,7 +159,7 @@ class GaussianClassifier(SupervisedClassifier):
                 print '  Omitting class %3d : only %d samples present' % (
                     cl.index, cl.size())
         for cl in self.classes:
-            if not hasattr(cl, 'stats'):
+            if not hasattr(cl, 'stats') or not cl.stats_valid():
                 cl.calc_stats()
 
     def classify_spectrum(self, x):
@@ -172,24 +179,15 @@ class GaussianClassifier(SupervisedClassifier):
                 The index for the :class:`~spectral.algorithms.TrainingClass`
                 to which `x` is classified.
         '''
-        from numpy import dot, transpose
-        from numpy.oldnumeric import NewAxis
         from math import log
 
-        max_prob = -100000000000.
-        max_class = -1
-        first = True
-
-        for cl in self.classes:
-            delta = (x - cl.stats.mean)[:, NewAxis]
-            prob = log(cl.class_prob) - 0.5 * cl.stats.log_det_cov \
-                - 0.5 * dot(transpose(delta), dot(cl.stats.inv_cov, delta))
-            if first or prob[0, 0] > max_prob:
-                first = False
-                max_prob = prob[0, 0]
-                max_class = cl.index
-        return max_class
-
+        scores = np.empty(len(self.classes))
+        for (i, cl) in enumerate(self.classes):
+            delta = (x - cl.stats.mean)
+            scores[i] = log(cl.class_prob) - 0.5 * cl.stats.log_det_cov \
+               - 0.5 * delta.dot(cl.stats.inv_cov).dot(delta)
+        return self.classes[np.argmax(scores)].index
+            
     def classify_image(self, image):
         '''Classifies an entire image, returning a classification map.
 
@@ -214,12 +212,25 @@ class GaussianClassifier(SupervisedClassifier):
         image = image.reshape(-1, shape[-1])
         scores = np.empty((image.shape[0], len(self.classes)), np.float64)
         delta = np.empty_like(image, dtype=np.float64)
+
+        # For some strange reason, creating Y with np.emtpy_like will sometimes
+        # result in the following error when attempting an in-place np.dot:
+        #     ValueError: output array is not acceptable (must have the right
+        #     type, nr dimensions, and be a C-Array)
+        # It appears that this may be happening when delta is not contiguous,
+        # although it isn't clear why the alternate construction of Y below
+        # does work.
         Y = np.empty_like(delta)
 
         for (i, c) in enumerate(self.classes):
             scalar = math.log(c.class_prob) - 0.5 * c.stats.log_det_cov
             delta = np.subtract(image, c.stats.mean, out=delta)
-            Y = delta.dot(-0.5 * c.stats.inv_cov, out=Y)
+            try:
+                Y = delta.dot(-0.5 * c.stats.inv_cov, out=Y)
+            except:
+                warn('Unable to output np.dot to existing array. ' \
+                     'Allocating new storage.')
+                Y = delta.dot(-0.5 * c.stats.inv_cov)
             scores[:, i] = np.einsum('ij,ij->i', Y, delta)
             scores[:, i] += scalar
             status.update_percentage(float(i) / len(self.classes))
@@ -272,21 +283,11 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
                 The index for the :class:`~spectral.algorithms.TrainingClass`
                 to which `x` is classified.
         '''
-        from numpy import dot, transpose
-        from numpy.oldnumeric import NewAxis
-
-        max_class = -1
-        d2_min = -1
-        first = True
-
-        for cl in self.classes:
-            delta = (x - cl.stats.mean)[:, NewAxis]
-            d2 = dot(transpose(delta), dot(self.background.inv_cov, delta))
-            if first or d2 < d2_min:
-                first = False
-                d2_min = d2
-                max_class = cl.index
-        return max_class
+        scores = np.empty(len(self.classes))
+        for (i, cl) in enumerate(self.classes):
+            delta = (x - cl.stats.mean)
+            scores[i] = delta.dot(self.background.inv_cov).dot(delta)
+        return self.classes[np.argmin(scores)].index
 
     def classify_image(self, image):
         '''Classifies an entire image, returning a classification map.
@@ -301,6 +302,7 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
 
             An `MxN` ndarray of integers specifying the class for each pixel.
         '''
+        import spectral
         from .detectors import RX
         if not self.cache_class_scores:
             return super(MahalanobisDistanceClassifier,
@@ -311,7 +313,6 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
         # background mean to the mean of the particular class being evaluated.
 
         scores = np.empty(image.shape[:2] + (len(self.classes),), np.float64)
-        import spectral
         status = spectral._status
         status.display_percentage('Processing...')
         rx = RX()

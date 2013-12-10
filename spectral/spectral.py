@@ -444,32 +444,17 @@ def save_training_sets(sets, file):
     f.close()
 
 
-def load_training_sets(file, im=0):
+def load_training_sets(file, image=None):
     '''
     Loads a list of TrainingSet objects from a file.  This function assumes
     that all the sets in the list refer to the same image and mask array.
     If that is not the case, this function should not be used.
     '''
-    from spectral.algorithms import TrainingSet
-    import pickle
+    from .algorithms.algorithms import TrainingClassSet
 
-    f = open(file)
-    sets = []
-
-    nSets = pickle.load(f)
-    mask = LoadArray(f)
-    for i in range(nSets):
-        s = TrainingSet(0, 0)
-        s.load(f)
-        s.mask = mask
-        if im:
-            s.image = im
-        else:
-            s.image = open_image(s.image)
-        sets.append(s)
-
-    f.close()
-    return sets
+    ts = TrainingClassSet()
+    ts.load(file, image)
+    return ts
 
 # Deprecated Functions
 

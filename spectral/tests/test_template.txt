@@ -45,16 +45,8 @@ class FooTest(SpyTest):
     def setup(self):
         pass
 
-    @test_method
     def test_foo(self):
         assert_allclose(1, 1)
-
-
-    def run(self):
-        '''Executes the test case.'''
-        self.setup()
-        self.test_foo()
-        self.finish()
 
 
 def run():
