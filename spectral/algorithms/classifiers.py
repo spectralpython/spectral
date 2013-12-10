@@ -228,12 +228,13 @@ class GaussianClassifier(SupervisedClassifier):
             try:
                 Y = delta.dot(-0.5 * c.stats.inv_cov, out=Y)
             except:
-                warn('Unable to output np.dot to existing array. ' \
-                     'Allocating new storage.')
+                msg ='Unable to output np.dot to existing array. ' \
+                     'Allocating new storage. This will not affect results.'
+                warn(msg)
                 Y = delta.dot(-0.5 * c.stats.inv_cov)
             scores[:, i] = np.einsum('ij,ij->i', Y, delta)
             scores[:, i] += scalar
-            status.update_percentage(float(i) / len(self.classes))
+            status.update_percentage(100. * (i + 1) / len(self.classes))
         status.end_percentage()
         inds = np.array([c.index for c in self.classes], dtype=np.int16)
         mins = np.argmax(scores, axis=-1)
@@ -320,7 +321,7 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
             self.background.mean = c.stats.mean
             rx.set_background(self.background)
             scores[:, :, i] = rx(image)
-            status.update_percentage(float(i) / len(self.classes))
+            status.update_percentage(100. * (i + 1) / len(self.classes))
         status.end_percentage()
         inds = np.array([c.index for c in self.classes], np.int16)
         mins = np.argmin(scores, axis=-1)
