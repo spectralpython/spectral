@@ -288,9 +288,9 @@ def cov_avg(image, mask, weighted=True):
     N = sum([c.nsamples for c in classes])
     if weighted:
         return np.sum([((c.nsamples - 1) / float(N)) * c.cov
-                       for c in classes], axis=0)
+                       for c in classes], axis=0, dtype=np.float64)
     else:
-        return np.mean([c.cov for c in classes], axis=0)
+        return np.mean([c.cov for c in classes], axis=0, dtype=np.float64)
 
 def covariance(*args):
     '''
@@ -562,10 +562,6 @@ def linear_discriminant(classes, whiten=True):
         Richards, J.A. & Jia, X. Remote Sensing Digital Image Analysis: An
         Introduction. (Springer: Berlin, 1999).
     '''
-
-    from numpy import zeros, dot, transpose, diagonal
-    from numpy.linalg import inv, eig
-    from numpy.oldnumeric import NewAxis
     import math
 
     C = len(classes)            # Number of training sets
@@ -580,21 +576,17 @@ def linear_discriminant(classes, whiten=True):
     for s in classes:
         N += s.size()
         mean += s.size() * s.stats.mean
-    mean /= float(N)
+    mean /= N
 
-    cov_b = zeros((B, B), float)            # cov between classes
-    cov_w = zeros((B, B), float)            # cov within classes
-
+    cov_b = np.zeros((B, B), np.float64)            # cov between classes
+    cov_w = np.zeros((B, B), np.float64)            # cov within classes
     for s in classes:
-        cov_w += (s.size() - 1) * s.stats.cov
-        m = (s.stats.mean - mean)[:, NewAxis]
-        cov_b += s.size() * dot(m, transpose(m))
-    cov_w /= float(N)
-    cov_b /= float(N)
+        cov_w += ((s.size() - 1) / float(N)) * s.stats.cov
+        m = s.stats.mean - mean
+        cov_b += (s.size() / float(N)) * np.outer(m, m)
 
-    cwInv = inv(cov_w)
-    (vals, vecs) = eig(dot(cwInv, cov_b))
-
+    inv_cov_w = np.linalg.inv(cov_w)
+    (vals, vecs) = np.linalg.eig(inv_cov_w.dot(cov_b))
     vals = vals[:rank]
     vecs = vecs[:, :rank]
 
