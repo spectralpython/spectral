@@ -4,6 +4,10 @@
 
 2013-12-10	tboggs <tboggs@users.sourceforge.net>
 
+    Added `cov_avg` to compute class averaged covariance
+    
+    * algorithms/algorithms.py (cov_avg): New function.
+
     Fixed saving/loading training class data. Saving training data is now done
     using `TrainingClassSet.save`. Loading can be done with either
     `TrainingClassSet.load` or `load_training_sets`.
@@ -28,6 +32,7 @@
       (GaussianClassifier.classify_image): Catch potential exception in np.dot
       when array is not contiguous.
       (MahalanobisDistanceClassifier.classify_spectrum): Simplified logic.
+      (create_training_classes): Simplified code.
     * spectral.py (load_training_sets): Use TrainingClassSet.load.
     * tests/__init__.py: Include classifiers tests.
     * tests/classifiers.py: New file.

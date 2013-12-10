@@ -256,6 +256,42 @@ def mean_cov(image, mask=None, index=None):
     return (mean, cov, count)
 
 
+def cov_avg(image, mask, weighted=True):
+    '''Calculates the covariance averaged over a set of classes.
+
+    Arguments:
+
+        `image` (ndarrray, :class:`~spectral.Image`, or :class:`spectral.Iterator`):
+
+            If an ndarray, it should have shape `MxNxB` and the mean &
+            covariance will be calculated for each band (third dimension).
+
+        `mask` (integer-valued ndarray):
+
+            Elements specify the classes associated with pixels in `image`.
+            All pixels associeted with non-zero elements of `mask` will be
+            used in the covariance calculation.
+
+        `weighted` (bool, default True):
+
+            Specifies whether the individual class covariances should be
+            weighted when computing the average. If True, each class will
+            be weighted by the number of pixels provided for the class;
+            otherwise, a simple average of the class covariances is performed.
+
+    Returns a class-averaged covariance matrix with shape `image.shape[:2]`.
+    The number of covariances used in the average is equal to the number of
+    non-zero elements of `mask`.
+    '''
+    ids = set(mask.ravel()) - set((0,))
+    classes = [calc_stats(image, mask, i) for i in ids]
+    N = sum([c.nsamples for c in classes])
+    if weighted:
+        return np.sum([((c.nsamples - 1) / float(N)) * c.cov
+                       for c in classes], axis=0)
+    else:
+        return np.mean([c.cov for c in classes], axis=0)
+
 def covariance(*args):
     '''
     Returns the covariance of the set of vectors.
@@ -1028,15 +1064,13 @@ def create_training_classes(image, class_mask, calc_stats=False, indices=None):
     unlabeled and are not added to a training set.
     '''
 
-    class_indices = set(class_mask.ravel())
+    if indices is not None:
+        class_indices = set(indices) - set((0,))
+    else:
+        class_indices = set(class_mask.ravel()) - set((0,))
     classes = TrainingClassSet()
     classes.nbands = image.shape[-1]
     for i in class_indices:
-        if i == 0:
-            # Index 0 denotes unlabled pixel
-            continue
-        elif indices and not i in indices:
-            continue
         cl = TrainingClass(image, class_mask, i)
         if calc_stats:
             cl.calc_stats()
