@@ -4,6 +4,13 @@
 
 2013-12-10	tboggs <tboggs@users.sourceforge.net>
 
+    Fixed a bug in linear_discriminant (not dividing num num classes). Also,
+    make cov_w an unbiased estimator.
+
+    * algorithms/algorithms.py (linear_discriminant):
+      - Divide cov_b by (K - 1) - bug fix.
+      - Divide cov_b by (N - 1) instead if N to make unbiased estimator.
+
     Added `cov_avg` to compute class averaged covariance
     
     * algorithms/algorithms.py (cov_avg): New function.

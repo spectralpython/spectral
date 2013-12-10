@@ -1,4 +1,4 @@
-#########################################################################
+########################################################################
 #
 #   algorithms.py - This file is part of the Spectral Python (SPy)
 #   package.
@@ -279,15 +279,14 @@ def cov_avg(image, mask, weighted=True):
             be weighted by the number of pixels provided for the class;
             otherwise, a simple average of the class covariances is performed.
 
-    Returns a class-averaged covariance matrix with shape `image.shape[:2]`.
-    The number of covariances used in the average is equal to the number of
-    non-zero elements of `mask`.
+    Returns a class-averaged covariance matrix. The number of covariances used
+    in the average is equal to the number of non-zero elements of `mask`.
     '''
     ids = set(mask.ravel()) - set((0,))
     classes = [calc_stats(image, mask, i) for i in ids]
     N = sum([c.nsamples for c in classes])
     if weighted:
-        return np.sum([((c.nsamples - 1) / float(N)) * c.cov
+        return np.sum([((c.nsamples - 1) / float(N - 1)) * c.cov
                        for c in classes], axis=0, dtype=np.float64)
     else:
         return np.mean([c.cov for c in classes], axis=0, dtype=np.float64)
@@ -572,6 +571,7 @@ def linear_discriminant(classes, whiten=True):
     # Calculate total # of training pixels and total mean
     N = 0
     B = classes.nbands
+    K = len(classes)
     mean = np.zeros(B, dtype=np.float64)
     for s in classes:
         N += s.size()
@@ -581,9 +581,9 @@ def linear_discriminant(classes, whiten=True):
     cov_b = np.zeros((B, B), np.float64)            # cov between classes
     cov_w = np.zeros((B, B), np.float64)            # cov within classes
     for s in classes:
-        cov_w += ((s.size() - 1) / float(N)) * s.stats.cov
+        cov_w += ((s.size() - 1) / float(N - 1)) * s.stats.cov
         m = s.stats.mean - mean
-        cov_b += (s.size() / float(N)) * np.outer(m, m)
+        cov_b += (s.size() / float(N) / (K - 1)) * np.outer(m, m)
 
     inv_cov_w = np.linalg.inv(cov_w)
     (vals, vecs) = np.linalg.eig(inv_cov_w.dot(cov_b))
