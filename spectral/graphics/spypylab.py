@@ -106,6 +106,7 @@ class MplCallback(object):
         self.callback = callback
         self.cid = None
         self.is_connected = False
+        self.children = []
 
     def set_registry(self, registry=None):
         '''
@@ -170,6 +171,8 @@ class MplCallback(object):
             # Assume registry is an MPL canvas
             self.cid = self.registry.mpl_connect(self.event, self)
         self.is_connected = True
+        for c in self.children:
+            c.connect()
 
     def disconnect(self):
         '''Stops the callback from receiving events.'''
@@ -181,6 +184,8 @@ class MplCallback(object):
             self.registry.mpl_disconnect(self.cid)
         self.is_connected = False
         self.cid = None
+        for c in self.children:
+            c.disconnect()
 
     def __call__(self, *args, **kwargs):
         if self.callback is not None:
@@ -245,13 +250,77 @@ class ImageViewKeyboardHandler(ImageViewCallback):
                                                        registry=view,
                                                        event='key_press_event',
                                                        *args, **kwargs)
+        self.cb_key_release = ImageViewCallback(view, registry=view,
+                                                event='key_release_event',
+                                                callback=self.on_key_release,
+                                                *args, **kwargs)
+        # Must add to children member to automatically connect/disconnect.
+        self.children.append(self.cb_key_release)
+        self.idstr = ''
+
+    def on_key_release(self, event):
+        kp = KeyParser(event.key)
+        key = kp.key
+        if key is None and self.view.selector.get_active() and \
+            kp.mods_are('shift'):
+            self.view.selector.set_active(False)
+            print 'Resetting selection.'
+            self.view.selection = None
+
 
     def handle_event(self, event):
         from spectral import settings
         kp = KeyParser(event.key)
         key = kp.key
-        if len(kp.modifiers) > 0:
+#        print key, kp.modifiers
+        
+        #-----------------------------------------------------------
+        # Handling for keyboard input related to class ID assignment
+        #-----------------------------------------------------------
+        
+        if key is None and kp.mods_are('shift'):
+            # Rectangle selector is active while shift key is pressed
+            self.view.selector.set_active(True)
             return
+
+        if key in [str(i) for i in range(10)]:
+            if self.view.selection is None:
+                print 'Select an image region before assigning a class ID.'
+                return
+            if len(self.idstr) > 0 and self.idstr[-1] == '!':
+                print 'Cancelled class ID assignment.'
+                self.idstr = ''
+                return
+            else:
+                self.idstr += key
+                return
+
+        if key == 'enter':
+            if self.view.selection is None:
+                print 'Select an image region before assigning a class ID.'
+                return
+            if len(self.idstr) == 0:
+                print 'Enter a numeric class ID before assigning a class ID.'
+                return
+            if self.idstr[-1] != '!':
+                print 'Press ENTER again to assign class %s to pixel ' \
+                  'region [%d:%d, %d:%d]:' \
+                  % ((self.idstr,) + tuple(self.view.selection))
+                self.idstr += '!'
+                return
+            else:
+                print 'Pixels reassigned to class %s' % self.idstr
+                self.idstr = ''
+                return
+
+        if len(self.idstr) > 0:
+            self.idstr = ''
+            print 'Cancelled class ID assignment.'
+                
+        #-----------------------------------------------------------
+        # General keybinds
+        #-----------------------------------------------------------
+
         if key == 'a' and self.view.display_mode == 'overlay':
             self.view.class_alpha = max(self.view.class_alpha - 0.05, 0)
         elif key == 'A' and self.view.display_mode == 'overlay':
@@ -280,7 +349,8 @@ class ImageViewKeyboardHandler(ImageViewCallback):
         print
         print 'Mouse Functions:'
         print '----------------'
-        print 'CTRL+left-click          ->   pan zoom window to pixel'
+        print 'ctrl+left-click          ->   pan zoom window to pixel'
+        print 'shift+left-click&drag    ->   select rectangular image region'
         print 'left-dblclick            ->   plot pixel spectrum'
 
         print
@@ -390,7 +460,10 @@ class SpyMplEvent(object):
 class ImageView(object):
     '''Class to manage events and data associated with image raster views.
     '''
-
+    selector_rectprops = dict(facecolor='red', edgecolor = 'black',
+                              alpha=0.5, fill=True)
+    selector_lineprops = dict(color='black', linestyle='-',
+                              linewidth = 2, alpha=0.5)
     def __init__(self, data=None, bands=None, classes=None, source=None,
                  **kwargs):
 
@@ -410,6 +483,7 @@ class ImageView(object):
         self._image_shape = None
         self.display_mode = None
         self._interpolation = None
+        self.selection = None
         self.interpolation = kwargs.get('interpolation',
                                         settings.imshow_interpolation)
         
@@ -594,6 +668,7 @@ class ImageView(object):
     def init_callbacks(self):
         '''Creates the object's callback registry and default callbacks.'''
         from matplotlib.cbook import CallbackRegistry
+        from matplotlib.widgets import RectangleSelector
         
         self.callbacks = CallbackRegistry()
 
@@ -619,7 +694,36 @@ class ImageView(object):
                                callback=updater)
         callback.connect()
         self.cb_classes_modified = callback
-        
+
+        self.selector = RectangleSelector(self.axes,
+                                          self._select_rectangle,
+                                          button=1,
+                                          useblit=True,
+                                          spancoords='data',
+                                          drawtype='box',
+                                          rectprops = self.selector_rectprops)
+        self.selector.set_active(False)
+
+    def _select_rectangle(self, event1, event2):
+        if event1.inaxes is not self.axes or event2.inaxes is not self.axes:
+            self.selection = None
+            return
+        (r1, c1) = xy_to_rowcol(event1.xdata, event1.ydata)
+        (r2, c2) = xy_to_rowcol(event2.xdata, event2.ydata)
+        (r1, r2) = sorted([r1, r2])
+        (c1, c2) = sorted([c1, c2])
+        if (r2 < 0) or (r1 >= self._image_shape[0]) or \
+          (c2 < 0) or (c1 >= self._image_shape[1]):
+          self.selection = None
+          return
+        r1 = max(r1, 0)
+        r2 = min(r2, self._image_shape[0] - 1)
+        c1 = max(c1, 0)
+        c2 = min(c2, self._image_shape[1] - 1)
+        print 'Selected region: [%d: %d, %d: %d]' % (r1, r2 + 1, c1, c2 + 1)
+        self.selection = [r1, r2 + 1, c1, c2 + 1]
+        self.selector.set_active(False)
+    
     def _guess_mode(self):
         '''Select an appropriate display mode, based on current data.'''
         if self.data is not None:

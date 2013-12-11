@@ -4,6 +4,18 @@
 
 2013-12-10	tboggs <tboggs@users.sourceforge.net>
 
+    Partial implementation of pixel class labeling.
+
+    * graphics/spypylab.py:
+      (MplCallback.children): New member list for child callbacks.
+      (ImageViewKeyboardHandler.__init__): Add child key release handler.
+      (ImageViewKeyboardHandler.on_key_release): New method.
+      (ImageViewKeyboardHandler.handle_event): Handling for pixel labeling.
+      (ImageView.selection): New member for rectangular region selections.
+      (ImageView.init_callbacks): Attach RectanglSelector.
+      (ImageView._select_rectangle): Handles creation of `selection` from
+       RectangleSelector callback.
+
     Made ImageView mouse handler an external callback object.
 
     * spectral/graphics/spypylab.py:
