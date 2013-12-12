@@ -88,6 +88,14 @@ class SpySettings:
 
             alpha blending value to use for imshow class overlays
 
+        `imshow_enable_rectangle_selector` (bool, default True):
+
+            Whether to create the rectangle selection tool that enables
+            interactive image pixel class labeling. On some OS/backend
+            combinations, an exception may be raised when this object is
+            created so disabling it allows imshow windows to be created without
+            using the selector tool.
+
         `imshow_disable_mpl_callbacks` (bool, default True):
 
             If True, several matplotlib keypress event callbacks will be
@@ -116,6 +124,7 @@ class SpySettings:
     imshow_zoom_pixel_width = 50
     imshow_float_cmap = 'gray'
     imshow_class_alpha = 0.5
+    imshow_enable_rectangle_selector = True
     imshow_disable_mpl_callbacks = True
         
 

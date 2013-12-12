@@ -2,6 +2,21 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2013-12-11	tboggs <tboggs@users.sourceforge.net>
+
+    Completed initial implementation of pixel class labeling.
+
+    * graphics/spypylab.py:
+      (MplCallbacks.show_events): New boolean class attribute that indicates
+       whether matplotlib events should be printed to the console.
+      (ImageViewKeyboardHandler.on_key_release): Check whether selector exists.
+      (ImageViewKeyboardHandler.handle_event):
+       - Check whether selector exists.
+       - Call self.view.label_region.
+      (ImageView.init_callbacks): Only create selector if settings say so.
+      (ImageView.label_region): New method to reassign image pixel class IDs.
+    * spectral.py (SpySettings): Added imshow_enable_rectangle_selector.
+      
 2013-12-10	tboggs <tboggs@users.sourceforge.net>
 
     Partial implementation of pixel class labeling.

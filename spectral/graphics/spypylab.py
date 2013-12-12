@@ -76,6 +76,7 @@ class MplCallback(object):
     # (e.g., if an associated window has been closed) . If it is True, the
     # associated exception will be rethrown.
     raise_event_exceptions = False
+    show_events = False
     
     def __init__(self, registry=None, event=None, callback=None):
         '''
@@ -229,6 +230,8 @@ class ParentViewPanCallback(ImageViewCallback):
         self.child = child
 
     def handle_event(self, event):
+        if self.show_events:
+            print event, 'key = %s' % event.key
         if event.inaxes is not self.view.axes:
             return
         (r, c) = xy_to_rowcol(event.xdata, event.ydata)
@@ -259,10 +262,12 @@ class ImageViewKeyboardHandler(ImageViewCallback):
         self.idstr = ''
 
     def on_key_release(self, event):
+        if self.show_events:
+            print 'key = %s' % event.key
         kp = KeyParser(event.key)
         key = kp.key
-        if key is None and self.view.selector.get_active() and \
-            kp.mods_are('shift'):
+        if key is None and self.view.selector is not None and \
+          self.view.selector.get_active() and kp.mods_are('shift'):
             self.view.selector.set_active(False)
             print 'Resetting selection.'
             self.view.selection = None
@@ -270,20 +275,22 @@ class ImageViewKeyboardHandler(ImageViewCallback):
 
     def handle_event(self, event):
         from spectral import settings
+        if self.show_events:
+            print 'key = %s' % event.key
         kp = KeyParser(event.key)
         key = kp.key
-#        print key, kp.modifiers
         
         #-----------------------------------------------------------
         # Handling for keyboard input related to class ID assignment
         #-----------------------------------------------------------
         
-        if key is None and kp.mods_are('shift'):
+        if key is None and kp.mods_are('shift') and \
+          self.view.selector is not None:
             # Rectangle selector is active while shift key is pressed
             self.view.selector.set_active(True)
             return
 
-        if key in [str(i) for i in range(10)]:
+        if key in [str(i) for i in range(10)] and self.view.selector is not None:
             if self.view.selection is None:
                 print 'Select an image region before assigning a class ID.'
                 return
@@ -295,7 +302,7 @@ class ImageViewKeyboardHandler(ImageViewCallback):
                 self.idstr += key
                 return
 
-        if key == 'enter':
+        if key == 'enter' and self.view.selector is not None:
             if self.view.selection is None:
                 print 'Select an image region before assigning a class ID.'
                 return
@@ -309,7 +316,12 @@ class ImageViewKeyboardHandler(ImageViewCallback):
                 self.idstr += '!'
                 return
             else:
-                print 'Pixels reassigned to class %s' % self.idstr
+                i = int(self.idstr[:-1])
+                n = self.view.label_region(self.view.selection, i)
+                if n == 0:
+                    print 'No pixels reassigned.'
+                else:
+                    print '%d pixels reassigned to class %d.' % (n, i)
                 self.idstr = ''
                 return
 
@@ -429,6 +441,8 @@ class ImageViewMouseHandler(ImageViewCallback):
 
     def handle_event(self, event):
         '''Callback for click event in the image display.'''
+        if self.show_events:
+            print event, ', key = %s' % event.key
         if event.inaxes is not self.view.axes:
             return
         (r, c) = (int(event.ydata + 0.5), int(event.xdata + 0.5))
@@ -499,6 +513,7 @@ class ImageView(object):
  
         self.spectrum_plot_fig_id = None
         self.parent = None
+        self.selector = None
         self._on_parent_click_cid = None
         self._class_alpha = settings.imshow_class_alpha
 
@@ -667,8 +682,8 @@ class ImageView(object):
 
     def init_callbacks(self):
         '''Creates the object's callback registry and default callbacks.'''
+        from spectral import settings
         from matplotlib.cbook import CallbackRegistry
-        from matplotlib.widgets import RectangleSelector
         
         self.callbacks = CallbackRegistry()
 
@@ -695,14 +710,59 @@ class ImageView(object):
         callback.connect()
         self.cb_classes_modified = callback
 
-        self.selector = RectangleSelector(self.axes,
-                                          self._select_rectangle,
-                                          button=1,
-                                          useblit=True,
-                                          spancoords='data',
-                                          drawtype='box',
-                                          rectprops = self.selector_rectprops)
-        self.selector.set_active(False)
+
+        if settings.imshow_enable_rectangle_selector is False:
+            return
+        try:
+            from matplotlib.widgets import RectangleSelector
+            self.selector = RectangleSelector(self.axes,
+                                              self._select_rectangle,
+                                              button=1,
+                                              useblit=True,
+                                              spancoords='data',
+                                              drawtype='box',
+                                              rectprops = \
+                                                  self.selector_rectprops)
+            self.selector.set_active(False)
+        except:
+            self.selector = None
+            msg = 'Failed to create RectangleSelector object. Interactive ' \
+              'pixel class labeling will be unavailable.'
+            warn(msg)
+
+    def label_region(self, rectangle, class_id):
+        '''Assigns all pixels in the rectangle to the specified class.
+
+        Arguments:
+
+            `rectangle` (4-tuple of integers):
+
+                Tuple or list defining the rectangle bounds. Should have the
+                form (row_start, row_stop, col_start, col_stop), where the
+                stop indices are not included (i.e., the effect is
+                `classes[row_start:row_stop, col_start:col_stop] = id`.
+
+            class_id (integer >= 0):
+
+                The class to which pixels will be assigned.
+
+        Returns the number of pixels reassigned (the number of pixels in the
+        rectangle whose class has *changed* to `class_id`.
+        '''
+        if self.classes is None:
+            msg = 'No classes are associatied with this view. To (re)assign ' \
+              'pixel classes, open the image view with the `classes` keyword.'
+            raise Exception(msg)
+        r = rectangle
+        n = np.sum(self.classes[r[0]:r[1], r[2]:r[3]] != class_id)
+        if n > 0:
+            self.classes[r[0]:r[1], r[2]:r[3]] = class_id
+            event = SpyMplEvent('spy_classes_modified')
+            event.classes = self.classes
+            event.nchanged = n
+            self.callbacks_common.process('spy_classes_modified', event)
+            return n
+        return 0
 
     def _select_rectangle(self, event1, event2):
         if event1.inaxes is not self.axes or event2.inaxes is not self.axes:
