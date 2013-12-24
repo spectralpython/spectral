@@ -267,11 +267,14 @@ class ImageViewKeyboardHandler(ImageViewCallback):
         kp = KeyParser(event.key)
         key = kp.key
         if key is None and self.view.selector is not None and \
-          self.view.selector.get_active() and kp.mods_are('shift'):
-            self.view.selector.set_active(False)
+          self.view.selector.get_active() and kp.mods_are('shift') \
+          and self.view.selector.eventpress is not None:
             print 'Resetting selection.'
+            self.view.selector.eventpress = None
+            self.view.selector.set_active(False)
             self.view.selection = None
-
+            self.view.selector.to_draw.set_visible(False)
+            self.view.refresh()
 
     def handle_event(self, event):
         from spectral import settings
@@ -761,6 +764,9 @@ class ImageView(object):
             event.classes = self.classes
             event.nchanged = n
             self.callbacks_common.process('spy_classes_modified', event)
+            # Make selection rectangle go away.
+            self.selector.to_draw.set_visible(False)
+            self.refresh()
             return n
         return 0
 
@@ -783,6 +789,9 @@ class ImageView(object):
         print 'Selected region: [%d: %d, %d: %d]' % (r1, r2 + 1, c1, c2 + 1)
         self.selection = [r1, r2 + 1, c1, c2 + 1]
         self.selector.set_active(False)
+        # Make the rectangle display until at least the next event
+        self.selector.to_draw.set_visible(True)
+        self.selector.update()
     
     def _guess_mode(self):
         '''Select an appropriate display mode, based on current data.'''

@@ -2,6 +2,21 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2013-12-23	tboggs <tboggs@users.sourceforge.net>
+
+    Make selection rectangle disappear when canceling selection and stay when
+    selection is complete.
+
+    * graphics/spypylab:
+      (ImageViewKeyboardHandler.on_key_release): Suppress cancellation message
+       if mouse was never clicked. Hide rectangle if SHIFT is released while
+       selecting.
+      (ImageViewKeyboardHandler.handle_event): Make selection rectangle
+       disappear after pixels are assigned to a class.
+      (ImageView._select_rectangle): Make selection rectangle continue to be
+       displayed until the next GUI event (the default mpl behavior is for it
+       to disappear).
+
 2013-12-11	tboggs <tboggs@users.sourceforge.net>
 
     Completed initial implementation of pixel class labeling.
