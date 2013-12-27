@@ -174,13 +174,17 @@ import numpy as np
 
 class MouseMenu(wx.Menu):
     '''Right-click menu for reassigning points to different classes.'''
+    ids = []
     def __init__(self, window):
         super(MouseMenu, self).__init__(title='Assign to class')
         self.window = window
         self.id_classes = {}
+        while len(self.ids) < self.window.max_menu_class + 1:
+            self.ids.append( wx.NewId())
         for i in range(self.window.max_menu_class + 1):
-            id = wx.NewId()
+            id = self.ids[i]
             self.id_classes[id] = i
+            print '(id, i) =', (id, i)
             mi = wx.MenuItem(self, id, str(i))
             self.AppendItem(mi)
             self.Bind(wx.EVT_MENU, self.reassign_points, mi)

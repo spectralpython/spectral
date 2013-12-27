@@ -2,6 +2,15 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2013-12-27	tboggs <tboggs@users.sourceforge.net>
+
+    Avoid a bug in `wx.NewId` that can cause exceptions when right-clicking in
+    an ND window.
+
+    graphics/ndwindow.py (MouseMenu.__init__): Cache menu item ID's instead of
+     regenerating them every time the menu is opened. This avoids an exception
+     that intermittantly occurs in wx.
+
 2013-12-23	tboggs <tboggs@users.sourceforge.net>
 
     Make selection rectangle disappear when canceling selection and stay when
