@@ -7,9 +7,18 @@
     Avoid a bug in `wx.NewId` that can cause exceptions when right-clicking in
     an ND window.
 
-    graphics/ndwindow.py (MouseMenu.__init__): Cache menu item ID's instead of
+    * graphics/ndwindow.py (MouseMenu.__init__): Cache menu item ID's instead of
      regenerating them every time the menu is opened. This avoids an exception
      that intermittantly occurs in wx.
+
+    * graphics/spypylab.py:
+      (ImageViewMouseHandler.handle_event): Force redraw of spectrum plots.
+
+    Fixed bug that caused an exception when a SpyFile objects is usied in an
+    ImageView.
+
+    * graphics/spypylab.py (ImageView.set_data): Use `shape` member instead of
+      `ndim`.
 
 2013-12-23	tboggs <tboggs@users.sourceforge.net>
 

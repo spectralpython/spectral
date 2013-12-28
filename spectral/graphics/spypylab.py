@@ -371,6 +371,8 @@ class ImageViewKeyboardHandler(ImageViewCallback):
         print
         print 'Keybinds:'
         print '---------'
+        print '0-9     -> enter class ID for image pixel labeling'
+        print 'ENTER   -> apply specified class ID to selected rectangular region'
         print 'a/A     -> decrease/increase class overlay alpha value'
         print 'c       -> set display mode to "classes" (if classes set)'
         print 'C       -> set display mode to "overlay" (if data and ' \
@@ -466,8 +468,12 @@ class ImageViewMouseHandler(ImageViewCallback):
                     except:
                         f = plt.figure()
                         self.view.spectrum_plot_fig_id = f.number
+                    s = plt.subplot(111)
                     settings.plotter.plot(self.view.source[r, c],
-                                          self.view.data)
+                                          self.view.source)
+                    s.xaxis.axes.relim()
+                    s.xaxis.axes.autoscale(True)
+                    f.canvas.draw()
 
 
 class SpyMplEvent(object):
@@ -561,7 +567,7 @@ class ImageView(object):
         # If it is a gray-scale image, only keep the first RGB component so
         # matplotlib imshow's cmap can still be used.
         self.data = spy.get_rgb(data, bands, **rgb_kwargs)
-        if data.ndim == 2 or (bands is not None and len(bands) == 1):
+        if len(data.shape) == 2 or (bands is not None and len(bands) == 1):
             self.data = self.data[:, :, 0]
 
         if self._image_shape is None:
