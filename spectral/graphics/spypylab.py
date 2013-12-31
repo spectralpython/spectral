@@ -482,6 +482,14 @@ class SpyMplEvent(object):
 
 class ImageView(object):
     '''Class to manage events and data associated with image raster views.
+
+    In most cases, it is more convenient to simply call :func:`~spectral.graphics.spypylab.imshow`,
+    which creates, displays, and returns an :class:`ImageView` object. Creating
+    an :class:`ImageView` object directly (or creating an instance of a subclass)
+    enables additional customization of the image display (e.g., overriding
+    default event handlers). If the object is created directly, call the
+    :meth:`show` method to display the image. The underlying image display
+    functionality is implemented via :func:`matplotlib.pyplot.imshow`.
     '''
     selector_rectprops = dict(facecolor='red', edgecolor = 'black',
                               alpha=0.5, fill=True)
@@ -489,6 +497,40 @@ class ImageView(object):
                               linewidth = 2, alpha=0.5)
     def __init__(self, data=None, bands=None, classes=None, source=None,
                  **kwargs):
+        '''
+        Arguments:
+
+            `data` (ndarray or :class:`SpyFile`):
+
+                The source of RGB bands to be displayed. with shape (R, C, B).
+                If the shape is (R, C, 3), the last dimension is assumed to
+                provide the red, green, and blue bands (unless the `bands`
+                argument is provided). If :math:`B > 3` and `bands` is not
+                provided, the first, middle, and last band will be used.
+
+            `bands` (triplet of integers):
+
+                Specifies which bands in `data` should be displayed as red,
+                green, and blue, respectively.
+
+            `classes` (ndarray of integers):
+
+                An array of integer-valued class labels with shape (R, C). If
+                the `data` argument is provided, the shape must match the first
+                two dimensions of `data`.
+
+            `source` (ndarray or :class:`SpyFile`):
+
+                The source of spectral data associated with the image display.
+                This optional argument is used to access spectral data (e.g., to
+                generate a spectrum plot when a user double-clicks on the image
+                display.
+
+        Keyword arguments:
+
+            Any keyword that can be provided to :func:`~spectral.graphics.graphics.get_rgb`
+            or :func:`matplotlib.imshow`.
+        '''
 
         import spectral
         from spectral import settings
@@ -601,7 +643,7 @@ class ImageView(object):
 
                 Color triplets (with values in the range [0, 255]) that
                 define the colors to be associatd with the integer indices
-                in `classes.
+                in `classes`.
 
         Keyword Arguments:
 
@@ -634,7 +676,14 @@ class ImageView(object):
             self.refresh()
 
     def set_source(self, source):
-        '''Sets the image data source (used for accessing spectral data).'''
+        '''Sets the image data source (used for accessing spectral data).
+
+        Arguments:
+
+            `source` (ndarray or :class:`SpyFile`):
+
+                The source for spectral data associated with the view.
+        '''
         self.source = source
     
     def show(self, mode=None, fignum=None):
@@ -979,7 +1028,7 @@ class ImageView(object):
         return view
 
     def pan_to(self, row, col):
-        '''Centers view on pixel coordinate (x, y).'''
+        '''Centers view on pixel coordinate (row, col).'''
         if self.axes is None:
             raise Exception('Cannot pan image until it is shown.')
         (xmin, xmax) = self.axes.get_xlim()
@@ -1005,7 +1054,7 @@ class ImageView(object):
 
 
     def format_coord(self, x, y):
-        '''Formats pixel coorinate string displayed in the window.'''
+        '''Formats pixel coordinate string displayed in the window.'''
         (nrows, ncols) = self._image_shape
         if x < -0.5 or x > ncols - 0.5 or y < -0.5 or y > ncols - 0.5:
             return ""
