@@ -8,13 +8,113 @@ type the following::
 
     python setup.py install
 
+The latest release is also hosted at http://pypi.python.org. So if you have `pip`
+installed, you can automatically fetch and install the latest SPy release by
+typing::
+
+    pip install spectral
+
+================================================================================
+SPy 0.13
+================================================================================
+Release date: 2014.01.XX
+
+New Features
+------------
+
+* New features the `ImageView` class returned by `imshow`:
+
+  * Image rasters can be switched between *data*, *class*, and *class overlay*
+    view, using adjustable class alpha transparency.
+
+  * Image pixel regions can be interactively assigned to new classes using
+    mouse/keyboard click & drag interaction.
+
+  * A "zoom" window can be opened from an image view by pressing "z". The zoom
+    window center point can be panned to a new location by holding CONTROL and
+    left-clicking in the original window.
+
+  * Image pixel interpolation can be switched between the module default and
+    *nearest* (by pressing "i").
+
+* The `view_nd` window can open a class map raster view (by pressing "c") that
+  dynamically shows changed class values.
+
+* Added a `matched_filter` function, which wraps the `MatchedFilter` class and
+  allows using local background stats using an inner/outer window.
+
+* `rx` accepts an optional *cov* argument, which specifies a global background
+  covariance. When this argument is given, the background mean will be computed
+  using a moving inner/outer window but the covariance will be fixed.
+
+* Function `cov_avg` computes covariance averaged over multiple classes (using
+  the mean of each class.
+
+* `matrix_sqrt` optionally returns the square root of the matrix inverse.
+
+* Created the `WindowedGaussianBackgroundMapper` to easily apply any pixel-based
+  estimator to an image using local background stats computed for an inner/outer
+  window.
+
+Performance Improvements
+------------------------
+
+* Significant speedup for sevaral algorithms using ndarray inputs:
+
+  * 14x speedup for GMCL
+
+  * 7x speedup for Mahalanobis distance classification
+
+  * 3x speedup for `kmeans`
+
+* Windowed `rx` is significanty faster from using cached covariance.
+
+* `matrix_sqrt` accepts an optional *eigs* arguments that makes square root
+  calculation significantly faster.
+
+* `GaussianStats` object caches eigen-decomposition, make calculation of other
+  covariance-derived stats much faster.
+
+Changes
+-------
+
+* Eigenvectors in `PrincipalComponents` objects (returned by `principal_components`)
+  are now stored in columns (they were in rows) to be consistent with numpy.
+  An explicit check is not performed to ensure eigenvalues are in descending
+  order.
+
+* Converted `GaussianStats` constructor keyword args to optional positional args.
+
+* Added numerouse new unit tests.
+
+* Simplified the unit testing interface, eliminating the need for `test_method`
+  decorator and `TestCase` subclass `run` methods.
+
+* Converted `SpySettings` object attributes to class attributes.
+
+* Removed `save_training_sets`. Use `TrainingClassSet.save` instead.
+
+Bug Fixes
+---------
+
+* Exception occured when *bands* argument was not provided to `imshow`.
+
+* *stretch_all* parameter for `get_rgb` was sometimes being used when set to
+  False or 0 (because it was not None).
+
+* Fixed broken implementation of `load_training_sets`. `save_training_sets` was
+  also fixed (but implementation is replaced by TrainingClassSet.save`.
+
+* Fixed a scaling error in `linear_discriminant` and divide by N-1 to get
+  unbiased estimate of *cov_b*.
+
 ================================================================================
 SPy 0.12
 ================================================================================
 Release date: 2013.09.06
 
-New Featues
------------
+New Features
+------------
 
 * Added a wrapper around matplotlib's `imshow` to easily display HSI data.
 
@@ -62,15 +162,20 @@ Bug Fixes
 
 * Applied Ferdinand Deger's bugfix for `envi.create_image`.
 
+* `ImageView` objects raised an exception when the *data* constructor arg was
+  a `SpyFile` object.
 
+* `wx.NewId` occasionally returns a weird number (large negative value), which
+  raises an exception in wx. Now caching `NDWindow` right-click menu ID values
+  to avoid this wx bug.
 
 ================================================================================
 SPy 0.11
 ================================================================================
 Release date: 2013.04.03
 
-New Featues
------------
+New Features
+------------
 
 * RX anomaly detector.
 
