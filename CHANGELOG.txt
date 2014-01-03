@@ -14,7 +14,7 @@
     * graphics/spypylab.py:
       (ImageViewMouseHandler.handle_event): Force redraw of spectrum plots.
 
-    Fixed bug that caused an exception when a SpyFile objects is usied in an
+    Fixed bug that caused an exception when a SpyFile object is used in an
     ImageView.
 
     * graphics/spypylab.py (ImageView.set_data): Use `shape` member instead of
