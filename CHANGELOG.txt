@@ -22,6 +22,13 @@
       prevent bad values in arccos due to roundoff.
       (msam): New function.
 
+    Removed deprecated functions:
+
+    * algorithms/algorithms.py: Removed principalComponents,
+      linearDiscriminant, reduceEigenvectors, logDeterminant, ,
+      createTrainingClasses, bhattacharyyaDistance, bDistanceTerms,
+      transformImage, spectralAngles.
+
 2013-12-27	tboggs <tboggs@users.sourceforge.net>
 
     Avoid a bug in `wx.NewId` that can cause exceptions when right-clicking in
