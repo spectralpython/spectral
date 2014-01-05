@@ -50,6 +50,9 @@ New Features
 * Function `cov_avg` computes covariance averaged over multiple classes (using
   the mean of each class.
 
+* Added `msam` (Modified SAM) function by Oshigami et al (code was contributed
+  by Christian Mielke).
+
 * `matrix_sqrt` optionally returns the square root of the matrix inverse.
 
 * Created the `WindowedGaussianBackgroundMapper` to easily apply any pixel-based
