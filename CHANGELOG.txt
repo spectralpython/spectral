@@ -2,6 +2,19 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2013-01-05	tboggs <tboggs@users.sourceforge.net>
+
+    Allow modifying `ImageView` classes even when the `classes` arg was not
+    provided.
+
+    * graphics/spypylab.py:
+      (ImageViewKeyboardHandler.handle_event): Check ImageView.classes instead
+        of ImageView.class_axes.
+      (ImageView.init_callbacks): Make class update callback handle `classes`
+        being None.
+      (ImageView.set_display_mode): Call .show_classes if classes are set but
+        .class_axes is not (i.e., if classes were set since last update).
+
 2013-12-27	tboggs <tboggs@users.sourceforge.net>
 
     Avoid a bug in `wx.NewId` that can cause exceptions when right-clicking in

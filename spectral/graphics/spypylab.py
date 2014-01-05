@@ -341,10 +341,10 @@ class ImageViewKeyboardHandler(ImageViewCallback):
         elif key == 'A' and self.view.display_mode == 'overlay':
             self.view.class_alpha = min(self.view.class_alpha + 0.05, 1)
         elif key == 'c':
-            if self.view.class_axes is not None:
+            if self.view.classes is not None:
                 self.view.set_display_mode('classes')
         elif key == 'C':
-            if self.view.class_axes is not None \
+            if self.view.classes is not None \
               and self.view.data_axes is not None:
                 self.view.set_display_mode('overlay')
         elif key == 'd':
@@ -761,6 +761,8 @@ class ImageView(object):
 
         # Class update event callback
         def updater(*args, **kwargs):
+            if self.classes is None:
+                self.set_classes(args[0].classes)
             self.refresh()
         callback = MplCallback(registry=self.callbacks_common,
                                event='spy_classes_modified',
@@ -808,9 +810,7 @@ class ImageView(object):
         rectangle whose class has *changed* to `class_id`.
         '''
         if self.classes is None:
-            msg = 'No classes are associatied with this view. To (re)assign ' \
-              'pixel classes, open the image view with the `classes` keyword.'
-            raise Exception(msg)
+            self.classes = np.zeros(self.data.shape[:2], dtype=np.int16)
         r = rectangle
         n = np.sum(self.classes[r[0]:r[1], r[2]:r[3]] != class_id)
         if n > 0:
@@ -933,10 +933,15 @@ class ImageView(object):
         if mode not in ('data', 'classes', 'overlay'):
             raise ValueError('Invalid display mode: ' + repr(mode))
         self.display_mode = mode
+
         show_data = mode in ('data', 'overlay')
         if self.data_axes is not None:
             self.data_axes.set_visible(show_data)
+
         show_classes = mode in ('classes', 'overlay')
+        if self.classes is not None and self.class_axes is None:
+            # Class data values were just set
+            self.show_classes()
         if self.class_axes is not None:
             self.class_axes.set_visible(show_classes)
             if mode is 'classes':
@@ -1083,6 +1088,15 @@ def imshow(data=None, bands=None, classes=None, source=None, colors=None,
             `data` to be plotted as the red, green, and blue colors,
             respectively. If it contains a single value, then a single band
             will be extracted from the image.
+
+        `classes` (ndarray of integers):
+
+            An array of integer-valued class labels with shape (R, C). If
+            the `data` argument is provided, the shape must match the first
+            two dimensions of `data`. The returned `ImageView` object will use
+            a copy of this array. To access class values that were altered
+            after calling `imshow`, access the `classes` attribute of the
+            returned `ImageView` object.
 
         `source` (optional, SpyImage or ndarray):
 
