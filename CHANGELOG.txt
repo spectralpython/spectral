@@ -15,6 +15,13 @@
       (ImageView.set_display_mode): Call .show_classes if classes are set but
         .class_axes is not (i.e., if classes were set since last update).
 
+    Added Modified SAM (code contributed by Christian Mielke).
+
+    * algorithms/algorithms.py:
+      (spectral_angles): Compute angles in 64 bits. Clip dot products to
+      prevent bad values in arccos due to roundoff.
+      (msam): New function.
+
 2013-12-27	tboggs <tboggs@users.sourceforge.net>
 
     Avoid a bug in `wx.NewId` that can cause exceptions when right-clicking in

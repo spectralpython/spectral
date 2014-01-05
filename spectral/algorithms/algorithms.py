@@ -1304,29 +1304,92 @@ def spectral_angles(data, members):
     endmembers.  The output of this function (angles) can be used to classify
     the data by minimum spectral angle by calling argmin(angles).
     '''
-    from numpy import array, dot, zeros, arccos, sqrt
-
     assert members.shape[1] == data.shape[2], \
         'Matrix dimensions are not aligned.'
 
     (M, N, B) = data.shape
-    m = array(members, float)
+    m = np.array(members, np.float64)
     C = m.shape[0]
 
     # Normalize endmembers
     for i in range(C):
-        m[i] /= sqrt(dot(m[i], m[i]))
+        m[i] /= np.sqrt(m[i].dot(m[i]))
 
-    angles = zeros((M, N, C), float)
+    angles = np.zeros((M, N, C), np.float64)
 
     for i in range(M):
         for j in range(N):
             v = data[i, j].astype(float)
-            v = v / sqrt(dot(v, v))
+            v = v / np.sqrt(v.dot(v))
             for k in range(C):
-                angles[i, j, k] = dot(v, m[k])
+                angles[i, j, k] = np.clip(v.dot(m[k]), -1, 1)
+    return np.arccos(angles)
 
-    return arccos(angles)
+def msam(data, members):
+    '''Modified SAM scores according to Oshigami, et al [1]. Endmembers are
+    mean-subtracted prior to spectral angle calculation. Results are
+    normalized such that the maximum value of 1 corresponds to a perfect match
+    (zero spectral angle).
+
+    Arguments:
+
+        `data` (:class:`numpy.ndarray` or :class:`spectral.Image`):
+
+            An `MxNxB` image for which spectral angles will be calculated.
+
+        `members` (:class:`numpy.ndarray`):
+
+            `CxB` array of spectral endmembers.
+
+    Returns:
+
+        `MxNxC` array of MSAM scores with maximum value of 1 corresponding
+        to a perfect match (zero spectral angle).
+
+    Calculates the spectral angles between each vector in data and each of the
+    endmembers.  The output of this function (angles) can be used to classify
+    the data by minimum spectral angle by calling argmax(angles).
+
+    References:
+
+    [1] Shoko Oshigami, Yasushi Yamaguchi, Tatsumi Uezato, Atsushi Momose,
+    Yessy Arvelyna, Yuu Kawakami, Taro Yajima, Shuichi Miyatake, and
+    Anna Nguno. 2013. Mineralogical mapping of southern Namibia by application
+    of continuum-removal MSAM method to the HyMap data. Int. J. Remote Sens.
+    34, 15 (August 2013), 5282-5295.
+    '''
+    # The modifications to the `spectral_angles` function were contributed by
+    # Christian Mielke.
+    
+    import math
+    
+    assert members.shape[1] == data.shape[2], \
+        'Matrix dimensions are not aligned.'
+
+    (M, N, B) = data.shape
+    m = np.array(members, np.float64)
+    C = m.shape[0]
+
+    # Normalize endmembers
+    for i in range(C):
+        # Fisher z trafo type operation
+        m[i] -= np.mean(m[i])
+        m[i] /= np.sqrt(m[i].dot(m[i]))
+
+    angles = np.zeros((M, N, C), np.float64)
+
+    for i in range(M):
+        for j in range(N):
+            #Fisher z trafo type operation
+            v = data[i, j] - np.mean(data[i, j])
+            v /= np.sqrt(v.dot(v))
+            v = np.clip(v, -1, 1)
+            for k in range(C):
+                # Calculate Mineral Index according to Oshigami et al.
+                # (Intnl. J. of Remote Sens. 2013)
+                a = np.clip(v.dot(m[k]), -1, 1)
+                angles[i,j,k]= 1.0 - np.arccos(a) / (math.pi / 2)
+    return angles
 
 #---------------------
 # Deprecated functions
