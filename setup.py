@@ -7,13 +7,13 @@ except:
 
 long_description = '''
 Spectral Python (SPy) is a pure Python module for processing hyperspectral
-image data. SPy has functions for reading, displaying, manipulating, and
-classifying hyperspectral imagery. SPy can be used interactively from the
+image data. It has functions for reading, displaying, manipulating, and
+classifying hyperspectral imagery. It can be used interactively from the
 Python command prompt or via Python scripts. SPy is free, open source software
 distributed under the GNU General Public License.'''
 
 setup(name='spectral',
-      version='0.12',
+      version='0.13',
       description='Spectral Python (SPy) is a Python module for hyperspectral image processing.',
       long_description=long_description,
       author='Thomas Boggs',
