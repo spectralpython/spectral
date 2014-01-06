@@ -22,7 +22,7 @@ Release date: 2014.01.05
 New Features
 ------------
 
-* New features the `ImageView` class returned by `imshow`:
+* New features for image displays:
 
   * Image rasters can be switched between *data*, *class*, and *class overlay*
     view, using adjustable class alpha transparency.
