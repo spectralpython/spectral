@@ -1073,7 +1073,7 @@ class ImageView(object):
         return s
 
 def imshow(data=None, bands=None, classes=None, source=None, colors=None,
-           figsize=None, **kwargs):
+           figsize=None, fignum=None, **kwargs):
     '''A wrapper around matplotlib's imshow for multi-band images.
 
     Arguments:
@@ -1116,6 +1116,11 @@ def imshow(data=None, bands=None, classes=None, source=None, colors=None,
             Specifies the width and height (in inches) of the figure window
             to be created. If this value is not provided, the value specified
             in `spectral.settings.imshow_figure_size` will be used.
+
+        `fignum`  (optional, integer):
+
+            Specifies the figure number of an existing matplotlib figure. If
+            this argument is None, a new figure will be created.
 
     Keywords:
 
@@ -1180,8 +1185,8 @@ def imshow(data=None, bands=None, classes=None, source=None, colors=None,
         view.set_source(source)
     elif data is not None and len(data.shape) == 3 and data.shape[2] > 3:
         view.set_source(data)
-    if figsize is not None:
-        fig = plt.figure(figsize=figsize)
+    if fignum is not None or figsize is not None:
+        fig = plt.figure(num=fignum, figsize=figsize)
         view.show(fignum=fig.number)
     else:
         view.show()

@@ -4,6 +4,14 @@
 
 2013-01-05	tboggs <tboggs@users.sourceforge.net>
 
+    Enable displaying `imshow` output in an existing matplotlib figure.
+
+    * graphics/spypylab (imshow): Accept optional `fignum` argument.
+
+2013-01-05	tboggs <tboggs@users.sourceforge.net>
+
+    Updated version to 0.13
+
     Allow modifying `ImageView` classes even when the `classes` arg was not
     provided.
 
