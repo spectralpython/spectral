@@ -34,11 +34,12 @@ To run the unit tests, type the following from the system command line:
     # python -m spectral.tests.classifiers
 '''
 
+import os
 import numpy as np
 import spectral as spy
 from numpy.testing import assert_allclose
 from spytest import SpyTest, test_method
-
+from spectral.tests import testdir
 
 class ClassifierTest(SpyTest):
     '''Tests various classfication functions.'''
@@ -49,17 +50,18 @@ class ClassifierTest(SpyTest):
         self.gt = spy.open_image('92AV3GT.GIS').read_band(0)
         self.ts = spy.create_training_classes(self.data, self.gt,
                                               calc_stats=True)
+        self.class_filename = os.path.join(testdir, '92AV3C.classes')
 
     def test_save_training_sets(self):
         '''Test that TrainingClassSet data can be saved without exception.'''
         ts = spy.create_training_classes(self.data, self.gt, calc_stats=True)
-        ts.save('92AV3C.classes')
+        ts.save(self.class_filename)
 
     def test_load_training_sets(self):
         '''Test that the data loaded is the same as was saved.'''
         ts = spy.create_training_classes(self.data, self.gt, calc_stats=True)
-        ts.save('92AV3C.classes')
-        ts2 = spy.load_training_sets('92AV3C.classes', image=self.data)
+        ts.save(self.class_filename)
+        ts2 = spy.load_training_sets(self.class_filename, image=self.data)
         ids = ts.classes.keys()
         for id in ids:
             s1 = ts[id]
