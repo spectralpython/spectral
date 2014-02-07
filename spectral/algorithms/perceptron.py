@@ -33,61 +33,85 @@ Classes and functions for classification with neural networks.
 '''
 
 import numpy as np
+import sys
 
 class PerceptronLayer:
-    '''A layer in a perceptron network.'''
+    '''A multilayer perceptron layer with sigmoid activation function.'''
     def __init__(self, shape, k=1.0, weights=None):
         '''
-        ARGUMENTS:
-            shape (2-tuple of int): (num_inputs, num_neurons)
-            numInputs           Number of input features that will be passed to
-                                the Perceptron for training and classification.
-            numNeurons          Number of neurons in the Perceptron, which is
-                                also the number of outputs.
-        OPTIONAL ARGUMENTS:
-            neuron              A prototype neuron that will be cloned to
-                                populate the network.
-            weights             initial weights with which to begin training
-            rate                rate adjustment parameter.
+        Arguments:
+
+            `shape` (2-tuple of int):
+
+                Should have the form (`num_inputs`, `num_neurons`), where
+                `num_inputs` does not include an input for the bias weights.
+
+            `k` (float):
+
+                Sigmoid shape parameter.
+
+            `weights` (ndarray):
+
+                Initial weights for the layer. Note that if provided, this
+                argument must have shape (`num_neurons`, `num_inputs` + 1). If
+                not provided, initial weights will be randomized.
         '''
         self.k = k
-#        numInputs += 1
         self.shape = (shape[1], shape[0] + 1)
-#        self.shape = [numNeurons, numInputs]
         if weights:
             if weights.shape != self.shape:
                 raise Exception('Shape of weight matrix does not ' \
-                                'match Perceptron shape.')
-            self.weights = weights
+                                'match Perceptron layer shape.')
+            self.weights = np.array(weights)
         else:
             self.randomize_weights()
-        self.x = np.empty(self.shape[1], float)
+        self.dW = np.zeros_like(self.weights)
+        self.x = np.ones(self.shape[1], float)
 
     def randomize_weights(self):
+        '''Randomizes the layer weight matrix.
+        The bias weight will be in the range [0, 1). The remaining weights will
+        correspond to a vector with unit length and uniform random orienation.
+        '''
         import math
         self.weights = 1. - 2. * np.random.rand(*self.shape)
         for row in self.weights:
             row[1:] /= math.sqrt(np.sum(row[1:]**2))
 
-    def input(self, x, tol=0.0):
-        '''
-        Sets Perceptron input, activates neurons and sets & returns Perceptron
-        output. The Perceptron unity bias input (if used) should not be
-        included in x.
+    def input(self, x, clip=0.0):
+        '''Sets layer input and computes output.
 
-        For classifying samples, call classify instead.
+        Arguments:
+
+            `x` (sequence):
+
+                Layer input, not including bias input.
+
+            `clip` (float >= 0):
+
+                Optional clipping value to limit sigmoid output. The sigmoid
+                function has output in the range (0, 1). If the `clip` argument
+                is set to `a` then all neuron outputs for the layer will be
+                constrained to the range [a, 1 - a]. This can improve perceptron
+                learning rate in some situations.
+
+        Return value:
+
+            The ndarray of output values is returned and is also set in the `y`
+            attribute of the layer.
+
+        For classifying samples, call `classify` instead.
         '''
-#        self.x = np.concatenate(([1.0], x))
         self.x[1:] = x
         self.z = np.dot(self.weights, self.x)
-        if tol > 0.:
-            self.y = np.clip(self.g(self.z), tol, 1. - tol)
+        if clip > 0.:
+            self.y = np.clip(self.g(self.z), clip, 1. - clip)
         else:
             self.y = self.g(self.z)
         return self.y
 
     def g(self, a):
-        '''Neuron activation function'''
+        '''Neuron activation function (logistic sigmoid)'''
         return 1. / (1. + np.exp(- self.k * a))
 
     def dy_da(self):
@@ -97,140 +121,207 @@ class PerceptronLayer:
 
 class Perceptron:
     ''' A Multi-Layer Perceptron network with backpropagation learning.'''
-    def __init__(self, layers, rate=0.3, k=1.0):
+    def __init__(self, layers, k=1.0):
         '''
         Creates the Perceptron network.
 
-        ARGUMENTS:
-            layers              A tuple specifying the network structure.
-                                layers[0] is the number of inputs.
-                                layers[-1] is the number of outputs
-                                layers[1: -1] are # of units in hidden layers
-        OPTIONAL ARGUMENTS:
-            rate                Learning rate coeff. for weight adjustments
-            neuron              Prototype neuron cloned to populate the network
-        '''
+        Arguments:
 
+            layers (sequence of integers):
+
+                A specifying the network structure. `layers`[0] is the number
+                of inputs. `layers`[-1] is the number of perceptron outputs.
+                `layers`[1: -1] are the numbers of units in the hidden layers.
+
+            `rate` (float):
+
+                Learning rate coefficient for weight adjustments
+
+            `k` (float):
+
+                Sigmoid shape parameter.
+        '''
         if type(layers) != list or len(layers) < 2:
             raise Exception('ERROR: Perceptron argument must be list of 2 or '
                             'more integers.')
-
         self.shape = layers[:]
         self.layers = [PerceptronLayer((layers[i - 1], layers[i]), k)
                        for i in range(1, len(layers))]
-
-        self.rate = rate
-        self.momentum = 0.8
-        self.onIteration = None
-        self.inputScale = 1
-        self.stochastic = False
-
-        self.trainingAccuracy = 0
+        self.accuracy = 0
         self.error = 0
 
-        self._haveWeights = False
+        # To prevent overflow when scaling inputs
+        self.min_input_diff = 1.e-8
 
-    def input(self, x, tol=0.0):
-        '''
-        Sets Perceptron input, activates neurons and sets & returns output.
-        For classifying samples, call classify instead of input.
+
+    def input(self, x, clip=0.0):
+        '''Sets Perceptron input, activates neurons and sets & returns output.
+
+        Arguments:
+
+            `x` (sequence):
+
+                Inputs to input layer. Should not include a bias input.
+
+
+            `clip` (float >= 0):
+
+                Optional clipping value to limit sigmoid output. The sigmoid
+                function has output in the range (0, 1). If the `clip` argument
+                is set to `a` then all neuron outputs for the layer will be
+                constrained to the range [a, 1 - a]. This can improve perceptron
+                learning rate in some situations.
+
+        For classifying samples, call `classify` instead of `input`.
         '''
         self.x = x[:]
-
-#        x *= self.inputScale
-        x = self._scale * (x - self._offset)
+        x = self._scale * (x - self._offset) + 0.5
         for layer in self.layers:
-            x = layer.input(x, tol)
+            x = layer.input(x, clip)
         self.y = np.array(x)
         return x
 
-    def classify(self, x, tol=0.0):
+    def classify(self, x):
+        '''Classifies the given sample.
+        This has the same result as calling input and rounding the result.
         '''
-        Classifies the given sample.  This has the same result as
-        calling input and rounding the result.
-        '''
-        return [int(round(xx)) for xx in self.input(x, tol)]
+        return [int(round(xx)) for xx in self.input(x)]
 
-    def train(self, X, Y, max_iterations=1000, accuracy=100.0, tol=0.0):
+    def train(self, X, Y, max_iterations=1000, accuracy=100.0, rate=0.3,
+              momentum=0.1, batch=0, clip=0.0, on_iteration=None,
+              status=sys.stdout):
         '''
         Trains the Perceptron to classify the given samples.
 
-        ARGUMENTS:
-            samples             A list containing input-classification pairs.
-                                The first element of each pair is the sample
-                                value. The second element of each pair is the
-                                correct classification of the sample, which
-                                should be a list containing only 1's and 0's,
-                                with length corresponding to the number of
-                                neurons in the Perceptron.
-            max_iterations      The maximum number of iterations to perform
-                                before terminating training.
-            accuracy            The accuracy at which to terminate training (if
-                                max_iterations isn't reached first).
+        Arguments:
+
+            `X`:
+
+                The sequence of observations to be learned. Each element of `X`
+                must have a length corresponding to the input layer of the
+                network. Values in `X` are not required to be scaled.
+
+            `Y`:
+
+                Truth values corresponding to elements of `X`. `Y` must contain
+                as many elements as `X` and each element of `Y` must contain a
+                number of elements corresponding to the output layer of the
+                network. All values in `Y` should be in the range [0, 1] and for
+                training a classifier, values in `Y` are typically *only* 0 or 1
+                (i.e., no intermediate values).
+
+            `max_iterations` (int):
+
+                Maximum number of iterations through the data to perform.
+                Training will end sooner if the specified accuracy is reached in
+                fewer iterations.
+
+            `accuracy` (float):
+
+                The percent training accuracy at which to terminate training, if
+                the maximum number of iterations are not reached first. This
+                value can be set greater than 100 to force a specified number of
+                training iterations to be performed (e.g., to continue reducing
+                the error term after 100% classification accuracy has been
+                achieved.
+
+            `rate` (float):
+
+                The perceptron learning rate (typically in the range (0, 1]).
+
+            `momentum` (float):
+
+                The perceptron learning momentum term, which specifies the
+                fraction of the previous update value that should be added to
+                the current update term. The value should be in the range [0, 1).
+
+            `batch` (positive integer):
+
+                Specifies how many samples should be evaluated before an update
+                is made to the perceptron weights. A value of 0 indicates batch
+                updates should be performed (evaluate all training inputs prior
+                to updating). Otherwise, updates will be aggregated for every
+                `batch` inputs (i.e., `batch` == 1 is stochastic learning).
+
+            `clip` (float >= 0):
+
+                Optional clipping value to limit sigmoid output during training.
+                The sigmoid function has output in the range (0, 1). If the
+                `clip` argument is set to `a` then all neuron outputs for the
+                layer will be constrained to the range [a, 1 - a]. This can
+                improve perceptron learning rate in some situations.
+
+                After training the perceptron with a clipping value, `train` can
+                be called again with clipping set to 0 to continue reducing the
+                training error.
+
+            `on_iteration` (callable):
+
+                A callable object that accepts the perceptron as input and
+                returns bool. If this argument is set, the object will be called
+                at the end of each training iteration with the perceptron as its
+                argument. If the callable returns True, training will terminate.
+
+            `status`:
+
+                An object with a `write` method that can be set to redirect
+                training status messages somewhere other than stdout.
         '''
         import itertools
-        import spectral
-
-        status = spectral._status
 
         try:
-
-            self.set_scaling(X)
-
-#            if not self._haveWeights:
-#                self.init_weights(samples)
-#                self._haveWeights = True
+            self._set_scaling(X)
             for layer in self.layers:
-                layer.dW_old = 0
+                layer.dW_old = np.zeros_like(layer.dW)
 
             for iteration in xrange(max_iterations):
 
-                self.reset_corrections()
+                self._reset_corrections()
                 self.error = 0
-                numSamples = 0
-                numCorrect = 0
-                self._sampleCount = 0
-                self._iteration = iteration
+                num_samples = 0
+                num_correct = 0
+                num_summed = 0
 
                 for (x, t) in itertools.izip(X, Y):
-                    numSamples += 1
-                    self._sampleCount += 1
-                    correct = np.all(self.classify(x, tol) == t)
-                    if correct:
-                        numCorrect += 1
+                    num_samples += 1
+                    num_summed += 1
+                    num_correct += np.all(np.round(self.input(x, clip)) == t)
                     delta = np.array(t) - self.y
                     self.error += sum(0.5 * delta * delta)
 
                     # Determine incremental weight adjustments
-                    self.update_dWs(t)
-                    if self.stochastic:
-                        self.adjust_weights()
+                    self._update_dWs(t)
+                    if batch > 0 and num_summed == batch:
+                        self._adjust_weights(rate, momentum, num_summed)
+                        num_summed = 0
 
-                self.trainingAccuracy = 100. * numCorrect / numSamples
+                self.accuracy = 100. * num_correct / num_samples
 
-                if self.onIteration and not self.onIteration(self):
-                    return
+                if on_iteration and on_iteration(self):
+                    return True
 
                 status.write('Iter % 5d: Accuracy = %.2f%% E = %f\n' %
-                             (iteration, self.trainingAccuracy, self.error))
-                if self.trainingAccuracy >= accuracy:
+                             (iteration, self.accuracy, self.error))
+                if self.accuracy >= accuracy:
                     status.write('Network trained to %.1f%% sample accuracy '
                                  'in %d iterations.\n'
-                                 % (self.trainingAccuracy, iteration))
-                    return
+                                 % (self.accuracy, iteration))
+                    return True
 
-                if not self.stochastic:
-                    self.adjust_weights()
+                if num_summed > 0:
+                    self._adjust_weights(rate, momentum, num_summed)
+                    num_summed = 0
 
         except KeyboardInterrupt:
             print "KeyboardInterrupt: Terminating training."
-            self.reset_corrections()
-            return
+            self._reset_corrections()
+            return False
 
         status.write('Terminating network training after %d iterations.\n' %
                      iteration)
+        return False
 
-    def update_dWs(self, t):
+    def _update_dWs(self, t):
         '''Update weight adjustment values for the current sample.'''
 
         # Output layer
@@ -259,15 +350,16 @@ class Perceptron:
                     dW[j, c] = layerJ.delta[0, j] * layerJ.x[c]
             layerJ.dW = layerJ.dW + dW
 
-    def adjust_weights(self):
+    def _adjust_weights(self, rate, momentum, num_summed):
+        '''Applies aggregated weight adjustments to the perceptron weights.'''
         weights = [np.array(layer.weights) for layer in self.layers]
         try:
             for layer in self.layers:
-                layer.dW = (self.rate / self._sampleCount) * \
-                    layer.dW + self.momentum * layer.dW_old
+                layer.dW = (rate / num_summed) * \
+                    layer.dW + momentum * layer.dW_old
+#                print 'dW =', layer.dW
                 layer.weights += layer.dW
-                layer.dW_old = np.array(layer.dW)
-            self._sampleCount = 0
+                (layer.dW_old, layer.dW) = (layer.dW, layer.dW_old)
         except KeyboardInterrupt:
             print 'Interrupt during weight adjustment. Restoring ' \
                   'previous weights.'
@@ -275,42 +367,24 @@ class Perceptron:
                 self.layers[i].weights = weights[i]
             raise
         finally:
-            self.reset_corrections()
+            self._reset_corrections()
 
-    def reset_corrections(self):
+    def _reset_corrections(self):
         for layer in self.layers:
-            layer.dW = np.zeros_like(layer.weights)
+            layer.dW.fill(0)
 
-    def set_scaling(self, X):
+    def _set_scaling(self, X):
         mins = X[0]
         maxes = X[0]
         for x in X:
             mins = np.min([mins, x], axis=0)
             maxes = np.max([maxes, x], axis = 0)
-        self._offset = mins
+        self._offset = (mins + maxes) / 2.
         r = maxes - mins
-        self._scale = 1. / np.where(r < 1.e-8, 1, r)
+        self._scale = 1. / np.where(r < self.min_input_diff, 1, r)
         
-    def init_weights(self, samples):
-        from random import random
-        minMax = [(x, x) for x in samples[0][0]]
-        for sample in samples[1:]:
-            minMax = [(min(x[0], x[2]), max(
-                x[1], x[2])) for x in zip(*zip(*minMax) + [sample[0]])]
-        for i in range(len(self.shape) - 1):
-            N = self.shape[i]
-            if i > 0:
-                minMax = [(-1, 1)] * N
-            for j in range(self.shape[i + 1]):
-                loc = [p[0] + random() * (p[1] - p[0]) for p in minMax]
-                vec = np.array([random() - 0.5 for k in range(N + 1)])
-                vec /= np.sqrt(sum(vec[1:]**2))
-                vec[0] = np.sum(loc * vec[1:])
-                self.layers[i].weights[j, :] = vec
-        self._haveWeights = True
 
 from spectral.algorithms.classifiers import SupervisedClassifier
-
 
 class PerceptronSampleIterator:
     '''
@@ -403,30 +477,6 @@ class PerceptronClassifier(Perceptron, SupervisedClassifier):
         else:
             return self.indices[maxNodeIndex]
 
-    def initialize_weights(self, trainingClassData):
-        '''
-        Randomizes initial values of hidden layer weights and scale them to
-        prevent overflow when evaluating activation function.
-
-        Arguments:
-
-            `trainingClassData` (:class:`~spectral.TrainingClassSet`):
-
-                Data for the training classes.
-        '''
-        from spectral.algorithms.algorithms import SampleIterator
-        from random import random
-
-        maxVal = 0
-        for sample in SampleIterator(trainingClassData):
-            maxVal = max(max(np.absolute(sample.ravel())), maxVal)
-
-        layer = self.layers[-2]
-        for i in range(layer.shape[0]):
-            layer.weights[i, 0] = (random() * 2 - 1)
-        self.inputScale = 1.0 / maxVal
-        self._haveWeights = True
-
 
 # Sample data
 
@@ -506,6 +556,13 @@ xor_data = [
     [[1, 1], [0]],
 ]
 
+xor_data1 = [
+    [[-1, -1], [0]],
+    [[-1,  6], [1]],
+    [[ 6, -1], [1]],
+    [[ 6,  6], [0]],
+]
+
 t2x1b = [[a, [b[1]]] for [a, b] in t2x2]
 
 
@@ -537,5 +594,16 @@ def go():
 if __name__ == '__main__':
 #    p = go()
     (X, Y) = zip(*xor_data)
-    p = Perceptron([2, 2, 1], rate=0.5)
-    p.train(X, Y, 20000, tol=0.05)
+    p = Perceptron([2, 2, 1])
+    w = np.array(p.layers[1].weights)
+    p.train(X, Y, 20000, rate=0.7, momentum=0.2, batch=0, clip=0.)
+    print w
+    print p.layers[1].weights
+    for (i, layer) in enumerate(p.layers):
+        print 'layer', i, ': x =', layer.x
+
+
+
+
+
+
