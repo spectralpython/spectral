@@ -32,43 +32,14 @@
 Classes and functions for classification with neural networks.
 '''
 
-import numpy
-
-
-class Neuron:
-    '''A neuron with a logistic sigmoid activation function.'''
-    def __init__(self, k=1.0):
-        '''
-        ARGUMENTS:
-            k               logistic sigmoid constant (defaults to 1)
-        '''
-        self.k = k
-
-    def clone(self):
-        '''Return a new neuron with the same parameters.'''
-        return Neuron(self.k)
-
-    def input(self, a):
-        '''Sets neuron input and calls activation function to set output.'''
-        self.a = a
-        self.y = self.g(a)
-        return self.y
-
-    def g(self, a):
-        '''Neuron activation function'''
-        from math import exp
-        return 1. / (1. + exp(- self.k * a))
-
-    def dy_da(self):
-        '''Derivative of activation function at current activation level.'''
-        return self.k * self.y * (1.0 - self.y)
-
+import numpy as np
 
 class PerceptronLayer:
     '''A layer in a perceptron network.'''
-    def __init__(self, numInputs, numNeurons, k=1.0, weights=None):
+    def __init__(self, shape, k=1.0, weights=None):
         '''
         ARGUMENTS:
+            shape (2-tuple of int): (num_inputs, num_neurons)
             numInputs           Number of input features that will be passed to
                                 the Perceptron for training and classification.
             numNeurons          Number of neurons in the Perceptron, which is
@@ -79,26 +50,26 @@ class PerceptronLayer:
             weights             initial weights with which to begin training
             rate                rate adjustment parameter.
         '''
-        import random
-
         self.k = k
-        numInputs += 1
-        #if neuron:
-        #    self.neuron = neuron
-        #else:
-        #    self.neuron = Neuron()
+#        numInputs += 1
+        self.shape = (shape[1], shape[0] + 1)
+#        self.shape = [numNeurons, numInputs]
         if weights:
-            if weights.shape != (numNeurons, numInputs):
-                raise 'Shape of weight matrix does not match Perceptron shape.'
+            if weights.shape != self.shape:
+                raise Exception('Shape of weight matrix does not ' \
+                                'match Perceptron shape.')
             self.weights = weights
         else:
-            self.weights = numpy.array([1 - 2 * random.random(
-            ) for i in range((numInputs) * numNeurons)])
-            self.weights.shape = (numNeurons, numInputs)
-        self.shape = [numNeurons, numInputs]
-        self.x = numpy.empty(numInputs, float)
+            self.randomize_weights()
+        self.x = np.empty(self.shape[1], float)
 
-    def input(self, x):
+    def randomize_weights(self):
+        import math
+        self.weights = 1. - 2. * np.random.rand(*self.shape)
+        for row in self.weights:
+            row[1:] /= math.sqrt(np.sum(row[1:]**2))
+
+    def input(self, x, tol=0.0):
         '''
         Sets Perceptron input, activates neurons and sets & returns Perceptron
         output. The Perceptron unity bias input (if used) should not be
@@ -106,15 +77,18 @@ class PerceptronLayer:
 
         For classifying samples, call classify instead.
         '''
-#        self.x = numpy.concatenate(([1.0], x))
+#        self.x = np.concatenate(([1.0], x))
         self.x[1:] = x
-        self.z = numpy.dot(self.weights, self.x)
-        self.y = self.g(self.z)
+        self.z = np.dot(self.weights, self.x)
+        if tol > 0.:
+            self.y = np.clip(self.g(self.z), tol, 1. - tol)
+        else:
+            self.y = self.g(self.z)
         return self.y
 
     def g(self, a):
         '''Neuron activation function'''
-        return 1. / (1. + numpy.exp(- self.k * a))
+        return 1. / (1. + np.exp(- self.k * a))
 
     def dy_da(self):
         '''Derivative of activation function the current activation level.'''
@@ -142,8 +116,8 @@ class Perceptron:
                             'more integers.')
 
         self.shape = layers[:]
-        self.layers = [PerceptronLayer(
-            layers[i - 1], layers[i], k) for i in range(1, len(layers))]
+        self.layers = [PerceptronLayer((layers[i - 1], layers[i]), k)
+                       for i in range(1, len(layers))]
 
         self.rate = rate
         self.momentum = 0.8
@@ -156,27 +130,28 @@ class Perceptron:
 
         self._haveWeights = False
 
-    def input(self, x):
+    def input(self, x, tol=0.0):
         '''
         Sets Perceptron input, activates neurons and sets & returns output.
         For classifying samples, call classify instead of input.
         '''
         self.x = x[:]
 
-        x *= self.inputScale
+#        x *= self.inputScale
+        x = self._scale * (x - self._offset)
         for layer in self.layers:
-            x = layer.input(x)
-        self.y = numpy.array(x)
+            x = layer.input(x, tol)
+        self.y = np.array(x)
         return x
 
-    def classify(self, x):
+    def classify(self, x, tol=0.0):
         '''
         Classifies the given sample.  This has the same result as
         calling input and rounding the result.
         '''
-        return [int(round(xx)) for xx in self.input(x)]
+        return [int(round(xx)) for xx in self.input(x, tol)]
 
-    def train(self, samples, max_iterations=1000, accuracy=100.0):
+    def train(self, X, Y, max_iterations=1000, accuracy=100.0, tol=0.0):
         '''
         Trains the Perceptron to classify the given samples.
 
@@ -193,17 +168,18 @@ class Perceptron:
             accuracy            The accuracy at which to terminate training (if
                                 max_iterations isn't reached first).
         '''
-        from numpy import array, dot, transpose, zeros, repeat
+        import itertools
         import spectral
 
         status = spectral._status
 
         try:
 
-            if not self._haveWeights:
-                self.init_weights(samples)
-                self._haveWeights = True
+            self.set_scaling(X)
 
+#            if not self._haveWeights:
+#                self.init_weights(samples)
+#                self._haveWeights = True
             for layer in self.layers:
                 layer.dW_old = 0
 
@@ -216,14 +192,13 @@ class Perceptron:
                 self._sampleCount = 0
                 self._iteration = iteration
 
-                for (x, t) in samples:
-
+                for (x, t) in itertools.izip(X, Y):
                     numSamples += 1
                     self._sampleCount += 1
-                    correct = self.classify(x) == t
+                    correct = np.all(self.classify(x, tol) == t)
                     if correct:
                         numCorrect += 1
-                    delta = array(t) - self.y
+                    delta = np.array(t) - self.y
                     self.error += sum(0.5 * delta * delta)
 
                     # Determine incremental weight adjustments
@@ -257,24 +232,23 @@ class Perceptron:
 
     def update_dWs(self, t):
         '''Update weight adjustment values for the current sample.'''
-        from numpy import array, dot, zeros, zeros_like, transpose, newaxis
 
         # Output layer
         layerK = self.layers[-1]
-        dy_da = array(layerK.dy_da(), ndmin=2)
+        dy_da = np.array(layerK.dy_da(), ndmin=2)
         dE_dy = t - self.y
         dE_dy.shape = (1, len(dE_dy))
         layerK.delta = dy_da * dE_dy
-        dz_dW = array(layerK.x, ndmin=2)
-        dW = dot(layerK.delta.transpose(), dz_dW)
+        dz_dW = np.array(layerK.x, ndmin=2)
+        dW = layerK.delta.T.dot(dz_dW)
         layerK.dW = layerK.dW + dW
 
         # Hidden layers
         for i in range(len(self.layers) - 2, -1, -1):
             (layerJ, layerK) = self.layers[i: i + 2]
             (J, K) = (layerJ.shape[0], layerK.shape[0])
-            dW = zeros_like(layerJ.weights)
-            layerJ.delta = zeros([1, J])
+            dW = np.zeros_like(layerJ.weights)
+            layerJ.delta = np.zeros([1, J])
             dy_da = layerJ.dy_da()
             for j in range(J):
                 b = 0.0
@@ -286,13 +260,14 @@ class Perceptron:
             layerJ.dW = layerJ.dW + dW
 
     def adjust_weights(self):
-        weights = [numpy.array(layer.weights) for layer in self.layers]
+        weights = [np.array(layer.weights) for layer in self.layers]
         try:
             for layer in self.layers:
                 layer.dW = (self.rate / self._sampleCount) * \
                     layer.dW + self.momentum * layer.dW_old
                 layer.weights += layer.dW
-                layer.dW_old = numpy.array(layer.dW)
+                layer.dW_old = np.array(layer.dW)
+            self._sampleCount = 0
         except KeyboardInterrupt:
             print 'Interrupt during weight adjustment. Restoring ' \
                   'previous weights.'
@@ -304,8 +279,18 @@ class Perceptron:
 
     def reset_corrections(self):
         for layer in self.layers:
-            layer.dW = numpy.zeros_like(layer.weights)
+            layer.dW = np.zeros_like(layer.weights)
 
+    def set_scaling(self, X):
+        mins = X[0]
+        maxes = X[0]
+        for x in X:
+            mins = np.min([mins, x], axis=0)
+            maxes = np.max([maxes, x], axis = 0)
+        self._offset = mins
+        r = maxes - mins
+        self._scale = 1. / np.where(r < 1.e-8, 1, r)
+        
     def init_weights(self, samples):
         from random import random
         minMax = [(x, x) for x in samples[0][0]]
@@ -318,9 +303,9 @@ class Perceptron:
                 minMax = [(-1, 1)] * N
             for j in range(self.shape[i + 1]):
                 loc = [p[0] + random() * (p[1] - p[0]) for p in minMax]
-                vec = numpy.array([random() - 0.5 for k in range(N + 1)])
-                vec /= numpy.sqrt(sum(vec[1:]**2))
-                vec[0] = numpy.sum(loc * vec[1:])
+                vec = np.array([random() - 0.5 for k in range(N + 1)])
+                vec /= np.sqrt(sum(vec[1:]**2))
+                vec[0] = np.sum(loc * vec[1:])
                 self.layers[i].weights[j, :] = vec
         self._haveWeights = True
 
@@ -410,7 +395,7 @@ class PerceptronClassifier(Perceptron, SupervisedClassifier):
                 to which `x` is classified.
         '''
         y = self.input(x)
-        maxNodeIndex = numpy.argmax(y)
+        maxNodeIndex = np.argmax(y)
         val = int(round(y[maxNodeIndex]))
         # If val is zero, then no node was above threshold
         if val == 0:
@@ -434,7 +419,7 @@ class PerceptronClassifier(Perceptron, SupervisedClassifier):
 
         maxVal = 0
         for sample in SampleIterator(trainingClassData):
-            maxVal = max(max(numpy.absolute(sample.ravel())), maxVal)
+            maxVal = max(max(np.absolute(sample.ravel())), maxVal)
 
         layer = self.layers[-2]
         for i in range(layer.shape[0]):
@@ -550,4 +535,7 @@ def go():
     return p
 
 if __name__ == '__main__':
-    p = go()
+#    p = go()
+    (X, Y) = zip(*xor_data)
+    p = Perceptron([2, 2, 1], rate=0.5)
+    p.train(X, Y, 20000, tol=0.05)
