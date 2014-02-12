@@ -2,7 +2,7 @@
 #
 #   perceptron.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001-2008 Thomas Boggs
+#   Copyright (C) 2001-2014 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -62,7 +62,7 @@ class PerceptronLayer:
             if weights.shape != self.shape:
                 raise Exception('Shape of weight matrix does not ' \
                                 'match Perceptron layer shape.')
-            self.weights = np.array(weights)
+            self.weights = np.array(weights, dtype=np.float64)
         else:
             self.randomize_weights()
         self.dW = np.zeros_like(self.weights)
@@ -77,6 +77,7 @@ class PerceptronLayer:
         self.weights = 1. - 2. * np.random.rand(*self.shape)
         for row in self.weights:
             row[1:] /= math.sqrt(np.sum(row[1:]**2))
+            row[0] = 0.5 - np.random.rand() - 0.5 * np.sum(row[1:])
 
     def input(self, x, clip=0.0):
         '''Sets layer input and computes output.
@@ -115,7 +116,7 @@ class PerceptronLayer:
         return 1. / (1. + np.exp(- self.k * a))
 
     def dy_da(self):
-        '''Derivative of activation function the current activation level.'''
+        '''Derivative of activation function at current activation level.'''
         return self.k * (self.y * (1.0 - self.y))
 
 
@@ -175,7 +176,7 @@ class Perceptron:
         For classifying samples, call `classify` instead of `input`.
         '''
         self.x = x[:]
-        x = self._scale * (x - self._offset) + 0.5
+        x = self._scale * (x - self._offset)
         for layer in self.layers:
             x = layer.input(x, clip)
         self.y = np.array(x)
@@ -265,9 +266,14 @@ class Perceptron:
             `status`:
 
                 An object with a `write` method that can be set to redirect
-                training status messages somewhere other than stdout.
+                training status messages somewhere other than stdout. To
+                suppress output, set `stats` to None.
         '''
         import itertools
+        import os
+
+        if status is None:
+            status = open(os.devnull, 'w')
 
         try:
             self._set_scaling(X)
@@ -313,7 +319,7 @@ class Perceptron:
                     num_summed = 0
 
         except KeyboardInterrupt:
-            print "KeyboardInterrupt: Terminating training."
+            status.write("KeyboardInterrupt: Terminating training.\n")
             self._reset_corrections()
             return False
 
@@ -357,12 +363,11 @@ class Perceptron:
             for layer in self.layers:
                 layer.dW = (rate / num_summed) * \
                     layer.dW + momentum * layer.dW_old
-#                print 'dW =', layer.dW
                 layer.weights += layer.dW
                 (layer.dW_old, layer.dW) = (layer.dW, layer.dW_old)
         except KeyboardInterrupt:
-            print 'Interrupt during weight adjustment. Restoring ' \
-                  'previous weights.'
+            status.write('Interrupt during weight adjustment. Restoring ' \
+                         'previous weights.\n')
             for i in range(len(weights)):
                 self.layers[i].weights = weights[i]
             raise
@@ -374,109 +379,18 @@ class Perceptron:
             layer.dW.fill(0)
 
     def _set_scaling(self, X):
-        mins = X[0]
-        maxes = X[0]
+        mins = maxes = None
         for x in X:
-            mins = np.min([mins, x], axis=0)
-            maxes = np.max([maxes, x], axis = 0)
-        self._offset = (mins + maxes) / 2.
+            if mins is None:
+                mins = x
+                maxes = x
+            else:
+                mins = np.min([mins, x], axis=0)
+                maxes = np.max([maxes, x], axis = 0)
+        self._offset = mins
         r = maxes - mins
         self._scale = 1. / np.where(r < self.min_input_diff, 1, r)
         
-
-from spectral.algorithms.classifiers import SupervisedClassifier
-
-class PerceptronSampleIterator:
-    '''
-    An iterator over all samples of all classes in a TrainingData object.
-    Similar to Algorithms.SampleIterator but this on packages the samples
-    to be used by the Perceptron.train method.
-
-    For testing algoritms, the class variable max_samples can be set to an
-    integer to specify the max number of samples to return for any
-    training class.
-    '''
-    max_samples = None
-
-    def __init__(self, trainingData):
-        self.classes = trainingData
-
-    def __iter__(self):
-        i = 0
-        ci = 0
-        for cl in self.classes:
-            t = [0] * len(self.classes)
-            t[i] = 1
-            j = 0
-            for sample in cl:
-                j += 1
-                if self.max_samples and j > self.max_samples:
-                    break
-                yield (sample, t)
-            i += 1
-
-
-class PerceptronClassifier(Perceptron, SupervisedClassifier):
-    def train(self, trainingClassData, max_iterations=1000, accuracy=100.0):
-        '''
-        Trains the Perceptron on the training data.
-
-        Arguments:
-
-            `trainingClassData` (:class:`~spectral.TrainingClassSet`):
-
-                Data for the training classes.
-
-            `max_iterations` (int):
-
-                Maximum number of training iterations to perform.
-
-            `accuracy` (float):
-
-                Training set classification accuracy to which the classifier
-                should be trained.
-        '''
-        # Number of Perceptron inputs must equal number of features in the
-        # training data.
-        if len(trainingClassData) != self.layers[-1].shape[0]:
-            raise Exception('Number of nodes in output layer must match '
-                            'number of training classes.')
-        self.trainingClassData = trainingClassData
-
-        # Map output nodes to class indices
-        self.indices = [cl.index for cl in self.trainingClassData]
-
-        self.initialize_weights(trainingClassData)
-
-        it = PerceptronSampleIterator(trainingClassData)
-        Perceptron.train(self, it, max_iterations, accuracy)
-
-    def classify_spectrum(self, x):
-        '''
-        Classifies a pixel into one of the trained classes.
-
-        Arguments:
-
-            `x` (list or rank-1 ndarray):
-
-                The unclassified spectrum.
-
-        Returns:
-
-            `classIndex` (int):
-
-                The index for the :class:`~spectral.TrainingClass`
-                to which `x` is classified.
-        '''
-        y = self.input(x)
-        maxNodeIndex = np.argmax(y)
-        val = int(round(y[maxNodeIndex]))
-        # If val is zero, then no node was above threshold
-        if val == 0:
-            return 0
-        else:
-            return self.indices[maxNodeIndex]
-
 
 # Sample data
 
@@ -556,6 +470,13 @@ xor_data = [
     [[1, 1], [0]],
 ]
 
+and_data = [
+    [[0, 0], [0]],
+    [[0, 1], [0]],
+    [[1, 0], [0]],
+    [[1, 1], [1]],
+]
+
 xor_data1 = [
     [[-1, -1], [0]],
     [[-1,  6], [1]],
@@ -591,19 +512,24 @@ def go():
 
     return p
 
-if __name__ == '__main__':
-#    p = go()
+def run_tests():
     (X, Y) = zip(*xor_data)
-    p = Perceptron([2, 2, 1])
-    w = np.array(p.layers[1].weights)
-    p.train(X, Y, 20000, rate=0.7, momentum=0.2, batch=0, clip=0.)
-    print w
-    print p.layers[1].weights
-    for (i, layer) in enumerate(p.layers):
-        print 'layer', i, ': x =', layer.x
+    p = Perceptron([2, 3, 1])
+    r1 = p.train(X, Y, 20000, rate=0.7, momentum=0.2, batch=0, clip=0.)
 
+    (X, Y) = zip(*and_data)
+    p = Perceptron([2, 1])
+    r2 = p.train(X, Y, 20000, rate=0.7, momentum=0.2, batch=0, clip=0.)
 
+    if r1:
+        print "XOR test passed."
+    else:
+        print "XOR test FAILED"
+    if r2:
+        print "AND test passed."
+    else:
+        print "AND test FAILED"
 
-
-
-
+if __name__ == '__main__':
+    from spectral.algorithms.perceptron import run_tests
+    run_tests()

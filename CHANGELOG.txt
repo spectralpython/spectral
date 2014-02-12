@@ -2,6 +2,17 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2013-02-11	tboggs <tboggs@users.sourceforge.net>
+
+    Fixed PerceptronClassifier implementation.
+
+    * algorithims/__init__.py: import all from classifiers.py.
+    * algorithms/classifiers.py: Moved PerceptronClassifier from perceptron.py.
+    * algorithms/perceptron.py: Numerous fixes/improvements. This file is now
+      independent of the rest of the SPy package (i.e., it is a pure
+      multilayer perceptron implementation without the baggage of the rest of
+      the SPy package).
+
 2013-01-05	tboggs <tboggs@users.sourceforge.net>
 
     Enable displaying `imshow` output in an existing matplotlib figure.

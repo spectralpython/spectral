@@ -36,6 +36,8 @@ import numpy as np
 from exceptions import DeprecationWarning
 from warnings import warn
 
+__all__ = ('GaussianClassifier', 'MahalanobisDistanceClassifier',
+           'PerceptronClassifier')
 
 class Classifier(object):
     '''
@@ -333,4 +335,128 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
              + 'MahalanobisDistanceClassifier.classify_spectrum.',
              DeprecationWarning)
         return self.classify_spectrum(*args, **kwargs)
+
+
+from .perceptron import Perceptron
+
+class PerceptronClassifier(Perceptron, SupervisedClassifier):
+    def train(self, training_data, samples_per_class=0, *args, **kwargs):
+        '''Trains the Perceptron on the training data.
+
+        Arguments:
+
+            `training_data` (:class:`~spectral.TrainingClassSet`):
+
+                Data for the training classes.
+
+            `samples_per_class` (int):
+
+                Maximum number of training observations to user from each
+                class in `training_data`. If this argument is not provided,
+                all training data is used.
+
+        Keyword Arguments:
+
+            `accuracy` (float):
+
+                The percent training accuracy at which to terminate training, if
+                the maximum number of iterations are not reached first. This
+                value can be set greater than 100 to force a specified number of
+                training iterations to be performed (e.g., to continue reducing
+                the error term after 100% classification accuracy has been
+                achieved.
+
+            `rate` (float):
+
+                The perceptron learning rate (typically in the range (0, 1]).
+
+            `momentum` (float):
+
+                The perceptron learning momentum term, which specifies the
+                fraction of the previous update value that should be added to
+                the current update term. The value should be in the range [0, 1).
+
+            `batch` (positive integer):
+
+                Specifies how many samples should be evaluated before an update
+                is made to the perceptron weights. A value of 0 indicates batch
+                updates should be performed (evaluate all training inputs prior
+                to updating). Otherwise, updates will be aggregated for every
+                `batch` inputs (i.e., `batch` == 1 is stochastic learning).
+
+            `clip` (float >= 0):
+
+                Optional clipping value to limit sigmoid output during training.
+                The sigmoid function has output in the range (0, 1). If the
+                `clip` argument is set to `a` then all neuron outputs for the
+                layer will be constrained to the range [a, 1 - a]. This can
+                improve perceptron learning rate in some situations.
+
+                After training the perceptron with a clipping value, `train` can
+                be called again with clipping set to 0 to continue reducing the
+                training error.
+
+            `on_iteration` (callable):
+
+                A callable object that accepts the perceptron as input and
+                returns bool. If this argument is set, the object will be called
+                at the end of each training iteration with the perceptron as its
+                argument. If the callable returns True, training will terminate.
+
+            `status`:
+
+                An object with a `write` method that can be set to redirect
+                training status messages somewhere other than stdout. To
+                suppress output, set `stats` to None.
+        '''
+        from spectral import _status, settings
+        # Number of Perceptron inputs must equal number of features in the
+        # training data.
+        if len(training_data) != self.layers[-1].shape[0]:
+            raise Exception('Number of nodes in output layer must match '
+                            'number of training classes.')
+        self.training_data = training_data
+
+        # Map output nodes to class indices
+        self.indices = [cl.index for cl in self.training_data]
+
+        class_data = [np.array([x for x in cl]) for cl in self.training_data]
+        if samples_per_class > 0:
+            for i in range(len(class_data)):
+                if class_data[i].shape[0] > samples_per_class:
+                    class_data[i] = class_data[i][:samples_per_class]
+        X = np.vstack(class_data)
+        y = np.hstack([np.ones(c.shape[0], dtype=np.int16) * i for \
+                      (i, c) in enumerate(class_data)])
+        Y = np.eye(np.max(y) + 1, dtype=np.int16)[y]
+
+        if settings.show_progress is True:
+            status = _status
+        else:
+            status = None
+        Perceptron.train(self, X, Y, *args, status=status, **kwargs)
+
+    def classify_spectrum(self, x):
+        '''
+        Classifies a pixel into one of the trained classes.
+
+        Arguments:
+
+            `x` (list or rank-1 ndarray):
+
+                The unclassified spectrum.
+
+        Returns:
+
+            `classIndex` (int):
+
+                The index for the :class:`~spectral.TrainingClass`
+                to which `x` is classified.
+        '''
+        y = self.input(x)
+        return self.indices[np.argmax(y)]
+
+    def classify(self, X, **kwargs):
+        from .classifiers import Classifier
+        return Classifier.classify(self, X, **kwargs)
 
