@@ -78,7 +78,8 @@ class PerceptronLayer:
         self.weights = 1. - 2. * np.random.rand(*self.shape)
         for row in self.weights:
             row[1:] /= math.sqrt(np.sum(row[1:]**2))
-            row[0] = 0.5 - np.random.rand() - 0.5 * np.sum(row[1:])
+#            row[0] = 0.5 - np.random.rand() - 0.5 * np.sum(row[1:])
+            row[0] = -0.5 * np.random.rand() - 0.5 * np.sum(row[1:])
 
     def input(self, x, clip=0.0):
         '''Sets layer input and computes output.
@@ -154,6 +155,8 @@ class Perceptron:
 
         # To prevent overflow when scaling inputs
         self.min_input_diff = 1.e-8
+
+        self.cache_weights = True
 
 
     def input(self, x, clip=0.0):
@@ -294,13 +297,18 @@ class Perceptron:
                     num_summed += 1
                     num_correct += np.all(np.round(self.input(x, clip)) == t)
                     delta = np.array(t) - self.y
-                    self.error += sum(0.5 * delta * delta)
+                    self.error += 0.5 * sum(delta**2)
 
                     # Determine incremental weight adjustments
                     self._update_dWs(t)
                     if batch > 0 and num_summed == batch:
                         self._adjust_weights(rate, momentum, num_summed)
                         num_summed = 0
+
+                # In case a partial batch is remaining
+                if batch > 0 and num_summed > 0:
+                    self._adjust_weights(rate, momentum, num_summed)
+                    num_summed = 0
 
                 self.accuracy = 100. * num_correct / num_samples
 
@@ -315,6 +323,7 @@ class Perceptron:
                                  % (self.accuracy, iteration))
                     return True
 
+                # If doing full batch learning (batch == 0)
                 if num_summed > 0:
                     self._adjust_weights(rate, momentum, num_summed)
                     num_summed = 0
@@ -331,40 +340,74 @@ class Perceptron:
     def _update_dWs(self, t):
         '''Update weight adjustment values for the current sample.'''
 
-        # Output layer
+        # Output layer:
+        #   dE/dy = t - y
+        #   dz/dW = x
         layerK = self.layers[-1]
-        dE_dy = t - self.y
-        layerK.delta = layerK.dy_da() * dE_dy
-        dz_dW = layerK.x
-        layerK.dW += np.outer(layerK.delta, dz_dW)
+        layerK.delta = layerK.dy_da() * (t - self.y)
+        layerK.dW += np.outer(layerK.delta, layerK.x)
 
         # Hidden layers
         for i in range(len(self.layers) - 2, -1, -1):
             (layerJ, layerK) = self.layers[i: i + 2]
-            (J, K) = (layerJ.shape[0], layerK.shape[0])
-            layerJ.dW_buf.fill(0)
-            layerJ.delta = np.zeros(J)
-            dy_da = layerJ.dy_da()
-            for j in range(J):
-                b = np.dot(layerK.delta, layerK.weights[:, j + 1])
-                layerJ.delta[j] = dy_da[j] * b
-                layerJ.dW_buf[j] = layerJ.delta[j] * layerJ.x
-            layerJ.dW += layerJ.dW_buf
+            b = np.dot(layerK.delta, layerK.weights[:, 1:])
+            layerJ.delta = layerJ.dy_da() * b
+            layerJ.dW += np.outer(layerJ.delta, layerJ.x)
 
     def _adjust_weights(self, rate, momentum, num_summed):
         '''Applies aggregated weight adjustments to the perceptron weights.'''
-        weights = [np.array(layer.weights) for layer in self.layers]
+        if self.cache_weights:
+            weights = [np.array(layer.weights) for layer in self.layers]
+        try:
+            if momentum > 0:
+                for layer in self.layers:
+                    layer.dW *= rate
+#                    layer.dW *= (rate / num_summed)
+                    layer.dW += momentum * layer.dW_old
+                    layer.weights += layer.dW
+                    (layer.dW_old, layer.dW) = (layer.dW, layer.dW_old)
+            else:
+                for layer in self.layers:
+                    layer.dW *= rate
+ #                   layer.dW *= (rate / num_summed)
+                    layer.weights += layer.dW
+        except KeyboardInterrupt:
+            if self.cache_weights:
+                status.write('Interrupt during weight adjustment. Restoring ' \
+                            'previous weights.\n')
+                for i in range(len(weights)):
+                    self.layers[i].weights = weights[i]
+            else:
+                status.write('Interrupt during weight adjustment. Weight ' \
+                            'cacheing was disabled so current weights may' \
+                            'be corrupt.\n')
+            raise
+        finally:
+            self._reset_corrections()
+
+    def _adjust_weights_working(self, rate, momentum, num_summed):
+        '''Applies aggregated weight adjustments to the perceptron weights.'''
+        if self.cache_weights:
+            weights = [np.array(layer.weights) for layer in self.layers]
         try:
             for layer in self.layers:
-                layer.dW = (rate / num_summed) * \
-                    layer.dW + momentum * layer.dW_old
+                layer.dW *= (rate / num_summed)
+                if momentum > 0:
+                    layer.dW += momentum * layer.dW_old
+#                layer.dW = (rate / num_summed) * \
+#                    layer.dW + momentum * layer.dW_old
                 layer.weights += layer.dW
                 (layer.dW_old, layer.dW) = (layer.dW, layer.dW_old)
         except KeyboardInterrupt:
-            status.write('Interrupt during weight adjustment. Restoring ' \
-                         'previous weights.\n')
-            for i in range(len(weights)):
-                self.layers[i].weights = weights[i]
+            if self.cache_weights:
+                status.write('Interrupt during weight adjustment. Restoring ' \
+                            'previous weights.\n')
+                for i in range(len(weights)):
+                    self.layers[i].weights = weights[i]
+            else:
+                status.write('Interrupt during weight adjustment. Weight ' \
+                            'cacheing was disabled so current weights may' \
+                            'be corrupt.\n')
             raise
         finally:
             self._reset_corrections()
@@ -510,11 +553,15 @@ def go():
 def run_tests():
     (X, Y) = zip(*xor_data)
     p = Perceptron([2, 3, 1])
-    r1 = p.train(X, Y, 20000, rate=0.7, momentum=0.2, batch=0, clip=0.)
+    r1 = p.train(X, Y, 20000, rate=0.7, momentum=0.2, batch=1, clip=0.)
 
     (X, Y) = zip(*and_data)
     p = Perceptron([2, 1])
-    r2 = p.train(X, Y, 20000, rate=0.7, momentum=0.2, batch=0, clip=0.)
+    r2 = p.train(X, Y, 20000, rate=0.7, momentum=0.2, batch=1, clip=0.)
+
+    (X, Y) = zip(*t4)
+    p = Perceptron([2, 4, 4, 4])
+    r3 = p.train(X, Y, 20000, rate=0.7, momentum=0.2, batch=1, clip=0.)
 
     if r1:
         print "XOR test passed."
@@ -524,6 +571,10 @@ def run_tests():
         print "AND test passed."
     else:
         print "AND test FAILED"
+    if r3:
+        print "4-class test passed."
+    else:
+        print "4-class test FAILED"
 
 if __name__ == '__main__':
     from spectral.algorithms.perceptron import run_tests
