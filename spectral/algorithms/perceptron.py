@@ -66,6 +66,7 @@ class PerceptronLayer:
         else:
             self.randomize_weights()
         self.dW = np.zeros_like(self.weights)
+        self.dW_buf = np.zeros_like(self.dW)
         self.x = np.ones(self.shape[1], float)
 
     def randomize_weights(self):
@@ -332,29 +333,23 @@ class Perceptron:
 
         # Output layer
         layerK = self.layers[-1]
-        dy_da = np.array(layerK.dy_da(), ndmin=2)
         dE_dy = t - self.y
-        dE_dy.shape = (1, len(dE_dy))
-        layerK.delta = dy_da * dE_dy
-        dz_dW = np.array(layerK.x, ndmin=2)
-        dW = layerK.delta.T.dot(dz_dW)
-        layerK.dW = layerK.dW + dW
+        layerK.delta = layerK.dy_da() * dE_dy
+        dz_dW = layerK.x
+        layerK.dW += np.outer(layerK.delta, dz_dW)
 
         # Hidden layers
         for i in range(len(self.layers) - 2, -1, -1):
             (layerJ, layerK) = self.layers[i: i + 2]
             (J, K) = (layerJ.shape[0], layerK.shape[0])
-            dW = np.zeros_like(layerJ.weights)
-            layerJ.delta = np.zeros([1, J])
+            layerJ.dW_buf.fill(0)
+            layerJ.delta = np.zeros(J)
             dy_da = layerJ.dy_da()
             for j in range(J):
-                b = 0.0
-                for k in range(K):
-                    b += layerK.delta[0, k] * layerK.weights[k, j + 1]
-                layerJ.delta[0, j] = dy_da[j] * b
-                for c in range(layerJ.weights.shape[1]):
-                    dW[j, c] = layerJ.delta[0, j] * layerJ.x[c]
-            layerJ.dW = layerJ.dW + dW
+                b = np.dot(layerK.delta, layerK.weights[:, j + 1])
+                layerJ.delta[j] = dy_da[j] * b
+                layerJ.dW_buf[j] = layerJ.delta[j] * layerJ.x
+            layerJ.dW += layerJ.dW_buf
 
     def _adjust_weights(self, rate, momentum, num_summed):
         '''Applies aggregated weight adjustments to the perceptron weights.'''
