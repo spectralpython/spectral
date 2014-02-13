@@ -1,20 +1,4 @@
 ================================================================================
-Installation Instructions
-================================================================================
-
-To install SPy, unpack the source distribution archive, `cd` into the
-directory created when the archive is unpacked (e.g., "spectral.x.y"), and
-type the following::
-
-    python setup.py install
-
-The latest release is also hosted at http://pypi.python.org. So if you have `pip`
-installed, you can automatically fetch and install the latest SPy release by
-typing::
-
-    pip install spectral
-
-================================================================================
 SPy 0.13
 ================================================================================
 Release date: 2014.01.05
