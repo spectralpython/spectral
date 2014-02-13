@@ -45,6 +45,8 @@ class ClassifierTest(SpyTest):
     '''Tests various classfication functions.'''
 
     def setup(self):
+        if not os.path.isdir(testdir):
+            os.mkdir(testdir)
         self.image = spy.open_image('92AV3C.lan')
         self.data = self.image.load()
         self.gt = spy.open_image('92AV3GT.GIS').read_band(0)
@@ -86,6 +88,47 @@ class ClassifierTest(SpyTest):
         mdc = spy.MahalanobisDistanceClassifier(self.ts)
         cl = mdc.classes[0]
         assert(mdc.classify(cl.stats.mean) == cl.index)
+
+    def test_perceptron_learns_and(self):
+        '''Test that 2x1 network can learn the logical AND function.'''
+        from spectral.algorithms.perceptron import test_and
+        (success, p) = test_and(stdout=None)
+        assert(success)
+        
+    def test_perceptron_learns_xor(self):
+        '''Test that 2x2x1 network can learn the logical XOR function.'''
+        from spectral.algorithms.perceptron import test_xor231
+        # XOR isn't guaranteed to converge so try at lease a few times
+        for i in range(10):
+            (success, p) = test_xor231(3000, stdout=None)
+            if success is True:
+                return
+        assert(False)
+
+    def test_perceptron_learns_xor_222(self):
+        '''Test that 2x2x2 network can learn the logical XOR function.'''
+        from spectral.algorithms.perceptron import test_xor222
+        # XOR isn't guaranteed to converge so try at lease a few times
+        for i in range(10):
+            (success, p) = test_xor222(3000, stdout=None)
+            if success is True:
+                return
+        assert(False)
+
+    def test_perceptron_learns_image_classes(self):
+        '''Test that perceptron can learn image class means.'''
+        fld = spy.linear_discriminant(self.ts)
+        xdata = fld.transform(self.data)
+        classes = spy.create_training_classes(xdata, self.gt)
+        nfeatures = xdata.shape[-1]
+        nclasses = len(classes)
+        for i in range(10):
+            p = spy.PerceptronClassifier([nfeatures, 20, 8, nclasses])
+            success = p.train(classes, 1, 5000, batch=1, momentum=0.3,
+                              rate=0.3)
+            if success is True:
+                return
+        assert(False)
 
     def test_mahalanobis_spectrum_image_equal(self):
         '''Tests that classification of spectrum is same as from image.'''

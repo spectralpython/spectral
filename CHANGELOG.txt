@@ -2,6 +2,16 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2013-02-13	tboggs <tboggs@users.sourceforge.net>
+
+    Finished Perceptron Classifier improvements.
+
+    * algorithms/classifiers.py (PerceptronClassifier.train): Return
+      Perceptron.train result.
+    * algorithms/perceptron.py (PerceptronLayer.randomize_weights):
+      Randomize weights so initial hyperplanes intersect the unit box [0, 0].
+    * test/classifiers.py: Added perceptron unit tests.
+
 2013-02-11	tboggs <tboggs@users.sourceforge.net>
 
     Fixed PerceptronClassifier implementation.

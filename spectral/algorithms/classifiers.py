@@ -340,6 +340,31 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
 from .perceptron import Perceptron
 
 class PerceptronClassifier(Perceptron, SupervisedClassifier):
+    '''A multi-layer perceptron classifier with backpropagation learning.
+
+    Multi-layer perceptrons often require many (i.e., thousands) of iterations
+    through the traning data to converge on a solution. Therefore, it is not
+    recommended to attempt training a network on full-dimensional hyperspectral
+    data or even on a full set of image pixels. It is likely preferable to
+    first train the network on a subset of the data, then retrain the network
+    (starting with network weights from initial training) on the full data
+    set.
+
+    Example usage: Train an MLP with 20 samples from each training class after
+    performing dimensionality reduction:
+
+        >>> classes = create_training_classes(data, gt)
+        >>> fld = linear_discriminant(classes)
+        >>> xdata = fld.transform(data)
+        >>> classes = create_training_classes(xdata, gt)
+        >>> nfeatures = xdata.shape[-1]
+        >>> nclasses = len(classes)
+        >>> 
+        >>> p = PerceptronClassifier([nfeatures, 20, 8, nclasses])
+        >>> p.train(classes, 20, clip=0., accuracy=100., batch=1,
+        >>>         momentum=0.3, rate=0.3)
+        >>> c = p.classify(xdata)
+    '''
     def train(self, training_data, samples_per_class=0, *args, **kwargs):
         '''Trains the Perceptron on the training data.
 
@@ -403,11 +428,23 @@ class PerceptronClassifier(Perceptron, SupervisedClassifier):
                 at the end of each training iteration with the perceptron as its
                 argument. If the callable returns True, training will terminate.
 
-            `status`:
+            `stdout`:
 
                 An object with a `write` method that can be set to redirect
                 training status messages somewhere other than stdout. To
-                suppress output, set `stats` to None.
+                suppress output, set `stdout` to None.
+
+        Return value:
+
+            Returns True if desired accuracy was achieved.
+
+        Neural networks can require many iterations through a data set to
+        converge. If convergence slows (as indicated by small changes in
+        residual error), training can be terminated by pressing CTRL-C, which
+        will preserve the network weights from the previous training iteration.
+        `train` can then be called again with altered training parameters
+        (e.g., increased learning rate or momentum) to increase the convergence
+        rate.
         '''
         from spectral import _status, settings
         # Number of Perceptron inputs must equal number of features in the
@@ -430,11 +467,13 @@ class PerceptronClassifier(Perceptron, SupervisedClassifier):
                       (i, c) in enumerate(class_data)])
         Y = np.eye(np.max(y) + 1, dtype=np.int16)[y]
 
-        if settings.show_progress is True:
-            status = _status
+        if 'stdout' in kwargs:
+            stdout = kwargs.pop('stdout')
+        elif settings.show_progress is True:
+            stdout = _status
         else:
-            status = None
-        Perceptron.train(self, X, Y, *args, status=status, **kwargs)
+            stdout = None
+        return Perceptron.train(self, X, Y, *args, stdout=stdout, **kwargs)
 
     def classify_spectrum(self, x):
         '''

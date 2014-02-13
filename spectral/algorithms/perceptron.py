@@ -78,7 +78,6 @@ class PerceptronLayer:
         self.weights = 1. - 2. * np.random.rand(*self.shape)
         for row in self.weights:
             row[1:] /= math.sqrt(np.sum(row[1:]**2))
-#            row[0] = 0.5 - np.random.rand() - 0.5 * np.sum(row[1:])
             row[0] = -0.5 * np.random.rand() - 0.5 * np.sum(row[1:])
 
     def input(self, x, clip=0.0):
@@ -136,10 +135,6 @@ class Perceptron:
                 of inputs. `layers`[-1] is the number of perceptron outputs.
                 `layers`[1: -1] are the numbers of units in the hidden layers.
 
-            `rate` (float):
-
-                Learning rate coefficient for weight adjustments
-
             `k` (float):
 
                 Sigmoid shape parameter.
@@ -156,6 +151,8 @@ class Perceptron:
         # To prevent overflow when scaling inputs
         self.min_input_diff = 1.e-8
 
+        # If True, previous iteration weights are preserved after interrupting
+        # training (with CTRL-C)
         self.cache_weights = True
 
 
@@ -192,9 +189,9 @@ class Perceptron:
         '''
         return [int(round(xx)) for xx in self.input(x)]
 
-    def train(self, X, Y, max_iterations=1000, accuracy=100.0, rate=0.3,
-              momentum=0.1, batch=0, clip=0.0, on_iteration=None,
-              status=sys.stdout):
+    def train(self, X, Y, max_iterations=10000, accuracy=100.0, rate=0.3,
+              momentum=0., batch=1, clip=0.0, on_iteration=None,
+              stdout=sys.stdout):
         '''
         Trains the Perceptron to classify the given samples.
 
@@ -267,7 +264,7 @@ class Perceptron:
                 at the end of each training iteration with the perceptron as its
                 argument. If the callable returns True, training will terminate.
 
-            `status`:
+            `stdout`:
 
                 An object with a `write` method that can be set to redirect
                 training status messages somewhere other than stdout. To
@@ -276,8 +273,8 @@ class Perceptron:
         import itertools
         import os
 
-        if status is None:
-            status = open(os.devnull, 'w')
+        if stdout is None:
+            stdout = open(os.devnull, 'w')
 
         try:
             self._set_scaling(X)
@@ -302,12 +299,13 @@ class Perceptron:
                     # Determine incremental weight adjustments
                     self._update_dWs(t)
                     if batch > 0 and num_summed == batch:
-                        self._adjust_weights(rate, momentum, num_summed)
+                        self._adjust_weights(rate, momentum, num_summed,
+                                             stdout)
                         num_summed = 0
 
                 # In case a partial batch is remaining
                 if batch > 0 and num_summed > 0:
-                    self._adjust_weights(rate, momentum, num_summed)
+                    self._adjust_weights(rate, momentum, num_summed, stdout)
                     num_summed = 0
 
                 self.accuracy = 100. * num_correct / num_samples
@@ -315,26 +313,26 @@ class Perceptron:
                 if on_iteration and on_iteration(self):
                     return True
 
-                status.write('Iter % 5d: Accuracy = %.2f%% E = %f\n' %
+                stdout.write('Iter % 5d: Accuracy = %.2f%% E = %f\n' %
                              (iteration, self.accuracy, self.error))
                 if self.accuracy >= accuracy:
-                    status.write('Network trained to %.1f%% sample accuracy '
+                    stdout.write('Network trained to %.1f%% sample accuracy '
                                  'in %d iterations.\n'
-                                 % (self.accuracy, iteration))
+                                 % (self.accuracy, iteration + 1))
                     return True
 
                 # If doing full batch learning (batch == 0)
                 if num_summed > 0:
-                    self._adjust_weights(rate, momentum, num_summed)
+                    self._adjust_weights(rate, momentum, num_summed, stdout)
                     num_summed = 0
 
         except KeyboardInterrupt:
-            status.write("KeyboardInterrupt: Terminating training.\n")
+            stdout.write("KeyboardInterrupt: Terminating training.\n")
             self._reset_corrections()
             return False
 
-        status.write('Terminating network training after %d iterations.\n' %
-                     iteration)
+        stdout.write('Terminating network training after %d iterations.\n' %
+                     (iteration + 1))
         return False
 
     def _update_dWs(self, t):
@@ -354,58 +352,29 @@ class Perceptron:
             layerJ.delta = layerJ.dy_da() * b
             layerJ.dW += np.outer(layerJ.delta, layerJ.x)
 
-    def _adjust_weights(self, rate, momentum, num_summed):
+    def _adjust_weights(self, rate, momentum, num_summed, stdout):
         '''Applies aggregated weight adjustments to the perceptron weights.'''
         if self.cache_weights:
             weights = [np.array(layer.weights) for layer in self.layers]
         try:
             if momentum > 0:
                 for layer in self.layers:
-                    layer.dW *= rate
-#                    layer.dW *= (rate / num_summed)
+                    layer.dW *= (float(rate) / num_summed)
                     layer.dW += momentum * layer.dW_old
                     layer.weights += layer.dW
                     (layer.dW_old, layer.dW) = (layer.dW, layer.dW_old)
             else:
                 for layer in self.layers:
-                    layer.dW *= rate
- #                   layer.dW *= (rate / num_summed)
+                    layer.dW *= (float(rate) / num_summed)
                     layer.weights += layer.dW
         except KeyboardInterrupt:
             if self.cache_weights:
-                status.write('Interrupt during weight adjustment. Restoring ' \
+                stdout.write('Interrupt during weight adjustment. Restoring ' \
                             'previous weights.\n')
                 for i in range(len(weights)):
                     self.layers[i].weights = weights[i]
             else:
-                status.write('Interrupt during weight adjustment. Weight ' \
-                            'cacheing was disabled so current weights may' \
-                            'be corrupt.\n')
-            raise
-        finally:
-            self._reset_corrections()
-
-    def _adjust_weights_working(self, rate, momentum, num_summed):
-        '''Applies aggregated weight adjustments to the perceptron weights.'''
-        if self.cache_weights:
-            weights = [np.array(layer.weights) for layer in self.layers]
-        try:
-            for layer in self.layers:
-                layer.dW *= (rate / num_summed)
-                if momentum > 0:
-                    layer.dW += momentum * layer.dW_old
-#                layer.dW = (rate / num_summed) * \
-#                    layer.dW + momentum * layer.dW_old
-                layer.weights += layer.dW
-                (layer.dW_old, layer.dW) = (layer.dW, layer.dW_old)
-        except KeyboardInterrupt:
-            if self.cache_weights:
-                status.write('Interrupt during weight adjustment. Restoring ' \
-                            'previous weights.\n')
-                for i in range(len(weights)):
-                    self.layers[i].weights = weights[i]
-            else:
-                status.write('Interrupt during weight adjustment. Weight ' \
+                stdout.write('Interrupt during weight adjustment. Weight ' \
                             'cacheing was disabled so current weights may' \
                             'be corrupt.\n')
             raise
@@ -417,6 +386,7 @@ class Perceptron:
             layer.dW.fill(0)
 
     def _set_scaling(self, X):
+        '''Sets translation/scaling of inputs to map X to the range [0, 1].'''
         mins = maxes = None
         for x in X:
             if mins is None:
@@ -432,80 +402,18 @@ class Perceptron:
 
 # Sample data
 
-t2x1 = [
-    [[0.1, 0.0], [1]],
-    [[0.2, 0.1], [1]],
-    [[0.3, 0.2], [1]],
-    [[0.4, 0.3], [1]],
-    [[0.5, 0.4], [1]],
-    [[0.6, 0.5], [1]],
-    [[0.7, 0.6], [1]],
-    [[0.8, 0.7], [1]],
-    [[0.9, 0.8], [1]],
-    [[1.0, 0.9], [1]],
-    [[0.0, 0.1], [0]],
-    [[0.1, 0.2], [0]],
-    [[0.2, 0.3], [0]],
-    [[0.3, 0.4], [0]],
-    [[0.4, 0.5], [0]],
-    [[0.5, 0.6], [0]],
-    [[0.6, 0.7], [0]],
-    [[0.7, 0.8], [0]],
-    [[0.8, 0.9], [0]],
-    [[0.9, 1.0], [0]]
-]
-
-t2x2 = [
-    [[5, 2], [1, 0]],
-    [[3, 1], [1, 0]],
-    [[8, 1], [1, 0]],
-    [[5, 3], [1, 0]],
-    [[2, 0], [1, 0]],
-    [[0, 4], [1, 0]],
-    [[2, 4], [1, 0]],
-    [[1, 7], [1, 0]],
-    [[3, 5], [1, 0]],
-    [[2, 6], [1, 0]],
-    [[4, 9], [0, 1]],
-    [[2, 9], [0, 1]],
-    [[4, 9], [0, 1]],
-    [[6, 8], [0, 1]],
-    [[5, 7], [0, 1]],
-    [[9, 3], [0, 1]],
-    [[7, 4], [0, 1]],
-    [[8, 5], [0, 1]],
-    [[7, 6], [0, 1]],
-    [[9, 8], [0, 1]]
-]
-
-t4 = [
-    [[5, 2], [1, 0, 0, 0]],
-    [[3, 1], [1, 0, 0, 0]],
-    [[8, 1], [1, 0, 0, 0]],
-    [[5, 3], [1, 0, 0, 0]],
-    [[2, 0], [1, 0, 0, 0]],
-    [[0, 4], [0, 1, 0, 0]],
-    [[2, 4], [0, 1, 0, 0]],
-    [[1, 7], [0, 1, 0, 0]],
-    [[3, 5], [0, 1, 0, 0]],
-    [[2, 6], [0, 1, 0, 0]],
-    [[4, 9], [0, 0, 1, 0]],
-    [[2, 9], [0, 0, 1, 0]],
-    [[4, 9], [0, 0, 1, 0]],
-    [[6, 8], [0, 0, 1, 0]],
-    [[5, 7], [0, 0, 1, 0]],
-    [[9, 3], [0, 0, 0, 1]],
-    [[7, 4], [0, 0, 0, 1]],
-    [[8, 5], [0, 0, 0, 1]],
-    [[7, 6], [0, 0, 0, 1]],
-    [[9, 8], [0, 0, 0, 1]]
-]
-
 xor_data = [
     [[0, 0], [0]],
     [[0, 1], [1]],
     [[1, 0], [1]],
     [[1, 1], [0]],
+]
+
+xor_data2 = [
+    [[0, 0], [0, 1]],
+    [[0, 1], [1, 0]],
+    [[1, 0], [1, 0]],
+    [[1, 1], [0, 1]],
 ]
 
 and_data = [
@@ -515,66 +423,31 @@ and_data = [
     [[1, 1], [1]],
 ]
 
-xor_data1 = [
-    [[-1, -1], [0]],
-    [[-1,  6], [1]],
-    [[ 6, -1], [1]],
-    [[ 6,  6], [0]],
-]
+def test_case(XY, shape, *args, **kwargs):
+    (X, Y) = zip(*XY)
+    p = Perceptron(shape)
+    trained = p.train(X, Y, *args, **kwargs)
+    return (trained, p)
+    
+def test_xor(*args, **kwargs):
+    XY = xor_data
+    shape = [2, 2, 1]
+    return test_case(XY, shape, *args, **kwargs)
 
-t2x1b = [[a, [b[1]]] for [a, b] in t2x2]
+def test_xor222(*args, **kwargs):
+    XY = xor_data2
+    shape = [2, 2, 2]
+    return test_case(XY, shape, *args, **kwargs)
 
+def test_xor231(*args, **kwargs):
+    XY = xor_data
+    shape = [2, 3, 1]
+    return test_case(XY, shape, *args, **kwargs)
 
-def go():
-    #p = Perceptron([2, 1])
-    #p.train(t2x1, 5000)
-    #
-
-    #p = Perceptron([2, 1, 2])
-    #p.momentum = 0.5
-    #import random
-    #p.layers[0].weights[0,0] = random.random() * 20 - 10
-    #p.train(t2x2, 1000)
-
-    #
-    #p = Perceptron([2, 4, 4])
-    #p.stochastic = True
-    #p.train(t4, 5000)
-    #
-    #p = Perceptron([2, 4, 4, 4])
-    #p.stochastic = True
-    #p.train(t4, 5000)
-
-    p = Perceptron([2, 1])
-    p.train(t2x1b, 5000)
-
-    return p
-
-def run_tests():
-    (X, Y) = zip(*xor_data)
-    p = Perceptron([2, 3, 1])
-    r1 = p.train(X, Y, 20000, rate=0.7, momentum=0.2, batch=1, clip=0.)
-
-    (X, Y) = zip(*and_data)
-    p = Perceptron([2, 1])
-    r2 = p.train(X, Y, 20000, rate=0.7, momentum=0.2, batch=1, clip=0.)
-
-    (X, Y) = zip(*t4)
-    p = Perceptron([2, 4, 4, 4])
-    r3 = p.train(X, Y, 20000, rate=0.7, momentum=0.2, batch=1, clip=0.)
-
-    if r1:
-        print "XOR test passed."
-    else:
-        print "XOR test FAILED"
-    if r2:
-        print "AND test passed."
-    else:
-        print "AND test FAILED"
-    if r3:
-        print "4-class test passed."
-    else:
-        print "4-class test FAILED"
+def test_and(*args, **kwargs):
+    XY = and_data
+    shape = [2, 1]
+    return test_case(XY, shape, *args, **kwargs)
 
 if __name__ == '__main__':
     from spectral.algorithms.perceptron import run_tests
