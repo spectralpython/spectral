@@ -12,7 +12,7 @@ Installation Instructions
 The latest release is always hosted on `PyPI <https://pypi.python.org/pypi/spectral>`_,
 so if you have `pip` installed, you can install SPy from the command line with
 
-.. python::
+.. code::
 
     pip install spectral
 
