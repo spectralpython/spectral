@@ -263,10 +263,9 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
         GaussianClassifier.train(self, trainingData)
 
         covariance = numpy.zeros(self.classes[0].stats.cov.shape, numpy.float)
-        nsamples = 0
+        nsamples = np.sum(cl.stats.nsamples for cl in self.classes)
         for cl in self.classes:
-            covariance += cl.stats.nsamples * cl.stats.cov
-            nsamples += cl.stats.nsamples
+            covariance += (cl.stats.nsamples / float(nsamples)) * cl.stats.cov
         self.background = GaussianStats(cov=covariance)
 
     def classify_spectrum(self, x):

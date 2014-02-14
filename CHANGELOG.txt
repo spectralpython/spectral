@@ -4,6 +4,11 @@
 
 2013-02-13	tboggs <tboggs@users.sourceforge.net>
 
+    Fix covariance averaging for MahalanobisDistanceClassifier.
+
+    * algorithms/classifiers.py (MahalanobisDistanceClassifier.train):
+      Divide by total number of samples when computing weighted covariance.
+
     Finished Perceptron Classifier improvements.
 
     * algorithms/classifiers.py (PerceptronClassifier.train): Return
