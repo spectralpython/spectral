@@ -450,5 +450,19 @@ def test_and(*args, **kwargs):
     return test_case(XY, shape, *args, **kwargs)
 
 if __name__ == '__main__':
-    from spectral.algorithms.perceptron import run_tests
-    run_tests()
+    tests = [('AND (2x1)', test_and),
+             ('XOR (2x2x1)', test_xor),
+             ('XOR (2x2x2)', test_xor222),
+             ('XOR (2x3x1)', test_xor231)]
+    results = [test[1](5000)[0] for test in tests]
+    nr = [(p[0][0], p[1]) for p in zip(tests, results)]
+    print
+    print 'Training results for 5000 iterations'
+    print '------------------------------------'
+    for (name, result) in nr:
+        s = [ 'FAILED', 'PASSED'][result]
+        print '{:<20}: {}'.format(name, s)
+    if False in results:
+        print '\nNote: XOR convergence for these small network sizes is'
+        print 'dependent on initial weights, which are randomized. Try'
+        print 'running the test again.'
