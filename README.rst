@@ -9,21 +9,14 @@ package are on the `web site <http://spectralpython.sourceforge.net>`_.
 Installation Instructions
 =========================
 
-The latest release is always hosted on `PyPI <http://pypi.python.org>`_, so if
-you have `pip` installed, you can install SPy from the command line with
+The latest release is always hosted on `PyPI <https://pypi.python.org/pypi/spectral>`_,
+so if you have `pip` installed, you can install SPy from the command line with
 
 .. python::
 
     pip install spectral
 
-To install the latest development version, download or clone the git repository
-and from the main directory type
-
-.. code::
-
-    python setup.py install
-
-Packaged distributions are also hosted at `PyPI <https://pypi.python.org/pypi/spectral>`_
+Packaged distributions are also hosted at `PyPI`
 and `Sourceforge <https://sourceforge.net/projects/spectralpython/files/SPy/>`_
 so you can download and unpack the latest zip/tarball, then type
 
