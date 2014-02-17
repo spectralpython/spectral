@@ -239,8 +239,9 @@ class AsterDatabase:
 
             An :class:`~spectral.AsterDatabase` connected to the database.
         '''
+        from spectral.io.spyfile import find_file_path
         if sqlite_filename:
-            self._connect(sqlite_filename)
+            self._connect(find_file_path(sqlite_filename))
         else:
             self.db = None
             self.cursor = None

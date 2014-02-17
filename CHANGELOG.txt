@@ -2,6 +2,12 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2013-02-17	tboggs <tboggs@users.sourceforge.net>
+
+    Search `SPECTRAL_DATA` paths for `AsterDatabase` files.
+
+    * database/aster.py (AsterDatabase.__init__).
+
 2013-02-13	tboggs <tboggs@users.sourceforge.net>
 
     Fix covariance averaging for MahalanobisDistanceClassifier.
