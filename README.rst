@@ -40,5 +40,8 @@ environment variable). To run the unit tests, type
 
     python -m spectral.tests.run
 
-Using SPy interactively requires `IPython` and several other packages
-(depending on the features used). See the web site for details.
+Dependencies
+============
+Using SPy interactively with its visualization capabilities requires `IPython` and
+several other packages (depending on the features used). See the web site for details.
+
