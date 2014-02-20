@@ -256,10 +256,10 @@ class HypercubeWindow(wx.Frame, SpyWindow):
         # of the cube with corners rendered from lower left CCW to upper left.
 
         # Read data for sides of cube
-        sides = [np.rot90(data[s[0] - 1, :, :].squeeze(), 3)]   # front face
+        sides = [np.fliplr(np.rot90(data[s[0] - 1, :, :].squeeze(), 3))]   # front face
         sides.append(np.rot90(data[:, s[1] - 1, :].squeeze(), 3))  # right face
         sides.append(np.rot90(data[0, :, :].squeeze(), 3))      # back face
-        sides.append(np.rot90(data[:, 0, :].squeeze(), 3))      # left face
+        sides.append(np.fliplr(np.rot90(data[:, 0, :].squeeze(), 3)))      # left face
 
         # Create images for sides of cube
         scaleMin = min([min(side.ravel()) for side in sides])
@@ -364,7 +364,7 @@ class HypercubeWindow(wx.Frame, SpyWindow):
         import OpenGL.GL as gl
         # Determine cube proportions
         divisor = max(self.hsi.shape[:2])
-        hh, hw = [float(x) / divisor for x in self.hsi.shape[:2]]
+        hw, hh = [float(x) / divisor for x in self.hsi.shape[:2]]
         hz = self.cubeHeight
 
         # Top Face (note that the texture's corners have to match the quad's)

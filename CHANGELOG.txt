@@ -2,6 +2,17 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2013-02-19	tboggs <tboggs@users.sourceforge.net>
+
+    Fixed two bugs in `view_cube`: Front and left sides of the cube were
+    flipped left-right and cube width/height was scaled incorrectly for
+    extreme aspect ratios.
+
+    * graphics/hypercube.py:
+      (HypercubeWindow.draw_cube): Corrected aspect ratio.
+      (HypercubeWindow.load_textures): Mirrored front and left faces
+      left-right.
+
 2013-02-17	tboggs <tboggs@users.sourceforge.net>
 
     Search `SPECTRAL_DATA` paths for `AsterDatabase` files.
