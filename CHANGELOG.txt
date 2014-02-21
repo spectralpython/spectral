@@ -4,6 +4,14 @@
 
 2013-02-19	tboggs <tboggs@users.sourceforge.net>
 
+    Use common color scale on all faces of image cube in `view_cube`.
+
+    * graphics/hypercube.py:
+      (HypercubeWindow.load_textures): Do not use auto-scaling for cube face
+      color scales.
+
+2013-02-19	tboggs <tboggs@users.sourceforge.net>
+
     Fixed two bugs in `view_cube`: Front and left sides of the cube were
     flipped left-right and cube width/height was scaled incorrectly for
     extreme aspect ratios.

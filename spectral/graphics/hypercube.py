@@ -266,7 +266,7 @@ class HypercubeWindow(wx.Frame, SpyWindow):
         scaleMax = max([max(side.ravel()) for side in sides])
         scale.set_range(scaleMin, scaleMax)
         sideImages = [graphics.make_pil_image(side, color_scale=scale,
-                                              auto_scale=1, format='bmp')
+                                              auto_scale=0, format='bmp')
                       for side in sides]
         images = [image] + sideImages
 
