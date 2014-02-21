@@ -375,8 +375,12 @@ def make_pil_image(*args, **kwargs):
     import numpy
     from numpy.oldnumeric import transpose
     import StringIO
-    import Image
-    import ImageDraw
+
+    try:
+        from PIL import Image, ImageDraw
+    except ImportError:
+        import Image
+        import ImageDraw
 
     rgb = get_rgb(*args, **kwargs)
 

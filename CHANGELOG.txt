@@ -2,7 +2,14 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
-2013-02-19	tboggs <tboggs@users.sourceforge.net>
+2014-02-21	tboggs <tboggs@users.sourceforge.net>
+
+    If available, use Pillow module instead of PIL.
+
+    * graphics/graphics.py (make_pil_image): First try importing `Image` from
+      PIL (Pillow) instead of top-level namespace (Python Imaging Library).
+
+2014-02-19	tboggs <tboggs@users.sourceforge.net>
 
     Use common color scale on all faces of image cube in `view_cube`.
 
@@ -10,7 +17,7 @@
       (HypercubeWindow.load_textures): Do not use auto-scaling for cube face
       color scales.
 
-2013-02-19	tboggs <tboggs@users.sourceforge.net>
+2014-02-19	tboggs <tboggs@users.sourceforge.net>
 
     Fixed two bugs in `view_cube`: Front and left sides of the cube were
     flipped left-right and cube width/height was scaled incorrectly for
@@ -21,13 +28,13 @@
       (HypercubeWindow.load_textures): Mirrored front and left faces
       left-right.
 
-2013-02-17	tboggs <tboggs@users.sourceforge.net>
+2014-02-17	tboggs <tboggs@users.sourceforge.net>
 
     Search `SPECTRAL_DATA` paths for `AsterDatabase` files.
 
     * database/aster.py (AsterDatabase.__init__).
 
-2013-02-13	tboggs <tboggs@users.sourceforge.net>
+2014-02-13	tboggs <tboggs@users.sourceforge.net>
 
     Fix covariance averaging for MahalanobisDistanceClassifier.
 
@@ -42,7 +49,7 @@
       Randomize weights so initial hyperplanes intersect the unit box [0, 0].
     * test/classifiers.py: Added perceptron unit tests.
 
-2013-02-11	tboggs <tboggs@users.sourceforge.net>
+2014-02-11	tboggs <tboggs@users.sourceforge.net>
 
     Fixed PerceptronClassifier implementation.
 
@@ -53,13 +60,13 @@
       multilayer perceptron implementation without the baggage of the rest of
       the SPy package).
 
-2013-01-05	tboggs <tboggs@users.sourceforge.net>
+2014-01-05	tboggs <tboggs@users.sourceforge.net>
 
     Enable displaying `imshow` output in an existing matplotlib figure.
 
     * graphics/spypylab (imshow): Accept optional `fignum` argument.
 
-2013-01-05	tboggs <tboggs@users.sourceforge.net>
+2014-01-05	tboggs <tboggs@users.sourceforge.net>
 
     Updated version to 0.13
 
