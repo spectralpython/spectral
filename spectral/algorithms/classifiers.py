@@ -230,9 +230,9 @@ class GaussianClassifier(SupervisedClassifier):
             try:
                 Y = delta.dot(-0.5 * c.stats.inv_cov, out=Y)
             except:
-                msg ='Unable to output np.dot to existing array. ' \
-                     'Allocating new storage. This will not affect results.'
-                warn(msg)
+                #msg ='Unable to output np.dot to existing array. ' \
+                #     'Allocating new storage. This will not affect results.'
+                #warn(msg)
                 Y = delta.dot(-0.5 * c.stats.inv_cov)
             scores[:, i] = np.einsum('ij,ij->i', Y, delta)
             scores[:, i] += scalar
