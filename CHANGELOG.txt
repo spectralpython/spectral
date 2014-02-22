@@ -2,6 +2,13 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2014-02-21	tboggs <tboggs@users.sourceforge.net>
+
+    If available, use Pillow module instead of PIL.
+
+    * graphics/graphics.py (make_pil_image): First try importing `Image` from
+      PIL (Pillow) instead of top-level namespace (Python Imaging Library).
+
 2014-02-19	tboggs <tboggs@users.sourceforge.net>
 
     Use common color scale on all faces of image cube in `view_cube`.

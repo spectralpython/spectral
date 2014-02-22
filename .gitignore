@@ -1,4 +1,7 @@
 *.py[cod]
+dist/
+spectral.egg-info/
+
 *#
 *~
 TAGS

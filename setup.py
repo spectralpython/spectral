@@ -5,15 +5,16 @@ try:
 except:
     from distutils.core import setup
 
-long_description = '''
-Spectral Python (SPy) is a pure Python module for processing hyperspectral
-image data. It has functions for reading, displaying, manipulating, and
-classifying hyperspectral imagery. It can be used interactively from the
-Python command prompt or via Python scripts. SPy is free, open source software
-distributed under the GNU General Public License.'''
+import spectral
+
+long_description = '''Spectral Python (SPy) is a pure Python module for
+processing hyperspectral image data (imaging spectroscopy data). It has
+functions for reading, displaying, manipulating, and classifying hyperspectral
+imagery. SPy is Free, Open Source Software (FOSS) distributed under the GNU
+General Public License.'''
 
 setup(name='spectral',
-      version='0.13',
+      version=spectral.__version__,
       description='Spectral Python (SPy) is a Python module for hyperspectral image processing.',
       long_description=long_description,
       author='Thomas Boggs',
@@ -25,12 +26,17 @@ setup(name='spectral',
                 'spectral.graphics', 'spectral.io', 'spectral.tests',
                 'spectral.utilities'],
       platforms=['Platform-Independent'],
-      classifiers=[
-	'Development Status :: 4 - Beta',
-	'Intended Audience :: Science/Research',
-	'License :: OSI Approved :: GNU General Public License (GPL)',
-	'Operating System :: OS Independent',
-	'Programming Language :: Python :: 2.6',
-	'Programming Language :: Python :: 2.7'
+      classifiers=[	'Development Status :: 4 - Beta',
+                    'License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)',
+                    'Operating System :: OS Independent',
+                    'Programming Language :: Python :: 2.6',
+                    'Programming Language :: Python :: 2.7',
+                    'Environment :: Console',
+                    'Natural Language :: English'
+                    'Intended Audience :: Science/Research',
+                    'Topic :: Scientific/Engineering :: Image Recognition',
+                    'Topic :: Scientific/Engineering :: GIS',
+                    'Topic :: Scientific/Engineering :: Information Analysis',
+                    'Topic :: Scientific/Engineering :: Visualization'
       ]
-     )
+)

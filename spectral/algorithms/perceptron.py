@@ -131,7 +131,7 @@ class Perceptron:
 
             layers (sequence of integers):
 
-                A specifying the network structure. `layers`[0] is the number
+                A list specifying the network structure. `layers`[0] is the number
                 of inputs. `layers`[-1] is the number of perceptron outputs.
                 `layers`[1: -1] are the numbers of units in the hidden layers.
 
