@@ -2,6 +2,10 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2014-02-23	tboggs <tboggs@users.sourceforge.net>
+
+    Updated version to 0.14.
+
 2014-02-21	tboggs <tboggs@users.sourceforge.net>
 
     If available, use Pillow module instead of PIL.

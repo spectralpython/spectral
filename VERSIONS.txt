@@ -1,4 +1,55 @@
 ================================================================================
+SPy 0.14.0
+================================================================================
+Release date: 2014.02.22
+
+Changes
+-------
+
+* Attempt to use Pillow fork of PIL, if available, rather than older PIL.
+
+* `view_cube` now uses common color scale limits on all side faces.
+
+* When creating an `AsterDatabase` instance, directories in the `SPECTRAL_DATA`
+  environment variable are search for the specified file (after the current
+  directory).
+
+* `spectral.imshow` accepts an optional `fignum` argument to render to an
+  existing figure.
+
+* Class labels in a `spectral.imshow` window can be reassigned even when class
+  labels were not provided in the function call (all pixels will start with
+  class 0).
+
+* File `spectral/algorithms/perceptron.py` can be used independently of the
+  rest of the package.
+
+Bug Fixes
+---------
+
+* Front and left sides of the image cube displayed by `view_cube` were
+  mirrored left-right. Cube aspect ratio was being computed incorrectly for
+  non-square images. These bugs were introduced by a recent release.
+
+* Global covariance was not being scaled properly in the
+  `MahalanobisDistanceClassifier`. Mathematically, it does not affect results
+  and did not affect results on the test data but for large covariance with
+  many classes, it could have cause rounding/truncation that would affect
+  results.
+
+* PerceptronClassifier constructor was failing due to recent changes in
+  base class code. Unit tests have been added to ensure it continues to work
+  properly.
+
+
+Performance Improvements
+------------------------
+
+* PerceptronClassifier is roughly an order of magnitude faster due to better
+  use of numpy. Inputs are now scaled and weights are initialized withing the
+  data limits, which usually results in fewer iterations for convergence.
+
+================================================================================
 SPy 0.13
 ================================================================================
 Release date: 2014.01.05
