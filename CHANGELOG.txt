@@ -2,6 +2,13 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2014-03-11	tboggs <tboggs@users.sourceforge.net>
+
+    [fixed #1] - Pixel row/col is not displayed in imshow window when pixel
+    row is greater than image width.
+
+    * graphics/spypylab.py(ImageView.format_coord): `ncols` -> `nrows`.
+
 2014-02-23	tboggs <tboggs@users.sourceforge.net>
 
     Updated version to 0.14.

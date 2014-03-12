@@ -1061,7 +1061,7 @@ class ImageView(object):
     def format_coord(self, x, y):
         '''Formats pixel coordinate string displayed in the window.'''
         (nrows, ncols) = self._image_shape
-        if x < -0.5 or x > ncols - 0.5 or y < -0.5 or y > ncols - 0.5:
+        if x < -0.5 or x > ncols - 0.5 or y < -0.5 or y > nrows - 0.5:
             return ""
         (r, c) = xy_to_rowcol(x, y)
         s = 'pixel=[%d,%d]' % (r, c)
