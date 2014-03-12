@@ -32,7 +32,7 @@ setup(name='spectral',
                     'Programming Language :: Python :: 2.6',
                     'Programming Language :: Python :: 2.7',
                     'Environment :: Console',
-                    'Natural Language :: English'
+                    'Natural Language :: English',
                     'Intended Audience :: Science/Research',
                     'Topic :: Scientific/Engineering :: Image Recognition',
                     'Topic :: Scientific/Engineering :: GIS',
