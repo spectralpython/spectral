@@ -76,3 +76,15 @@ def matrix_sqrt(X=None, symmetric=False, inverse=False, eigs=None):
         return V.dot(SRV).dot(V.T)
     else:
         return V.dot(SRV).dot(np.linalg.inv(V))
+
+import exceptions
+
+class NaNValueWarning(exceptions.UserWarning):
+    pass
+
+class NaNValueError(exceptions.ValueError):
+    pass
+
+def has_nan(X):
+    '''returns True if ndarray `X` contains a NaN value.'''
+    return bool(np.isnan(np.min(X)))

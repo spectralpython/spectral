@@ -723,7 +723,7 @@ class GaussianStats(object):
         return LinearTransform(matrix_sqrt(C_1, True), pre=-self.mean)
 
 
-def calc_stats(image, mask=None, index=None):
+def calc_stats(image, mask=None, index=None, allow_nan=False):
     '''Computes Gaussian stats for image data..
 
     Arguments:
@@ -746,6 +746,12 @@ def calc_stats(image, mask=None, index=None):
             `image`. If not specified but `mask` is, then all nonzero elements
             of `mask` will be used.
 
+        `allow_nan` (bool, default False):
+
+            If True, statistics will be computed even if `np.nan` values are
+            present in the data; otherwise, `~spectral.algorithms.spymath.NaNValueError`
+            is raised.
+
         If neither `mask` nor `index` are specified, all samples in `vectors`
         will be used.
 
@@ -755,7 +761,10 @@ def calc_stats(image, mask=None, index=None):
 
             This object will have members `mean`, `cov`, and `nsamples`.
     '''
+    from spectral.algorithms.spymath import has_nan, NaNValueError
     (mean, cov, N) = mean_cov(image, mask, index)
+    if has_nan(mean) and not allow_nan:
+        raise NaNValueError('NaN values present in data.')
     return GaussianStats(mean=mean, cov=cov, nsamples=N)
 
 

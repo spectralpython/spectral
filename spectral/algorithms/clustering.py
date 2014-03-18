@@ -217,10 +217,10 @@ def kmeans(image, nclusters=10, max_iterations=20, **kwargs):
         for i in range(nclusters):
             centers[i] = boxMin.astype(float) + i * delta
 
-    iter = 1
-    while (iter <= max_iterations):
+    itnum = 1
+    while (itnum <= max_iterations):
         try:
-            status.display_percentage('Iteration %d...' % iter)
+            status.display_percentage('Iteration %d...' % itnum)
 
             # Assign all pixels
             for i in range(nrows):
@@ -251,10 +251,12 @@ def kmeans(image, nclusters=10, max_iterations=20, **kwargs):
                 iterations.append(clusters)
 
             if compare and compare(old_clusters, clusters):
+                status.end_percentage('done.')
                 break
             else:
                 nChanged = numpy.sum(clusters != old_clusters)
                 if nChanged == 0:
+                    status.end_percentage('0 pixels reassigned.')
                     break
                 else:
                     status.end_percentage('%d pixels reassigned.' \
@@ -263,14 +265,14 @@ def kmeans(image, nclusters=10, max_iterations=20, **kwargs):
             old_clusters = clusters
             old_centers = centers
             clusters = numpy.zeros((nrows, ncols), int)
-            iter += 1
+            itnum += 1
 
         except KeyboardInterrupt:
             print "KeyboardInterrupt: Returning clusters from previous iteration"
             return (old_clusters, old_centers)
 
     print >>status, 'kmeans terminated with', len(set(old_clusters.ravel())), \
-        'clusters after', iter - 1, 'iterations.'
+        'clusters after', itnum - 1, 'iterations.'
     return (old_clusters, centers)
 
 
@@ -339,6 +341,10 @@ def kmeans_ndarray(image, nclusters=10, max_iterations=20, **kwargs):
     '''
     import spectral
     import numpy as np
+    from spectral.algorithms.spymath import has_nan, NaNValueError
+
+    if has_nan(image):
+        raise NaNValueError('Image data contains NaN values.')
 
     status = spectral._status
     
@@ -390,10 +396,10 @@ def kmeans_ndarray(image, nclusters=10, max_iterations=20, **kwargs):
     clusters = np.zeros((N,), int)
     old_clusters = np.copy(clusters)
     diffs = np.empty_like(image, dtype=np.float64)
-    iter = 1
-    while (iter <= max_iterations):
+    itnum = 1
+    while (itnum <= max_iterations):
         try:
-            status.display_percentage('Iteration %d...' % iter)
+            status.display_percentage('Iteration %d...' % itnum)
 
             # Assign all pixels
             for i in range(nclusters):
@@ -416,10 +422,12 @@ def kmeans_ndarray(image, nclusters=10, max_iterations=20, **kwargs):
                 iterations.append(clusters.reshape(nrows, ncols))
 
             if compare and compare(old_clusters, clusters):
+                status.end_percentage('done.')
                 break
             else:
                 nChanged = numpy.sum(clusters != old_clusters)
                 if nChanged == 0:
+                    status.end_percentage('0 pixels reassigned.')
                     break
                 else:
                     status.end_percentage('%d pixels reassigned.' \
@@ -427,14 +435,14 @@ def kmeans_ndarray(image, nclusters=10, max_iterations=20, **kwargs):
 
             old_clusters[:] = clusters
             old_centers[:] = centers
-            iter += 1
+            itnum += 1
 
         except KeyboardInterrupt:
             print "KeyboardInterrupt: Returning clusters from previous iteration."
             return (old_clusters.reshape(nrows, ncols), old_centers)
 
     print >>status, 'kmeans terminated with', len(set(old_clusters.ravel())), \
-        'clusters after', iter - 1, 'iterations.'
+        'clusters after', itnum - 1, 'iterations.'
     return (old_clusters.reshape(nrows, ncols), centers)
 
 

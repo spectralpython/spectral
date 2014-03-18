@@ -217,6 +217,8 @@ class SpyFile(Image):
         import spectral
         from spectral.spectral import ImageArray
         from array import array
+        import warnings
+        from spectral.algorithms.spymath import has_nan, NaNValueWarning
 
         for k in kwargs.keys():
             if k not in ('dtype', 'scale'):
@@ -238,7 +240,10 @@ class SpyFile(Image):
         npArray = npArray.astype(dtype)
         if self.scale_factor != 1 and kwargs.get('scale', True):
             npArray = npArray / float(self.scale_factor)
-        return ImageArray(npArray, self)
+        imarray = ImageArray(npArray, self)
+        if has_nan(imarray):
+            warnings.warn('Image data contains NaN values.', NaNValueWarning)
+        return imarray        
 
     def __getitem__(self, args):
         '''Subscripting operator that provides a numpy-like interface.

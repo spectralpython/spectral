@@ -2,6 +2,26 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2014-03-18	tboggs <tboggs@users.sourceforge.net>
+
+    [closes #2] Handle image data containing NaN. Rather than just passing
+    image data through to SPy functions, several checks are now made to
+    either warn or raise an exception when `np.nan` is found in the data
+
+    * algorithms/algorithms.py (calc_stats): New argument `allow_nan` (False
+      by default) indicates whether nan should be allowed in the data. If
+      False, a NanValueError is raised when nan is present.
+    * algorithms/clustering.py:
+      (kmeans): Make sure status percentage ends in all code paths
+      (kmeans_ndarray): Make sure status percentage ends in all code paths.
+      Raise NanValueError if nan is present.
+    * algorithms/spymath.py:
+      (NaNValueWarning): New class
+      (NaNValueError): New class
+      (has_nan): New function to determine if np.nan is present in the data.
+    * io/spyfile.py (SpyFile.load): Issue NaNValueWarning if np.nan is present
+      in the image data.
+
 2014-03-11	tboggs <tboggs@users.sourceforge.net>
 
     [fixed #1] - Pixel row/col is not displayed in imshow window when pixel
