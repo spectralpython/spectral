@@ -611,26 +611,40 @@ def log_det(x):
 class GaussianStats(object):
     '''A class for storing Gaussian statistics for a data set.
 
+    Statistics stored include:
+
+        `mean`:
+
+            Mean vector
+
+        `cov`:
+
+            Covariance matrix
+
+        `nsamples`:
+
+            Number of samples used in computing the statistics
+
     Several derived statistics are computed on-demand (and cached) and are
     available as property attributes. These include:
 
-        inv_cov:
+        `inv_cov`:
 
             Inverse of the covariance
 
-        sqrt_cov:
+        `sqrt_cov`:
 
             Matrix square root of covariance: sqrt_cov.dot(sqrt_cov) == cov
 
-        sqrt_inv_cov:
+        `sqrt_inv_cov`:
 
             Matrix square root of the inverse of covariance
 
-        log_det_cov:
+        `log_det_cov`:
 
             The log of the determinant of the covariance matrix
 
-        principal_components:
+        `principal_components`:
 
             The principal components of the data, based on mean and cov.
     '''            
@@ -1400,3 +1414,264 @@ def msam(data, members):
                 angles[i,j,k]= 1.0 - np.arccos(a) / (math.pi / 2)
     return angles
 
+def noise_from_diffs(X, direction='lowerright'):
+    '''Estimates noise statistcs by taking differences of adjacent pixels.
+
+    Arguments:
+
+        `X` (np.ndarray):
+
+            The data from which to estimage noise statistics. `X` should have
+            shape `(nrows, ncols, nbands`).
+
+        `direction` (str, default "lowerright"):
+
+            The pixel direction along which to calculate pixel differences.
+            Must be one of the following:
+
+                'lowerright':
+                    Take difference with pixel diagonally to lower right
+                'lowerleft':
+                     Take difference with pixel diagonally to lower right
+                'right':
+                    Take difference with pixel to the right
+                'lower':
+                    Take differenece with pixel below
+
+    Returns a :class:`~spectral.algorithms.algorithms.GaussianStats` object.
+    '''
+    if direction.lower() not in ['lowerright', 'lowerleft', 'right', 'lower']:
+        raise ValueError('Invalid `direction` value.')
+    if direction == 'lowerright':
+        deltas = X[:-1, :-1, :] - X[1:, 1:, :]
+    elif direction == 'lowerleft':
+        deltas = X[:-1, 1:, :] - X[1:, :-1, :]
+    elif direction == 'right':
+        deltas = X[:, :-1, :] - X[:, 1:, :]
+    else:
+        deltas = X[:-1, :, :] - X[1:, :, :]
+        
+    stats = calc_stats(deltas)
+    stats.cov /= 2.0
+    return stats
+
+class MNFResult(object):
+    '''A result object returned by the :func:`~spectral.mnf` function.
+
+    This object contains data associates with a Minimum Noise Fraction
+    calculation, including signal and noise statistics, as well as the
+    Noise-Adjusted Principal Components (NAPC). This object can be used to
+    denoise image data or to reduce its dimensionality.
+    '''
+    def __init__(self, signal, noise, napc):
+        '''
+        Arguments:
+
+            `signal` (:class:`~spectral.GaussianStats`):
+
+                Signal statistics
+
+            `noise` (:class:`~spectral.GaussianStats`):
+
+                Noise statistics
+
+            `napc` (:class:`~spectral.PrincipalComponents`):
+
+                Noise-Adjusted Pricipal Components
+        '''
+        self.signal = signal
+        self.noise = noise
+        self.napc = napc
+
+    def _num_from_kwargs(self, **kwargs):
+        '''Returns number of components to retain for the given kwargs.'''
+        for key in kwargs:
+            if key not in ('num', 'snr'):
+                raise Exception('Keyword not recognized.')
+        num = kwargs.get('num', None)
+        snr = kwargs.get('snr', None)
+        if num == snr == None:
+            raise Exception('Must specify either `num` or `snr` keyword.')
+        if None not in (num, snr):
+            raise Exception('Can not specify both `num` and `snr` keywords.')
+        if snr is not None:
+            num = self.num_with_snr(snr)
+        return num
+
+    def denoise(self, X, **kwargs):
+        '''Returns a de-noised version of `X`.
+
+        Arguments:
+
+            `X` (np.ndarray):
+
+                Data to be de-noised. Can be a single pixel or an image.
+
+        One (and only one) of the following keywords must be specified:
+
+            `num` (int):
+
+                Number of Noise-Adjusted Principal Components to retain.
+
+            `snr` (float):
+
+                Threshold signal-to-noise ratio (SNR) to retain.
+
+        Returns denoised image data with same shape as `X`.
+
+        Note that calling this method is equivalent to calling the
+        `get_denoising_transform` method with same keyword and applying the
+        returned transform to `X`. If you only intend to denoise data with the
+        same parameters multiple times, then it is more efficient to get the
+        denoising transform and reuse it, rather than calling this method
+        multilple times.
+        '''
+        f = self.get_denoising_transform(**kwargs)
+        return f(X)
+
+    def get_denoising_transform(self, **kwargs):
+        '''Returns a function for denoising image data.
+
+        One (and only one) of the following keywords must be specified:
+
+            `num` (int):
+
+                Number of Noise-Adjusted Principal Components to retain.
+
+            `snr` (float):
+
+                Threshold signal-to-noise ratio (SNR) to retain.
+
+        Returns a callable :class:`~spectral.algorithms.transforms.LinearTransform`
+        object for denoising image data.
+        '''
+        from spectral.algorithms.transforms import LinearTransform
+        N = self._num_from_kwargs(**kwargs)
+        V = self.napc.eigenvectors
+        Vr = np.array(V)
+        Vr[:, N:] = 0.
+        f = LinearTransform(self.noise.sqrt_cov.dot(Vr).dot(V.T) \
+			    .dot(self.noise.sqrt_inv_cov),
+                            pre=-self.signal.mean,
+                            post=self.signal.mean)
+        return f
+
+    def reduce(self, X, **kwargs):
+        '''Reduces dimensionality of image data.
+
+        Arguments:
+
+            `X` (np.ndarray):
+
+                Data to be reduced. Can be a single pixel or an image.
+
+        One (and only one) of the following keywords must be specified:
+
+            `num` (int):
+
+                Number of Noise-Adjusted Principal Components to retain.
+
+            `snr` (float):
+
+                Threshold signal-to-noise ratio (SNR) to retain.
+
+        Returns a verions of `X` with reduced dimensionality.
+
+        Note that calling this method is equivalent to calling the
+        `get_reduction_transform` method with same keyword and applying the
+        returned transform to `X`. If you intend to denoise data with the
+        same parameters multiple times, then it is more efficient to get the
+        reduction transform and reuse it, rather than calling this method
+        multilple times.
+        '''
+        f = self.get_reduction_transform(**kwargs)
+        return f(X)
+
+    def get_reduction_transform(self, **kwargs):
+        '''Reduces dimensionality of image data.
+
+        One (and only one) of the following keywords must be specified:
+
+            `num` (int):
+
+                Number of Noise-Adjusted Principal Components to retain.
+
+            `snr` (float):
+
+                Threshold signal-to-noise ratio (SNR) to retain.
+
+        Returns a callable :class:`~spectral.algorithms.transforms.LinearTransform`
+        object for reducing the dimensionality of image data.
+        '''
+        from spectral.algorithms.transforms import LinearTransform
+        N = self._num_from_kwargs(**kwargs)
+        V = self.napc.eigenvectors
+        f = LinearTransform(V[:, :N].T.dot(self.noise.sqrt_inv_cov),
+                            pre=-self.signal.mean)
+        return f
+
+    def num_with_snr(self, snr):
+        '''Returns the number of components with SNR >= `snr`.'''
+        return np.sum(self.napc.eigenvalues >= (snr + 1))
+
+def mnf(signal, noise):
+    '''Computes Minimum Noise Fraction / Noise-Adjusted Principal Components.
+
+    Arguments:
+
+        `signal` (:class:`~spectral.GaussianStats`):
+
+            Estimated signal statistics
+
+        `noise` (:class:`~spectral.GaussianStats`):
+
+            Estimated noise statistics
+
+    Returns an :class:`~spectral.MNFResult` object, containing the Noise-
+    Adjusted Principal Components (NAPC) and methods for denoising or reducing
+    dimensionality of associated data.
+
+    The Minimum Noise Fraction (MNF) is similar to the Principal Components
+    transformation with the difference that the Principal Components associated
+    with the MNF are ordered by descending signal-to-noise ratio (SNR) rather
+    than overall image variance. Note that the eigenvalues of the NAPC are
+    equal to one plus the SNR in the transformed space (since noise has
+    whitened unit variance in the NAPC coordinate space).
+
+    Example:
+
+        >>> data = open_image('92AV3C.lan').load()
+        >>> signal = calc_stats(data)
+        >>> noise = noise_from_diffs(data[117: 137, 85: 122, :])
+        >>> mnfr = mnf(signal, noise)
+
+        >>> # De-noise the data, eliminating components where SNR > 10. The
+        >>> # denoised data will be in the original coordinate space.
+        >>> denoised = mnfr.denoise(snr=10)
+
+        >>> # Reduce dimensionality, retaining NAPC components where SNR > 10.
+        >>> reduced = mnfr.reduce(snr=10)
+
+        >>> # Reduce dimensionality, retaining top 50 NAPC components.
+        >>> reduced = mnfr.reduce(num=10)
+
+    References:
+
+        Lee, James B., A. Stephen Woodyatt, and Mark Berman. "Enhancement of
+        high spectral resolution remote-sensing data by a noise-adjusted
+        principal components transform." Geoscience and Remote Sensing, IEEE
+        Transactions on 28.3 (1990): 295-304.
+    '''
+    from spectral.algorithms.transforms import LinearTransform
+    from spectral.algorithms.algorithms import PrincipalComponents, GaussianStats
+    C = noise.sqrt_inv_cov.dot(signal.cov).dot(noise.sqrt_inv_cov)
+    (L, V) = np.linalg.eig(C)
+    # numpy says eigenvalues may not be sorted so we'll sort them, if needed.
+    if not np.alltrue(np.diff(L) <= 0):
+        ii = list(reversed(np.argsort(L)))
+        L = L[ii]
+        V = V[:, ii]
+    wstats = GaussianStats(mean=np.zeros_like(L), cov=C)
+    napc = PrincipalComponents(L, V, wstats)
+    return MNFResult(signal, noise, napc)
+ 

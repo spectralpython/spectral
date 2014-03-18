@@ -4,6 +4,18 @@
 
 2014-03-18	tboggs <tboggs@users.sourceforge.net>
 
+    Added the Minimum Noise Fraction transform.
+
+    * __init__.py: Incremented __version__ to 0.15.0.dev-2
+    * algorithms/algorithms.py:
+      (noise_from_diffs): New function.
+      (MNFResult): New class.
+      (mnf): New function.
+    * tests/__init__.py: Include MNF tests.
+    * tests/dimensionality.py: New file.
+
+2014-03-18	tboggs <tboggs@users.sourceforge.net>
+
     [closes #2] Handle image data containing NaN. Rather than just passing
     image data through to SPy functions, several checks are now made to
     either warn or raise an exception when `np.nan` is found in the data
