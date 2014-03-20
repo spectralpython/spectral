@@ -398,7 +398,10 @@ def save_image(hdr_file, image, **kwargs):
 
     metadata['lines'] = image.shape[0]
     metadata['samples'] = image.shape[1]
-    metadata['bands'] = image.shape[2]
+    if len(image.shape) == 3:
+        metadata['bands'] = image.shape[2]
+    else:
+        metadata['bands'] = 1
     metadata['file type'] = 'ENVI Standard'
     interleave = kwargs.get('interleave', 'bip').lower()
     if interleave not in ['bil', 'bip', 'bsq']:

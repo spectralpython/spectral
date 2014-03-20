@@ -2,6 +2,11 @@
 # Spectral Python (SPy) package change log
 ##############################################################################
 
+2014-03-20	tboggs <tboggs@users.sourceforge.net>
+
+    * io/envi.py (save_image): When saving an image, assume nbands==1 when
+      len(img.shape)==2.
+
 2014-03-18	tboggs <tboggs@users.sourceforge.net>
 
     Added the Minimum Noise Fraction transform.
