@@ -3,7 +3,7 @@ Spectral Python (SPy)
 Spectral Python (SPy) is a pure Python module for processing hyperspectral image
 data (imaging spectroscopy data). It has functions for reading, displaying,
 manipulating, and classifying hyperspectral imagery. Full details about the
-package are on the `web site <http://spectralpython.sourceforge.net>`_.
+package are on the `web site <http://spectralpython.net>`_.
 
 
 Installation Instructions
@@ -32,7 +32,7 @@ Unit Tests
 ==========
 
 To run the suite of unit tests, you must have `numpy` installed and you must
-have the `sample data files <http://spectralpython.sourceforge.net/user_guide_intro.html>`_
+have the `sample data files <http://spectralpython.net/user_guide_intro.html>`_
 downloaded to the current directory (or one specified by the `SPECTRAL_DATA`
 environment variable). To run the unit tests, type
 
@@ -43,5 +43,6 @@ environment variable). To run the unit tests, type
 Dependencies
 ============
 Using SPy interactively with its visualization capabilities requires `IPython` and
-several other packages (depending on the features used). See the web site for details.
+several other packages (depending on the features used). See the
+`web site <http://spectralpython.net>`_ for details.
 
