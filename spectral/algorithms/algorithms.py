@@ -1456,7 +1456,7 @@ def noise_from_diffs(X, direction='lowerright'):
     return stats
 
 class MNFResult(object):
-    '''A result object returned by the :func:`~spectral.mnf` function.
+    '''Result object returned by :func:`~spectral.algorithms.algorithms.mnf`.
 
     This object contains data associates with a Minimum Noise Fraction
     calculation, including signal and noise statistics, as well as the
@@ -1619,17 +1619,17 @@ def mnf(signal, noise):
 
     Arguments:
 
-        `signal` (:class:`~spectral.GaussianStats`):
+        `signal` (:class:`~spectral.algorithms.algorithms.GaussianStats`):
 
             Estimated signal statistics
 
-        `noise` (:class:`~spectral.GaussianStats`):
+        `noise` (:class:`~spectral.algorithms.algorithms.GaussianStats`):
 
             Estimated noise statistics
 
-    Returns an :class:`~spectral.MNFResult` object, containing the Noise-
-    Adjusted Principal Components (NAPC) and methods for denoising or reducing
-    dimensionality of associated data.
+    Returns an :class:`~spectral.algorithms.algorithms.MNFResult` object,
+    containing the Noise-Adjusted Principal Components (NAPC) and methods for
+    denoising or reducing dimensionality of associated data.
 
     The Minimum Noise Fraction (MNF) is similar to the Principal Components
     transformation with the difference that the Principal Components associated
@@ -1645,15 +1645,16 @@ def mnf(signal, noise):
         >>> noise = noise_from_diffs(data[117: 137, 85: 122, :])
         >>> mnfr = mnf(signal, noise)
 
-        >>> # De-noise the data, eliminating components where SNR > 10. The
-        >>> # denoised data will be in the original coordinate space.
+        >>> # De-noise the data by eliminating NAPC components where SNR < 10.
+        >>> # The de-noised data will be in the original coordinate space (at
+        >>> # full dimensionality).
         >>> denoised = mnfr.denoise(snr=10)
 
-        >>> # Reduce dimensionality, retaining NAPC components where SNR > 10.
+        >>> # Reduce dimensionality, retaining NAPC components where SNR >= 10.
         >>> reduced = mnfr.reduce(snr=10)
 
         >>> # Reduce dimensionality, retaining top 50 NAPC components.
-        >>> reduced = mnfr.reduce(num=10)
+        >>> reduced = mnfr.reduce(num=50)
 
     References:
 
