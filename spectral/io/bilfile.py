@@ -139,19 +139,22 @@ class BilFile(SpyFile, MemmapFile):
 
         arr = numpy.empty((self.nrows, self.ncols, len(bands)), self.dtype)
 
-        for j in range(len(bands)):
+        delta_frame = self.sample_size * self.ncols * self.nbands
+        first_band_offset = self.sample_size * self.ncols * bands[0]
+        n_bands_to_read = bands[-1] - bands[0] + 1
+        n_bytes_to_read = self.sample_size * self.ncols * n_bands_to_read
+        shifted_band_indices = [b - bands[0] for b in bands]
 
+        # Pixel format is BIL, so read one frame at a time.  Only read the
+        # values for the bands between band[0] and band[-1].
+        for i in range(self.nrows):
             vals = array('b')
-            offset = self.offset + (bands[j]) * self.sample_size * self.ncols
 
-            # Pixel format is BIL, so read an entire line at  time.
-            for i in range(self.nrows):
-                f.seek(offset + i * self.sample_size * self.nbands *
-                       self.ncols, 0)
-                vals.fromfile(f, self.ncols * self.sample_size)
-
-            band = numpy.fromstring(vals.tostring(), dtype=self.dtype)
-            arr[:, :, j] = band.reshape((self.nrows, self.ncols))
+            f.seek(self.offset + i*delta_frame + first_band_offset, 0)
+            vals.fromfile(f, n_bytes_to_read)
+            frame = numpy.fromstring(vals.tostring(), dtype=self.dtype)
+            frame = frame.reshape((n_bands_to_read, self.ncols)).transpose()
+            arr[i, :, :] = frame[:, shifted_band_indices]
 
         if self.scale_factor != 1:
             return arr / float(self.scale_factor)
