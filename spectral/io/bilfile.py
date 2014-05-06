@@ -139,19 +139,18 @@ class BilFile(SpyFile, MemmapFile):
 
         arr = numpy.empty((self.nrows, self.ncols, len(bands)), self.dtype)
 
-        for j in range(len(bands)):
-
+        for i in range(self.nrows):
             vals = array('b')
-            offset = self.offset + (bands[j]) * self.sample_size * self.ncols
+            row_offset = self.offset + i * (self.sample_size * self.nbands *
+                                            self.ncols)
 
-            # Pixel format is BIL, so read an entire line at  time.
-            for i in range(self.nrows):
-                f.seek(offset + i * self.sample_size * self.nbands *
-                       self.ncols, 0)
+            # Pixel format is BIL, so read an entire line at a time.
+            for j in range(len(bands)):
+                f.seek(row_offset + bands[j] * self.sample_size * self.ncols, 0)
                 vals.fromfile(f, self.ncols * self.sample_size)
 
-            band = numpy.fromstring(vals.tostring(), dtype=self.dtype)
-            arr[:, :, j] = band.reshape((self.nrows, self.ncols))
+            frame = numpy.fromstring(vals.tostring(), dtype=self.dtype)
+            arr[i, :, :] = frame.reshape((len(bands), self.ncols)).transpose()
 
         if self.scale_factor != 1:
             return arr / float(self.scale_factor)
