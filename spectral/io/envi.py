@@ -82,20 +82,22 @@ def read_envi_header(file):
     f.close()
 
     dict = {}
-    i = 0
     try:
-        while i < len(lines):
-            if find(lines[i], '=') == -1:
-                i += 1
-                continue
-            (key, sep, val) = lines[i].partition('=')
+        while lines:
+            line = lines.pop(0)
+            if find(line, '=') == -1: continue
+            if line[0] == ';': continue
+
+            (key, sep, val) = line.partition('=')
             key = key.strip()
             val = val.strip()
-            if val[0] == '{':
+            if val and val[0] == '{':
                 str = val.strip()
                 while str[-1] != '}':
-                    i += 1
-                    str += '\n' + lines[i].strip()
+                    line = lines.pop(0)
+                    if line[0] == ';': continue
+
+                    str += '\n' + line.strip()
                 if key == 'description':
                     dict[key] = str.strip('{}').strip()
                 else:
@@ -105,7 +107,7 @@ def read_envi_header(file):
                     dict[key] = vals
             else:
                 dict[key] = val
-            i += 1
+
         return dict
     except:
         raise IOError("Error while reading ENVI file header.")
