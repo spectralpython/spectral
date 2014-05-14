@@ -388,16 +388,8 @@ def make_pil_image(*args, **kwargs):
         rgb = (rgb * 255).astype(numpy.ubyte)
     else:
         rgb = rgb.astype(numpy.ubyte)
-    rgb = transpose(rgb, (1, 0, 2))
-    im = Image.new("RGB", rgb.shape[:2])
-    draw = ImageDraw.ImageDraw(im)
 
-    # TO DO:
-    # Find a more efficient way to write data to the PIL image below.
-    for i in range(rgb.shape[0]):
-        for j in range(rgb.shape[1]):
-            draw.point((i, j), tuple(rgb[i, j]))
-
+    im = Image.fromarray(rgb)
     return im
 
 
@@ -597,12 +589,8 @@ def get_rgb(source, bands=None, **kwargs):
         s = rgb.shape
         if "colors" in kwargs:
             rgb = rgb.astype(int)
-            rgb3 = zeros((s[0], s[1], 3), int)
             pal = kwargs["colors"]
-            for i in range(s[0]):
-                for j in range(s[1]):
-                    rgb3[i, j] = pal[rgb[i, j, 0]]
-            rgb = rgb3
+            rgb = pal[rgb[:,:,0]]
         elif color_scale is not None:
             # Colors should be generated from the supplied color scale
             # This section assumes rgb colors in the range 0-255.
