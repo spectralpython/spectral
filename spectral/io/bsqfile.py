@@ -65,7 +65,7 @@ class BsqFile(SpyFile, MemmapFile):
             return None
 
 
-    def read_band(self, band):
+    def read_band(self, band, use_memmap=True):
         '''Reads a single band from the image.
 
         Arguments:
@@ -82,7 +82,7 @@ class BsqFile(SpyFile, MemmapFile):
         '''
         from array import array
 
-        if self._memmap is not None:
+        if self._memmap is not None and use_memmap is True:
             data = np.array(self._memmap[band, :, :])
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
@@ -105,7 +105,7 @@ class BsqFile(SpyFile, MemmapFile):
             return arr / float(self.scale_factor)
         return arr
 
-    def read_bands(self, bands):
+    def read_bands(self, bands, use_memmap=True):
         '''Reads multiple bands from the image.
 
         Arguments:
@@ -125,7 +125,7 @@ class BsqFile(SpyFile, MemmapFile):
 
         from array import array
 
-        if self._memmap is not None:
+        if self._memmap is not None and use_memmap is True:
             data = np.array(self._memmap[bands, :, :]).transpose((1, 2, 0))
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
@@ -152,7 +152,7 @@ class BsqFile(SpyFile, MemmapFile):
             return arr / float(self.scale_factor)
         return arr
 
-    def read_pixel(self, row, col):
+    def read_pixel(self, row, col, use_memmap=True):
         '''Reads the pixel at position (row,col) from the file.
 
         Arguments:
@@ -170,7 +170,7 @@ class BsqFile(SpyFile, MemmapFile):
 
         from array import array
 
-        if self._memmap is not None:
+        if self._memmap is not None and use_memmap is True:
             data = np.array(self._memmap[:, row, col])
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
@@ -202,7 +202,8 @@ class BsqFile(SpyFile, MemmapFile):
             return pixel / float(self.scale_factor)
         return pixel
 
-    def read_subregion(self, row_bounds, col_bounds, bands=None):
+    def read_subregion(self, row_bounds, col_bounds, bands=None,
+                       use_memmap=True):
         '''
         Reads a contiguous rectangular sub-region from the image.
 
@@ -230,7 +231,7 @@ class BsqFile(SpyFile, MemmapFile):
 
         from array import array
 
-        if self._memmap is not None:
+        if self._memmap is not None and use_memmap is True:
             if bands is None:
                 data = np.array(self._memmap[:, row_bounds[0]: row_bounds[1],
                                              col_bounds[0]: col_bounds[1]])
@@ -284,7 +285,7 @@ class BsqFile(SpyFile, MemmapFile):
             return arr / float(self.scale_factor)
         return arr
 
-    def read_subimage(self, rows, cols, bands=None):
+    def read_subimage(self, rows, cols, bands=None, use_memmap=True):
         '''
         Reads arbitrary rows, columns, and bands from the image.
 
@@ -313,7 +314,7 @@ class BsqFile(SpyFile, MemmapFile):
 
         from array import array
 
-        if self._memmap is not None:
+        if self._memmap is not None and use_memmap is True:
             if bands is None:
                 data = np.array(self._memmap[:].take(rows, 1).take(cols, 2))
             else:
@@ -369,7 +370,7 @@ class BsqFile(SpyFile, MemmapFile):
             return arr / float(self.scale_factor)
         return arr
 
-    def read_datum(self, i, j, k):
+    def read_datum(self, i, j, k, use_memmap=True):
         '''Reads the band `k` value for pixel at row `i` and column `j`.
 
         Arguments:
@@ -383,7 +384,7 @@ class BsqFile(SpyFile, MemmapFile):
         '''
         import array
 
-        if self._memmap is not None:
+        if self._memmap is not None and use_memmap is True:
             datum = self._memmap[k, i, j]
             if self.scale_factor != 1:
                 datum /= float(self.scale_factor)
