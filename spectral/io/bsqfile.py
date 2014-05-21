@@ -74,6 +74,12 @@ class BsqFile(SpyFile, MemmapFile):
 
                 Index of band to read.
 
+            `use_memmap` (bool, default True):
+
+                Specifies whether the file's memmap interface should be used
+                to read the data. Setting this arg to True only has an effect
+                if a memmap is being used (i.e., if `img.using_memmap` is True).
+                
         Returns:
 
            :class:`numpy.ndarray`
@@ -114,6 +120,12 @@ class BsqFile(SpyFile, MemmapFile):
 
                 Indices of bands to read.
 
+            `use_memmap` (bool, default True):
+
+                Specifies whether the file's memmap interface should be used
+                to read the data. Setting this arg to True only has an effect
+                if a memmap is being used (i.e., if `img.using_memmap` is True).
+                
         Returns:
 
            :class:`numpy.ndarray`
@@ -161,6 +173,12 @@ class BsqFile(SpyFile, MemmapFile):
 
                 Indices of the row & column for the pixel
 
+            `use_memmap` (bool, default True):
+
+                Specifies whether the file's memmap interface should be used
+                to read the data. Setting this arg to True only has an effect
+                if a memmap is being used (i.e., if `img.using_memmap` is True).
+                
         Returns:
 
            :class:`numpy.ndarray`
@@ -222,6 +240,12 @@ class BsqFile(SpyFile, MemmapFile):
                 Optional list of bands to read.  If not specified, all bands
                 are read.
 
+            `use_memmap` (bool, default True):
+
+                Specifies whether the file's memmap interface should be used
+                to read the data. Setting this arg to True only has an effect
+                if a memmap is being used (i.e., if `img.using_memmap` is True).
+                
         Returns:
 
            :class:`numpy.ndarray`
@@ -304,6 +328,12 @@ class BsqFile(SpyFile, MemmapFile):
                 Optional list of bands to read.  If not specified, all bands
                 are read.
 
+            `use_memmap` (bool, default True):
+
+                Specifies whether the file's memmap interface should be used
+                to read the data. Setting this arg to True only has an effect
+                if a memmap is being used (i.e., if `img.using_memmap` is True).
+                
         Returns:
 
            :class:`numpy.ndarray`
@@ -379,6 +409,12 @@ class BsqFile(SpyFile, MemmapFile):
 
                 Row, column and band index, respectively.
 
+            `use_memmap` (bool, default True):
+
+                Specifies whether the file's memmap interface should be used
+                to read the data. Setting this arg to True only has an effect
+                if a memmap is being used (i.e., if `img.using_memmap` is True).
+                
         Using this function is not an efficient way to iterate over bands or
         pixels. For such cases, use readBands or readPixel instead.
         '''
