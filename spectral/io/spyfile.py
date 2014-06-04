@@ -281,22 +281,18 @@ class SpyFile(Image):
                 region = img[50:100, 50:100, :30]
         '''
 
-        intType = type(1)
-        sliceType = type(slice(0, 0, 0))
+        atypes = [type(a) for a in args]
 
         if len(args) < 2:
             raise IndexError('Too few subscript indices.')
 
-        if type(args[0]) == intType and type(args[1]) == intType \
-                and len(args) == 2:
+        if atypes[0] == atypes[1] == int and len(args) == 2:
             return self.read_pixel(args[0], args[1])
-        elif len(args) == 3 and (type(args[0]) == intType
-                                 and type(args[1]) == intType
-                                 and type(args[2]) == intType):
+        elif len(args) == 3 and atypes[0] == atypes[1] == atypes[2] == int:
             return self.read_datum(args[0], args[1], args[2])
         else:
             #  At least one arg should be a slice
-            if type(args[0]) == sliceType:
+            if atypes[0] == slice:
                 (xstart, xstop, xstep) = (args[0].start, args[0].stop,
                                           args[0].step)
                 if xstart is None:
@@ -308,7 +304,7 @@ class SpyFile(Image):
                 rows = range(xstart, xstop, xstep)
             else:
                 rows = [args[0]]
-            if type(args[1]) == sliceType:
+            if atypes[1] == slice:
                 (ystart, ystop, ystep) = (args[1].start, args[1].stop,
                                           args[1].step)
                 if ystart is None:
@@ -322,22 +318,30 @@ class SpyFile(Image):
                 cols = [args[1]]
 
         if len(args) == 2 or args[2] is None:
-            bands = range(self.nbands)
-        elif type(args[2]) == sliceType:
+            bands = None
+        elif atypes[2] == slice:
             (zstart, zstop, zstep) = (args[2].start, args[2].stop,
                                       args[2].step)
-            if zstart is None:
-                zstart = 0
-            if zstop is None:
-                zstop = self.nbands
-            if zstep is None:
-                zstep = 1
-            bands = range(zstart, zstop, zstep)
-        elif type(args[2]) == intType:
+            if zstart == zstop == zstep == None:
+                bands = None
+            else:
+                if zstart is None:
+                    zstart = 0
+                if zstop is None:
+                    zstop = self.nbands
+                if zstep is None:
+                    zstep = 1
+                bands = range(zstart, zstop, zstep)
+        elif atypes[2] == int:
             bands = [args[2]]
         else:
             # Band indices should be in a list
             bands = args[2]
+
+        if atypes[0] == slice and xstep == 1 \
+          and atypes[1] == slice and ystep == 1 \
+          and (bands is None or type(bands) == list):
+          return self.read_subregion((xstart, xstop), (ystart, ystop), bands)
 
         return self.read_subimage(rows, cols, bands)
 
