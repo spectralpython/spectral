@@ -111,7 +111,7 @@ class BsqFile(SpyFile, MemmapFile):
             return arr / float(self.scale_factor)
         return arr
 
-    def read_bands(self, bands, use_memmap=True):
+    def read_bands(self, bands, use_memmap=False):
         '''Reads multiple bands from the image.
 
         Arguments:
@@ -120,7 +120,7 @@ class BsqFile(SpyFile, MemmapFile):
 
                 Indices of bands to read.
 
-            `use_memmap` (bool, default True):
+            `use_memmap` (bool, default False):
 
                 Specifies whether the file's memmap interface should be used
                 to read the data. Setting this arg to True only has an effect
@@ -309,7 +309,7 @@ class BsqFile(SpyFile, MemmapFile):
             return arr / float(self.scale_factor)
         return arr
 
-    def read_subimage(self, rows, cols, bands=None, use_memmap=True):
+    def read_subimage(self, rows, cols, bands=None, use_memmap=False):
         '''
         Reads arbitrary rows, columns, and bands from the image.
 
@@ -328,7 +328,7 @@ class BsqFile(SpyFile, MemmapFile):
                 Optional list of bands to read.  If not specified, all bands
                 are read.
 
-            `use_memmap` (bool, default True):
+            `use_memmap` (bool, default False):
 
                 Specifies whether the file's memmap interface should be used
                 to read the data. Setting this arg to True only has an effect
