@@ -82,39 +82,80 @@ class SpyFileTest(SpyTest):
             self.image = spectral.open_image(self.file)
 
     def test_read_datum(self):
-        assert_almost_equal(self.image.read_datum(*self.datum),
+        assert_almost_equal(self.image.read_datum(*self.datum, use_memmap=True),
+                            self.value)
+        assert_almost_equal(self.image.read_datum(*self.datum, use_memmap=False),
                             self.value)
 
     def test_read_pixel(self):
         (i, j, k) = self.datum
-        assert_almost_equal(self.image.read_pixel(i, j)[k],
+        assert_almost_equal(self.image.read_pixel(i, j, use_memmap=True)[k],
+                            self.value)
+        assert_almost_equal(self.image.read_pixel(i, j, use_memmap=False)[k],
                             self.value)
 
     def test_read_band(self):
         (i, j, k) = self.datum
-        assert_almost_equal(self.image.read_band(k)[i, j],
+        assert_almost_equal(self.image.read_band(k, use_memmap=True)[i, j],
+                            self.value)
+        assert_almost_equal(self.image.read_band(k, use_memmap=False)[i, j],
                             self.value)
 
     def test_read_bands(self):
         (i, j, k) = self.datum
         bands = (k - 5, k - 2, k, k + 1)
-        assert_almost_equal(self.image.read_bands(bands)[i, j, 2],
+        assert_almost_equal(self.image.read_bands(bands,
+                                                  use_memmap=True)[i, j, 2],
+                            self.value)
+        assert_almost_equal(self.image.read_bands(bands,
+                                                  use_memmap=False)[i, j, 2],
+                            self.value)
+
+    def test_read_bands_nonascending(self):
+        (i, j, k) = self.datum
+        bands = (k - 2, k + 1, k, k - 5)
+        assert_almost_equal(self.image.read_bands(bands,
+                                                  use_memmap=True)[i, j, 2],
+                            self.value)
+        assert_almost_equal(self.image.read_bands(bands,
+                                                  use_memmap=False)[i, j, 2],
+                            self.value)
+
+    def test_read_bands_duplicates(self):
+        (i, j, k) = self.datum
+        bands = (k - 5, k - 5, k, k -5)
+        assert_almost_equal(self.image.read_bands(bands,
+                                                  use_memmap=True)[i, j, 2],
+                            self.value)
+        assert_almost_equal(self.image.read_bands(bands,
+                                                  use_memmap=False)[i, j, 2],
                             self.value)
 
     def test_read_subregion(self):
         (i, j, k) = self.datum
         region = self.image.read_subregion((i - 5, i + 9),
-                                           (j - 3, j + 4))
+                                           (j - 3, j + 4), use_memmap=True)
+        assert_almost_equal(region[5, 3, k], self.value)
+        region = self.image.read_subregion((i - 5, i + 9),
+                                           (j - 3, j + 4), use_memmap=False)
         assert_almost_equal(region[5, 3, k], self.value)
 
     def test_read_subimage(self):
         (i, j, k) = self.datum
         subimage = self.image.read_subimage([0, 3, i, 5],
                                             [1, j, 4, 7],
-                                            [3, 7, k])
+                                            [3, 7, k], use_memmap=True)
         assert_almost_equal(subimage[2, 1, 2], self.value)
         subimage = self.image.read_subimage([0, 3, i, 5],
-                                            [1, j, 4, 7])
+                                            [1, j, 4, 7],
+                                            [3, 7, k], use_memmap=False)
+        assert_almost_equal(subimage[2, 1, 2], self.value)
+
+        subimage = self.image.read_subimage([0, 3, i, 5],
+                                            [1, j, 4, 7], use_memmap=True)
+        assert_almost_equal(subimage[2, 1, k], self.value)
+        subimage = self.image.read_subimage([0, 3, i, 5],
+                                            [1, j, 4, 7], use_memmap=False)
         assert_almost_equal(subimage[2, 1, k], self.value)
 
     def test_load(self):
@@ -122,11 +163,21 @@ class SpyFileTest(SpyTest):
         data = self.image.load()
         assert_almost_equal(data[i, j, k], self.value)
 
-    def test_getitem(self):
+    def test_getitem_i_j_k(self):
         (i, j, k) = self.datum
-        assert_almost_equal(self.image[i, j][k], self.value)
         assert_almost_equal(self.image[i, j, k], self.value)
 
+    def test_getitem_i_j(self):
+        (i, j, k) = self.datum
+        assert_almost_equal(self.image[i, j][k], self.value)
+
+    def test_getitem_i_j_kslice(self):
+        (i, j, k) = self.datum
+        assert_almost_equal(self.image[i, j, k-2:k+3:2][0, 0, 1], self.value)
+
+    def test_getitem_islice_jslice(self):
+        (i, j, k) = self.datum
+        assert_almost_equal(self.image[i-3:i+3, j-3:j+3][3, 3, k], self.value)
 
 class SpyFileTestSuite(object):
     '''Tests reading by byte orders, data types, and interleaves. For a

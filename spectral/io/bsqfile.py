@@ -65,7 +65,7 @@ class BsqFile(SpyFile, MemmapFile):
             return None
 
 
-    def read_band(self, band):
+    def read_band(self, band, use_memmap=True):
         '''Reads a single band from the image.
 
         Arguments:
@@ -74,6 +74,12 @@ class BsqFile(SpyFile, MemmapFile):
 
                 Index of band to read.
 
+            `use_memmap` (bool, default True):
+
+                Specifies whether the file's memmap interface should be used
+                to read the data. Setting this arg to True only has an effect
+                if a memmap is being used (i.e., if `img.using_memmap` is True).
+                
         Returns:
 
            :class:`numpy.ndarray`
@@ -82,7 +88,7 @@ class BsqFile(SpyFile, MemmapFile):
         '''
         from array import array
 
-        if self._memmap is not None:
+        if self._memmap is not None and use_memmap is True:
             data = np.array(self._memmap[band, :, :])
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
@@ -105,7 +111,7 @@ class BsqFile(SpyFile, MemmapFile):
             return arr / float(self.scale_factor)
         return arr
 
-    def read_bands(self, bands):
+    def read_bands(self, bands, use_memmap=False):
         '''Reads multiple bands from the image.
 
         Arguments:
@@ -114,6 +120,12 @@ class BsqFile(SpyFile, MemmapFile):
 
                 Indices of bands to read.
 
+            `use_memmap` (bool, default False):
+
+                Specifies whether the file's memmap interface should be used
+                to read the data. Setting this arg to True only has an effect
+                if a memmap is being used (i.e., if `img.using_memmap` is True).
+                
         Returns:
 
            :class:`numpy.ndarray`
@@ -125,7 +137,7 @@ class BsqFile(SpyFile, MemmapFile):
 
         from array import array
 
-        if self._memmap is not None:
+        if self._memmap is not None and use_memmap is True:
             data = np.array(self._memmap[bands, :, :]).transpose((1, 2, 0))
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
@@ -152,7 +164,7 @@ class BsqFile(SpyFile, MemmapFile):
             return arr / float(self.scale_factor)
         return arr
 
-    def read_pixel(self, row, col):
+    def read_pixel(self, row, col, use_memmap=True):
         '''Reads the pixel at position (row,col) from the file.
 
         Arguments:
@@ -161,6 +173,12 @@ class BsqFile(SpyFile, MemmapFile):
 
                 Indices of the row & column for the pixel
 
+            `use_memmap` (bool, default True):
+
+                Specifies whether the file's memmap interface should be used
+                to read the data. Setting this arg to True only has an effect
+                if a memmap is being used (i.e., if `img.using_memmap` is True).
+                
         Returns:
 
            :class:`numpy.ndarray`
@@ -170,7 +188,7 @@ class BsqFile(SpyFile, MemmapFile):
 
         from array import array
 
-        if self._memmap is not None:
+        if self._memmap is not None and use_memmap is True:
             data = np.array(self._memmap[:, row, col])
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
@@ -202,7 +220,8 @@ class BsqFile(SpyFile, MemmapFile):
             return pixel / float(self.scale_factor)
         return pixel
 
-    def read_subregion(self, row_bounds, col_bounds, bands=None):
+    def read_subregion(self, row_bounds, col_bounds, bands=None,
+                       use_memmap=True):
         '''
         Reads a contiguous rectangular sub-region from the image.
 
@@ -221,6 +240,12 @@ class BsqFile(SpyFile, MemmapFile):
                 Optional list of bands to read.  If not specified, all bands
                 are read.
 
+            `use_memmap` (bool, default True):
+
+                Specifies whether the file's memmap interface should be used
+                to read the data. Setting this arg to True only has an effect
+                if a memmap is being used (i.e., if `img.using_memmap` is True).
+                
         Returns:
 
            :class:`numpy.ndarray`
@@ -230,7 +255,7 @@ class BsqFile(SpyFile, MemmapFile):
 
         from array import array
 
-        if self._memmap is not None:
+        if self._memmap is not None and use_memmap is True:
             if bands is None:
                 data = np.array(self._memmap[:, row_bounds[0]: row_bounds[1],
                                              col_bounds[0]: col_bounds[1]])
@@ -284,7 +309,7 @@ class BsqFile(SpyFile, MemmapFile):
             return arr / float(self.scale_factor)
         return arr
 
-    def read_subimage(self, rows, cols, bands=None):
+    def read_subimage(self, rows, cols, bands=None, use_memmap=False):
         '''
         Reads arbitrary rows, columns, and bands from the image.
 
@@ -303,6 +328,12 @@ class BsqFile(SpyFile, MemmapFile):
                 Optional list of bands to read.  If not specified, all bands
                 are read.
 
+            `use_memmap` (bool, default False):
+
+                Specifies whether the file's memmap interface should be used
+                to read the data. Setting this arg to True only has an effect
+                if a memmap is being used (i.e., if `img.using_memmap` is True).
+                
         Returns:
 
            :class:`numpy.ndarray`
@@ -313,7 +344,7 @@ class BsqFile(SpyFile, MemmapFile):
 
         from array import array
 
-        if self._memmap is not None:
+        if self._memmap is not None and use_memmap is True:
             if bands is None:
                 data = np.array(self._memmap[:].take(rows, 1).take(cols, 2))
             else:
@@ -369,7 +400,7 @@ class BsqFile(SpyFile, MemmapFile):
             return arr / float(self.scale_factor)
         return arr
 
-    def read_datum(self, i, j, k):
+    def read_datum(self, i, j, k, use_memmap=True):
         '''Reads the band `k` value for pixel at row `i` and column `j`.
 
         Arguments:
@@ -378,12 +409,18 @@ class BsqFile(SpyFile, MemmapFile):
 
                 Row, column and band index, respectively.
 
+            `use_memmap` (bool, default True):
+
+                Specifies whether the file's memmap interface should be used
+                to read the data. Setting this arg to True only has an effect
+                if a memmap is being used (i.e., if `img.using_memmap` is True).
+                
         Using this function is not an efficient way to iterate over bands or
         pixels. For such cases, use readBands or readPixel instead.
         '''
         import array
 
-        if self._memmap is not None:
+        if self._memmap is not None and use_memmap is True:
             datum = self._memmap[k, i, j]
             if self.scale_factor != 1:
                 datum /= float(self.scale_factor)
