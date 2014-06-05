@@ -1,4 +1,53 @@
 ================================================================================
+SPy 0.15.0
+================================================================================
+Release date: 2014.06.04
+
+New Features
+------------
+
+* Added Minimum Noise Fraction (`mnf`) algorithm (a.k.a., Noise-Adjusted
+  Principal Components). An associated `noise_from_diffs` function enables
+  estimation of image noise from a homogeneous region of the image.
+
+
+Changes
+-------
+
+* When calling `envi.save_image`, assume an ndarray with two dimensions is
+  a single-band image (i.e., don't require an explicit third dimension).
+
+* [Issue #9] All SpyFile subclass read methods now have an optional
+  `use_memmap` argument to indicate whether the memmap interface should be
+  used (vice direct file read) on a per-call basis. Default values are
+  specific to the particular method and file interleave.
+
+Bug Fixes
+---------
+
+* [Issue #7] Handle recognize comment lines in ENVI headers and accept blank
+  parameter values in the header. Thanks to Don March (http://ohspite.net)
+
+* [Issue #2] Garbage results were being generated for several algorithms when
+  a NaN value was present in the image data. Reasonable checks are now
+  performed in several algorithms and an optional `allow_nan` argument (False
+  by default) was added to `calc_stats`.
+
+* [Issue #1] For images with more rows than columns, the row/col of the pixel
+  under the mouse cursor did not display if the row index was greater than
+  the image width.
+
+
+Performance Improvements
+------------------------
+
+* [Issue #5] Improved BilFile.read_bands performance. Thanks to Don March
+  (http://ohspite.net)
+
+* [Issue #8] Faster creation/display of RGB images for display. Thanks to
+  Don March (http://ohspite.net)
+
+================================================================================
 SPy 0.14.0
 ================================================================================
 Release date: 2014.02.22
