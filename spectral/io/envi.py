@@ -40,7 +40,7 @@ the data file has an unusual file extension that SPy can not identify.
     >>> import spectral.io.envi as envi
     >>> img = envi.open('cup95eff.int.hdr', '/Users/thomas/spectral_data/cup95eff.int')
 
-.. [#envi-trademark] ENVI is a registered trademark of ITT Corporation.
+.. [#envi-trademark] ENVI is a registered trademark of Exelis, Inc.
 '''
 
 import numpy as np
@@ -361,17 +361,131 @@ def save_image(hdr_file, image, **kwargs):
     that all the metadata fields from the source image are still accurate
     (e.g., band names or wavelengths will no longer be correct if the data
     being saved are from a principal components transformation).
+
+    '''
+    data, metadata = _prepared_data_and_metadata(hdr_file, image, **kwargs)
+    metadata['file type'] = "ENVI Standard"
+    _write_image(hdr_file, data, metadata, **kwargs)
+
+
+def save_classification(hdr_file, image, **kwargs):
+    '''Saves a classification image to disk.
+
+    Arguments:
+
+        `hdr_file` (str):
+
+            Header file (with ".hdr" extension) name with path.
+
+        `image` (SpyFile object or numpy.ndarray):
+
+            The image to save.
+
+    Keyword Arguments:
+
+        `dtype` (numpy dtype or type string):
+
+            The numpy data type with which to store the image.  For example,
+            to store the image in 16-bit unsigned integer format, the argument
+            could be any of `numpy.uint16`, "u2", "uint16", or "H".
+
+        `force` (bool):
+
+            If the associated image file or header already exist and `force` is
+            True, the files will be overwritten; otherwise, if either of the
+            files exist, an exception will be raised.
+
+        `ext` (str):
+
+            The extension to use for the image file.  If not specified, the
+            default extension ".img" will be used.  If `ext` is an empty
+            string, the image file will have the same name as the header but
+            without the ".hdr" extension.
+
+        `interleave` (str):
+
+            The band interleave format to use in the file.  This argument
+            should be one of "bil", "bip", or "bsq".  If not specified, the
+            image will be written in BIP interleave.
+
+        `byteorder` (int or string):
+
+            Specifies the byte order (endian-ness) of the data as
+            written to disk. For little endian, this value should be
+            either 0 or "little".  For big endian, it should be
+            either 1 or "big". If not specified, native byte order
+            will be used.
+
+        `metadata` (dict):
+
+            A dict containing ENVI header parameters (e.g., parameters
+            extracted from a source image).
+
+        `class_names` (array of strings):
+
+            For classification results, specifies the names to assign each
+            integer in the class map being written.  If not given, default
+            class names are created. 
+
+        `class_colors` (array of RGB-tuples):
+
+            For classification results, specifies colors to assign each
+            integer in the class map being written.  If not given, default
+            colors are automatically generated.  
+
+    If the source image being saved was already in ENVI format, then the
+    SpyFile object for that image will contain a `metadata` dict that can be
+    passed as the `metadata` keyword. However, care should be taken to ensure
+    that all the metadata fields from the source image are still accurate
+    (e.g., wavelengths do not apply to classification results).
+
+    '''
+    from spectral import spy_colors
+    
+    data, metadata = _prepared_data_and_metadata(hdr_file, image, **kwargs)
+    metadata['file type'] = "ENVI Classification"
+
+    class_names = kwargs.get('class_names', metadata.get('class_names', None))
+    class_colors = kwargs.get('class_colors', metadata.get('class_colors', None))
+    if class_names is None:
+        # guess the number of classes and create default class names
+        n_classes = int(np.max(data) + 1)
+        metadata['classes'] = str(n_classes)
+        metadata['class names'] = (['Unclassified'] + 
+                                   ['Class ' + str(i) for i in range(1, n_classes)])
+        # if keyword is given, override whatever is in the metadata dict
+    else:
+        n_classes = int(max(np.max(data) + 1, len(class_names)))
+        metadata['class names'] = class_names
+        metadata['classes'] = str(n_classes)
+        
+    # the resulting value for 'class lookup' needs to be a flattened array.
+    colors = []
+    if class_colors is not None:
+        try:
+            for color in class_colors:
+                # call list() in case color is a numpy array
+                colors += list(color)
+        except:
+            # list was already flattened
+            colors = list(class_colors)
+    if len(colors) < n_classes * 3:
+        colors = []
+        for i in range(n_classes):
+            colors += list(spy_colors[i % len(spy_colors)])
+    metadata['class lookup'] = colors
+
+    _write_image(hdr_file, data, metadata, **kwargs)
+
+def _prepared_data_and_metadata(hdr_file, image, **kwargs):
+    '''
+    Return data array and metadata dict representing `image`.
     '''
     import os
     import sys
-    import __builtin__
     import spectral
     from spectral.io.spyfile import SpyFile, interleave_transpose
 
-    metadata = kwargs.get('metadata', {}).copy()
-    force = kwargs.get('force', False)
-    img_ext = kwargs.get('ext', '.img')
-    
     endian_out = str(kwargs.get('byteorder', sys.byteorder)).lower()
     if endian_out in ('0', 'little'):
         endian_out = 'little'
@@ -379,8 +493,6 @@ def save_image(hdr_file, image, **kwargs):
         endian_out = 'big'
     else:
         raise ValueError('Invalid byte order: "%s".' % endian_out)
-
-    (hdr_file, img_file) = check_new_filename(hdr_file, img_ext, force)
 
     if isinstance(image, np.ndarray):
         data = image
@@ -396,34 +508,22 @@ def save_image(hdr_file, image, **kwargs):
             data = image.load(dtype=image.dtype, scale=False)
             src_interleave = 'bip'
             swap = False
-        if image.scale_factor != 1:
-            metadata['reflectance scale factor'] = image.scale_factor
     else:
         data = image.load()
         src_interleave = 'bip'
         swap = False
+
+    metadata = kwargs.get('metadata', {}).copy()
+    add_image_info_to_metadata(image, metadata)
+    if hasattr(image, 'bands'):
+        add_band_info_to_metadata(image.bands, metadata)
+
     dtype = np.dtype(kwargs.get('dtype', data.dtype)).char
     _validate_dtype(dtype)
     if dtype != data.dtype.char:
         data = data.astype(dtype)
     metadata['data type'] = dtype_to_envi[dtype]
-    # A few header parameters need to be set independent of what is provided
-    # in the supplied metadata.
 
-    # Always write data from start of file, regardless of what was in
-    # provided metadata.
-    offset = int(metadata.get('header offset', 0))
-    if offset != 0:
-        print 'Ignoring non-zero header offset in provided metadata.'
-    metadata['header offset'] = 0
-
-    metadata['lines'] = image.shape[0]
-    metadata['samples'] = image.shape[1]
-    if len(image.shape) == 3:
-        metadata['bands'] = image.shape[2]
-    else:
-        metadata['bands'] = 1
-    metadata['file type'] = 'ENVI Standard'
     interleave = kwargs.get('interleave', 'bip').lower()
     if interleave not in ['bil', 'bip', 'bsq']:
         raise ValueError('Invalid interleave: %s'
@@ -436,12 +536,66 @@ def save_image(hdr_file, image, **kwargs):
       (endian_out != sys.byteorder and data.dtype.isnative):
         data = data.byteswap()
 
-    if hasattr(image, 'bands'):
-        add_band_info_to_metadata(image.bands, metadata)
+    return data, metadata
 
-    write_envi_header(hdr_file, metadata, is_library=False)
+
+# A few header parameters need to be set no matter what is provided in the
+# supplied metadata.
+def add_image_info_to_metadata(image, metadata):
+    '''
+    Set keys in metadata dict to values appropriate for image.
+    '''
+    from spectral.io.spyfile import SpyFile, interleave_transpose
+    import colorsys
+
+    if isinstance(image, SpyFile) and image.scale_factor != 1:
+        metadata['reflectance scale factor'] = image.scale_factor
+
+    # Always write data from start of file, regardless of what was in
+    # the provided metadata.
+    offset = int(metadata.get('header offset', 0))
+    if offset != 0:
+        print 'Ignoring non-zero header offset in provided metadata.'
+    metadata['header offset'] = 0
+
+    metadata['lines'] = image.shape[0]
+    metadata['samples'] = image.shape[1]
+    if len(image.shape) == 3:
+        metadata['bands'] = image.shape[2]
+    else:
+        metadata['bands'] = 1
+
+
+def add_band_info_to_metadata(bands, metadata, overwrite=False):
+    '''Adds BandInfo data to the metadata dict.
+
+    Data is only added if not already present, unless `overwrite` is True.
+    '''
+    if bands.centers is not None and (overwrite is True or
+                                      'wavelength' not in metadata):
+        metadata['wavelength'] = bands.centers
+    if bands.bandwidths is not None and (overwrite is True or
+                                      'fwhm' not in metadata):
+        metadata['fwhm'] = bands.bandwidths
+    if len(bands.band_unit) > 0 and (overwrite is True or
+                                     'wavelength units' not in metadata):
+        metadata['wavelength units'] = bands.band_unit
+        
+
+def _write_image(hdr_file, data, header, **kwargs):
+    '''
+    Write `data` as an ENVI file using the metadata in `header`.
+    '''
+    import __builtin__
+
+    force = kwargs.get('force', False)
+    img_ext = kwargs.get('ext', '.img')
+    
+    (hdr_file, img_file) = check_new_filename(hdr_file, img_ext, force)
+    write_envi_header(hdr_file, header, is_library=False)
     print 'Saving', img_file
-    bufsize = data.shape[0] * data.shape[1] * np.dtype(dtype).itemsize
+    # bufsize = data.shape[0] * data.shape[1] * np.dtype(dtype).itemsize
+    bufsize = data.shape[0] * data.shape[1] * data.dtype.itemsize
     fout = __builtin__.open(img_file, 'wb', bufsize)
     fout.write(data.tostring())
     fout.close()
@@ -716,21 +870,6 @@ class SpectralLibrary:
         self.spectra.astype('f').tofile(fout)
         fout.close()
 
-def add_band_info_to_metadata(bands, metadata, overwrite=False):
-    '''Adds BandInfo data to the metadata dict.
-
-    Data is only added if not already present, unless `overwrite` is True.
-    '''
-    if bands.centers is not None and (overwrite is True or
-                                      'wavelength' not in metadata):
-        metadata['wavelength'] = bands.centers
-    if bands.bandwidths is not None and (overwrite is True or
-                                      'fwhm' not in metadata):
-        metadata['fwhm'] = bands.bandwidths
-    if len(bands.band_unit) > 0 and (overwrite is True or
-                                     'wavelength units' not in metadata):
-        metadata['wavelength units'] = bands.band_unit
-        
 def _write_header_param(fout, paramName, paramVal):
     if paramName.lower() == 'description':
         valStr = '{\n%s}' % '\n'.join(['  ' + line for line
