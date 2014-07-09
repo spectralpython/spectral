@@ -415,11 +415,10 @@ def tile_image(im, nrows, ncols):
                         contains nrows lists, each of which contains
                         ncols SubImage objects.
     '''
-
-    from numpy.oldnumeric import array, Int
+    import numpy as np
     from io.spyfile import SubImage
-    x = (array(range(nrows + 1)) * float(im.nrows) / nrows).astype(Int)
-    y = (array(range(ncols + 1)) * float(im.ncols) / ncols).astype(Int)
+    x = (np.array(range(nrows + 1)) * float(im.nrows) / nrows).astype(np.int)
+    y = (np.array(range(ncols + 1)) * float(im.ncols) / ncols).astype(np.int)
     x[-1] = im.nrows
     y[-1] = im.ncols
 

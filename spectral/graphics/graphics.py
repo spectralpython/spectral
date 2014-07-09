@@ -373,7 +373,6 @@ def make_pil_image(*args, **kwargs):
     '''
 
     import numpy
-    from numpy.oldnumeric import transpose
     import StringIO
 
     try:
