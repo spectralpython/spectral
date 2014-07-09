@@ -1205,12 +1205,11 @@ def transform_image(matrix, image):
         will occur until elements of the object are accessed.
     '''
     from spectral.io.spyfile import TransformedImage
-    from numpy.oldnumeric import ArrayType
     from spectral.io.spyfile import SpyFile
 
     if isinstance(image, SpyFile):
         return TransformedImage(matrix, image)
-    elif isinstance(image, ArrayType):
+    elif isinstance(image, np.ndarray):
         (M, N, B) = image.shape
         ximage = numpy.zeros((M, N, matrix.shape[0]), float)
 

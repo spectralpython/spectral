@@ -125,7 +125,7 @@ class ColorScale:
 
 def create_default_color_scale():
     '''Returns a black-blue-green-red-white color scale.'''
-    from numpy.oldnumeric import array
+    from numpy import array
     mycolors = array([[0, 0, 0],
                       [0, 0, 255],
                       [0, 255, 0],
