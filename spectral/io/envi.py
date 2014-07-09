@@ -45,7 +45,7 @@ the data file has an unusual file extension that SPy can not identify.
 
 import numpy as np
 
-dtype_map = [('1', np.int8),                    # byte
+dtype_map = [('1', np.uint8),                   # unsigned byte
              ('2', np.int16),                   # 16-bit int
              ('3', np.int32),                   # 32-bit int
              ('4', np.float32),                 # 32-bit float
@@ -59,6 +59,24 @@ dtype_map = [('1', np.int8),                    # byte
 envi_to_dtype = dict((k, np.dtype(v).char) for (k, v) in dtype_map)
 dtype_to_envi = dict(tuple(reversed(item)) for item in envi_to_dtype.items())
 
+class EnviDataTypeError(TypeError):
+    '''Exception raised when saving invalid image data type to ENVI format.
+    '''
+    def __init__(self, dtype):
+        msg = 'Image data type "{}" can not be saved to ENVI data file. ' \
+          'Call spectral.envi.get_supported_dtypes for a list of supported ' \
+          'data type names.'.format(np.dtype(dtype).name)
+        super(EnviDataTypeError, self).__init__(msg)
+
+def _validate_dtype(dtype):
+    '''Raises EnviDataTypeError if dtype can not be written to ENVI file.'''
+    typename = np.dtype(dtype).name
+    if typename not in [np.dtype(t).name for t in dtype_to_envi.keys()]:
+        raise EnviDataTypeError(dtype)
+
+def get_supported_dtypes():
+    '''Returns list of names of image data types supported by ENVI format.'''
+    return [np.dtype(t).name for t in dtype_to_envi.keys()]
 
 def read_envi_header(file):
     '''
@@ -385,6 +403,7 @@ def save_image(hdr_file, image, **kwargs):
         src_interleave = 'bip'
         swap = False
     dtype = np.dtype(kwargs.get('dtype', data.dtype)).char
+    _validate_dtype(dtype)
     if dtype != data.dtype.char:
         data = data.astype(dtype)
     metadata['data type'] = dtype_to_envi[dtype]
@@ -569,6 +588,7 @@ def create_image(hdr_file, metadata=None, **kwargs):
 
     params = gen_params(metadata)
     dt = np.dtype(params.dtype).char
+    _validate_dtype(dt)
     params.filename = img_file
         
     is_library = False
