@@ -36,6 +36,7 @@ To run the unit tests, type the following from the system command line:
 '''
 
 import numpy as np
+import os
 from numpy.testing import assert_almost_equal
 from spytest import SpyTest
 from spectral.tests import testdir
@@ -113,6 +114,27 @@ class ENVIWriteTest(SpyTest):
         img = spectral.open_image(fname)
         assert_almost_equal(img[r, b, c], datum)
 
+    def test_save_invalid_dtype_fails(self):
+        '''Should not be able to write unsupported data type to file.''' 
+        import spectral as spy
+        from spectral.io.envi import EnviDataTypeError
+        a = np.random.randint(0, 200, 900).reshape((30, 30)).astype(np.int8)
+        fname = os.path.join(testdir, 'test_save_invalid_dtype_fails.hdr')
+        try:
+            spy.envi.save_image('invalid.hdr', a)
+        except EnviDataTypeError as e:
+            pass
+        else:
+            raise Exception('Expected EnviDataTypeError to be raised.')
+        
+    def test_save_load_classes(self):
+        '''Verify that `envi.save_classification` saves data correctly.'''
+        import spectral as spy
+        fname = os.path.join(testdir, 'test_save_load_classes.hdr')
+        gt = spy.open_image('92AV3GT.GIS').read_band(0)
+        spy.envi.save_classification(fname, gt, dtype=np.uint8)
+        gt2 = spy.open_image(fname).read_band(0)
+        assert(np.all(gt == gt2))
 
 def run():
     print '\n' + '-' * 72
