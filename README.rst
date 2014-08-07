@@ -1,5 +1,9 @@
 Spectral Python (SPy)
 ---------------------
+
+.. image:: https://travis-ci.org/spectralpython/spectral.svg?branch=master
+    :target: https://travis-ci.org/spectralpython/spectral
+
 Spectral Python (SPy) is a pure Python module for processing hyperspectral image
 data (imaging spectroscopy data). It has functions for reading, displaying,
 manipulating, and classifying hyperspectral imagery. Full details about the
