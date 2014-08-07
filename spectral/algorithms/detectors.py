@@ -33,12 +33,11 @@
 Spectral target detection algorithms
 '''
 
-__all__ = ['MatchedFilter', 'matched_filter', 'RX', 'rx',
-           'WindowedGaussianBackgroundMapper']
+__all__ = ['MatchedFilter', 'matched_filter', 'RX', 'rx']
 
 import numpy as np
 from spectral.algorithms.transforms import LinearTransform
-
+from spectral.algorithms.spatial import inner_outer_window_mask_creator
 
 class MatchedFilter(LinearTransform):
     r'''A callable linear matched filter.
@@ -431,7 +430,7 @@ class WindowedGaussianBackgroundMapper(object):
         if self.create_mask is not None:
             create_mask = self.create_mask
         else:
-            create_mask = window_mask_creator(image.shape, window)
+            create_mask = inner_outer_window_mask_creator(image.shape, window)
 
         interior_mask = create_mask(R / 2, C / 2, True)[2].ravel()
         interior_indices = np.argwhere(interior_mask == 0).squeeze()
@@ -588,72 +587,4 @@ def rx(X, background=None, window=None, cov=None):
     else:
         return RX(background)(X)
 
-
-def window_mask_creator(image_shape, window):
-    '''Returns a function to give  inner/outer windows.
-
-    Arguments:
-
-        `image_shape` (tuple of integers):
-
-            Specifies the dimensions of the image for which windows are to be
-            produced. Only the first two dimensions (rows, columns) is used.
-
-        `window` (2-tuple of integers):
-
-            Specifies the sizes of the inner & outer windows. Both values
-            must be odd integers.
-
-    Return value:
-
-        A function that accepts the following arguments:
-
-            `i` (int):
-
-                Row index of pixel for which to generate the mask
-                
-            `j` (int):
-
-                Row index of pixel for which to generate the mask
-
-            `gen_mask` (bool, default False):
-
-                A boolean flag indicating whether to return a boolean mask of
-                shape (window[1], window[1]), indicating which pixels in the
-                window should be used for background statistics calculations.
-
-        If `gen_mask` is False, the return value is a 2-tuple of 4-tuples,
-        where the 2-tuples specify the start/stop row/col indices for the
-        inner and outer windows, respectively. Each of the 4-tuples is of the
-        form (row_start, row_stop, col_start, col_stop).
-
-        If `gen_mask` is True, a third element is added the tuple, which is
-        the boolean mask for the inner/outer window.
-    '''
-    (R, C) = image_shape[:2]
-    (R_in, R_out) = window
-    assert(R_in % 2 + R_out % 2 == 2)
-    (a, b) = [(x - 1) / 2 for x in window]
-    def create_mask(i, j, gen_mask=False):
-        inner_imin = max(i - a, 0)
-        inner_imax = min(i + a + 1, R)
-        inner_jmin = max(j - a, 0)
-        inner_jmax = min(j + a + 1, C)
-        outer_imin = max(i - b, 0)
-        outer_imax = min(outer_imin + R_out, R)
-        if outer_imax == R:
-            outer_imin = R - R_out
-        outer_jmin = max(j - b, 0)
-        outer_jmax = min(outer_jmin + R_out, C)
-        if outer_jmax == C:
-            outer_jmin = C - R_out
-        inner = (inner_imin, inner_imax, inner_jmin, inner_jmax)
-        outer = (outer_imin, outer_imax, outer_jmin, outer_jmax)
-        if not gen_mask:
-            return (inner, outer)
-        mask = np.zeros((R_out, R_out), dtype=np.bool)
-        mask[inner_imin - outer_imin : inner_imax - outer_imin,
-             inner_jmin - outer_jmin : inner_jmax - outer_jmin] = True
-        return (inner, outer, mask)
-    return create_mask
 

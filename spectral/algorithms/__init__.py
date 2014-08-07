@@ -39,3 +39,4 @@ from clustering import L1, L2, kmeans, cluster, isoCluster
 from resampling import BandResampler
 from transforms import LinearTransform
 from detectors import *
+from spatial import *

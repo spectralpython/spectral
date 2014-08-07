@@ -54,7 +54,8 @@ from . import spymath
 from . import detectors
 from . import classifiers
 from . import dimensionality
+from . import spatial
 
 # List of all submodules to be run from the `run` submodule.
 all_tests = [spyfile, memmap, transforms, envi, spymath, detectors,
-             classifiers, dimensionality]
+             classifiers, dimensionality, spatial]
