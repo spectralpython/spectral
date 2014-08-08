@@ -68,8 +68,7 @@ class SpatialWindowTest(SpyTest):
         from spectral.algorithms.spatial import apply_windowed_function
         f = lambda X: np.mean(X.reshape((-1, X.shape[-1])), axis=0)
         X = self.data
-        y = apply_windowed_function(f, X, 3, 5, rstart=10, rstop=50,
-                                    cstart=20, cstop=40)
+        y = apply_windowed_function(f, X, 3, 5, (10, 50), (20, 40))
         t = np.mean(X[9:12, 18:23].reshape((-1, X.shape[-1])), axis=0)
         assert_allclose(y[0, 0], t)
 
@@ -78,7 +77,7 @@ class SpatialWindowTest(SpyTest):
         from spectral.algorithms.spatial import apply_windowed_function
         f = lambda X: np.mean(X.reshape((-1, X.shape[-1])), axis=0)
         X = self.data
-        y = apply_windowed_function(f, X, 3, 5, rstart=100, cstart=100,
+        y = apply_windowed_function(f, X, 3, 5, (100, None), (100, None),
                                     border='clip')
         t = np.mean(X[-2:, -3:].reshape((-1, X.shape[-1])), axis=0)
         assert_allclose(y[-1, -1], t)
@@ -88,10 +87,20 @@ class SpatialWindowTest(SpyTest):
         from spectral.algorithms.spatial import apply_windowed_function
         f = lambda X: np.mean(X.reshape((-1, X.shape[-1])), axis=0)
         X = self.data
-        y = apply_windowed_function(f, X, 3, 5, rstart=100, cstart=100,
+        y = apply_windowed_function(f, X, 3, 5, (100, None), (100, None),
                                     border='shift')
         t = np.mean(X[-3:, -5:].reshape((-1, X.shape[-1])), axis=0)
         assert_allclose(y[-1, -1], t)
+
+    def test_apply_windowed_function_stepped(self):
+        '''Test spatial averaging with non-unity row/column step sizes.'''
+        from spectral.algorithms.spatial import apply_windowed_function
+        f = lambda X: np.mean(X.reshape((-1, X.shape[-1])), axis=0)
+        X = self.data
+        y = apply_windowed_function(f, X, 3, 5, (30, 60, 3),
+                                    (70, 100, 4), border='shift')
+        t = np.mean(X[32:35, 72:77].reshape((-1, X.shape[-1])), axis=0)
+        assert_allclose(y[1, 1], t)
 
 def run():
     print '\n' + '-' * 72

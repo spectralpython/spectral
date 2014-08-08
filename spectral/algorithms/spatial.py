@@ -163,9 +163,8 @@ def get_window_bounds_clipped(nrows, ncols, height, width, i, j):
 
     return (rmin, rmax, cmin, cmax)
 
-def apply_windowed_function(func, image, height, width,
-                            rstart=0, rstop=-1, cstart=0, cstop=-1,
-                            border='shift', dtype=None ):
+def apply_windowed_function(func, image, height, width, rslice=(None,),
+                            cslice=(None,), border='shift', dtype=None ):
     '''Applies a function over a rolling spatial window.
     
     Arguments:
@@ -189,25 +188,16 @@ def apply_windowed_function(func, image, height, width,
 
             The width of the rolling window in pixels
 
-        `rstart` (int, default 0):
+        `rslice` (tuple):
 
-            Index of the first row for which the function is applied. If not
-            specified, start on the first row.
+            Tuple of `slice` parameters specifying at which rows the function
+            should be applied. If not provided, `func` is applied to all rows.
 
-        `rstop` (int, default -1):
+        `cslice` (tuple):
 
-            Index of the row at which iteration stops. If not specified, stop
-            after the last row.
- 
-        `cstart` (int, default 0):
-
-            Index of the first column for which the function is applied. If not
-            specified, start on the first columnn.
-
-        `cstop` (int, default -1):
-
-            Index of the column at which iteration stops. If not specified,
-            stop after the last row.
+            Tuple of `slice` parameters specifying at which columns the
+            function should be applied. If not provided, `func` is applied to
+            all columns.
 
         `border` (string, default "shift"):
 
@@ -234,7 +224,16 @@ def apply_windowed_function(func, image, height, width,
 
     >>> f = lambda X: np.mean(X.reshape((-1, X.shape[-1])), axis=0)
     >>> image_3x3 = apply_windowed_function(f, image, 3, 3)
-   '''
+
+    Perform a 5x5 pixel average but only retain values at every fifth row and
+    column (i.e., simulate an image at one fifth resolution):
+
+    >>> image.shape
+    (145, 145, 220)
+    >>> image_5x5 = apply_windowed_function(f, image, 3, 3, (2, -2, 5), (2, -2, 5))
+    >>> image_5x5.shape
+    (29, 29, 220)
+    '''
     if border == 'shift':
         get_window = get_window_bounds
     elif border == 'clip':
@@ -242,24 +241,28 @@ def apply_windowed_function(func, image, height, width,
     else:
         raise ValueError('Unrecognized border option.')
 
-    if rstop < 0:
-        rstop = image.shape[0] + 1 + rstop
-    if cstop < 0:
-        cstop = image.shape[1] + 1 + cstop
-
     (nrows, ncols) = image.shape[:2]
 
+    # Row/Col indices at which to apply the windowed function
+    rvals = range(*slice(*rslice).indices(nrows))
+    cvals = range(*slice(*cslice).indices(ncols))
+
+    nrows_out = len(rvals)
+    ncols_out = len(cvals)
+
     # Call the function once to get output shape and dtype
-    (r0, r1, c0, c1) = get_window(nrows, ncols, height, width, rstart, cstart)
+    (r0, r1, c0, c1) = get_window(nrows, ncols, height, width,
+                                  rvals[0], cvals[0])
     y = func(image[r0:r1, c0:c1])
     if dtype is None:
         dtype = np.array(y).dtype
-    out = np.empty((rstop - rstart, cstop - cstart) + np.shape(y), dtype=dtype)
+    out = np.empty((nrows_out, ncols_out) + np.shape(y), dtype=dtype)
 
-    for i in range(rstart, rstop):
-        for j in range(cstart, cstop):
-            (r0, r1, c0, c1) = get_window(nrows, ncols, height, width, i, j)
-            out[i - rstart, j - cstart] = func(image[r0:r1, c0:c1])
+    for i in xrange(nrows_out):
+        for j in xrange(ncols_out):
+            (r0, r1, c0, c1) = get_window(nrows, ncols, height, width,
+                                          rvals[i], cvals[j])
+            out[i, j] = func(image[r0:r1, c0:c1])
     return out
             
 
