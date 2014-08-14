@@ -37,7 +37,6 @@ __all__ = ['MatchedFilter', 'matched_filter', 'RX', 'rx']
 
 import numpy as np
 from spectral.algorithms.transforms import LinearTransform
-from spectral.algorithms.spatial import inner_outer_window_mask_creator
 
 class MatchedFilter(LinearTransform):
     r'''A callable linear matched filter.
@@ -107,30 +106,6 @@ class MatchedFilter(LinearTransform):
             A = math.sqrt(self.coef) * self.background.sqrt_inv_cov
             self._whitening_transform = LinearTransform(A, pre=-self.u_b)
         return self._whitening_transform(X)
-
-class MatchedFilterWrapper(object):
-    '''Wrapper for using MatchedFilter with WindowedGaussianBackgroundMapper.
-    '''
-    def __init__(self, target=None, background=None):
-        self.target = None
-        self.background = None
-        if target is not None:
-            self.set_target(target)
-        if background is not None:
-            self.set_background(background)
-
-    def set_target(self, target):
-        self.target = target
-        if self.target is not None and self.background is not None:
-            self.mf = MatchedFilter(self.background, self.target)
-
-    def set_background(self, background):
-        self.background = background
-        if self.target is not None and self.background is not None:
-            self.mf = MatchedFilter(self.background, self.target)
-
-    def __call__(self, X):
-        return self.mf(X)
 
 def matched_filter(X, target, background=None, window=None, cov=None):
     r'''Computes a linear matched filter target detector score.
@@ -220,12 +195,11 @@ def matched_filter(X, target, background=None, window=None, cov=None):
         raise ValueError('`background` and `window` are mutually ' \
                          'exclusive arguments.')
     if window is not None:
-        mf = MatchedFilterWrapper(target, background)
-        wmf = WindowedGaussianBackgroundMapper(window=window,
-                                               function=mf,
-                                               cov=cov,
-                                               dim_out=1)
-        return wmf(X)
+        from .spatial import map_outer_window_stats
+        def mf_wrapper(bg, x):
+            return MatchedFilter(bg, target)(x)
+        return map_outer_window_stats(mf_wrapper, X, window[0], window[1],
+                                      dim_out=1, cov=cov)
     else:
         from spectral.algorithms.algorithms import calc_stats
         if background is None:
@@ -333,161 +307,6 @@ class RX():
 #            raise Exception('Unexpected number of dimensions.')
 #
 
-class WindowedGaussianBackgroundMapper(object):
-    '''
-    '''
-    def __init__(self, window, function=None, cov=None, dim_out=None):
-        '''Creates a detector with the given inner/outer window.
-
-        Arguments:
-
-            `window` (2-tuple of odd integers):
-
-                `window` must have the form (`inner`, `outer`), where inner
-                and outer are both odd-valued integers with `inner` < `outer`.
-
-            `function` (callable object):
-
-                A callable object that will be applied to each pixel when the
-                __call__ method is called for this object. `function` must
-                have the following properties:
-
-                    - A `__call__` method that accepts a pixel spectrum
-
-                    - A `set_background` method that accepts a `GaussianStats`
-                      object.
-
-                    - An optional `dim_out` integer member that specifies the
-                      dimensionality of callable objects output. If this
-                      member does not exist and it has not been specified as
-                      an argument to this objects constructor, `dim_out` will
-                      will be assumed to be 1.                
-
-            `cov` (ndarray):
-
-                An optional covariance to use. If this parameter is given,
-                `cov` will be used for all RX calculations (background
-                covariance will not be recomputed in each window). Only the
-                background mean will be recomputed in each window).
-
-            `dim_out` (int):
-
-                The dimensionality of the output of `function` when called on
-                a pixel spectrum. If this value is not specified, `function`
-                will be checked to see if it has a `dim_out` member. If it
-                does not, `dim_out` will be assumed to be 1.
-        '''
-        from exceptions import ValueError
-        (inner, outer) = window
-        if inner % 2 == 0 or outer % 2 == 0:
-            raise ValueError('Inner and outer window widths must be odd.')
-        if inner >= outer:
-            raise ValueError('Inner window must be smaller than outer.')
-        self.window = window[:]
-        self.callable = function
-        self.cov = cov
-        self.dim_out = dim_out
-        self.create_mask = None
-
-    def __call__(self, image):
-        '''Applies the RX anomaly detector to X.
-
-        Arguments:
-
-            `image` (numpy.ndarray):
-
-                An image with shape (R, C, B).
-
-        Returns numpy.ndarray:
-
-            The return value will be the RX detector score (squared Mahalanobis
-            distance) for each pixel given in `image`.
-        '''
-        import spectral
-        from spectral.algorithms.algorithms import GaussianStats
-        window = self.window
-        (R, C, B) = image.shape
-        (R_in, R_out) = window[:]
-        (a, b) = [(x - 1) / 2 for x in window]
-
-        if self.dim_out is not None:
-            dim_out = self.dim_out
-        elif hasattr(self.callable, 'dim_out') and \
-          self.callable.dim_out is not None:
-            dim_out = self.callable.dim_out
-        else:
-            dim_out = 1
-
-        if dim_out > 1:
-            x = np.ones((R, C, dim_out), dtype=np.float32) * -1.0
-        else:
-            x = np.ones((R, C), dtype=np.float32) * -1.0
-
-        if self.cov is None and R_out**2 - R_in**2 < B:
-            raise ValueError('Window size provides too few samples for ' \
-                             'image data dimensionality.')
-
-        if self.create_mask is not None:
-            create_mask = self.create_mask
-        else:
-            create_mask = inner_outer_window_mask_creator(image.shape, window)
-
-        interior_mask = create_mask(R / 2, C / 2, True)[2].ravel()
-        interior_indices = np.argwhere(interior_mask == 0).squeeze()
-
-        (i_interior_start, i_interior_stop) = (b, R - b)
-        (j_interior_start, j_interior_stop) = (b, C - b)
-
-        status = spectral._status
-        status.display_percentage('Processing image: ')
-        if self.cov is not None:
-            # Since we already have the covariance, just use np.mean to get
-            # means of the inner window and outer (including the inner), then
-            # use those to calculate the mean of the outer window alone.
-            background = GaussianStats(cov=self.cov)
-            for i in range(R):
-                for j in range(C):
-                    (inner, outer) = create_mask(i, j, False)
-                    N_in = (inner[1] - inner[0]) * (inner[3] - inner[2])
-                    N_tot = (outer[1] - outer[0]) * (outer[3] - outer[2])
-                    mean_out = np.mean(image[outer[0]: outer[1],
-                                             outer[2]: outer[3]].reshape(-1, B),
-                                             axis=0)
-                    mean_in = np.mean(image[outer[0]: outer[1],
-                                            outer[2]: outer[3]].reshape(-1, B),
-                                            axis=0)
-                    mean = mean_out * (float(N_tot) / (N_tot - N_in)) - \
-                           mean_in * (float(N_in) / (N_tot - N_in))
-                    background.mean = mean
-                    self.callable.set_background(background)
-                    x[i, j] = self.callable(image[i, j])
-                if i % (R / 10) == 0:
-                    status.update_percentage(100. * i / R)
-        else:
-            # Need to calculate both the mean and covariance for the outer
-            # window (without the inner).
-            for i in range(R):
-                for j in range(C):
-                    if i_interior_start <= i < i_interior_stop and \
-                       j_interior_start <= j < j_interior_stop:
-                        X = image[i - b : i + b + 1, j - b : j + b + 1, :]
-                        indices = interior_indices
-                    else:
-                        (inner, (i0, i1, j0, j1), mask) = create_mask(i, j, True)
-                        indices = np.argwhere(mask.ravel() == 0).squeeze()
-                        X = image[i0 : i1, j0 : j1, :]
-                    X = np.take(X.reshape((-1, B)), indices, axis=0)
-                    mean = np.mean(X, axis=0)
-                    cov = np.cov(X, rowvar=False)
-                    background = GaussianStats(mean, cov)
-                    self.callable.set_background(background)
-                    x[i, j] = self.callable(image[i, j])
-                if i % (R / 10) == 0:
-                    status.update_percentage(100. * i / R)
-
-        status.end_percentage()
-        return x
-
 def rx(X, background=None, window=None, cov=None):
     r'''Computes RX anomaly detector scores.
 
@@ -578,12 +397,13 @@ def rx(X, background=None, window=None, cov=None):
         raise ValueError('`background` and `window` keywords are mutually ' \
                          'exclusive.')
     if window is not None:
+        from .spatial import map_outer_window_stats
         rx = RX()
-        wrx = WindowedGaussianBackgroundMapper(window=window,
-                                               function=rx,
-                                               cov=cov,
-                                               dim_out=1)
-        return wrx(X)
+        def rx_wrapper(bg, x):
+            rx.set_background(bg)
+            return rx(x)
+        return map_outer_window_stats(rx_wrapper, X, window[0], window[1],
+                                      dim_out=1, cov=cov)
     else:
         return RX(background)(X)
 

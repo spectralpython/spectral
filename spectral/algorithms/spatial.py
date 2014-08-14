@@ -32,7 +32,7 @@
 Functions over spatial regions of images.
 '''
 
-__all__ = ['apply_windowed_function']
+__all__ = ['map_window', 'map_outer_window_stats']
 
 import numpy as np
 
@@ -163,31 +163,41 @@ def get_window_bounds_clipped(nrows, ncols, height, width, i, j):
 
     return (rmin, rmax, cmin, cmax)
 
-def apply_windowed_function(func, image, height, width, rslice=(None,),
-                            cslice=(None,), border='shift', dtype=None ):
+def map_window(func, image, window, rslice=(None,), cslice=(None,),
+               border='shift', dtype=None ):
     '''Applies a function over a rolling spatial window.
     
     Arguments:
 
         `func` (callable):
 
-            The function to apply. For an `N`-band image, this function must
-            accept as input an ndarray with shape `(height, width, N)`. For
-            some values of the `border` argument, the first two dimensions of
-            the functions input may be smaller.
+            The function to apply. This function must accept two inputs:
 
+            `X` (ndarray):
+
+                The image data corresponding to the spatial window for the
+                current pixel being evaluated. `X` will have shape
+                `window + (N,)`, where `N` is the number of bands in the image.
+                For pixels near the border of the image, the first two
+                dimensions of `X` may be smaller if `border` is set to "clip".
+
+            `ij` (2-tuple of integers):
+
+                Indicates the row/column of the current pixel within the
+                window. For `window` with even dimensions or for pixels near
+                the image border, this may not correspond to the center pixel
+                in the window.
+    
         `image` (`SpyFile` or np.ndarray):
 
             The image on which the apply `func` with the specified window.
 
-        `height` (int):
+        `window` (int or 2-tuple of ints):
 
-            The height of the rolling window in pixels
+            The size of the window, in pixels. If this value is an integer,
+            the height and width of the window will both be set to the value.
+            Otherwise, `window` should be a tuple of the form (height, width).
             
-        `width` (int):
-
-            The width of the rolling window in pixels
-
         `rslice` (tuple):
 
             Tuple of `slice` parameters specifying at which rows the function
@@ -222,18 +232,23 @@ def apply_windowed_function(func, image, height, width, rslice=(None,),
 
     To produce a new image that is a 3x3 pixel average of the input image:
 
-    >>> f = lambda X: np.mean(X.reshape((-1, X.shape[-1])), axis=0)
-    >>> image_3x3 = apply_windowed_function(f, image, 3, 3)
+    >>> f = lambda X, ij: np.mean(X.reshape((-1, X.shape[-1])), axis=0)
+    >>> image_3x3 = map_window(f, image, 3)
 
     Perform a 5x5 pixel average but only retain values at every fifth row and
     column (i.e., simulate an image at one fifth resolution):
 
     >>> image.shape
     (145, 145, 220)
-    >>> image_5x5 = apply_windowed_function(f, image, 3, 3, (2, -2, 5), (2, -2, 5))
+    >>> image_5x5 = map_window(f, image, 5, (2, -2, 5), (2, -2, 5))
     >>> image_5x5.shape
     (29, 29, 220)
     '''
+    if isinstance(window, (list, tuple)):
+        (height, width) = window[:]
+    else:
+        (height, width) = (window, window)
+
     if border == 'shift':
         get_window = get_window_bounds
     elif border == 'clip':
@@ -253,7 +268,7 @@ def apply_windowed_function(func, image, height, width, rslice=(None,),
     # Call the function once to get output shape and dtype
     (r0, r1, c0, c1) = get_window(nrows, ncols, height, width,
                                   rvals[0], cvals[0])
-    y = func(image[r0:r1, c0:c1])
+    y = func(image[r0:r1, c0:c1], (rvals[0] - r0, cvals[0] - c0))
     if dtype is None:
         dtype = np.array(y).dtype
     out = np.empty((nrows_out, ncols_out) + np.shape(y), dtype=dtype)
@@ -262,11 +277,278 @@ def apply_windowed_function(func, image, height, width, rslice=(None,),
         for j in xrange(ncols_out):
             (r0, r1, c0, c1) = get_window(nrows, ncols, height, width,
                                           rvals[i], cvals[j])
-            out[i, j] = func(image[r0:r1, c0:c1])
+            out[i, j] = func(image[r0:r1, c0:c1],
+                             (rvals[i] - r0, cvals[j] - c0))
     return out
             
+def map_outer_window_stats(func, image, inner, outer, dim_out=1, cov=None,
+                           dtype=None, rslice=(None,), cslice=(None,)):
+    '''Maps a function accepting `GaussianStats` over a rolling spatial window.
+    
+    Arguments:
 
-def inner_outer_window_mask_creator(image_shape, window):
+        `func` (callable):
+
+            A callable object that will be applied to each pixel when the
+            __call__ method is called for this object. The __call__ method
+            of `func` must accept two arguments:
+
+                - `X` (`GaussianStats`):
+
+                    The Gaussian statistics computed from pixels in the outer
+                    window (excluding the inner window).
+
+                - `v` (ndarray):
+
+                    An ndarray representing the pixel for which the window
+                    was produced.
+
+        `image` (`SpyFile` or np.ndarray):
+
+            The image on which the apply `func` with the specified window.
+
+        `inner` (int or 2-tuple of ints):
+
+            The size of the inner window, in pixels. If this value is an integer,
+            the height and width of the window will both be set to the given value.
+            Otherwise, `inner` should be a tuple of the form (height, width).
+            All pixels within the inner window are excluded from statistics
+            computed for the associated pixel.
+            
+        `outer` (int or 2-tuple of ints):
+
+            The size of the outer window, in pixels. If this value is an integer,
+            the height and width of the window will both be set to the given value.
+            Otherwise, `outer` should be a tuple of the form (height, width).
+            All pixels in the outer window (but not in the inner window) are
+            used to compute statistics for the associated pixel.
+            
+        `rslice` (tuple):
+
+            Tuple of `slice` parameters specifying at which rows the function
+            should be applied. If not provided, `func` is applied to all rows.
+
+        `cslice` (tuple):
+
+            Tuple of `slice` parameters specifying at which columns the
+            function should be applied. If not provided, `func` is applied to
+            all columns.
+
+        `dtype` (np.dtype):
+
+            Optional dtype for the output.
+
+    Return value:
+
+        Returns an np.ndarray whose elements are the result of mapping `func`
+        to the pixels and associated window stats.
+
+    Examples:
+    ---------
+
+    To create an RX anomaly detector with a 3x3 pixel inner window and 17x17
+    outer window (note that `spectral.rx` already does this):
+
+    >>> def mahalanobis(bg, x):
+    ...     return (x - bg.mean).dot(bg.inv_cov).dot(x - bg.mean)
+    ...
+    >>> rx_scores = map_outer_window_stats(mahalanobis, image, 3, 17)
+
+    '''
+    mapper = WindowedGaussianBackgroundMapper(inner, outer, func, cov, dim_out,
+                                              dtype)
+    return mapper(image, rslice, cslice)
+
+class WindowedGaussianBackgroundMapper(object):
+    '''A class for procucing window statistics with an inner exclusion window.
+    '''
+    def __init__(self, inner, outer, function=None, cov=None, dim_out=None,
+                 dtype=None):
+        '''Creates a detector with the given inner/outer window.
+
+        Arguments:
+
+            `inner` (integer or 2-tuple of integers):
+
+                Width and heigth of inner window, in pixels.
+
+            `outer` (integer or 2-tuple of integers):
+
+                Width and heigth of outer window, in pixels. Dimensions must
+                be greater than inner window
+
+            `function` (callable object):
+
+                A callable object that will be applied to each pixel when the
+                __call__ method is called for this object. The __call__ method
+                of `function` must accept two arguments:
+
+                    - A `GaussianStats` object.
+
+                    - An ndarray representing the pixel for which the
+                      were computed.
+
+            `cov` (ndarray):
+
+                An optional covariance to use. If this parameter is given,
+                `cov` will be used for all RX calculations (background
+                covariance will not be recomputed in each window). Only the
+                background mean will be recomputed in each window).
+
+            `dim_out` (int):
+
+                The dimensionality of the output of `function` when called on
+                a pixel spectrum. If this value is not specified, `function`
+                will be checked to see if it has a `dim_out` member. If it
+                does not, `dim_out` will be assumed to be 1.
+
+            `dtype`:
+
+                Optional dtype for the output array. If not specified,
+                np.float32 is used.
+        '''
+        from exceptions import ValueError
+        if isinstance(inner, (list, tuple)):
+            self.inner = inner[:]
+        else:
+            self.inner = (inner, inner)
+        if isinstance(outer, (list, tuple)):
+            self.outer = outer[:]
+        else:
+            self.outer = (outer, outer)
+        self.callable = function
+        self.cov = cov
+        self.dim_out = dim_out
+        self.create_mask = None
+        if dtype is not None:
+            self.dtype = dtype
+        else:
+            self.dtype = np.float32
+
+    def __call__(self, image, rslice=(None,), cslice=(None,)):
+        '''Applies the objects callable function to the image data.
+
+        Arguments:
+
+            `image` (numpy.ndarray):
+
+                An image with shape (R, C, B).
+
+            `rslice` (tuple):
+
+                Tuple of `slice` parameters specifying at which rows the function
+                should be applied. If not provided, `func` is applied to all rows.
+
+            `cslice` (tuple):
+
+                Tuple of `slice` parameters specifying at which columns the
+                function should be applied. If not provided, `func` is applied to
+                all columns.
+
+        Returns numpy.ndarray:
+
+            An array whose elements correspond to the outputs from the
+            object's callable function.
+        '''
+        import spectral
+        from spectral.algorithms.algorithms import GaussianStats
+        (R, C, B) = image.shape
+        (row_border, col_border) = [x / 2 for x in self.outer]
+
+        if self.dim_out is not None:
+            dim_out = self.dim_out
+        elif hasattr(self.callable, 'dim_out') and \
+          self.callable.dim_out is not None:
+            dim_out = self.callable.dim_out
+        else:
+            dim_out = 1
+
+        # Row/Col indices at which to apply the windowed function
+        rvals = range(*slice(*rslice).indices(R))
+        cvals = range(*slice(*cslice).indices(C))
+
+        nrows_out = len(rvals)
+        ncols_out = len(cvals)
+
+        if dim_out > 1:
+            x = np.ones((nrows_out, ncols_out, dim_out),
+                        dtype=np.float32) * -1.0
+        else:
+            x = np.ones((nrows_out, ncols_out), dtype=self.dtype) * -1.0
+
+        npixels = self.outer[0] * self.outer[1] - self.inner[0] * self.inner[1]
+        if self.cov is None and npixels < B:
+            raise ValueError('Window size provides too few samples for ' \
+                             'image data dimensionality.')
+
+        if self.create_mask is not None:
+            create_mask = self.create_mask
+        else:
+            create_mask = inner_outer_window_mask_creator(image.shape,
+                                                          self.inner,
+                                                          self.outer)
+
+        interior_mask = create_mask(R / 2, C / 2, True)[2].ravel()
+        interior_indices = np.argwhere(interior_mask == 0).squeeze()
+
+        (i_interior_start, i_interior_stop) = (row_border, R - row_border)
+        (j_interior_start, j_interior_stop) = (col_border, C - col_border)
+
+        status = spectral._status
+        status.display_percentage('Processing image: ')
+        if self.cov is not None:
+            # Since we already have the covariance, just use np.mean to get
+            # means of the inner window and outer (including the inner), then
+            # use those to calculate the mean of the outer window alone.
+            background = GaussianStats(cov=self.cov)
+            for i in xrange(nrows_out):
+                for j in xrange(ncols_out):
+                    (inner, outer) = create_mask(rvals[i], cvals[j], False)
+                    N_in = (inner[1] - inner[0]) * (inner[3] - inner[2])
+                    N_tot = (outer[1] - outer[0]) * (outer[3] - outer[2])
+                    mean_out = np.mean(image[outer[0]: outer[1],
+                                             outer[2]: outer[3]].reshape(-1, B),
+                                             axis=0)
+                    mean_in = np.mean(image[outer[0]: outer[1],
+                                            outer[2]: outer[3]].reshape(-1, B),
+                                            axis=0)
+                    mean = mean_out * (float(N_tot) / (N_tot - N_in)) - \
+                           mean_in * (float(N_in) / (N_tot - N_in))
+                    background.mean = mean
+                    x[i, j] = self.callable(background,
+                                            image[rvals[i], cvals[j]])
+                if i % (nrows_out / 10) == 0:
+                    status.update_percentage(100. * i / nrows_out)
+        else:
+            # Need to calculate both the mean and covariance for the outer
+            # window (without the inner).
+            (h, w) = self.outer[:]
+            for i in xrange(nrows_out):
+                ii = rvals[i] - h / 2
+                for j in xrange(ncols_out):
+                    jj = cvals[j] - w / 2
+                    if i_interior_start <= rvals[i] < i_interior_stop and \
+                        j_interior_start <= cvals[j] < j_interior_stop:
+                        X = image[ii : ii + h, jj : jj + w, :]
+                        indices = interior_indices
+                    else:
+                        (inner, (i0, i1, j0, j1), mask) = \
+                          create_mask(rvals[i], cvals[j], True)
+                        indices = np.argwhere(mask.ravel() == 0).squeeze()
+                        X = image[i0 : i1, j0 : j1, :]
+                    X = np.take(X.reshape((-1, B)), indices, axis=0)
+                    mean = np.mean(X, axis=0)
+                    cov = np.cov(X, rowvar=False)
+                    background = GaussianStats(mean, cov)
+                    x[i, j] = self.callable(background,
+                                            image[rvals[i], cvals[j]])
+                if i % (nrows_out / 10) == 0:
+                    status.update_percentage(100. * i / nrows_out)
+
+        status.end_percentage()
+        return x
+
+def inner_outer_window_mask_creator(image_shape, inner, outer):
     '''Returns a function to give  inner/outer windows.
 
     Arguments:
@@ -276,10 +558,13 @@ def inner_outer_window_mask_creator(image_shape, window):
             Specifies the dimensions of the image for which windows are to be
             produced. Only the first two dimensions (rows, columns) is used.
 
-        `window` (2-tuple of integers):
+        `inner` (int or 2-tuple of integers):
 
-            Specifies the sizes of the inner & outer windows. Both values
-            must be odd integers.
+            Height and width of the inner window, in pixels.
+
+        `outer` (int or 2-tuple of integers):
+
+            Height and width of the outer window, in pixels.
 
     Return value:
 
@@ -308,27 +593,66 @@ def inner_outer_window_mask_creator(image_shape, window):
         the boolean mask for the inner/outer window.
     '''
     (R, C) = image_shape[:2]
-    (R_in, R_out) = window
-    assert(R_in % 2 + R_out % 2 == 2)
-    (a, b) = [(x - 1) / 2 for x in window]
+    if isinstance(inner, (list, tuple)):
+        (hi, wi) = inner[:]
+    else:
+        (hi, wi) = (inner, inner)
+    if isinstance(outer, (list, tuple)):
+        (ho, wo) = outer[:]
+    else:
+        (ho, wo) = (outer, outer)
+
+    if wi > wo or hi > ho:
+        raise ValueError('Inner window dimensions must be smaller than outer.')
+    
+    (ai, bi) = (hi / 2, wi / 2)
+    (ao, bo) = (ho / 2, wo / 2)
+
     def create_mask(i, j, gen_mask=False):
-        inner_imin = max(i - a, 0)
-        inner_imax = min(i + a + 1, R)
-        inner_jmin = max(j - a, 0)
-        inner_jmax = min(j + a + 1, C)
-        outer_imin = max(i - b, 0)
-        outer_imax = min(outer_imin + R_out, R)
-        if outer_imax == R:
-            outer_imin = R - R_out
-        outer_jmin = max(j - b, 0)
-        outer_jmax = min(outer_jmin + R_out, C)
-        if outer_jmax == C:
-            outer_jmin = C - R_out
+
+        # Inner window
+        inner_imin = i - ai
+        inner_imax = inner_imin + hi
+        if inner_imin < 0:
+            inner_imax = hi
+            inner_imin = 0
+        elif inner_imax > R:
+            inner_imax = R
+            inner_imin = R - hi
+        
+        inner_jmin = j - bi
+        inner_jmax = inner_jmin + wi
+        if inner_jmin < 0:
+            inner_jmax = wi
+            inner_jmin = 0
+        elif inner_jmax > C:
+            inner_jmax = C
+            inner_jmin = C - wi
+        
+        # Outer window
+        outer_imin = i - ao
+        outer_imax = outer_imin + ho
+        if outer_imin < 0:
+            outer_imax = ho
+            outer_imin = 0
+        elif outer_imax > R:
+            outer_imax = R
+            outer_imin = R - ho
+        
+        outer_jmin = j - bo
+        outer_jmax = outer_jmin + wo
+        if outer_jmin < 0:
+            outer_jmax = wo
+            outer_jmin = 0
+        elif outer_jmax > C:
+            outer_jmax = C
+            outer_jmin = C - wo
+        
         inner = (inner_imin, inner_imax, inner_jmin, inner_jmax)
         outer = (outer_imin, outer_imax, outer_jmin, outer_jmax)
         if not gen_mask:
             return (inner, outer)
-        mask = np.zeros((R_out, R_out), dtype=np.bool)
+        mask = np.zeros((ho, wo), dtype=np.bool)
         mask[inner_imin - outer_imin : inner_imax - outer_imin,
              inner_jmin - outer_jmin : inner_jmax - outer_jmin] = True
         return (inner, outer, mask)
