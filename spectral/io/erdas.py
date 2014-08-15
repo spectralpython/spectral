@@ -87,6 +87,8 @@ Functions for reading Erdas files.
 #  +----------------------------------------------------------+
 
 
+from __future__ import division, print_function, unicode_literals
+
 def open(file):
     '''
     Returns a SpyFile object for an ERDAS/Lan image file.
@@ -108,8 +110,8 @@ def open(file):
 
     import numpy as np
     import spectral
-    from bilfile import BilFile
-    from spyfile import find_file_path
+    from .bilfile import BilFile
+    from .spyfile import find_file_path
 
 
     # ERDAS 7.5 headers do not specify byte order so we'll guess little endian.
@@ -162,12 +164,17 @@ def read_erdas_lan_header(fileName, byte_order=0):
 
             Specifies whether to read as little (0) or big (1) endian.
     '''
-    from exceptions import IOError
     from array import array
-    import __builtin__
+    import sys
     import spectral
+    from spectral.utilities.python23 import IS_PYTHON3, typecode
+    
+    if IS_PYTHON3:
+        import builtins
+    else:
+        import __builtin__ as builtins
 
-    f = __builtin__.open(fileName, "rb")
+    f = builtins.open(fileName, "rb")
 
     h = {}
     h["format"] = "lan"
@@ -175,16 +182,16 @@ def read_erdas_lan_header(fileName, byte_order=0):
     h["sizeOfHeader"] = 128
 
     h["type"] = f.read(6)
-    if h["type"] not in ('HEAD74', 'HEADER'):
+    if h["type"] not in (b'HEAD74', b'HEADER'):
         raise IOError('Does not look like an ERDAS Lan header.')
 
     # Read all header data into arrays
-    word = array('h')
-    dword = array('i')
-    float = array('f')
+    word = array(typecode('h'))
+    dword = array(typecode('i'))
+    float = array(typecode('f'))
     word.fromfile(f, 2)
     f.seek(16)
-    if h["type"] == 'HEAD74':
+    if h["type"] == b'HEAD74':
         dword.fromfile(f, 4)
     else:
         float.fromfile(f, 4)
@@ -203,7 +210,7 @@ def read_erdas_lan_header(fileName, byte_order=0):
     h["packing"] = word.pop(0)
     h["nbands"] = word.pop(0)
 
-    if h["type"] == 'HEAD74':
+    if h["type"] == b'HEAD74':
         h["ncols"] = dword.pop(0)
         h["nrows"] = dword.pop(0)
         h["pixel_xcoord"] = dword.pop(0)

@@ -36,29 +36,31 @@ must be referenced in that thread.  Thus, much of the actual GUI code
 is in SpyWxPythonThread.py.
 '''
 
+from __future__ import division, print_function, unicode_literals
+
 viewer = None
 
 
 class SpyWxPythonThreadStarter:
     def start(self):
         '''Starts the GUI thread.'''
-        import thread
+        import _thread
         import time
-        thread.start_new_thread(self.run, ())
+        _thread.start_new_thread(self.run, ())
 
     def run(self):
         '''
         This is the first function executed in the wxWindows thread.
         It creates the wxApp and starts the main event loop.
         '''
-        from spywxpythonthread import WxImageServer
+        from .spywxpythonthread import WxImageServer
         self.app = WxImageServer(0)
         self.app.MainLoop()
 
     def view(self, rgb, **kwargs):
         '''Sends a view request to the wxWindows thread.'''
 
-        import spywxpythonthread
+        from . import spywxpythonthread
         evt = spywxpythonthread.view_imageRequest(rgb, **kwargs)
         spywxpythonthread.wx.PostEvent(self.app.catcher, evt)
 
@@ -72,7 +74,7 @@ def init():
 def view(*args, **kwargs):
     '''Displays an image in a wxWindows frame.'''
 
-    import graphics
+    from . import graphics
     from spectral.spectral import Image
     import numpy as np
 

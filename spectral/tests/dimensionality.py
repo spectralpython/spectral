@@ -34,10 +34,12 @@ To run the unit tests, type the following from the system command line:
     # python -m spectral.tests.XXX
 '''
 
+from __future__ import division, print_function, unicode_literals
+
 import numpy as np
 from numpy.testing import assert_allclose
 import spectral as spy
-from spytest import SpyTest, test_method
+from .spytest import SpyTest, test_method
 
 
 class DimensionalityTest(SpyTest):
@@ -57,9 +59,9 @@ class DimensionalityTest(SpyTest):
 
 
 def run():
-    print '\n' + '-' * 72
-    print 'Running dimensionality tests.'
-    print '-' * 72
+    print('\n' + '-' * 72)
+    print('Running dimensionality tests.')
+    print('-' * 72)
     test = DimensionalityTest()
     test.run()
 

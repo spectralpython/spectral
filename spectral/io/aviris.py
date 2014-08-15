@@ -32,7 +32,8 @@
 Functions for handling AVIRIS image files.
 '''
 
-from exceptions import DeprecationWarning
+from __future__ import division, print_function, unicode_literals
+
 from warnings import warn
 
 
@@ -64,7 +65,7 @@ def open(file, band_file=None):
     import os
     import glob
     from exceptions import IOError
-    from spyfile import find_file_path
+    from .spyfile import find_file_path
     import spectral
 
     class Params:
@@ -95,14 +96,14 @@ def open(file, band_file=None):
         fileDir = os.path.split(p.filename)[0]
         calFiles = glob.glob(fileDir + '/*.spc')
         if len(calFiles) > 0:
-            print '\nThe following band calibration files are located in ' \
-                'the same directory as the opened AVIRIS file:\n'
+            print('\nThe following band calibration files are located in ' \
+                'the same directory as the opened AVIRIS file:\n')
             for f in calFiles:
-                print "    " + os.path.split(f)[1]
-            print '\nTo associate a band calibration file with an AVIRIS ' \
+                print("    " + os.path.split(f)[1])
+            print('\nTo associate a band calibration file with an AVIRIS ' \
                   'data file, re-open the AVIRIS file with the following ' \
-                  'syntax:\n'
-            print '    >>> img = aviris.open(fileName, calFileName)\n'
+                  'syntax:\n')
+            print('    >>> img = aviris.open(fileName, calFileName)\n')
     return img
 
 
@@ -120,17 +121,17 @@ def read_aviris_bands(cal_filename):
 
         A :class:`spectral.BandInfo` object
     '''
-    import __builtin__
+    import builtins
     from spectral import BandInfo
-    from spyfile import find_file_path
+    from .spyfile import find_file_path
     bands = BandInfo()
     bands.band_quantity = 'Wavelength'
     bands.band_unit = 'nm'
 
-    fin = __builtin__.open(find_file_path(cal_filename))
+    fin = builtins.open(find_file_path(cal_filename))
     rows = [line.split() for line in fin]
     rows = [[float(x) for x in row] for row in rows if len(row) == 5]
-    columns = zip(*rows)
+    columns = list(zip(*rows))
     bands.centers = columns[0]
     bands.bandwidths = columns[1]
     bands.center_stdevs = columns[2]

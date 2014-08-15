@@ -33,7 +33,10 @@
 Base classes for various types of transforms
 '''
 
+from __future__ import division, print_function, unicode_literals
+
 import numpy as np
+import collections
 
 
 class LinearTransform:
@@ -113,7 +116,7 @@ class LinearTransform:
         __init__.
         '''
         if not isinstance(X, np.ndarray):
-            if hasattr(X, 'transform') and callable(X.transform):
+            if hasattr(X, 'transform') and isinstance(X.transform, collections.Callable):
                 return X.transform(self)
             else:
                 raise TypeError('Unable to apply transform to object.')

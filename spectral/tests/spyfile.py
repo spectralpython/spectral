@@ -41,9 +41,11 @@ To run the unit tests, type the following from the system command line:
     # python -m spectral.tests.spyfile
 '''
 
+from __future__ import division, print_function, unicode_literals
+
 import numpy as np
 from numpy.testing import assert_almost_equal
-from spytest import SpyTest
+from .spytest import SpyTest
 
 
 class SpyFileTest(SpyTest):
@@ -225,9 +227,9 @@ class SpyFileTestSuite(object):
         import spectral
         from spectral.tests import testdir
 
-        print '\n' + '-' * 72
-        print 'Running SpyFile read tests.'
-        print '-' * 72
+        print('\n' + '-' * 72)
+        print('Running SpyFile read tests.')
+        print('-' * 72)
 
         if not os.path.isdir(testdir):
             os.mkdir(testdir)
@@ -246,21 +248,21 @@ class SpyFileTestSuite(object):
                 % (inter.upper(), np.dtype(dtype).name, endian)
             testimg = spectral.open_image(fname)
             if testimg.using_memmap is True:
-                print '\n' + '-' * 72
-                print msg + 'using memmap...'
-                print '-' * 72
+                print('\n' + '-' * 72)
+                print(msg + 'using memmap...')
+                print('-' * 72)
                 test = SpyFileTest(testimg, self.datum, self.value)
                 test.run()
-                print '\n' + '-' * 72
-                print msg + 'without memmap...'
-                print '-' * 72
+                print('\n' + '-' * 72)
+                print(msg + 'without memmap...')
+                print('-' * 72)
                 testimg._disable_memmap()
                 test = SpyFileTest(testimg, self.datum, self.value)
                 test.run()
             else:
-                print '\n' + '-' * 72
-                print msg + 'without memmap...'
-                print '-' * 72
+                print('\n' + '-' * 72)
+                print(msg + 'without memmap...')
+                print('-' * 72)
                 test = SpyFileTest(testimg, self.datum, self.value)
                 test.run()
 
@@ -279,7 +281,7 @@ def run():
                                      dtypes=('i2', 'i4', 'f4', 'f8'))
             suite.run()
         except FileNotFoundError:
-            print 'File "%s" not found. Skipping.' % fname
+            print('File "%s" not found. Skipping.' % fname)
 
 if __name__ == '__main__':
     run()

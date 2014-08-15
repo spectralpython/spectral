@@ -34,9 +34,11 @@ To run the unit tests, type the following from the system command line:
     # python -m spectral.tests.spatial
 '''
 
+from __future__ import division, print_function, unicode_literals
+
 import numpy as np
 from numpy.testing import assert_allclose
-from spytest import SpyTest
+from .spytest import SpyTest
 
 
 class SpatialWindowTest(SpyTest):
@@ -100,9 +102,9 @@ class SpatialWindowTest(SpyTest):
         assert_allclose(y[1, 1], t)
 
 def run():
-    print '\n' + '-' * 72
-    print 'Running spatial tests.'
-    print '-' * 72
+    print('\n' + '-' * 72)
+    print('Running spatial tests.')
+    print('-' * 72)
     for T in [SpatialWindowTest]:
         T().run()
 

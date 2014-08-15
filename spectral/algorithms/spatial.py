@@ -32,6 +32,8 @@
 Functions over spatial regions of images.
 '''
 
+from __future__ import division, print_function, unicode_literals
+
 __all__ = ['map_window', 'map_outer_window_stats']
 
 import numpy as np
@@ -83,7 +85,7 @@ def get_window_bounds(nrows, ncols, height, width, i, j):
     if height > nrows or width > ncols:
         raise ValueError('Window size is too large for image dimensions.')
 
-    rmin = i - height / 2
+    rmin = i - height // 2
     rmax = rmin + height
     if rmin < 0:
         rmax = height
@@ -92,7 +94,7 @@ def get_window_bounds(nrows, ncols, height, width, i, j):
         rmax = nrows
         rmin = nrows - height
 
-    cmin = j - width / 2
+    cmin = j - width // 2
     cmax = cmin + width
     if cmin < 0:
         cmax = width
@@ -147,14 +149,14 @@ def get_window_bounds_clipped(nrows, ncols, height, width, i, j):
     if height > nrows or width > ncols:
         raise ValueError('Window size is too large for image dimensions.')
 
-    rmin = i - height / 2
+    rmin = i - height // 2
     rmax = rmin + height
     if rmin < 0:
         rmin = 0
     elif rmax > nrows:
         rmax = nrows
 
-    cmin = j - width / 2
+    cmin = j - width // 2
     cmax = cmin + width
     if cmin < 0:
         cmin = 0
@@ -259,8 +261,8 @@ def map_window(func, image, window, rslice=(None,), cslice=(None,),
     (nrows, ncols) = image.shape[:2]
 
     # Row/Col indices at which to apply the windowed function
-    rvals = range(*slice(*rslice).indices(nrows))
-    cvals = range(*slice(*cslice).indices(ncols))
+    rvals = list(range(*slice(*rslice).indices(nrows)))
+    cvals = list(range(*slice(*cslice).indices(ncols)))
 
     nrows_out = len(rvals)
     ncols_out = len(cvals)
@@ -273,8 +275,8 @@ def map_window(func, image, window, rslice=(None,), cslice=(None,),
         dtype = np.array(y).dtype
     out = np.empty((nrows_out, ncols_out) + np.shape(y), dtype=dtype)
 
-    for i in xrange(nrows_out):
-        for j in xrange(ncols_out):
+    for i in range(nrows_out):
+        for j in range(ncols_out):
             (r0, r1, c0, c1) = get_window(nrows, ncols, height, width,
                                           rvals[i], cvals[j])
             out[i, j] = func(image[r0:r1, c0:c1],
@@ -407,7 +409,6 @@ class WindowedGaussianBackgroundMapper(object):
                 Optional dtype for the output array. If not specified,
                 np.float32 is used.
         '''
-        from exceptions import ValueError
         if isinstance(inner, (list, tuple)):
             self.inner = inner[:]
         else:
@@ -453,7 +454,7 @@ class WindowedGaussianBackgroundMapper(object):
         import spectral
         from spectral.algorithms.algorithms import GaussianStats
         (R, C, B) = image.shape
-        (row_border, col_border) = [x / 2 for x in self.outer]
+        (row_border, col_border) = [x // 2 for x in self.outer]
 
         if self.dim_out is not None:
             dim_out = self.dim_out
@@ -464,8 +465,8 @@ class WindowedGaussianBackgroundMapper(object):
             dim_out = 1
 
         # Row/Col indices at which to apply the windowed function
-        rvals = range(*slice(*rslice).indices(R))
-        cvals = range(*slice(*cslice).indices(C))
+        rvals = list(range(*slice(*rslice).indices(R)))
+        cvals = list(range(*slice(*cslice).indices(C)))
 
         nrows_out = len(rvals)
         ncols_out = len(cvals)
@@ -488,7 +489,7 @@ class WindowedGaussianBackgroundMapper(object):
                                                           self.inner,
                                                           self.outer)
 
-        interior_mask = create_mask(R / 2, C / 2, True)[2].ravel()
+        interior_mask = create_mask(R // 2, C // 2, True)[2].ravel()
         interior_indices = np.argwhere(interior_mask == 0).squeeze()
 
         (i_interior_start, i_interior_stop) = (row_border, R - row_border)
@@ -501,8 +502,8 @@ class WindowedGaussianBackgroundMapper(object):
             # means of the inner window and outer (including the inner), then
             # use those to calculate the mean of the outer window alone.
             background = GaussianStats(cov=self.cov)
-            for i in xrange(nrows_out):
-                for j in xrange(ncols_out):
+            for i in range(nrows_out):
+                for j in range(ncols_out):
                     (inner, outer) = create_mask(rvals[i], cvals[j], False)
                     N_in = (inner[1] - inner[0]) * (inner[3] - inner[2])
                     N_tot = (outer[1] - outer[0]) * (outer[3] - outer[2])
@@ -517,16 +518,16 @@ class WindowedGaussianBackgroundMapper(object):
                     background.mean = mean
                     x[i, j] = self.callable(background,
                                             image[rvals[i], cvals[j]])
-                if i % (nrows_out / 10) == 0:
-                    status.update_percentage(100. * i / nrows_out)
+                if i % (nrows_out // 10) == 0:
+                    status.update_percentage(100. * i // nrows_out)
         else:
             # Need to calculate both the mean and covariance for the outer
             # window (without the inner).
             (h, w) = self.outer[:]
-            for i in xrange(nrows_out):
-                ii = rvals[i] - h / 2
-                for j in xrange(ncols_out):
-                    jj = cvals[j] - w / 2
+            for i in range(nrows_out):
+                ii = rvals[i] - h // 2
+                for j in range(ncols_out):
+                    jj = cvals[j] - w // 2
                     if i_interior_start <= rvals[i] < i_interior_stop and \
                         j_interior_start <= cvals[j] < j_interior_stop:
                         X = image[ii : ii + h, jj : jj + w, :]
@@ -542,7 +543,7 @@ class WindowedGaussianBackgroundMapper(object):
                     background = GaussianStats(mean, cov)
                     x[i, j] = self.callable(background,
                                             image[rvals[i], cvals[j]])
-                if i % (nrows_out / 10) == 0:
+                if i % (nrows_out // 10) == 0:
                     status.update_percentage(100. * i / nrows_out)
 
         status.end_percentage()
@@ -605,8 +606,8 @@ def inner_outer_window_mask_creator(image_shape, inner, outer):
     if wi > wo or hi > ho:
         raise ValueError('Inner window dimensions must be smaller than outer.')
     
-    (ai, bi) = (hi / 2, wi / 2)
-    (ao, bo) = (ho / 2, wo / 2)
+    (ai, bi) = (hi // 2, wi // 2)
+    (ao, bo) = (ho // 2, wo // 2)
 
     def create_mask(i, j, gen_mask=False):
 

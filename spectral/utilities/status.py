@@ -29,6 +29,8 @@
 #
 
 
+from __future__ import division, print_function, unicode_literals
+
 class StatusDisplay:
     '''
     A class to sequentially display percentage completion of an iterative

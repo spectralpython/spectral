@@ -1,9 +1,8 @@
 #########################################################################
 #
-#   graphics/__init__.py - This file is part of the Spectral Python (SPy)
-#   package.
+#   python23.py - This file is part of the Spectral Python (SPy) package.
 #
-#   Copyright (C) 2001 Thomas Boggs
+#   Copyright (C) 2001-2014 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -28,13 +27,37 @@
 # Send comments to:
 # Thomas Boggs, tboggs@users.sourceforge.net
 #
+'''Functions for python 2/3 compatibility.'''
 
 from __future__ import division, print_function, unicode_literals
 
-from .graphics import (save_rgb, view, view_indexed, view_cube, view_nd,
-                      get_rgb)
-from .spypylab import imshow, ImageView
-from .colorscale import ColorScale
+import sys
 
-# Deprecated functions
-from .graphics import hypercube, ndwindow, save_image
+IS_PYTHON3 = sys.version_info >= (3,)
+
+def typecode(t):
+    '''Typecode handling for array module.
+
+    Python 3 expects a unicode character, whereas python 2 expects a byte char.
+
+    Arguments:
+
+        `t` (typecode string):
+
+            An input for array.array.
+
+    Return value:
+
+        The input formatted for the appropriate python version.
+    '''
+    if IS_PYTHON3:
+        return t
+    else:
+        return chr(ord(t))
+
+if IS_PYTHON3:
+    def is_string(s):
+        return isinstance(s, (str, bytes))
+else:
+    def is_string(s):
+        return isinstance(s, basestring)

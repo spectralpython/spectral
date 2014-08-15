@@ -30,10 +30,11 @@
 #
 '''Base classes for classifiers and basic classifiers.'''
 
+from __future__ import division, print_function, unicode_literals
+
 import numpy
 import numpy as np
 
-from exceptions import DeprecationWarning
 from warnings import warn
 
 __all__ = ('GaussianClassifier', 'MahalanobisDistanceClassifier',
@@ -72,7 +73,7 @@ class Classifier(object):
             An `MxN` ndarray of integers specifying the class for each pixel.
         '''
         import spectral
-        from algorithms import ImageIterator
+        from .algorithms import ImageIterator
         from numpy import zeros
         status = spectral._status
         status.display_percentage('Classifying image...')
@@ -152,14 +153,14 @@ class GaussianClassifier(SupervisedClassifier):
         if not self.min_samples:
             # Set minimum number of samples to the number of bands in the image
             self.min_samples = training_data.nbands
-            print 'Setting min samples to', self.min_samples
+            print('Setting min samples to', self.min_samples)
         self.classes = []
         for cl in training_data:
             if cl.size() >= self.min_samples:
                 self.classes.append(cl)
             else:
-                print '  Omitting class %3d : only %d samples present' % (
-                    cl.index, cl.size())
+                print('  Omitting class %3d : only %d samples present' % (
+                    cl.index, cl.size()))
         for cl in self.classes:
             if not hasattr(cl, 'stats') or not cl.stats_valid():
                 cl.calc_stats()

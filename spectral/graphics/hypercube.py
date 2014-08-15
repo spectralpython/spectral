@@ -64,6 +64,8 @@ Code for rendering and manipulating hypercubes. Most users will only need to
 call the function "hypercube".
 '''
 
+from __future__ import division, print_function, unicode_literals
+
 try:
     import wx
     from wx import glcanvas
@@ -224,7 +226,7 @@ class HypercubeWindow(wx.Frame, SpyWindow):
         import OpenGL.GL as gl
         import spectral
         from spectral.spectral import Image
-        import graphics
+        from . import graphics
         from spectral.graphics.colorscale import default_color_scale
 
         global DEFAULT_TEXTURE_SIZE
@@ -247,9 +249,9 @@ class HypercubeWindow(wx.Frame, SpyWindow):
                 bands = self.kwargs['bands']
             elif isinstance(data, spectral.io.SpyFile) and \
                     'default bands' in data.metadata:
-                bands = map(int, data.metadata['default bands'])
+                bands = list(map(int, data.metadata['default bands']))
             else:
-                bands = range(3)
+                bands = list(range(3))
             image = graphics.make_pil_image(data, bands, format='bmp')
 
         # Read each image so it displays properly when viewed from the outside
@@ -280,7 +282,7 @@ class HypercubeWindow(wx.Frame, SpyWindow):
             texImages.append(img)
 
             # Create Linear Filtered Texture
-            gl.glBindTexture(gl.GL_TEXTURE_2D, long(self.textures[i]))
+            gl.glBindTexture(gl.GL_TEXTURE_2D, int(self.textures[i]))
             gl.glTexParameteri(
                 gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
             gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER,
@@ -368,7 +370,7 @@ class HypercubeWindow(wx.Frame, SpyWindow):
         hz = self.cubeHeight
 
         # Top Face (note that the texture's corners have to match the quad's)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, long(self.textures[0]))
+        gl.glBindTexture(gl.GL_TEXTURE_2D, int(self.textures[0]))
         gl.glBegin(gl.GL_QUADS)
         gl.glTexCoord2f(0.0, 0.0)
         gl.glVertex3f(hw, -hh, hz)  # Bottom Left Of The Texture and Quad
@@ -383,7 +385,7 @@ class HypercubeWindow(wx.Frame, SpyWindow):
         gl.glEnd()
 
         # Far Face
-        gl.glBindTexture(gl.GL_TEXTURE_2D, long(self.textures[3]))
+        gl.glBindTexture(gl.GL_TEXTURE_2D, int(self.textures[3]))
         gl.glBegin(gl.GL_QUADS)
         gl.glTexCoord2f(0.0, 0.0)
         gl.glVertex3f(
@@ -400,7 +402,7 @@ class HypercubeWindow(wx.Frame, SpyWindow):
         gl.glEnd()
 
         # Near Face
-        gl.glBindTexture(gl.GL_TEXTURE_2D, long(self.textures[1]))
+        gl.glBindTexture(gl.GL_TEXTURE_2D, int(self.textures[1]))
         gl.glBegin(gl.GL_QUADS)
         gl.glTexCoord2f(0.0, 0.0)
         gl.glVertex3f(
@@ -417,7 +419,7 @@ class HypercubeWindow(wx.Frame, SpyWindow):
         gl.glEnd()
 
         # Right face
-        gl.glBindTexture(gl.GL_TEXTURE_2D, long(self.textures[2]))
+        gl.glBindTexture(gl.GL_TEXTURE_2D, int(self.textures[2]))
         gl.glBegin(gl.GL_QUADS)
         gl.glTexCoord2f(0.0, 0.0)
         gl.glVertex3f(
@@ -434,7 +436,7 @@ class HypercubeWindow(wx.Frame, SpyWindow):
         gl.glEnd()
 
         # Left Face
-        gl.glBindTexture(gl.GL_TEXTURE_2D, long(self.textures[4]))
+        gl.glBindTexture(gl.GL_TEXTURE_2D, int(self.textures[4]))
         gl.glBegin(gl.GL_QUADS)
         gl.glTexCoord2f(0.0, 0.0)
         gl.glVertex3f(
@@ -451,7 +453,7 @@ class HypercubeWindow(wx.Frame, SpyWindow):
         gl.glEnd()
 
         # Bottom Face
-        gl.glBindTexture(gl.GL_TEXTURE_2D, long(self.textures[0]))
+        gl.glBindTexture(gl.GL_TEXTURE_2D, int(self.textures[0]))
         gl.glBegin(gl.GL_QUADS)
         gl.glTexCoord2f(0.0, 0.0)
         gl.glVertex3f(
@@ -508,17 +510,17 @@ class HypercubeWindow(wx.Frame, SpyWindow):
             self.Destroy()
 
     def print_help(self):
-        print
-        print 'Mouse Functions:'
-        print '----------------'
-        print 'left-click & drag        ->   Rotate cube'
-        print 'CTRL+left-click & drag   ->   Zoom in/out'
-        print 'SHIFT+left-click & drag  ->  Pan'
-        print
-        print 'Keybinds:'
-        print '---------'
-        print 'l       -> toggle light'
-        print 't/g     -> stretch/compress z-dimension'
-        print 'h       -> print help message'
-        print 'q       -> close window'
-        print
+        print()
+        print('Mouse Functions:')
+        print('----------------')
+        print('left-click & drag        ->   Rotate cube')
+        print('CTRL+left-click & drag   ->   Zoom in/out')
+        print('SHIFT+left-click & drag  ->  Pan')
+        print()
+        print('Keybinds:')
+        print('---------')
+        print('l       -> toggle light')
+        print('t/g     -> stretch/compress z-dimension')
+        print('h       -> print help message')
+        print('q       -> close window')
+        print()

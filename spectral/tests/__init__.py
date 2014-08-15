@@ -34,6 +34,8 @@ To run all unit tests, type the following from the system command line:
     # python -m spectral.tests.run
 '''
 
+from __future__ import division, print_function, unicode_literals
+
 # If abort_on_fail is True, an AssertionError will be raised when a unit test
 # fails; otherwise, the failure will be printed to stdout and testing will
 # continue.

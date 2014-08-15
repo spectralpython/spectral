@@ -32,8 +32,13 @@
 Tools for handling files that are band sequential (BSQ).
 '''
 
-from spyfile import SpyFile, MemmapFile
+from __future__ import division, print_function, unicode_literals
+
 import numpy as np
+from .spyfile import SpyFile, MemmapFile
+from spectral.utilities.python23 import typecode
+
+byte_typecode = typecode('b')
 
 
 class BsqFile(SpyFile, MemmapFile):
@@ -53,13 +58,13 @@ class BsqFile(SpyFile, MemmapFile):
     def _open_memmap(self, mode):
         import os
         import sys
-        if (os.path.getsize(self.filename) < sys.maxint):
+        if (os.path.getsize(self.filename) < sys.maxsize):
             try:
                 (R, C, B) = self.shape
                 return np.memmap(self.filename, dtype=self.dtype, mode=mode,
                                  offset=self.offset, shape=(B, R, C))
             except:
-                print 'Unable to create memmap interface.'
+                print('Unable to create memmap interface.')
                 return None
         else:
             return None
@@ -94,7 +99,7 @@ class BsqFile(SpyFile, MemmapFile):
                 data = data / float(self.scale_factor)
             return data
 
-        vals = array('b')
+        vals = array(byte_typecode)
         offset = self.offset + band * self.sample_size * \
             self.nrows * self.ncols
 
@@ -149,7 +154,7 @@ class BsqFile(SpyFile, MemmapFile):
 
         for j in range(len(bands)):
 
-            vals = array('b')
+            vals = array(byte_typecode)
             offset = self.offset + (bands[j]) * self.sample_size \
                 * self.nrows * self.ncols
 
@@ -194,7 +199,7 @@ class BsqFile(SpyFile, MemmapFile):
                 data = data / float(self.scale_factor)
             return data
 
-        vals = array('b')
+        vals = array(byte_typecode)
         delta = self.sample_size * (self.nbands - 1)
         offset = self.offset + row * self.nbands * self.ncols \
             * self.sample_size + col * self.sample_size
@@ -277,7 +282,7 @@ class BsqFile(SpyFile, MemmapFile):
         # Increments between bands
         if bands is None:
             # Read all bands.
-            bands = range(self.nbands)
+            bands = list(range(self.nbands))
 
         arr = np.zeros((nSubRows, nSubCols, len(bands)), dtype=self.dtype)
 
@@ -292,7 +297,7 @@ class BsqFile(SpyFile, MemmapFile):
 
         # Pixel format is BSQ
         for i in bands:
-            vals = array('b')
+            vals = array(byte_typecode)
             bandOffset = i * bandSize
             for j in range(row_bounds[0], row_bounds[1]):
                 f.seek(self.offset
@@ -367,13 +372,13 @@ class BsqFile(SpyFile, MemmapFile):
         # Increments between bands
         if bands is None:
             # Read all bands.
-            bands = range(self.nbands)
+            bands = list(range(self.nbands))
         nSubBands = len(bands)
 
         arr = np.zeros((nSubRows, nSubCols, nSubBands), dtype=self.dtype)
 
         offset = self.offset
-        vals = array('b')
+        vals = array(byte_typecode)
 
         nrows = self.nrows
         ncols = self.ncols
@@ -434,7 +439,7 @@ class BsqFile(SpyFile, MemmapFile):
                       + (k * nrows * ncols
                          + i * ncols
                          + j) * sampleSize, 0)
-        vals = array.array('b')
+        vals = array.array(byte_typecode)
         vals.fromfile(self.fid, sampleSize)
         arr = np.fromstring(vals.tostring(), dtype=self.dtype)
         return arr.tolist()[0] / float(self.scale_factor)

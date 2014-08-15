@@ -29,6 +29,8 @@
 #
 
 
+from __future__ import division, print_function, unicode_literals
+
 class ColorScale:
     '''
     A color scale class to map scalar values to rgb colors.  The class allows
@@ -73,7 +75,7 @@ class ColorScale:
         self.max = levels[-1]
         self.min = levels[0]
         self.tics = np.array(
-            range(num_tics), np.float) * (self.span / num_tics) + self.min
+            list(range(num_tics)), np.float) * (self.span / num_tics) + self.min
         self.colorTics = np.zeros([self.tics.shape[0], 3], np.int)
         self.size = len(self.tics)
         self.bgColor = np.array([0, 0, 0])

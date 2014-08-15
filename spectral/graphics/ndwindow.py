@@ -33,6 +33,8 @@ This file contains functions and classes for display N-dimensional data sets
 in 3D using OpenGL.
 '''
 
+from __future__ import division, print_function, unicode_literals
+
 try:
     import wx
     from wx import glcanvas
@@ -92,7 +94,7 @@ class MouseHandler:
                 self.window.canvas.Refresh()
             elif wx.GetKeyState(wx.WXK_SHIFT):
                 # Switch to box selection mode.
-                print 'IN BOX SELECTION MODE.'
+                print('IN BOX SELECTION MODE.')
                 self.mode = 'BOX_SELECT'
             elif wx.GetKeyState(wx.WXK_CONTROL):
                 # Switch to zoom mode.
@@ -107,11 +109,11 @@ class MouseHandler:
             self.update_box_coordinates()
             # Box selection ends when the button is released.
             if wx.GetKeyState(wx.WXK_SHIFT):
-                print 'BOX HAS BEEN SELECTED.'
+                print('BOX HAS BEEN SELECTED.')
                 self.mode = 'DEFAULT'
             else:
                 # Shift key was released before box selection completed.
-                print 'BOX SELECTION CANCELLED.'
+                print('BOX SELECTION CANCELLED.')
                 self.window._selection_box = None
             self.window.canvas.SetCurrent(self.window.canvas.context)
             self.window.canvas.Refresh()
@@ -184,7 +186,7 @@ class MouseMenu(wx.Menu):
         for i in range(self.window.max_menu_class + 1):
             id = self.ids[i]
             self.id_classes[id] = i
-            print '(id, i) =', (id, i)
+            print('(id, i) =', (id, i))
             mi = wx.MenuItem(self, id, str(i))
             self.AppendItem(mi)
             self.Bind(wx.EVT_MENU, self.reassign_points, mi)
@@ -377,7 +379,7 @@ class NDWindow(wx.Frame):
         self.data = data
         self.classes = kwargs.get('classes',
                                   np.zeros(data.shape[:-1], np.int))
-        self.features = kwargs.get('features', range(6))
+        self.features = kwargs.get('features', list(range(6)))
         self.max_menu_class = int(np.max(self.classes.ravel() + 1))
 
         from matplotlib.cbook import CallbackRegistry
@@ -419,7 +421,7 @@ class NDWindow(wx.Frame):
         '''
         import OpenGL.GL as gl
         classes = kwargs.get('classes', None)
-        features = kwargs.get('features', range(6))
+        features = kwargs.get('features', list(range(6)))
         if self.data.shape[2] < 6:
             features = features[:3]
             self.quadrant_mode == 'single'
@@ -486,7 +488,7 @@ class NDWindow(wx.Frame):
             of a list, in which case nothing will be rendered in that octant.
         '''
         if features is None:
-            features = range(6)
+            features = list(range(6))
         if len(features) == 3:
             self.octant_features = [features] + [None] * 7
             new_quadrant_mode = 'single'
@@ -500,7 +502,7 @@ class NDWindow(wx.Frame):
             new_quadrant_mode = 'independent'
             self.target_pos = np.array([0.0, 0.0, 0.0])
         if new_quadrant_mode != self.quadrant_mode:
-            print 'Setting quadrant display mode to %s.' % new_quadrant_mode
+            print('Setting quadrant display mode to %s.' % new_quadrant_mode)
             self.quadrant_mode = new_quadrant_mode
         self._refresh_display_lists = True
 
@@ -575,14 +577,14 @@ class NDWindow(wx.Frame):
         '''Randomizes data features displayed using current display mode.'''
         import random
         from pprint import pprint
-        ids = range(self.data.shape[2])
+        ids = list(range(self.data.shape[2]))
         if self.quadrant_mode == 'single':
             features = random_subset(ids, 3)
         elif self.quadrant_mode == 'mirrored':
             features = random_subset(ids, 6)
         else:
             features = [random_subset(ids, 3) for i in range(8)]
-        print 'New feature IDs:'
+        print('New feature IDs:')
         pprint(np.array(features))
         self.set_octant_display_features(features)
 
@@ -602,7 +604,7 @@ class NDWindow(wx.Frame):
                                 '"independent" mode.')
         else:
             raise Exception('Unrecognized feature mode: %s.' % str(mode))
-        print 'New feature IDs:'
+        print('New feature IDs:')
         pprint(np.array(features))
         self.set_octant_display_features(features)
         self.Refresh()
@@ -687,7 +689,7 @@ class NDWindow(wx.Frame):
         if self._selection_box is None:
             msg = 'Bounding box is not selected. Hold SHIFT and click & ' + \
                   'drag with the left\nmouse button to select a region.'
-            print msg
+            print(msg)
             return 0
         self.add_display_command(lambda: self.reassign_selection(new_class))
         self.canvas.Refresh()
@@ -705,7 +707,7 @@ class NDWindow(wx.Frame):
         import spectral
         nreassigned_tot = 0
         i = 1
-        print 'Reassigning points',
+        print('Reassigning points', end=' ')
         while True:
             indices = np.array(self._display_indices)
             classes = np.array(self.classes.ravel()[indices])
@@ -724,10 +726,10 @@ class NDWindow(wx.Frame):
                 break
 #           print 'Pass %d: %d points reassigned to class %d.' \
 #                 % (i, nreassigned, new_class)
-            print '.',
+            print('.', end=' ')
             i += 1
-        print '\n%d points were reasssigned to class %d.' \
-              % (nreassigned_tot, new_class)
+        print('\n%d points were reasssigned to class %d.' \
+              % (nreassigned_tot, new_class))
         self._selection_box = None
         if nreassigned_tot > 0 and new_class == self.max_menu_class:
             self.max_menu_class += 1
@@ -797,7 +799,7 @@ class NDWindow(wx.Frame):
         for id in ids:
             if id > 0:
                 rc = self.index_to_image_row_col(id)
-                print 'Pixel %d %s has class %s.' % (id, rc, self.classes[rc])
+                print('Pixel %d %s has class %s.' % (id, rc, self.classes[rc]))
         return
 
     def render_rgb_indexed_colors(self, **kwargs):
@@ -944,8 +946,8 @@ class NDWindow(wx.Frame):
             self.view_class_image()
         elif key == 'd':
             if self.data.shape[2] < 6:
-                print 'Only single-quadrant mode is supported for %d features.' % \
-                      self.data.shape[2]
+                print('Only single-quadrant mode is supported for %d features.' % \
+                      self.data.shape[2])
                 return
             if self.quadrant_mode == 'single':
                 self.quadrant_mode = 'mirrored'
@@ -953,7 +955,7 @@ class NDWindow(wx.Frame):
                 self.quadrant_mode = 'independent'
             else:
                 self.quadrant_mode = 'single'
-            print 'Setting quadrant display mode to %s.' % self.quadrant_mode
+            print('Setting quadrant display mode to %s.' % self.quadrant_mode)
             self.randomize_features()
         elif key == 'f':
             self.randomize_features()
@@ -974,7 +976,7 @@ class NDWindow(wx.Frame):
             self.reset_view_geometry()
         elif key == 'u':
             self._show_unassigned = not self._show_unassigned
-            print 'SHOW UNASSIGNED =', self._show_unassigned
+            print('SHOW UNASSIGNED =', self._show_unassigned)
             self._refresh_display_lists = True
  
         self.canvas.Refresh()
@@ -1004,7 +1006,7 @@ class NDWindow(wx.Frame):
     def print_help(self):
         '''Prints a list of accepted keyboard/mouse inputs.'''
         import os
-        print '''Mouse functions:
+        print('''Mouse functions:
 ---------------
 Left-click & drag       -->     Rotate viewing geometry (or pan)
 CTRL+Left-click & drag  -->     Zoom viewing geometry
@@ -1026,12 +1028,11 @@ p/P     -->     Increase/Decrease the size of displayed points
 q       -->     Exit the application
 r       -->     Reset viewing geometry
 u       -->     Toggle display of unassigned points (points with class == 0)
-'''
+''')
 
 
 def validate_args(data, *args, **kwargs):
     '''Validates arguments to the `ndwindow` function.'''
-    from exceptions import ValueError, TypeError
     import numpy as np
     if not isinstance(data, np.ndarray):
         raise TypeError('`data` argument must be a numpy ndarray.')

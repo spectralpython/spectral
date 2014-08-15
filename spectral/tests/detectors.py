@@ -34,9 +34,11 @@ To run the unit tests, type the following from the system command line:
     # python -m spectral.tests.detectors
 '''
 
+from __future__ import division, print_function, unicode_literals
+
 import numpy as np
 from numpy.testing import assert_allclose
-from spytest import SpyTest
+from .spytest import SpyTest
 import spectral as spy
 
 
@@ -90,9 +92,9 @@ class RXTest(SpyTest):
         
 
 def run():
-    print '\n' + '-' * 72
-    print 'Running target detector tests.'
-    print '-' * 72
+    print('\n' + '-' * 72)
+    print('Running target detector tests.')
+    print('-' * 72)
     for T in [MatchedFilterTest, RXTest]:
         T().run()
 

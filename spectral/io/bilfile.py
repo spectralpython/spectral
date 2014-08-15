@@ -32,8 +32,13 @@
 Tools for handling files that are band interleaved by line (BIL).
 '''
 
-from spyfile import SpyFile, MemmapFile
+from __future__ import division, print_function, unicode_literals
+
 import numpy as np
+from .spyfile import SpyFile, MemmapFile
+from spectral.utilities.python23 import typecode
+
+byte_typecode = typecode('b')
 
 
 class BilFile(SpyFile, MemmapFile):
@@ -54,13 +59,13 @@ class BilFile(SpyFile, MemmapFile):
     def _open_memmap(self, mode):
         import os
         import sys
-        if (os.path.getsize(self.filename) < sys.maxint):
+        if (os.path.getsize(self.filename) < sys.maxsize):
             try:
                 (R, C, B) = self.shape
                 return np.memmap(self.filename, dtype=self.dtype, mode=mode,
                                  offset=self.offset, shape=(R, B, C))
             except:
-                print 'Unable to create memmap interface.'
+                print('Unable to create memmap interface.')
                 return None
         else:
             return None
@@ -96,7 +101,7 @@ class BilFile(SpyFile, MemmapFile):
                 data = data / float(self.scale_factor)
             return data
 
-        vals = array('b')
+        vals = array(byte_typecode)
         offset = self.offset + band * self.sample_size * self.ncols
 
         f = self.fid
@@ -152,7 +157,7 @@ class BilFile(SpyFile, MemmapFile):
         arr = numpy.empty((self.nrows, self.ncols, len(bands)), self.dtype)
 
         for i in range(self.nrows):
-            vals = array('b')
+            vals = array(byte_typecode)
             row_offset = self.offset + i * (self.sample_size * self.nbands *
                                             self.ncols)
 
@@ -200,7 +205,7 @@ class BilFile(SpyFile, MemmapFile):
                 data = data / float(self.scale_factor)
             return data
 
-        vals = array('b')
+        vals = array(byte_typecode)
         delta = self.sample_size * (self.nbands - 1)
         offset = self.offset + row * self.nbands * self.ncols \
             * self.sample_size + col * self.sample_size
@@ -279,7 +284,7 @@ class BilFile(SpyFile, MemmapFile):
         # Increments between bands
         if bands is None:
             # Read all bands.
-            bands = range(self.nbands)
+            bands = list(range(self.nbands))
 
         arr = numpy.empty((nSubRows, nSubCols, len(bands)), self.dtype)
 
@@ -292,7 +297,7 @@ class BilFile(SpyFile, MemmapFile):
         for i in range(row_bounds[0], row_bounds[1]):
             f.seek(offset + i * d_row + colStartPos, 0)
             rowPos = f.tell()
-            vals = array('b')
+            vals = array(byte_typecode)
             for j in bands:
                 f.seek(rowPos + j * ncols * sampleSize, 0)
                 vals.fromfile(f, nSubCols * sampleSize)
@@ -363,13 +368,13 @@ class BilFile(SpyFile, MemmapFile):
         # Increments between bands
         if bands is None:
             # Read all bands.
-            bands = range(self.nbands)
+            bands = list(range(self.nbands))
         nSubBands = len(bands)
 
         arr = numpy.empty((nSubRows, nSubCols, nSubBands), self.dtype)
 
         offset = self.offset
-        vals = array('b')
+        vals = array(byte_typecode)
         sample_size = self.sample_size
 
         # Pixel format is BIL
@@ -419,7 +424,7 @@ class BilFile(SpyFile, MemmapFile):
         d_row = d_band * self.nbands
 
         self.fid.seek(self.offset + i * d_row + j * d_col + k * d_band, 0)
-        vals = array.array('b')
+        vals = array.array(byte_typecode)
         vals.fromfile(self.fid, self.sample_size)
         arr = np.fromstring(vals.tostring(), dtype=self.dtype)
         return arr.tolist()[0] / float(self.scale_factor)

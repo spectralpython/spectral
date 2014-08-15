@@ -33,6 +33,8 @@ To run all unit tests, type the following from the system command line:
 
     # python -m spectral.tests.run
 '''
+from __future__ import division, print_function, unicode_literals
+
 import spectral.tests
 
 def parse_args():
@@ -55,9 +57,9 @@ def print_summary():
                                            spectral.tests._num_tests_run)
     else:
         msg =  'All %d tests PASSED!' % spectral.tests._num_tests_run
-    print '\n' + '-' * 72
-    print msg
-    print '-' * 72
+    print('\n' + '-' * 72)
+    print(msg)
+    print('-' * 72)
 
 if __name__ == '__main__':
     parse_args()

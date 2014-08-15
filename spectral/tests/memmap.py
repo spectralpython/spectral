@@ -40,9 +40,11 @@ To run the unit tests, type the following from the system command line:
     # python -m spectral.tests.memmap
 '''
 
+from __future__ import division, print_function, unicode_literals
+
 import numpy as np
 from numpy.testing import assert_almost_equal
-from spytest import SpyTest
+from .spytest import SpyTest
 from spectral.tests import testdir
 
 class SpyFileMemmapTest(SpyTest):
@@ -171,14 +173,14 @@ class SpyFileMemmapTestSuite(object):
         import os
         import itertools
         import spectral
-        print '\n' + '-' * 72
-        print 'Running memmap tests.'
-        print '-' * 72
+        print('\n' + '-' * 72)
+        print('Running memmap tests.')
+        print('-' * 72)
         if not os.path.isdir(testdir):
             os.mkdir(testdir)
         interleaves = ('bil', 'bip', 'bsq')
         for inter in interleaves:
-            print 'Testing memmaps with %s image file.' % inter.upper()
+            print('Testing memmaps with %s image file.' % inter.upper())
             test = SpyFileMemmapTest(self.filename, self.datum, self.value,
                                      inter)
             test.run()

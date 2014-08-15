@@ -34,11 +34,13 @@ To run the unit tests, type the following from the system command line:
     # python -m spectral.tests.classifiers
 '''
 
+from __future__ import division, print_function, unicode_literals
+
 import os
 import numpy as np
 import spectral as spy
 from numpy.testing import assert_allclose
-from spytest import SpyTest, test_method
+from .spytest import SpyTest, test_method
 from spectral.tests import testdir
 
 class ClassifierTest(SpyTest):
@@ -64,7 +66,7 @@ class ClassifierTest(SpyTest):
         ts = spy.create_training_classes(self.data, self.gt, calc_stats=True)
         ts.save(self.class_filename)
         ts2 = spy.load_training_sets(self.class_filename, image=self.data)
-        ids = ts.classes.keys()
+        ids = list(ts.classes.keys())
         for id in ids:
             s1 = ts[id]
             s2 = ts2[id]
@@ -139,9 +141,9 @@ class ClassifierTest(SpyTest):
 
 
 def run():
-    print '\n' + '-' * 72
-    print 'Running classifier tests.'
-    print '-' * 72
+    print('\n' + '-' * 72)
+    print('Running classifier tests.')
+    print('-' * 72)
     test = ClassifierTest()
     test.run()
 

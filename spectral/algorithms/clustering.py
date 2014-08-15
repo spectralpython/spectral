@@ -31,10 +31,11 @@
 Unsupervised clustering algorithms.
 '''
 
-import numpy
-from classifiers import Classifier
+from __future__ import division, print_function, unicode_literals
 
-from exceptions import DeprecationWarning
+import numpy
+from .classifiers import Classifier
+
 from warnings import warn
 
 
@@ -174,7 +175,7 @@ def kmeans(image, nclusters=10, max_iterations=20, **kwargs):
     distance = L2
     iterations = None
 
-    for (key, val) in kwargs.items():
+    for (key, val) in list(kwargs.items()):
         if key == 'start_clusters':
             start_clusters = val
         elif key == 'compare':
@@ -202,7 +203,7 @@ def kmeans(image, nclusters=10, max_iterations=20, **kwargs):
         nclusters clusters in the startCenters array.'
         centers = numpy.array(start_clusters)
     else:
-        print 'Initializing clusters along diagonal of N-dimensional bounding box.'
+        print('Initializing clusters along diagonal of N-dimensional bounding box.')
         centers = numpy.empty((nclusters, nbands), float)
         boxMin = image[0, 0]
         boxMax = image[0, 0]
@@ -268,11 +269,11 @@ def kmeans(image, nclusters=10, max_iterations=20, **kwargs):
             itnum += 1
 
         except KeyboardInterrupt:
-            print "KeyboardInterrupt: Returning clusters from previous iteration"
+            print("KeyboardInterrupt: Returning clusters from previous iteration")
             return (old_clusters, old_centers)
 
-    print >>status, 'kmeans terminated with', len(set(old_clusters.ravel())), \
-        'clusters after', itnum - 1, 'iterations.'
+    print('kmeans terminated with', len(set(old_clusters.ravel())), \
+        'clusters after', itnum - 1, 'iterations.', file=status)
     return (old_clusters, centers)
 
 
@@ -354,7 +355,7 @@ def kmeans_ndarray(image, nclusters=10, max_iterations=20, **kwargs):
     distance = L2
     iterations = None
 
-    for (key, val) in kwargs.items():
+    for (key, val) in list(kwargs.items()):
         if key == 'start_clusters':
             start_clusters = val
         elif key == 'compare':
@@ -383,7 +384,7 @@ def kmeans_ndarray(image, nclusters=10, max_iterations=20, **kwargs):
         nclusters clusters in the startCenters array.'
         centers = numpy.array(start_clusters)
     else:
-        print 'Initializing clusters along diagonal of N-dimensional bounding box.'
+        print('Initializing clusters along diagonal of N-dimensional bounding box.')
         boxMin = np.amin(image, 0)
         boxMax = np.amax(image, 0)
         delta = (boxMax - boxMin) / (nclusters - 1)
@@ -438,11 +439,11 @@ def kmeans_ndarray(image, nclusters=10, max_iterations=20, **kwargs):
             itnum += 1
 
         except KeyboardInterrupt:
-            print "KeyboardInterrupt: Returning clusters from previous iteration."
+            print("KeyboardInterrupt: Returning clusters from previous iteration.")
             return (old_clusters.reshape(nrows, ncols), old_centers)
 
-    print >>status, 'kmeans terminated with', len(set(old_clusters.ravel())), \
-        'clusters after', itnum - 1, 'iterations.'
+    print('kmeans terminated with', len(set(old_clusters.ravel())), \
+        'clusters after', itnum - 1, 'iterations.', file=status)
     return (old_clusters.reshape(nrows, ncols), centers)
 
 

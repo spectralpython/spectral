@@ -28,8 +28,9 @@
 # Thomas Boggs, tboggs@users.sourceforge.net
 #
 
+from __future__ import division, print_function, unicode_literals
 
-from spyfile import SpyFile
-import aviris
-import erdas
-import envi
+from .spyfile import SpyFile
+from ..io import aviris
+from ..io import erdas
+from ..io import envi

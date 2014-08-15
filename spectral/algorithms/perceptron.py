@@ -32,6 +32,8 @@
 Classes and functions for classification with neural networks.
 '''
 
+from __future__ import division, print_function, unicode_literals
+
 import numpy as np
 import sys
 
@@ -281,7 +283,7 @@ class Perceptron:
             for layer in self.layers:
                 layer.dW_old = np.zeros_like(layer.dW)
 
-            for iteration in xrange(max_iterations):
+            for iteration in range(max_iterations):
 
                 self._reset_corrections()
                 self.error = 0
@@ -289,7 +291,7 @@ class Perceptron:
                 num_correct = 0
                 num_summed = 0
 
-                for (x, t) in itertools.izip(X, Y):
+                for (x, t) in zip(X, Y):
                     num_samples += 1
                     num_summed += 1
                     num_correct += np.all(np.round(self.input(x, clip)) == t)
@@ -424,7 +426,7 @@ and_data = [
 ]
 
 def test_case(XY, shape, *args, **kwargs):
-    (X, Y) = zip(*XY)
+    (X, Y) = list(zip(*XY))
     p = Perceptron(shape)
     trained = p.train(X, Y, *args, **kwargs)
     return (trained, p)
@@ -456,13 +458,13 @@ if __name__ == '__main__':
              ('XOR (2x3x1)', test_xor231)]
     results = [test[1](5000)[0] for test in tests]
     nr = [(p[0][0], p[1]) for p in zip(tests, results)]
-    print
-    print 'Training results for 5000 iterations'
-    print '------------------------------------'
+    print()
+    print('Training results for 5000 iterations')
+    print('------------------------------------')
     for (name, result) in nr:
         s = [ 'FAILED', 'PASSED'][result]
-        print '{:<20}: {}'.format(name, s)
+        print('{:<20}: {}'.format(name, s))
     if False in results:
-        print '\nNote: XOR convergence for these small network sizes is'
-        print 'dependent on initial weights, which are randomized. Try'
-        print 'running the test again.'
+        print('\nNote: XOR convergence for these small network sizes is')
+        print('dependent on initial weights, which are randomized. Try')
+        print('running the test again.')

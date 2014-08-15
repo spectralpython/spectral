@@ -35,10 +35,12 @@ To run the unit tests, type the following from the system command line:
     # python -m spectral.tests.envi
 '''
 
+from __future__ import division, print_function, unicode_literals
+
 import numpy as np
 import os
 from numpy.testing import assert_almost_equal
-from spytest import SpyTest
+from .spytest import SpyTest
 from spectral.tests import testdir
 
 class ENVIWriteTest(SpyTest):
@@ -137,9 +139,9 @@ class ENVIWriteTest(SpyTest):
         assert(np.all(gt == gt2))
 
 def run():
-    print '\n' + '-' * 72
-    print 'Running ENVI tests.'
-    print '-' * 72
+    print('\n' + '-' * 72)
+    print('Running ENVI tests.')
+    print('-' * 72)
     write_test = ENVIWriteTest()
     write_test.run()
 

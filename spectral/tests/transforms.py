@@ -39,9 +39,11 @@ To run the unit tests, type the following from the system command line:
     # python -m spectral.tests.transforms
 '''
 
+from __future__ import division, print_function, unicode_literals
+
 import numpy as np
 from numpy.testing import assert_almost_equal
-from spytest import SpyTest
+from .spytest import SpyTest
 
 
 class LinearTransformTest(SpyTest):
@@ -161,21 +163,21 @@ def run():
     import spectral as spy
     (fname, datum, value) = ('92AV3C.lan', (99, 99, 99), 2057.0)
     image = spy.open_image(fname)
-    print '\n' + '-' * 72
-    print 'Running LinearTransform tests on SpyFile object.'
-    print '-' * 72
+    print('\n' + '-' * 72)
+    print('Running LinearTransform tests on SpyFile object.')
+    print('-' * 72)
     test = LinearTransformTest(image, datum, value)
     test.run()
     data = image.load()
-    print '\n' + '-' * 72
-    print 'Running LinearTransform tests on ImageArray object.'
-    print '-' * 72
+    print('\n' + '-' * 72)
+    print('Running LinearTransform tests on ImageArray object.')
+    print('-' * 72)
     test = LinearTransformTest(data, datum, value)
     test.run()
     image.scale_factor = 10000.0
-    print '\n' + '-' * 72
-    print 'Running LinearTransform tests on SpyFile object with scale factor.'
-    print '-' * 72
+    print('\n' + '-' * 72)
+    print('Running LinearTransform tests on SpyFile object with scale factor.')
+    print('-' * 72)
     test = LinearTransformTest(image, datum, value / 10000.0)
     test.run()
 

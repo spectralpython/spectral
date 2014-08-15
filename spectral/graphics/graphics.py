@@ -33,7 +33,8 @@
 Common functions for extracting and manipulating data for graphical display.
 '''
 
-from exceptions import UserWarning
+from __future__ import division, print_function, unicode_literals
+
 from warnings import warn
 import numpy as np
 import spectral
@@ -100,7 +101,7 @@ def view(*args, **kwargs):
     middle, and last bands will be displayed in the RGB channels, unless
     `bands` is specified.
     '''
-    import graphics
+    from . import graphics
     from spectral.spectral import Image
     from spectral.graphics.rasterwindow import RasterWindow
 
@@ -373,7 +374,7 @@ def make_pil_image(*args, **kwargs):
     '''
 
     import numpy
-    import StringIO
+    import io
 
     try:
         from PIL import Image, ImageDraw
@@ -519,7 +520,6 @@ def get_rgb(source, bands=None, **kwargs):
     from numpy import (take, zeros, repeat, ravel, minimum, maximum, clip,
                        float, int, newaxis)
     from spectral.spectral import Image
-    from exceptions import TypeError
 
     if not bands:
         bands = []

@@ -33,6 +33,8 @@
 Miscellaneous math functions
 '''
 
+from __future__ import division, print_function, unicode_literals
+
 import numpy as np
 
 
@@ -77,12 +79,11 @@ def matrix_sqrt(X=None, symmetric=False, inverse=False, eigs=None):
     else:
         return V.dot(SRV).dot(np.linalg.inv(V))
 
-import exceptions
 
-class NaNValueWarning(exceptions.UserWarning):
+class NaNValueWarning(UserWarning):
     pass
 
-class NaNValueError(exceptions.ValueError):
+class NaNValueError(ValueError):
     pass
 
 def has_nan(X):

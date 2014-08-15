@@ -28,10 +28,11 @@
 # Send comments to:
 # Thomas Boggs, tboggs@users.sourceforge.net
 #
-
 '''
 Spectral target detection algorithms
 '''
+
+from __future__ import division, print_function, unicode_literals
 
 __all__ = ['MatchedFilter', 'matched_filter', 'RX', 'rx']
 
@@ -190,7 +191,6 @@ def matched_filter(X, target, background=None, window=None, cov=None):
         pixel given.  If `X` has shape (R, C, K), the returned ndarray will
         have shape (R, C).
     '''
-    from exceptions import ValueError
     if background is not None and window is not None:
         raise ValueError('`background` and `window` are mutually ' \
                          'exclusive arguments.')
@@ -392,7 +392,6 @@ def rx(X, background=None, window=None, cov=None):
     pattern with unknown spectral distribution," IEEE Trans. Acoust.,
     Speech, Signal Processing, vol. 38, pp. 1760-1770, Oct. 1990.
     '''
-    from exceptions import ValueError
     if background is not None and window is not None:
         raise ValueError('`background` and `window` keywords are mutually ' \
                          'exclusive.')
@@ -406,5 +405,4 @@ def rx(X, background=None, window=None, cov=None):
                                       dim_out=1, cov=cov)
     else:
         return RX(background)(X)
-
 

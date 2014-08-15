@@ -32,9 +32,13 @@
 Tools for handling files that are band interleaved by pixel (BIP).
 '''
 
-from spyfile import SpyFile, MemmapFile
-import numpy as np
+from __future__ import division, print_function, unicode_literals
 
+import numpy as np
+from .spyfile import SpyFile, MemmapFile
+from spectral.utilities.python23 import typecode
+
+byte_typecode = typecode('b')
 
 class BipFile(SpyFile, MemmapFile):
     '''
@@ -52,13 +56,13 @@ class BipFile(SpyFile, MemmapFile):
     def _open_memmap(self, mode):
         import os
         import sys
-        if (os.path.getsize(self.filename) < sys.maxint):
+        if (os.path.getsize(self.filename) < sys.maxsize):
             try:
                 (R, C, B) = self.shape
                 return np.memmap(self.filename, dtype=self.dtype, mode=mode,
                                  offset=self.offset, shape=self.shape)
             except:
-                print 'Unable to create memmap interface.'
+                print('Unable to create memmap interface.')
                 return None
         else:
             return None
@@ -93,7 +97,7 @@ class BipFile(SpyFile, MemmapFile):
                 data = data / float(self.scale_factor)
             return data
 
-        vals = array('b')
+        vals = array(byte_typecode)
         delta = self.sample_size * (self.nbands - 1)
         nVals = self.nrows * self.ncols
         sample_size = self.sample_size
@@ -146,7 +150,7 @@ class BipFile(SpyFile, MemmapFile):
                 data = data / float(self.scale_factor)
             return data
 
-        vals = array('b')
+        vals = array(byte_typecode)
         offset = self.offset
         delta = self.sample_size * self.nbands
         nVals = self.nrows * self.ncols
@@ -201,7 +205,7 @@ class BipFile(SpyFile, MemmapFile):
                 data = data / float(self.scale_factor)
             return data
 
-        vals = array('b')
+        vals = array(byte_typecode)
 
         f = self.fid
         f.seek(self.offset + self.sample_size
@@ -267,7 +271,7 @@ class BipFile(SpyFile, MemmapFile):
         nSubCols = col_bounds[1] - col_bounds[0]  # Cols in sub-image
         d_row = self.sample_size * self.ncols * self.nbands
         colStartPos = col_bounds[0] * self.sample_size * self.nbands
-        vals = array.array('b')
+        vals = array.array(byte_typecode)
         nVals = self.nrows * self.ncols
         sample_size = self.sample_size
 
@@ -358,7 +362,7 @@ class BipFile(SpyFile, MemmapFile):
         d_band = self.sample_size
         d_col = d_band * self.nbands
         d_row = d_col * self.ncols
-        vals = array.array('b')
+        vals = array.array(byte_typecode)
         nVals = self.nrows * self.ncols
         sample_size = self.sample_size
 
@@ -368,7 +372,7 @@ class BipFile(SpyFile, MemmapFile):
             nSubBands = len(bands)
         else:
             allBands = 1
-            bands = range(self.nbands)
+            bands = list(range(self.nbands))
             nSubBands = self.nbands
 
         f = self.fid
@@ -420,7 +424,7 @@ class BipFile(SpyFile, MemmapFile):
                 datum /= float(self.scale_factor)
             return datum
 
-        vals = array('b')
+        vals = array(byte_typecode)
         f = self.fid
         f.seek(self.offset + self.sample_size
                * (self.nbands * (i * self.ncols + j) + k), 0)

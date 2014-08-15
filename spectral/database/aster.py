@@ -29,6 +29,8 @@
 #
 
 
+from __future__ import division, print_function, unicode_literals
+
 table_schemas = [
     'CREATE TABLE Samples (SampleID INTEGER PRIMARY KEY, Name TEXT, Type TEXT, Class TEXT, SubClass TEXT, '
     'ParticleSize TEXT, SampleNum TEXT, Owner TEXT, Origin TEXT, Phase TEXT, Description TEXT)',
@@ -98,7 +100,7 @@ def read_file(filename):
     for i in range(len(lpv)):
         pair = read_pair(fin, lpv[i])
         if len(pair) < 2:
-            print pair
+            print(pair)
         s.measurement[pair[0].lower()] = pair[1]
 
     # Read signature spectrum
@@ -116,17 +118,17 @@ def read_file(filename):
 #                 %  (pair[0], filename)
             continue
         elif nItems > 2:
-            print 'more than 2 values on signature line,', filename
+            print('more than 2 values on signature line,', filename)
             continue
         try:
             x = float(pair[0])
         except:
-            print 'corrupt signature line,', filename
+            print('corrupt signature line,', filename)
         if x == 0:
 #           print 'Zero wavelength value', filename
             continue
         elif x < 0:
-            print 'Negative wavelength value,', filename
+            print('Negative wavelength value,', filename)
             continue
 
         pairs.append(pair)
@@ -269,7 +271,7 @@ class AsterDatabase:
             if f in filesToIgnore:
                 numIgnored += 1
                 continue
-            print('Importing %s.' % f)
+            print(('Importing %s.' % f))
             numFiles += 1
             sig = read_file(f)
             s = sig.sample
@@ -303,14 +305,14 @@ class AsterDatabase:
                                 m['x units'], yUnit, m['first x value'],
                                 m['last x value'], sig.x, sig.y)
         if numFiles == 0:
-            print 'No ASTER data files were found in directory "%s".' \
-                  % aster_data_dir
+            print('No ASTER data files were found in directory "%s".' \
+                  % aster_data_dir)
         else:
-            print 'Processed %d files.' % numFiles
+            print('Processed %d files.' % numFiles)
         if numIgnored > 0:
-            print 'Ignored the following %d bad files:' % (numIgnored)
+            print('Ignored the following %d bad files:' % (numIgnored))
             for f in filesToIgnore:
-                print '\t' + f
+                print('\t' + f)
 
         return sigs
 
@@ -481,7 +483,7 @@ class AsterDatabase:
         '''
         ret = self.query(sql, args)
         for row in ret:
-            print "|".join([str(x) for x in row])
+            print("|".join([str(x) for x in row]))
 
     def create_envi_spectral_library(self, spectrumIDs, bandInfo):
         '''Creates an ENVI-formatted spectral library for a list of spectra.

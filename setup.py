@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import division, print_function, unicode_literals
+
 try:
     from setuptools import setup
 except:

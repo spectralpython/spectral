@@ -29,6 +29,10 @@
 #
 
 
+from __future__ import division, print_function, unicode_literals
+
+import collections
+
 class SpyTest(object):
     '''Base class for test cases.
 
@@ -61,11 +65,11 @@ class SpyTest(object):
                 pass
         null = NullStdOut()
         methods = [getattr(self, s) for s in sorted(dir(self)) if s.startswith('test_')]
-        methods = [m for m in methods if callable(m)]
+        methods = [m for m in methods if isinstance(m, collections.Callable)]
         stdout = sys.stdout
         for method in methods:
-            print format('Testing ' + method.__name__.split('_', 1)[-1],
-                         '.<60'),
+            print(format('Testing ' + method.__name__.split('_', 1)[-1],
+                         '.<60'), end=' ')
             tests._num_tests_run += 1
             try:
                 sys.stdout = null
@@ -87,14 +91,14 @@ def test_method(method):
     def meth(self):
         import spectral.tests as tests
         from spectral.tests import abort_on_fail
-        print format('Testing ' + method.__name__.split('_', 1)[-1],
-                     '.<40'),
+        print(format('Testing ' + method.__name__.split('_', 1)[-1],
+                     '.<40'), end=' ')
         try:
             method(self)
-            print 'OK'
+            print('OK')
             tests._num_tests_run += 1
         except AssertionError:
-            print 'FAILED'
+            print('FAILED')
             tests._num_tests_failed += 1
             if tests.abort_on_fail:
                 raise

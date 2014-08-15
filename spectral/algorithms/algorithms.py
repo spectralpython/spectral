@@ -32,10 +32,11 @@
 '''
 Various functions and algorithms for processing spectral data.
 '''
+from __future__ import division, print_function, unicode_literals
+
 import numpy
 import numpy as np
 
-from exceptions import DeprecationWarning
 from warnings import warn
 
 
@@ -365,7 +366,7 @@ class PrincipalComponents:
             variance.
     '''
     def __init__(self, vals, vecs, stats):
-        from transforms import LinearTransform
+        from .transforms import LinearTransform
         self.eigenvalues = vals
         self.eigenvectors = vecs
         self.stats = stats
@@ -523,7 +524,7 @@ class FisherLinearDiscriminant:
             linear discriminant.
     '''
     def __init__(self, vals, vecs, mean, cov_b, cov_w):
-        from transforms import LinearTransform
+        from .transforms import LinearTransform
         self.eigenvalues = vals
         self.eigenvectors = vecs
         self.mean = mean
@@ -893,7 +894,7 @@ class TrainingClass:
         After `transform` is applied, the class statistics will have `C` bands.
         '''
 
-        from transforms import LinearTransform
+        from .transforms import LinearTransform
         from numpy.linalg import det, inv
         import math
         from spectral.io.spyfile import TransformedImage
@@ -964,13 +965,13 @@ class TrainingClassSet:
 
         After the transform is applied, all classes will have `C` bands.
         '''
-        for cl in self.classes.values():
+        for cl in list(self.classes.values()):
             cl.transform(X)
-        self.nbands = self.classes.values()[0].nbands
+        self.nbands = list(self.classes.values())[0].nbands
 
     def __iter__(self):
         '''An iterator over all training classes in the set.'''
-        for cl in self.classes.values():
+        for cl in list(self.classes.values()):
             yield cl
 
     def all_samples(self):
@@ -979,14 +980,14 @@ class TrainingClassSet:
 
     def calc_stats(self):
         '''Computes statistics for each class, if not already computed.'''
-        for c in self.classes.values():
+        for c in list(self.classes.values()):
             if not c.stats_valid():
                 c.calc_stats()
-        self.nbands = self.classes.values()[0].nbands
+        self.nbands = list(self.classes.values())[0].nbands
 
     def save(self, filename, calc_stats=False):
         import pickle
-        for c in self.classes.values():
+        for c in list(self.classes.values()):
             if c.stats is None:
                 if calc_stats == False:
                     msg = 'Class statistics are missing from at least one ' \
@@ -997,7 +998,7 @@ class TrainingClassSet:
                     raise Exception (msg)
                 else:
                     c.calc_stats()
-        f = open(filename, 'w')
+        f = open(filename, 'wb')
         ids = sorted(self.classes.keys())
         pickle.dump(self.classes[ids[0]].mask, f)        
         pickle.dump(len(self), f)

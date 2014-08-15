@@ -32,9 +32,10 @@
 Generic functions for handling spectral image files.
 '''
 
+from __future__ import division, print_function, unicode_literals
+
 import numpy
 
-from exceptions import DeprecationWarning
 from warnings import warn
 
 
@@ -224,9 +225,8 @@ class Image(object):
         self.set_params(params, metadata)
 
     def set_params(self, params, metadata):
-        import spectral
+        from . import spectral
         import array
-        from exceptions import Exception
 
         try:
             self.nbands = params.nbands
@@ -280,7 +280,7 @@ class ImageArray(numpy.ndarray, Image):
         return obj
 
     def __init__(self, data, spyfile):
-        from io.spyfile import SpyFile
+        from .io.spyfile import SpyFile
 
         # Add param data to Image initializer
         params = spyfile.params()
@@ -371,10 +371,9 @@ def open_image(file):
     file, the `file` argument should be the name of the header file.
     '''
 
-    from exceptions import IOError
     import os
-    from io import aviris, envi, erdas, spyfile
-    from io.spyfile import find_file_path
+    from .io import aviris, envi, erdas, spyfile
+    from .io.spyfile import find_file_path
 
     pathname = find_file_path(file)
 
@@ -416,9 +415,9 @@ def tile_image(im, nrows, ncols):
                         ncols SubImage objects.
     '''
     import numpy as np
-    from io.spyfile import SubImage
-    x = (np.array(range(nrows + 1)) * float(im.nrows) / nrows).astype(np.int)
-    y = (np.array(range(ncols + 1)) * float(im.ncols) / ncols).astype(np.int)
+    from .io.spyfile import SubImage
+    x = (np.array(list(range(nrows + 1))) * float(im.nrows) / nrows).astype(np.int)
+    y = (np.array(list(range(ncols + 1))) * float(im.ncols) / ncols).astype(np.int)
     x[-1] = im.nrows
     y[-1] = im.ncols
 

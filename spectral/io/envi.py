@@ -43,6 +43,16 @@ the data file has an unusual file extension that SPy can not identify.
 .. [#envi-trademark] ENVI is a registered trademark of Exelis, Inc.
 '''
 
+from __future__ import division, print_function, unicode_literals
+
+from spectral.utilities.python23 import IS_PYTHON3
+
+
+if IS_PYTHON3:
+    import builtins
+else:
+    import __builtin__ as builtins
+
 import numpy as np
 
 dtype_map = [('1', np.uint8),                   # unsigned byte
@@ -57,7 +67,7 @@ dtype_map = [('1', np.uint8),                   # unsigned byte
              ('14', np.int64),                  # 64-bit int
              ('15', np.uint64)]                 # 64-bit unsigned int
 envi_to_dtype = dict((k, np.dtype(v).char) for (k, v) in dtype_map)
-dtype_to_envi = dict(tuple(reversed(item)) for item in envi_to_dtype.items())
+dtype_to_envi = dict(tuple(reversed(item)) for item in list(envi_to_dtype.items()))
 
 class EnviDataTypeError(TypeError):
     '''Exception raised when saving invalid image data type to ENVI format.
@@ -71,12 +81,12 @@ class EnviDataTypeError(TypeError):
 def _validate_dtype(dtype):
     '''Raises EnviDataTypeError if dtype can not be written to ENVI file.'''
     typename = np.dtype(dtype).name
-    if typename not in [np.dtype(t).name for t in dtype_to_envi.keys()]:
+    if typename not in [np.dtype(t).name for t in list(dtype_to_envi.keys())]:
         raise EnviDataTypeError(dtype)
 
 def get_supported_dtypes():
     '''Returns list of names of image data types supported by ENVI format.'''
-    return [np.dtype(t).name for t in dtype_to_envi.keys()]
+    return [np.dtype(t).name for t in list(dtype_to_envi.keys())]
 
 def read_envi_header(file):
     '''
@@ -85,14 +95,9 @@ def read_envi_header(file):
     Reads an ENVI ".hdr" file header and returns the parameters in
     a dictionary as strings.
     '''
+    f = builtins.open(file, 'r')
 
-    from string import find, split, strip
-    from exceptions import IOError
-    from __builtin__ import open
-
-    f = open(file, 'r')
-
-    if find(f.readline(), "ENVI") == -1:
+    if f.readline().find("ENVI") == -1:
         f.close()
         raise IOError("Not an ENVI header.")
 
@@ -103,7 +108,7 @@ def read_envi_header(file):
     try:
         while lines:
             line = lines.pop(0)
-            if find(line, '=') == -1: continue
+            if line.find('=') == -1: continue
             if line[0] == ';': continue
 
             (key, sep, val) = line.partition('=')
@@ -119,9 +124,9 @@ def read_envi_header(file):
                 if key == 'description':
                     dict[key] = str.strip('{}').strip()
                 else:
-                    vals = split(str[1:-1], ',')
+                    vals = str[1:-1].split(',')
                     for j in range(len(vals)):
-                        vals[j] = strip(vals[j])
+                        vals[j] = vals[j].strip()
                     dict[key] = vals
             else:
                 dict[key] = val
@@ -141,11 +146,10 @@ def gen_params(envi_header):
 
         A dict or an `.hdr` file name
     '''
-    from exceptions import TypeError
     import spectral
 
     if not isinstance(envi_header, dict):
-        from spyfile import find_file_path
+        from .spyfile import find_file_path
         headerPath = find_file_path(envi_header)
         h = read_envi_header(headerPath)
     else:
@@ -199,8 +203,7 @@ def open(file, image=None):
     '''
 
     import os
-    from exceptions import IOError, TypeError
-    from spyfile import find_file_path
+    from .spyfile import find_file_path
     import numpy
     import spectral
 
@@ -555,7 +558,7 @@ def add_image_info_to_metadata(image, metadata):
     # the provided metadata.
     offset = int(metadata.get('header offset', 0))
     if offset != 0:
-        print 'Ignoring non-zero header offset in provided metadata.'
+        print('Ignoring non-zero header offset in provided metadata.')
     metadata['header offset'] = 0
 
     metadata['lines'] = image.shape[0]
@@ -586,17 +589,15 @@ def _write_image(hdr_file, data, header, **kwargs):
     '''
     Write `data` as an ENVI file using the metadata in `header`.
     '''
-    import __builtin__
-
     force = kwargs.get('force', False)
     img_ext = kwargs.get('ext', '.img')
     
     (hdr_file, img_file) = check_new_filename(hdr_file, img_ext, force)
     write_envi_header(hdr_file, header, is_library=False)
-    print 'Saving', img_file
+    print('Saving', img_file)
     # bufsize = data.shape[0] * data.shape[1] * np.dtype(dtype).itemsize
     bufsize = data.shape[0] * data.shape[1] * data.dtype.itemsize
-    fout = __builtin__.open(img_file, 'wb', bufsize)
+    fout = builtins.open(img_file, 'wb', bufsize)
     fout.write(data.tostring())
     fout.close()
 
@@ -694,7 +695,6 @@ def create_image(hdr_file, metadata=None, **kwargs):
             >>> mm[30, 30] = 100
 
     '''
-    from exceptions import NotImplementedError, TypeError
     import numpy as np
     import os
     import spectral
@@ -846,7 +846,7 @@ class SpectralLibrary:
         `fileBaseName`.sli.
         '''
         import spectral
-        import __builtin__
+        import builtins
         meta = {}
         meta.update(self.metadata)
         if self.bands.centers:
@@ -866,15 +866,16 @@ class SpectralLibrary:
         if (description):
             meta['description'] = description
         write_envi_header(fileBaseName + '.hdr', meta, True)
-        fout = __builtin__.open(fileBaseName + '.sli', 'wb')
+        fout = builtins.open(fileBaseName + '.sli', 'wb')
         self.spectra.astype('f').tofile(fout)
         fout.close()
 
 def _write_header_param(fout, paramName, paramVal):
+    from spectral.utilities.python23 import is_string
     if paramName.lower() == 'description':
         valStr = '{\n%s}' % '\n'.join(['  ' + line for line
                                        in paramVal.split('\n')])
-    elif not isinstance(paramVal, str) and hasattr(paramVal, '__len__'):
+    elif not is_string(paramVal) and hasattr(paramVal, '__len__'):
         valStr = '{ %s }' % (
             ' , '.join([str(v).replace(',', '-') for v in paramVal]),)
     else:
@@ -883,8 +884,7 @@ def _write_header_param(fout, paramName, paramVal):
 
 
 def write_envi_header(fileName, header_dict, is_library=False):
-    import __builtin__
-    fout = __builtin__.open(fileName, 'w')
+    fout = builtins.open(fileName, 'w')
     d = {}
     d.update(header_dict)
     if is_library:

@@ -108,6 +108,8 @@ instance of a :class:`~spectral.BandInfo` object that contains optional
 information about the images spectral bands.
 '''
 
+from __future__ import division, print_function, unicode_literals
+
 import numpy
 import numpy as np
 from spectral.spectral import Image
@@ -148,7 +150,6 @@ class SpyFile(Image):
     def set_params(self, params, metadata):
         import spectral
         import array
-        from exceptions import Exception
 
         Image.set_params(self, params, metadata)
 
@@ -216,15 +217,16 @@ class SpyFile(Image):
         '''
         import spectral
         from spectral.spectral import ImageArray
+        from spectral.utilities.python23 import typecode
         from array import array
         import warnings
         from spectral.algorithms.spymath import has_nan, NaNValueWarning
 
-        for k in kwargs.keys():
+        for k in list(kwargs.keys()):
             if k not in ('dtype', 'scale'):
                 raise ValueError('Invalid keyword %s.' % str(k))
         dtype = kwargs.get('dtype', ImageArray.format)
-        data = array('b')
+        data = array(typecode('b'))
         self.fid.seek(self.offset)
         data.fromfile(self.fid, self.nrows * self.ncols *
                       self.nbands * self.sample_size)
@@ -301,7 +303,7 @@ class SpyFile(Image):
                     xstop = self.nrows
                 if xstep is None:
                     xstep = 1
-                rows = range(xstart, xstop, xstep)
+                rows = list(range(xstart, xstop, xstep))
             else:
                 rows = [args[0]]
             if atypes[1] == slice:
@@ -313,7 +315,7 @@ class SpyFile(Image):
                     ystop = self.ncols
                 if ystep is None:
                     ystep = 1
-                cols = range(ystart, ystop, ystep)
+                cols = list(range(ystart, ystop, ystep))
             else:
                 cols = [args[1]]
 
@@ -331,7 +333,7 @@ class SpyFile(Image):
                     zstop = self.nbands
                 if zstep is None:
                     zstep = 1
-                bands = range(zstart, zstop, zstep)
+                bands = list(range(zstart, zstop, zstep))
         elif atypes[2] == int:
             bands = [args[2]]
         else:
@@ -395,9 +397,6 @@ class SubImage(SpyFile):
         Row and column ranges must be 2-tuples (i,j) where i >= 0 and i < j.
 
         '''
-
-        import exceptions
-
         if row_range[0] < 0 or \
             row_range[1] > image.nrows or \
             col_range[0] < 0 or \
@@ -626,7 +625,7 @@ class TransformedImage(Image):
 
         # Note that band indices are wrt transformed features
         if len(args) == 2 or args[2] is None:
-            bands = range(self.nbands)
+            bands = list(range(self.nbands))
         elif type(args[2]) == slice:
             (zstart, zstop, zstep) = (args[2].start, args[2].stop,
                                       args[2].step)
@@ -636,7 +635,7 @@ class TransformedImage(Image):
                 zstop = self.nbands
             if zstep is None:
                 zstep = 1
-            bands = range(zstart, zstop, zstep)
+            bands = list(range(zstart, zstop, zstep))
         elif isinstance(args[2], int):
             bands = [args[2]]
         else:
@@ -726,7 +725,6 @@ class MemmapFile(object):
         Call `open_memmap` instead to return a memmap.
         '''
         from warnings import warn
-        from exceptions import UserWarning
         warn('"memmap" member is deprecated. Use image.open_memmap().',
              UserWarning)
         return self._memmap
@@ -772,7 +770,6 @@ class MemmapFile(object):
                 file.
         '''        
         import spectral as spy
-        from exceptions import ValueError
         
         src_inter = {spy.BIL: 'bil',
                      spy.BIP: 'bip',

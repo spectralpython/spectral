@@ -42,6 +42,8 @@ Functions for resampling a spectrum from one band discretization to another.
 # from Chebyshev fitting formula for erf(z) from Numerical Recipes, 6.2
 
 
+from __future__ import division, print_function, unicode_literals
+
 def erf(z):
     '''The error function (used to calculate the gaussian integral).'''
     import math
@@ -139,8 +141,8 @@ def create_resampling_matrix(centers1, fwhm1, centers2, fwhm2):
             j += 1
 
         if j == N1:
-            print('No overlap for target band %d (%f / %f)' % (
-                i, centers2[i], fwhm2[i]))
+            print(('No overlap for target band %d (%f / %f)' % (
+                i, centers2[i], fwhm2[i])))
             M[i, 0] = nan
             continue
 
@@ -155,8 +157,8 @@ def create_resampling_matrix(centers1, fwhm1, centers2, fwhm2):
         # Put NaN in first element of any row that doesn't produce a band in
         # the new schema.
         if len(matches) == 0:
-            print('No overlap for target band %d (%f / %f)' % (
-                i, centers2[i], fwhm2[i]))
+            print(('No overlap for target band %d (%f / %f)' % (
+                i, centers2[i], fwhm2[i])))
             M[i, 0] = nan
             continue
 

@@ -29,6 +29,8 @@
 # Thomas Boggs, tboggs@users.sourceforge.net
 #
 
+from __future__ import division, print_function, unicode_literals
+
 __version__ = '0.16.dev-1'
 
 import sys
@@ -41,19 +43,19 @@ BSQ = 0
 BIL = 1
 BIP = 2
 
-from spectral import (open_image, load_training_sets, save_training_sets,
+from .spectral import (open_image, load_training_sets, save_training_sets,
                       settings, tile_image, spy_colors, BandInfo)
-from io import *
-from algorithms import *
-from graphics import *
-from database import *
+from .io import *
+from .algorithms import *
+from .graphics import *
+from .database import *
 
 # Import some submodules into top-level namespace
-import algorithms.detectors as detectors
+from .algorithms import detectors
 
 # Deprecated functions
-from spectral import image
+from .spectral import image
 
-from spectral import _init
+from .spectral import _init
 _init()
 del _init

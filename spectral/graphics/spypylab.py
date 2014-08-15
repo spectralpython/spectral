@@ -33,10 +33,11 @@
 A module to use matplotlib for creating raster and spectral views.
 '''
 
+from __future__ import division, print_function, unicode_literals
+
 __all__ = ['ImageView', 'imshow']
 
 import numpy as np
-from exceptions import UserWarning, ValueError
 import warnings
 
 _mpl_callbacks_checked = False
@@ -231,7 +232,7 @@ class ParentViewPanCallback(ImageViewCallback):
 
     def handle_event(self, event):
         if self.show_events:
-            print event, 'key = %s' % event.key
+            print(event, 'key = %s' % event.key)
         if event.inaxes is not self.view.axes:
             return
         (r, c) = xy_to_rowcol(event.xdata, event.ydata)
@@ -263,13 +264,13 @@ class ImageViewKeyboardHandler(ImageViewCallback):
 
     def on_key_release(self, event):
         if self.show_events:
-            print 'key = %s' % event.key
+            print('key = %s' % event.key)
         kp = KeyParser(event.key)
         key = kp.key
         if key is None and self.view.selector is not None and \
           self.view.selector.get_active() and kp.mods_are('shift') \
           and self.view.selector.eventpress is not None:
-            print 'Resetting selection.'
+            print('Resetting selection.')
             self.view.selector.eventpress = None
             self.view.selector.set_active(False)
             self.view.selection = None
@@ -279,7 +280,7 @@ class ImageViewKeyboardHandler(ImageViewCallback):
     def handle_event(self, event):
         from spectral import settings
         if self.show_events:
-            print 'key = %s' % event.key
+            print('key = %s' % event.key)
         kp = KeyParser(event.key)
         key = kp.key
         
@@ -295,10 +296,10 @@ class ImageViewKeyboardHandler(ImageViewCallback):
 
         if key in [str(i) for i in range(10)] and self.view.selector is not None:
             if self.view.selection is None:
-                print 'Select an image region before assigning a class ID.'
+                print('Select an image region before assigning a class ID.')
                 return
             if len(self.idstr) > 0 and self.idstr[-1] == '!':
-                print 'Cancelled class ID assignment.'
+                print('Cancelled class ID assignment.')
                 self.idstr = ''
                 return
             else:
@@ -307,30 +308,30 @@ class ImageViewKeyboardHandler(ImageViewCallback):
 
         if key == 'enter' and self.view.selector is not None:
             if self.view.selection is None:
-                print 'Select an image region before assigning a class ID.'
+                print('Select an image region before assigning a class ID.')
                 return
             if len(self.idstr) == 0:
-                print 'Enter a numeric class ID before assigning a class ID.'
+                print('Enter a numeric class ID before assigning a class ID.')
                 return
             if self.idstr[-1] != '!':
-                print 'Press ENTER again to assign class %s to pixel ' \
+                print('Press ENTER again to assign class %s to pixel ' \
                   'region [%d:%d, %d:%d]:' \
-                  % ((self.idstr,) + tuple(self.view.selection))
+                  % ((self.idstr,) + tuple(self.view.selection)))
                 self.idstr += '!'
                 return
             else:
                 i = int(self.idstr[:-1])
                 n = self.view.label_region(self.view.selection, i)
                 if n == 0:
-                    print 'No pixels reassigned.'
+                    print('No pixels reassigned.')
                 else:
-                    print '%d pixels reassigned to class %d.' % (n, i)
+                    print('%d pixels reassigned to class %d.' % (n, i))
                 self.idstr = ''
                 return
 
         if len(self.idstr) > 0:
             self.idstr = ''
-            print 'Cancelled class ID assignment.'
+            print('Cancelled class ID assignment.')
                 
         #-----------------------------------------------------------
         # General keybinds
@@ -361,30 +362,30 @@ class ImageViewKeyboardHandler(ImageViewCallback):
             self.view.open_zoom()
 
     def print_help(self):
-        print
-        print 'Mouse Functions:'
-        print '----------------'
-        print 'ctrl+left-click          ->   pan zoom window to pixel'
-        print 'shift+left-click&drag    ->   select rectangular image region'
-        print 'left-dblclick            ->   plot pixel spectrum'
+        print()
+        print('Mouse Functions:')
+        print('----------------')
+        print('ctrl+left-click          ->   pan zoom window to pixel')
+        print('shift+left-click&drag    ->   select rectangular image region')
+        print('left-dblclick            ->   plot pixel spectrum')
 
-        print
-        print 'Keybinds:'
-        print '---------'
-        print '0-9     -> enter class ID for image pixel labeling'
-        print 'ENTER   -> apply specified class ID to selected rectangular region'
-        print 'a/A     -> decrease/increase class overlay alpha value'
-        print 'c       -> set display mode to "classes" (if classes set)'
-        print 'C       -> set display mode to "overlay" (if data and ' \
-                          'classes set)'
-        print 'd       -> set display mode to "data" (if data set)'
-        print 'h       -> print help message'
-        print 'i       -> toggle pixel interpolation between "nearest" and ' \
-                          'SPy default.'
-        print 'z       -> open zoom window'
-        print
-        print 'See matplotlib imshow documentation for addition key binds.'
-        print
+        print()
+        print('Keybinds:')
+        print('---------')
+        print('0-9     -> enter class ID for image pixel labeling')
+        print('ENTER   -> apply specified class ID to selected rectangular region')
+        print('a/A     -> decrease/increase class overlay alpha value')
+        print('c       -> set display mode to "classes" (if classes set)')
+        print('C       -> set display mode to "overlay" (if data and ' \
+                          'classes set)')
+        print('d       -> set display mode to "data" (if data set)')
+        print('h       -> print help message')
+        print('i       -> toggle pixel interpolation between "nearest" and ' \
+                          'SPy default.')
+        print('z       -> open zoom window')
+        print()
+        print('See matplotlib imshow documentation for addition key binds.')
+        print()
 
 class KeyParser(object):
     '''Class to handle ambiguities in matplotlib event key values.'''
@@ -432,7 +433,7 @@ class KeyParser(object):
         
     def get_token_modifiers(self, token):
         mods = set()
-        for (modifier, aliases) in self.aliases.items():
+        for (modifier, aliases) in list(self.aliases.items()):
             if token in aliases:
                 mods.add(modifier)
         return mods
@@ -447,7 +448,7 @@ class ImageViewMouseHandler(ImageViewCallback):
     def handle_event(self, event):
         '''Callback for click event in the image display.'''
         if self.show_events:
-            print event, ', key = %s' % event.key
+            print(event, ', key = %s' % event.key)
         if event.inaxes is not self.view.axes:
             return
         (r, c) = (int(event.ydata + 0.5), int(event.xdata + 0.5))
@@ -660,7 +661,7 @@ class ImageView(object):
         if colors is not None:
             self.class_colors = colors
 
-        kwargs = dict([item for item in kwargs.items() if item[0] not in \
+        kwargs = dict([item for item in list(kwargs.items()) if item[0] not in \
                        ('stretch', 'stretch_all', 'bounds')])
         self.imshow_class_kwargs.update(kwargs)
 
@@ -841,7 +842,7 @@ class ImageView(object):
         r2 = min(r2, self._image_shape[0] - 1)
         c1 = max(c1, 0)
         c2 = min(c2, self._image_shape[1] - 1)
-        print 'Selected region: [%d: %d, %d: %d]' % (r1, r2 + 1, c1, c2 + 1)
+        print('Selected region: [%d: %d, %d: %d]' % (r1, r2 + 1, c1, c2 + 1))
         self.selection = [r1, r2 + 1, c1, c2 + 1]
         self.selector.set_active(False)
         # Make the rectangle display until at least the next event
@@ -1216,11 +1217,11 @@ def plot(data, source=None):
 
     if len(s) == 1:
         if not xvals:
-            xvals = range(len(data))
+            xvals = list(range(len(data)))
         p = pylab.plot(xvals, data)
     elif len(s) == 2:
         if not xvals:
-            xvals = range(s[1])
+            xvals = list(range(s[1]))
         p = pylab.plot(xvals, data[0, :])
         pylab.hold(1)
         for i in range(1, s[0]):

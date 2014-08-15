@@ -35,6 +35,8 @@ wxWindows code which executes in a separate thread from the main thread
 of execution. This module handles disply of images and related events.
 '''
 
+from __future__ import division, print_function, unicode_literals
+
 DEFAULT_X_SIZE = 600
 DEFAULT_Y_SIZE = 600
 
@@ -128,7 +130,7 @@ class WxImageFrame(wx.Frame):
         dc.EndDrawing()
 
     def left_double_click(self, evt):
-        print (evt.m_y, evt.m_x)
+        print((evt.m_y, evt.m_x))
         from spectral import settings
         if "data source" in self.kwargs:
             settings.plotter.plot(self.kwargs["data source"][evt.m_y, evt.m_x],
