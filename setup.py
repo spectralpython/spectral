@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import division, print_function, unicode_literals
-
 try:
     from setuptools import setup
 except:
@@ -20,7 +18,7 @@ setup(name='spectral',
       description='Spectral Python (SPy) is a Python module for hyperspectral image processing.',
       long_description=long_description,
       author='Thomas Boggs',
-      author_email='tboggs@users.sourceforge.net',
+      author_email='thomas.boggs@gmail.com',
       license='GPL',
       url='http://spectralpython.net',
       download_url='https://sourceforge.net/projects/spectralpython/files/',
