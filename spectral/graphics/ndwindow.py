@@ -420,6 +420,11 @@ class NDWindow(wx.Frame):
                 NDWindow.set_octant_display_features for description).
         '''
         import OpenGL.GL as gl
+        try:
+            from OpenGL.GL import glGetIntegerv
+        except:
+            from OpenGL.GL.glget import glGetIntegerv
+
         classes = kwargs.get('classes', None)
         features = kwargs.get('features', list(range(6)))
         if self.data.shape[2] < 6:
@@ -451,8 +456,7 @@ class NDWindow(wx.Frame):
         # identifying pixel IDs.
         components = [gl.GL_RED_BITS, gl.GL_GREEN_BITS,
                       gl.GL_GREEN_BITS, gl.GL_ALPHA_BITS]
-        self._rgba_bits = [min(8, gl.glget.glGetIntegerv(i))
-                           for i in components]
+        self._rgba_bits = [min(8, glGetIntegerv(i)) for i in components]
         self._low_bits = [min(8, 8 - self._rgba_bits[i]) for i in range(4)]
         self._rgba_masks = \
             [(2**self._rgba_bits[i] - 1) << (8 - self._rgba_bits[i])
@@ -768,7 +772,7 @@ class NDWindow(wx.Frame):
         pixels = gl.glReadPixelsub(self._selection_box[0],
                                    self._selection_box[1],
                                    xsize, ysize, gl.GL_RGBA)
-
+        pixels = np.frombuffer(pixels, dtype=np.uint8).reshape((ysize, xsize, 4))
         for i in range(4):
             component = pixels[:, :, i].reshape((xsize * ysize,)) \
                 & self._rgba_masks[i]
