@@ -463,7 +463,7 @@ if __name__ == '__main__':
     print('------------------------------------')
     for (name, result) in nr:
         s = [ 'FAILED', 'PASSED'][result]
-        print('{:<20}: {}'.format(name, s))
+        print('{0:<20}: {1}'.format(name, s))
     if False in results:
         print('\nNote: XOR convergence for these small network sizes is')
         print('dependent on initial weights, which are randomized. Try')

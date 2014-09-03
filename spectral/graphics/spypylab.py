@@ -643,7 +643,7 @@ class ImageView(object):
 
         for k in kwargs:
             if k not in _get_rgb_kwargs:
-                raise ValueError('Unexpected keyword: {}'.format(k))
+                raise ValueError('Unexpected keyword: {0}'.format(k))
         self.rgb_kwargs = kwargs.copy()
         if self.is_shown:
             self._update_data_rgb()
@@ -1111,16 +1111,16 @@ class ImageView(object):
     def __str__(self):
         meta = self.data_rgb_meta
         s = 'ImageView object:\n'
-        s += '  {:<20}:  {}\n'.format("Display bands", meta['bands'])
+        s += '  {0:<20}:  {1}\n'.format("Display bands", meta['bands'])
         if self.interpolation == None:
             interp = "<default>"
         else:
             interp = self.interpolation
-        s += '  {:<20}:  {}\n'.format("Interpolation", interp)
+        s += '  {0:<20}:  {1}\n'.format("Interpolation", interp)
         if meta.has_key('rgb range'):
-            s += '  {:<20}:\n'.format("RGB data limits")
+            s += '  {0:<20}:\n'.format("RGB data limits")
             for (c, r) in zip('RGB', meta['rgb range']):
-                s += '    {}: {}\n'.format(c, str(r))
+                s += '    {0}: {1}\n'.format(c, str(r))
         return s
 
     def __repr__(self):

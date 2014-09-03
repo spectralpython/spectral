@@ -73,7 +73,7 @@ class EnviDataTypeError(TypeError):
     '''Exception raised when saving invalid image data type to ENVI format.
     '''
     def __init__(self, dtype):
-        msg = 'Image data type "{}" can not be saved to ENVI data file. ' \
+        msg = 'Image data type "{0}" can not be saved to ENVI data file. ' \
           'Call spectral.envi.get_supported_dtypes for a list of supported ' \
           'data type names.'.format(np.dtype(dtype).name)
         super(EnviDataTypeError, self).__init__(msg)
