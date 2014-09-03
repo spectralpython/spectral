@@ -80,6 +80,33 @@ def matrix_sqrt(X=None, symmetric=False, inverse=False, eigs=None):
         return V.dot(SRV).dot(np.linalg.inv(V))
 
 
+def get_histogram_cdf_points(data, cdf_vals):
+    '''Returns input values corresponding to the data's CDF values.
+
+    Arguments:
+
+        `data` (ndarray):
+
+            The data for which to determine the CDF values
+
+        `cdf_vals` (sequence of floats):
+
+            A sequence defining the CDF values for which the values of `data`
+            should be returned. Each value should be in the range [0, 1]. For
+            example, to get the values of `data` corresponding to the 1% lower
+            tail and 5% upper tail, this argument would be (0.01, 0.95).
+
+    Return value:
+
+        A list specifying the values in `data` that correspond to the
+        associated CDF values in `cdf_vals`.
+    '''
+    data = data.ravel()
+    isort = np.argsort(data)
+    N = len(data)
+    return[data[isort[int(x * (N - 1))]] for x in cdf_vals]
+    
+
 class NaNValueWarning(UserWarning):
     pass
 

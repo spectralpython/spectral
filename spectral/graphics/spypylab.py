@@ -537,12 +537,16 @@ class ImageView(object):
         from spectral import settings
         self.is_shown = False
         self.imshow_data_kwargs = {'cmap': settings.imshow_float_cmap}
+        self.rgb_kwargs = {}
         self.imshow_class_kwargs = {'zorder': 1}
 
-        self.data = None
+        self.data = data
+        self.data_rgb = None
+        self.data_rgb_meta = {}
         self.classes = None
         self.class_rgb = None
         self.source = None
+        self.bands = bands
         self.data_axes = None
         self.class_axes = None
         self.axes = None
@@ -555,7 +559,6 @@ class ImageView(object):
         
         if data is not None:
             self.set_data(data, bands, **kwargs)
-        self.bands = bands
         if classes is not None:
             self.set_classes(classes, **kwargs)
         if source is not None:
@@ -601,17 +604,18 @@ class ImageView(object):
             Any valid keyword for `get_rgb` or `matplotlib.imshow` can be
             given.
         '''
-        import spectral as spy
+        from .graphics import _get_rgb_kwargs
+
+        self.data = data
+        self.bands = bands
+
         rgb_kwargs = {}
-        for k in ('stretch', 'stretch_all', 'bounds'):
+        for k in _get_rgb_kwargs:
             if k in kwargs:
                 rgb_kwargs[k] = kwargs.pop(k)
+        self.set_rgb_options(**rgb_kwargs)
 
-        # If it is a gray-scale image, only keep the first RGB component so
-        # matplotlib imshow's cmap can still be used.
-        self.data = spy.get_rgb(data, bands, **rgb_kwargs)
-        if len(data.shape) == 2 or (bands is not None and len(bands) == 1):
-            self.data = self.data[:, :, 0]
+        self._update_data_rgb()
 
         if self._image_shape is None:
             self._image_shape = data.shape[:2]
@@ -629,6 +633,34 @@ class ImageView(object):
             warnings.warn(UserWarning(msg))
         if self.is_shown:
             self.refresh()
+
+    def set_rgb_options(self, **kwargs):
+        '''Sets parameters affecting RGB display of data.
+
+        Accepts any keyword supported by :func:`~spectral.graphics.graphics.get_rgb`.
+        '''
+        from .graphics import _get_rgb_kwargs
+
+        for k in kwargs:
+            if k not in _get_rgb_kwargs:
+                raise ValueError('Unexpected keyword: {}'.format(k))
+        self.rgb_kwargs = kwargs.copy()
+        if self.is_shown:
+            self._update_data_rgb()
+            self.refresh()
+        
+    def _update_data_rgb(self):
+        '''Regenerates the RGB values for display.'''
+        from .graphics import get_rgb_meta
+
+        (self.data_rgb, self.data_rgb_meta) = \
+          get_rgb_meta(self.data, self.bands, **self.rgb_kwargs)
+
+        # If it is a gray-scale image, only keep the first RGB component so
+        # matplotlib imshow's cmap can still be used.
+        if self.data_rgb_meta['mode'] == 'monochrome' and \
+           self.data_rgb.ndim ==3:
+          (self.bands is not None and len(self.bands) == 1)
 
     def set_classes(self, classes, colors=None, **kwargs):
         '''Sets the array of class values associated with the image data.
@@ -650,6 +682,7 @@ class ImageView(object):
 
             Any valid keyword for `matplotlib.imshow` can be provided.
         '''
+        from .graphics import _get_rgb_kwargs
         self.classes = classes
         if classes is None:
             return
@@ -662,7 +695,7 @@ class ImageView(object):
             self.class_colors = colors
 
         kwargs = dict([item for item in list(kwargs.items()) if item[0] not in \
-                       ('stretch', 'stretch_all', 'bounds')])
+                       _get_rgb_kwargs])
         self.imshow_class_kwargs.update(kwargs)
 
         if 'interpolation' in self.imshow_class_kwargs:
@@ -724,7 +757,7 @@ class ImageView(object):
             kwargs['figsize'] = settings.imshow_figure_size
         plt.figure(**kwargs)
             
-        if self.data is not None:
+        if self.data_rgb is not None:
             self.show_data()
         if self.classes is not None:
             self.show_classes()
@@ -811,7 +844,7 @@ class ImageView(object):
         rectangle whose class has *changed* to `class_id`.
         '''
         if self.classes is None:
-            self.classes = np.zeros(self.data.shape[:2], dtype=np.int16)
+            self.classes = np.zeros(self.data_rgb.shape[:2], dtype=np.int16)
         r = rectangle
         n = np.sum(self.classes[r[0]:r[1], r[2]:r[3]] != class_id)
         if n > 0:
@@ -851,7 +884,7 @@ class ImageView(object):
     
     def _guess_mode(self):
         '''Select an appropriate display mode, based on current data.'''
-        if self.data is not None:
+        if self.data_rgb is not None:
             self.set_display_mode('data')
         elif self.classes is not None:
             self.set_display_mode('classes')
@@ -865,13 +898,13 @@ class ImageView(object):
             msg = 'ImageView.show_data should only be called once.'
             warnings.warn(UserWarning(msg))
             return
-        elif self.data is None:
+        elif self.data_rgb is None:
             raise Exception('Unable to display data: data array not set.')
         if self.axes is not None:
             # A figure has already been created for the view. Make it current.
             plt.figure(self.axes.figure.number)
         self.imshow_data_kwargs['interpolation'] = self._interpolation
-        self.data_axes = plt.imshow(self.data, **self.imshow_data_kwargs)
+        self.data_axes = plt.imshow(self.data_rgb, **self.imshow_data_kwargs)
         if self.axes is None:
             self.axes = self.data_axes.axes
 
@@ -917,14 +950,14 @@ class ImageView(object):
             elif self.display_mode in ('classes', 'overlay'):
                 self.show_classes()
             if self.data_axes is not None:
-                self.data_axes.set_data(self.data)
+                self.data_axes.set_data(self.data_rgb)
                 self.data_axes.set_interpolation(self._interpolation)
             elif self.display_mode in ('data', 'overlay'):
                 self.show_data()
             self.axes.figure.canvas.draw()
 
     def _update_class_rgb(self):
-        if self.display_mode is 'overlay':
+        if self.display_mode == 'overlay':
             self.class_rgb = np.ma.array(self.classes, mask=(self.classes==0))
         else:
             self.class_rgb = np.array(self.classes)
@@ -945,7 +978,7 @@ class ImageView(object):
             self.show_classes()
         if self.class_axes is not None:
             self.class_axes.set_visible(show_classes)
-            if mode is 'classes':
+            if mode == 'classes':
                 self.class_axes.set_alpha(1)
             else:
                 self.class_axes.set_alpha(self._class_alpha)
@@ -983,7 +1016,7 @@ class ImageView(object):
         if self.class_axes is not None:
             self.class_axes.set_interpolation(interpolation)
         self.refresh()
-        
+
     def open_zoom(self, center=None, size=None):
         '''Opens a separate window with a zoomed view.
         If a ctrl-lclick event occurs in the original view, the zoomed window
@@ -1009,15 +1042,17 @@ class ImageView(object):
         if size is None:
             size = settings.imshow_zoom_pixel_width
         (nrows, ncols) = self._image_shape
-        kwargs = {'extent': (-0.5, ncols - 0.5, nrows - 0.5, -0.5)}
         fig_kwargs = {}
         if settings.imshow_zoom_figure_width is not None:
             width = settings.imshow_zoom_figure_width
             fig_kwargs['figsize'] = (width, width)
         fig = plt.figure(**fig_kwargs)
-        view = ImageView(data=self.data, classes=self.classes,
-                         source=self.source)
+
+        view = ImageView(source=self.source)
+        view.set_data(self.data, self.bands, **self.rgb_kwargs)
+        view.set_classes(self.classes, self.class_colors)
         view.imshow_data_kwargs = self.imshow_data_kwargs.copy()
+        kwargs = {'extent': (-0.5, ncols - 0.5, nrows - 0.5, -0.5)}
         view.imshow_data_kwargs.update(kwargs)
         view.imshow_class_kwargs = self.imshow_class_kwargs.copy()
         view.imshow_class_kwargs.update(kwargs)
@@ -1072,6 +1107,25 @@ class ImageView(object):
             except:
                 pass
         return s
+
+    def __str__(self):
+        meta = self.data_rgb_meta
+        s = 'ImageView object:\n'
+        s += '  {:<20}:  {}\n'.format("Display bands", meta['bands'])
+        if self.interpolation == None:
+            interp = "<default>"
+        else:
+            interp = self.interpolation
+        s += '  {:<20}:  {}\n'.format("Interpolation", interp)
+        if meta.has_key('rgb range'):
+            s += '  {:<20}:\n'.format("RGB data limits")
+            for (c, r) in zip('RGB', meta['rgb range']):
+                s += '    {}: {}\n'.format(c, str(r))
+        return s
+
+    def __repr__(self):
+        return str(self)
+        
 
 def imshow(data=None, bands=None, classes=None, source=None, colors=None,
            figsize=None, fignum=None, **kwargs):

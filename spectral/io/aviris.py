@@ -121,7 +121,11 @@ def read_aviris_bands(cal_filename):
 
         A :class:`spectral.BandInfo` object
     '''
-    import builtins
+    from spectral.utilities.python23 import IS_PYTHON3
+    if IS_PYTHON3:
+        import builtins
+    else:
+        import __builtin__ as builtins
     from spectral import BandInfo
     from .spyfile import find_file_path
     bands = BandInfo()

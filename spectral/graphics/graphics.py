@@ -481,8 +481,8 @@ def save_rgb(filename, data, bands=None, **kwargs):
 def get_rgb(source, bands=None, **kwargs):
     '''Extract RGB data for display from a SpyFile object or numpy array.
 
-    USAGE: rgb = get_rgb(source [, bands] [stretch=True]
-                         [stretch_all=False] [bounds = (lower, upper)] )
+    USAGE: rgb = get_rgb(source [, bands] [, stretch=<arg> | , bounds=<arg>]
+                         [, stretch_all=<arg>])
 
     Arguments:
 
@@ -500,35 +500,106 @@ def get_rgb(source, bands=None, **kwargs):
 
     Keyword Arguments:
 
-        `stretch` (bool, default True):
+        `stretch` (numeric or tuple):
 
-            If the `stretch` keyword is True, the RGB values will be scaled
-            so the maximum value in the returned array will be 1.
+            This keyword specifies two points on the cumulative histogram of
+            the input data for performing a linear stretch of RGB value for the
+            data. Numeric values given for this parameter are expected to be
+            between 0 and 1. This keyword can be expressed in three forms:
 
-        `stretch_all` (bool, default False):
+            1. As a 2-tuple. In this case the two values specify the lower and
+               upper points of the cumulative histogram respectively. The
+               specified stretch will be performed independently on each of the
+               three color channels unless the `stretch_all` keyword is set to
+               True, in which case all three color channels will be stretched
+               identically.
+
+            2. As a 3-tuple of 2-tuples. In this case, Each channel will be
+               stretched according to its respective 2-tuple in the keyword
+               argument.
+
+            3. As a single numeric value. In this case, the value indicates the
+               size of the histogram tail to be applied at both ends of the
+               histogram for each color channel. `stretch=a` is equivalent to
+               `stretch=(a, 1-a)`.
+
+            If neither `stretch` nor `bounds` are specified, then the default
+            value of `stretch` defined by `spectral.settings.imshow_stretch`
+            will be used.
+    
+        `bounds` (tuple):
+
+            This keyword functions similarly to the `stretch` keyword, except
+            numeric values are in image data units instead of cumulative
+            histogram values. The form of this keyword is the same as the first
+            two forms for the `stretch` keyword (i.e., either a 2-tuple of
+            numbers or a 3-tuple of 2-tuples of numbers).
+    
+        `stretch_all` (bool):
 
             If this keyword is True, each color channel will be scaled
-            separately such that its maximum value is 1.
+            independently.
 
-        `bounds` (2-tuple of scalars):
+        `color_scale` (:class:`~spectral.graphics.colorscale.ColorScale`):
 
-            If `bounds` is specified, the data will be scaled so that `lower`
-            and `upper` correspond to 0 and 1, respectively. Any values outside
-            of the range (`lower`, `upper`) will be clipped.
+            A color scale to be applied to a single-band image.
+
+        `auto_scale` (bool):
+
+            If `color_scale` is provided and `auto_scale` is True, the min/max
+            values of the color scale will be mapped to the min/max data
+            values.
+
+        `colors` (ndarray):
+
+            If `source` is a single-band integer-valued np.ndarray and this
+            keyword is provided, then elements of `source` are assumed to be
+            color index values that specify RGB values in `colors`.
+
+    Examples
+    --------
+
+    Select color limits corresponding to 2% tails in the data histogram:
+
+    >>> imshow(x, stretch=0.02)
+
+    Same as above but specify upper and lower limits explicitly:
+
+    >>> imshow(x, stretch=(0.02, 0.98))
+
+    Same as above but specify limits for each RGB channel explicitly:
+
+    >>> imshow(x, stretch=((0.02, 0.98), (0.02, 0.98), (0.02, 0.98)))
     '''
+    return get_rgb_meta(source, bands, **kwargs)[0]
 
-    from numpy import (take, zeros, repeat, ravel, minimum, maximum, clip,
-                       float, int, newaxis)
-    from spectral.spectral import Image
+def get_rgb_meta(source, bands=None, **kwargs):
+    '''Same as get_rgb but also returns some metadata.
+
+    Inputs are the same as for get_rgb but the return value is a 2-tuple whose
+    first element is the get_rgb return array and whose second element is a
+    dictionary containing some metadata values for the data RGB conversion.
+    '''
+    from spectral.spectral import Image, settings
+    from spectral.algorithms.spymath import get_histogram_cdf_points
+    from numbers import Number
+    from warnings import warn
+
+    for k in kwargs:
+        if k not in _get_rgb_kwargs:
+            raise ValueError('Invalid keyword: {}'.format(k))
 
     if not bands:
         bands = []
-    if len(bands) != 0 and len(bands) != 1 and len(bands) != 3:
+    if len(bands) not in (0, 1, 3):
         raise Exception("Invalid number of bands specified.")
-    monochrome = 0
+
+    meta = {}
+    monochrome = False
 
     if isinstance(source, Image) and len(source.shape) == 3:
         # Figure out which bands to display
+        s = source.shape
         if len(bands) == 0:
             # No bands specified. What should we show?
             if hasattr(source, 'metadata') and \
@@ -536,100 +607,143 @@ def get_rgb(source, bands=None, **kwargs):
                 try:
                     bands = [int(b) for b in source.metadata['default bands']]
                 except:
-                    pass
+                    msg = 'Unable to interpret "default bands" in image ' \
+                      'metadata. Defaulting to first, middle, & last band.'
+                    warn(msg)
             elif source.shape[-1] == 1:
                 bands = [0]
         if len(bands) == 0:
             # Pick the first, middle, and last bands
             n = source.shape[-1]
-            bands = [0, n / 2, n - 1]
-        rgb = source.read_bands(bands).astype(float)
+            bands = [0, n // 2, n - 1]
+        rgb = source.read_bands(bands).astype(np.float)
+        meta['bands'] = bands
     else:
         # It should be a numpy array
+        if source.ndim == 2:
+            source = source[:, :, np.newaxis]
         s = source.shape
-        if len(s) == 2:
-            rgb = source[:, :, newaxis]
-        elif (len(s) == 3 and s[2] == 1):
-            rgb = source
-        elif len(s) == 3:
-            if s[2] == 3:
-                if len(bands) == 0:
-                    # keep data as is.
-                    rgb = source.astype(float)
-                elif len(bands) == 3:
-                    if bands[0] == 0 and bands[1] == 1 and bands[2] == 2:
-                        # Same as first 'if', bands just explicit.
-                        rgb = source.astype(float)
-                    else:
-                        rgb = take(source, bands, 2).astype(float)
-            elif s[2] > 3 and (len(bands) == 1 or len(bands) == 3):
-                rgb = take(source, bands, 2).astype(float)
-            else:
-                rgb = take(source, [0, s[2] / 2, s[2] - 1], 2).astype(float)
-        else:
-            raise Exception('Invalid array shape for image display')
 
-    if 'colorScale' in kwargs:
-        color_scale = kwargs['colorScale']
-        warn('Keyword "colorScale" is deprecated. Use "color_scale"',
-             UserWarning)
-    else:
-        color_scale = kwargs.get('color_scale', None)
+        if s[2] == 1:
+            if len(bands) == 0:
+                bands = [0]
+            elif np.max(bands) > 0:
+                raise ValueError('Invalid band index for monochrome image.')
+        if s[2] == 3 and len(bands) == 0:
+            # Keep data as is.
+            bands = [0, 1, 2]
+        elif s[2] > 3 and len(bands) == 0:
+            # More than 3 bands in data but no bands specified so take
+            # first, middle, & last bands.
+            bands = [0, s[2] / 2, s[2] - 1]
 
-    if 'autoScale' in kwargs:
-        auto_scale = kwargs['autoScale']
-        warn('Keyword "autoScale" is deprecated. Use "auto_scale"',
-             UserWarning)
-    else:
-        auto_scale = kwargs.get('auto_scale', False)
+        rgb = np.take(source, bands, 2).astype(np.float)
+        if rgb.ndim == 2:
+            rgb = rgb[:, :, np.newaxis]
+        meta['bands'] = bands
+
+    color_scale = kwargs.get('color_scale', None)
+    auto_scale = kwargs.get('auto_scale', False)
 
     # If it's either color-indexed or monochrome
     if rgb.shape[2] == 1:
         s = rgb.shape
         if "colors" in kwargs:
+            # color-indexed image
+            meta['mode'] = 'indexed'
             rgb = rgb.astype(int)
             pal = kwargs["colors"]
-            rgb = pal[rgb[:,:,0]]
+            rgb = pal[rgb[:,:,0]] / 255.
+            return (rgb, meta)
         elif color_scale is not None:
             # Colors should be generated from the supplied color scale
             # This section assumes rgb colors in the range 0-255.
-            rgb = rgb[:, :, 0]
+            meta['mode'] = 'scaled'
             scale = color_scale
             if auto_scale:
                 scale.set_range(min(rgb.ravel()), max(rgb.ravel()))
-            rgb3 = zeros((s[0], s[1], 3), int)
-            for i in range(s[0]):
-                for j in range(s[1]):
-                    rgb3[i, j] = scale(rgb[i, j])
-            rgb = rgb3.astype(float) / 255.
+            rgb3 = np.zeros((s[0], s[1], 3), int)
+            rgb3 = np.apply_along_axis(scale, 2, rgb)
+            rgb = rgb3.astype(np.float) / 255.
+            return (rgb, meta)
         else:
-            monochrome = 1
-            rgb = repeat(rgb, 3, 2).astype(float)
+            # Only one band of data to display but still need to determine how
+            # to scale the data values
+            meta['mode'] = 'monochrome'
+            monochrome = True
+            rgb = np.repeat(rgb, 3, 2).astype(np.float)
 
-    if "colors" not in kwargs:
-        # Perform any requested color enhancements.
-        if "stretch" in kwargs or "bounds" not in kwargs:
-            stretch = 1
+    # Perform any requested color enhancements.
 
-        if "bounds" in kwargs:
-            # Stretch each color within the value bounds
-            (lower, upper) = kwargs["bounds"]
-            rgb = (rgb - lower) / (upper - lower)
-            rgb = clip(rgb, 0, 1)
-        elif kwargs.get("stretch_all", False):
-            # Stretch each color over its full range
-            for i in range(rgb.shape[2]):
-                mmin = minimum.reduce(ravel(rgb[:, :, i]))
-                mmax = maximum.reduce(ravel(rgb[:, :, i]))
-                rgb[:, :, i] = (rgb[:, :, i] - mmin) / (mmax - mmin)
-        elif stretch or (kwargs.get("stretch_all", False) and monochrome):
-            # Stretch so highest color channel value is 1
-            mmin = minimum.reduce(ravel(rgb))
-            mmax = maximum.reduce(ravel(rgb))
-            rgb = (rgb - mmin) / (mmax - mmin)
+    stretch = kwargs.get('stretch', settings.imshow_stretch)
+    stretch_all = kwargs.get('stretch_all', settings.imshow_stretch_all)
+    bounds = kwargs.get('bounds', None)
 
-    return rgb
+    if  bounds is not None:
+        # Data limits for the color stretch are set explicitly
+        bounds = np.array(bounds)
+        if bounds.shape not in ((2,), (3, 2)):
+            msg = '`bounds` keyword must have shape (2,) or (3, 2).'
+            raise ValueError(msg)
+        if bounds.ndim == 1:
+            bounds = np.vstack((bounds,) * 3)
+        rgb_lims = bounds
+    else:
+        # Determine data limits for color stretch from given cumulative
+        # histogram values.
+        if stretch in (True, False):
+            msg = 'Boolean values for `stretch` keyword are deprected. See ' \
+              'docstring for `get_rgb`'
+            warn(msg)
+            stretch = settings.imshow_stretch
+        elif isinstance(stretch, Number):
+            if not (0 <= stretch <= 1):
+                raise ValueError('Value must be between 0 and 1.')
+            stretch = (stretch, 1 - stretch)
+        stretch = np.array(stretch)
+        if stretch.shape not in ((2,), (3, 2)):
+            raise ValueError("`stretch` keyword must be numeric or a " \
+                             "sequence with shape (2,) or (3, 2).")
+        if stretch.ndim == 1:
+            if monochrome:
+                s = get_histogram_cdf_points(rgb[:, :, 0], stretch)
+                rgb_lims = [s, s, s]
+            elif stretch_all:
+                # Stretch each color component independently
+                rgb_lims = [get_histogram_cdf_points(rgb[:, :, i], stretch) \
+                            for i in range(3)]
+            else:
+                # Use a common lower/upper limit for each band by taking
+                # the lowest lower limit and greatest upper limit.
+                lims = np.array([get_histogram_cdf_points(rgb[:,:,i], stretch) \
+                        for i in range(3)])
+                minmax = np.array([lims[:,0].min(), lims[:,1].max()])
+                rgb_lims = minmax[np.newaxis, :].repeat(3, axis=0)
+        else:
+            if monochrome:
+                # Not sure why anyone would want separate RGB stretches for
+                # a gray-scale image but we'll let them.
+                rgb_lims = [get_histogram_cdf_points(rgb[:,:,0], stretch[i]) \
+                            for i in range(3)]
+            elif stretch_all:
+                rgb_lims = [get_histogram_cdf_points(rgb[:,:,i], stretch[i]) \
+                            for i in range(3)]
+            else:
+                msg = 'Can not use common stretch if different stretch ' \
+                  ' parameters are given for each color channel.'
+                raise ValueError(msg)
 
+    if 'mode' not in meta:
+        meta['mode'] = 'rgb'
+    meta['rgb range'] = rgb_lims
+    for i in range(rgb.shape[2]):
+        (lower, upper) = rgb_lims[i]
+        rgb[:, :, i] = np.clip((rgb[:, :, i] - lower) / (upper - lower), 0, 1)
+    return (rgb, meta)
+
+# For checking if valid keywords were supplied
+_get_rgb_kwargs = ('stretch', 'stretch_all', 'bounds', 'colors', 'color_scale',
+                   'auto_scale')
 
 def running_ipython():
     '''Returns True if ipython is running.'''

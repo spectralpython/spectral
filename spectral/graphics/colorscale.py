@@ -39,7 +39,7 @@ class ColorScale:
     :meth:`__call__` operator takes a scalar input and returns the
     corresponding color, interpolating between defined colors.
     '''
-    def __init__(self, levels, colors, num_tics=256):
+    def __init__(self, levels, colors, num_tics=0):
         '''
         Creates the ColorScale.
 
@@ -57,13 +57,21 @@ class ColorScale:
 
                 The total number of colors in the scale, not including the
                 background color.  This includes the colors given in the
-                `colors` argument, as well as interpolated color values.
+                `colors` argument, as well as interpolated color values. If
+                not specified, only the colors in the `colors` argument will
+                be used (i.e., num_tics = len(colors).
         '''
         import numpy as np
         if len(colors.shape) != 2 or colors.shape[1] != 3:
             raise 'colors array has invalid shape.'
         if len(levels) != colors.shape[0]:
             raise 'Number of scale levels and colors do not match.'
+
+        if num_tics == 0:
+            num_tics = len(colors)
+        if num_tics < 2:
+            msg = 'There must be at least two tics in the color scale.'
+            raise ValueError(msg)
 
         # Make sure scale levels are floats
         if type(levels) in (list, tuple):
@@ -74,9 +82,8 @@ class ColorScale:
         self.span = levels[-1] - levels[0]
         self.max = levels[-1]
         self.min = levels[0]
-        self.tics = np.array(
-            list(range(num_tics)), np.float) * (self.span / num_tics) + self.min
-        self.colorTics = np.zeros([self.tics.shape[0], 3], np.int)
+        self.tics = np.linspace(self.min, self.max, num_tics)
+        self.colorTics = np.zeros((len(self.tics), 3), np.int)
         self.size = len(self.tics)
         self.bgColor = np.array([0, 0, 0])
 

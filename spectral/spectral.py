@@ -69,6 +69,14 @@ class SpySettings:
             Pixel interpolation to be used in imshow windows. If this value
             is `None`, matplotlib's default interpolation is used. Note that
             zoom windows always use "nearest" interpolation.
+
+        `imshow_stretch`:
+
+            Default RGB linear color stretch to perform.
+
+        `imshow_stretch_all`:
+
+            If True, each color channel limits are determined independently.
     
         `imshow_zoom_figure_width` (int, default `None`):
     
@@ -121,6 +129,8 @@ class SpySettings:
     # imshow settings
     imshow_figure_size = None
     imshow_interpolation = None
+    imshow_stretch = (0.02, 0.98)
+    imshow_stretch_all = True
     imshow_zoom_figure_width = None
     imshow_zoom_pixel_width = 50
     imshow_float_cmap = 'gray'
