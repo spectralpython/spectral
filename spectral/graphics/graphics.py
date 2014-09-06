@@ -738,7 +738,11 @@ def get_rgb_meta(source, bands=None, **kwargs):
     meta['rgb range'] = rgb_lims
     for i in range(rgb.shape[2]):
         (lower, upper) = rgb_lims[i]
-        rgb[:, :, i] = np.clip((rgb[:, :, i] - lower) / (upper - lower), 0, 1)
+        span = upper - lower
+        if lower == upper:
+            rgb[:, :, i] = 0
+        else:
+            rgb[:, :, i] = np.clip((rgb[:, :, i] - lower) / span, 0, 1)
     return (rgb, meta)
 
 # For checking if valid keywords were supplied
