@@ -129,7 +129,7 @@ class SpySettings:
     # imshow settings
     imshow_figure_size = None
     imshow_interpolation = None
-    imshow_stretch = (0.02, 0.98)
+    imshow_stretch = (0.0, 1.0)
     imshow_stretch_all = True
     imshow_zoom_figure_width = None
     imshow_zoom_pixel_width = 50

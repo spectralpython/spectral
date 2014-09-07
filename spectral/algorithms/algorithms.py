@@ -1676,3 +1676,153 @@ def mnf(signal, noise):
     napc = PrincipalComponents(L, V, wstats)
     return MNFResult(signal, noise, napc)
  
+def ppi(X, niters, threshold=0, centered=False, start=None, display=0,
+        **imshow_kwargs):
+    '''Returns pixel purity indices for an image.
+
+    Arguments:
+
+        `X` (ndarray):
+
+            Image data for which to calculate pixel purity indices
+
+        `niters` (int):
+
+            Number of iterations to perform. Each iteration corresponds to a
+            projection of the image data onto a random unit vector.
+
+        `threshold` (numeric):
+
+            If this value is zero, only the two most extreme pixels will have
+            their indices incremented for each random vector. If the value is
+            greater than zero, then all pixels whose projections onto the
+            random vector are with `threshold` data units of either of the two
+            extreme pixels will also have their indices incremented.
+
+        `centered` (bool):
+
+            If True, then the pixels in X are assumed to have their mean
+            already subtracted; otherwise, the mean of `X` will be computed
+            and subtracted prior to computing the purity indices.
+
+        `start` (ndarray):
+
+            An optional array of initial purity indices. This can be used to
+            continue computing PPI values after a previous call to `ppi` (i.e.,
+            set `start` equal to the return value from a previou call to `ppi`.
+            This should be an integer-valued array whose dimensions are equal
+            to the first two dimensions of `X`.
+
+        `display` (integer):
+
+            If set to a postive integer, a :class:`~spectral.graphics.spypylab.ImageView`
+            window will be opened and dynamically display PPI values as the
+            function iterates. The value specifies the number of PPI iterations
+            between display updates. It is recommended to use a value around
+            100 or higher. If the `stretch` keyword (see :func:`~spectral.graphics.graphics.get_rgb`
+            for meaning) is not provided, a default stretch of (0.99, 0.999)
+            is used.
+
+    Return value:
+
+        An ndarray of integers that represent the pixel purity indices of the
+        input image. The return array will have dimensions equal to the first
+        two dimensions of the input image.
+
+    Keyword Arguments:
+
+        Any keyword accepted by :func:`~spectral.graphics.spypylab.imshow`.
+        These keywords will be passed to the image display and only have an
+        effect if the `display` argument is nonzero.
+
+    This function can be interruped with a KeyboardInterrupt (ctrl-C), in which
+    case, the most recent value of the PPI array will be returned. This can be
+    used in conjunction with the `display` argument to view the progression of
+    the PPI values until they appear stable, then terminate iteration using
+    ctrl-C.
+
+    References
+    ----------
+
+    Boardman J.W., Kruse F.A, and Green R.O., "Mapping Target Signatures via
+    Partial Unmixing of AVIRIS Data," Pasadena, California, USA, 23 Jan 1995,
+    URI: http://hdl.handle.net/2014/33635
+    '''
+    from numbers import Integral
+    import spectral as spy
+    from spectral.algorithms.algorithms import calc_stats
+    
+
+    if display is not None:
+        if not isinstance(display, Integral) or isinstance(display, bool) or \
+            display < 0:
+            msg = '`display` argument must be a non-negative integer.'
+            raise ValueError(msg)
+
+    if not centered:
+        stats = calc_stats(X)
+        X = X - stats.mean
+
+    shape = X.shape
+    X = X.reshape(-1, X.shape[-1])
+    nbands = X.shape[-1]
+    
+    fig = None
+    updating = False
+
+    if start is not None:
+        counts = np.array(start.ravel())
+    else:
+        counts = np.zeros(X.shape[0], dtype=np.uint32)
+
+    if 'stretch' not in imshow_kwargs:
+        imshow_kwargs['stretch'] = (0.99, 0.999)
+
+    msg = 'Running {} pixel purity iterations...'.format(niters)
+    spy._status.display_percentage(msg)
+
+    try:
+        for i in xrange(niters):
+            r = np.random.rand(nbands) - 0.5
+            r /= np.sqrt(np.sum(r * r))
+            s = X.dot(r)
+            imin = np.argmin(s)
+            imax = np.argmax(s)
+
+            updating = True
+            if threshold == 0:
+                # Only the two extreme pixels are incremented
+                counts[imin] += 1
+                counts[imax] += 1
+            else:
+                # All pixels within threshold distance from the two extremes
+                counts[s >= (s[imax] - threshold)] += 1
+                counts[s <= (s[imin] + threshold)] += 1
+            updating = False
+
+            if display > 0 and (i + 1) % display == 0:
+                if fig is not None:
+                    fig.set_data(counts.reshape(shape[:2]), **imshow_kwargs)
+                else:
+                    fig = spy.imshow(counts.reshape(shape[:2]), **imshow_kwargs)
+                fig.set_title('PPI ({} iterations)'.format(i + 1))
+
+            if not (i + 1) % 10:
+                spy._status.update_percentage(100 * (i + 1) / niters)
+
+    except KeyboardInterrupt:
+        spy._status.end_percentage('interrupted')
+        if not updating:
+            msg = 'KeyboardInterrupt received. Returning pixel purity ' \
+              'values after {} iterations.'.format(i)
+            spy._status.write(msg)
+            return counts.reshape(shape[:2])
+        else:
+            msg = 'KeyboardInterrupt received during array update. PPI ' \
+              'values may be corrupt. Returning None'
+            spy._status.write(msg)
+            return None
+        
+    spy._status.end_percentage()
+
+    return counts.reshape(shape[:2])

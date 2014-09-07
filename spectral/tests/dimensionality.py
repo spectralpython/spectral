@@ -57,6 +57,36 @@ class DimensionalityTest(SpyTest):
         denoised = mnfr.denoise(data, num=data.shape[-1])
         assert_allclose(denoised, data)
 
+    def test_ppi(self):
+        '''Tests that ppi function runs'''
+        data = self.data
+        p = spy.ppi(data, 4)
+
+    def test_ppi_threshold(self):
+        '''Tests that ppi function runs with threshold arg'''
+        data = self.data
+        p = spy.ppi(data, 4, 10)
+
+    def test_ppi_continues(self):
+        '''Tests that running ppi with initial indices works as expected.'''
+        data = self.data
+        s = np.random.get_state()
+        p = spy.ppi(data, 4)
+        np.random.set_state(s)
+        p2 = spy.ppi(data, 2)
+        p2 = spy.ppi(data, 2, start=p2)
+        np.all(p == p2)
+
+    def test_ppi_centered(self):
+        '''Tests that ppi with mean-subtracted data works as expected.'''
+        data = self.data
+        s = np.random.get_state()
+        p = spy.ppi(data, 4)
+        
+        np.random.set_state(s)
+        data_centered = data - spy.calc_stats(data).mean
+        p2 = spy.ppi(data_centered, 4)
+        np.all(p == p2)
 
 def run():
     print('\n' + '-' * 72)
