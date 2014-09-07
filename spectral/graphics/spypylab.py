@@ -1017,6 +1017,11 @@ class ImageView(object):
             self.class_axes.set_interpolation(interpolation)
         self.refresh()
 
+    def set_title(self, s):
+        if self.is_shown:
+            self.axes.set_title(s)
+            self.refresh()
+
     def open_zoom(self, center=None, size=None):
         '''Opens a separate window with a zoomed view.
         If a ctrl-lclick event occurs in the original view, the zoomed window
@@ -1128,7 +1133,7 @@ class ImageView(object):
         
 
 def imshow(data=None, bands=None, classes=None, source=None, colors=None,
-           figsize=None, fignum=None, **kwargs):
+           figsize=None, fignum=None, title=None, **kwargs):
     '''A wrapper around matplotlib's imshow for multi-band images.
 
     Arguments:
@@ -1177,12 +1182,15 @@ def imshow(data=None, bands=None, classes=None, source=None, colors=None,
             Specifies the figure number of an existing matplotlib figure. If
             this argument is None, a new figure will be created.
 
+        `title` (str):
+
+            The title to be displayed above the image.
+
     Keywords:
 
-        If provided, the keywords, "stretch", "stretch_all", and "bounds"
-        will be passed as keywords to `get_rgb` for extracting RGB values
-        from `data`. All keyword arguments other than those described above
-        will be passed on to `matplotlib.imshow`.
+        Keywords accepted by :func:`~spectral.graphics.graphics.get_rgb` or
+        :func:`matplotlib.imshow` will be passed on to the appropriate
+        function.
 
     This function defaults the color scale (imshow's "cmap" keyword) to
     "gray". To use imshow's default color scale, call this function with
@@ -1245,6 +1253,9 @@ def imshow(data=None, bands=None, classes=None, source=None, colors=None,
         view.show(fignum=fig.number)
     else:
         view.show()
+
+    if title is not None:
+        view.set_title(title)
     return view
         
 
