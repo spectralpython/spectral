@@ -1778,11 +1778,11 @@ def ppi(X, niters, threshold=0, centered=False, start=None, display=0,
     if 'stretch' not in imshow_kwargs:
         imshow_kwargs['stretch'] = (0.99, 0.999)
 
-    msg = 'Running {} pixel purity iterations...'.format(niters)
+    msg = 'Running {0} pixel purity iterations...'.format(niters)
     spy._status.display_percentage(msg)
 
     try:
-        for i in xrange(niters):
+        for i in range(niters):
             r = np.random.rand(nbands) - 0.5
             r /= np.sqrt(np.sum(r * r))
             s = X.dot(r)
@@ -1814,7 +1814,7 @@ def ppi(X, niters, threshold=0, centered=False, start=None, display=0,
         spy._status.end_percentage('interrupted')
         if not updating:
             msg = 'KeyboardInterrupt received. Returning pixel purity ' \
-              'values after {} iterations.'.format(i)
+              'values after {0} iterations.'.format(i)
             spy._status.write(msg)
             return counts.reshape(shape[:2])
         else:
