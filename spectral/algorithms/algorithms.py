@@ -1024,7 +1024,7 @@ class TrainingClassSet:
             class_prob = pickle.load(f)
             c = TrainingClass(image, mask, index, class_prob)
             c.stats = GaussianStats(mean=mean, cov=cov, nsamples=nsamples)
-            if None not in (cov, mean, nsamples):
+            if not (cov is None or mean is None or nsamples is None):
                 c.stats_valid(True)
                 c.nbands = len(mean)
             self.add_class(c)
