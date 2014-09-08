@@ -48,7 +48,7 @@ class SpyMathTest(SpyTest):
         import spectral as spy
         self.data = spy.open_image('92AV3C.lan').open_memmap()
         self.C = spy.calc_stats(self.data).cov
-        self.X = np.random.rand(100, 100)
+        self.X = np.array([[2., 1.],[1., 2.]])
 
     def test_matrix_sqrt(self):
         from spectral.algorithms.spymath import matrix_sqrt
