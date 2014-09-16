@@ -279,8 +279,10 @@ def check_new_filename(hdr_file, img_ext, force):
     '''Raises an exception if the associated header or image file names exist.
     '''
     import os
-    if img_ext[0] != '.':
-        img_ext += '.'
+    if img_ext is None:
+        img_ext = ''
+    elif len(img_ext) > 0 and img_ext[0] != '.':
+        img_ext = '.' + img_ext
     hdr_file = os.path.realpath(hdr_file)
     (base, ext) = os.path.splitext(hdr_file)
     if ext.lower() != '.hdr':
@@ -324,12 +326,12 @@ def save_image(hdr_file, image, **kwargs):
             True, the files will be overwritten; otherwise, if either of the
             files exist, an exception will be raised.
 
-        `ext` (str):
+        `ext` (str or None):
 
             The extension to use for the image file.  If not specified, the
             default extension ".img" will be used.  If `ext` is an empty
-            string, the image file will have the same name as the header but
-            without the ".hdr" extension.
+            string or is None, the image file will have the same name as the
+            header but without the ".hdr" extension.
 
         `interleave` (str):
 

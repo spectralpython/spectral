@@ -67,6 +67,30 @@ class ENVIWriteTest(SpyTest):
         img = spectral.open_image(fname)
         assert_almost_equal(img[r, b, c], datum)
 
+    def test_save_image_ndarray_no_ext(self):
+        '''Test saving an ENVI formated image with no image file extension.'''
+        import os
+        import spectral
+        data = np.arange(1000, dtype=np.int16).reshape(10, 10, 10)
+        base = os.path.join(testdir, 'test_save_image_ndarray_noext')
+        hdr_file = base + '.hdr'
+        spectral.envi.save_image(hdr_file, data, ext='')
+        rdata = spectral.open_image(hdr_file).load()
+        assert(np.all(data==rdata))
+
+    def test_save_image_ndarray_alt_ext(self):
+        '''Test saving an ENVI formated image with alternate extension.'''
+        import os
+        import spectral
+        data = np.arange(1000, dtype=np.int16).reshape(10, 10, 10)
+        base = os.path.join(testdir, 'test_save_image_ndarray_alt_ext')
+        hdr_file = base + '.hdr'
+        ext = '.foo'
+        img_file = base + ext
+        spectral.envi.save_image(hdr_file, data, ext=ext)
+        rdata = spectral.envi.open(hdr_file, img_file).load()
+        assert(np.all(data==rdata))
+
     def test_save_image_spyfile(self):
         '''Test saving an ENVI formatted image from a SpyFile object.'''
         import os
