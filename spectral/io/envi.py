@@ -848,7 +848,6 @@ class SpectralLibrary:
         `fileBaseName`.sli.
         '''
         import spectral
-        import builtins
         meta = {}
         meta.update(self.metadata)
         if self.bands.centers:

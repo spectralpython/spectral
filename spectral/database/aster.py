@@ -30,6 +30,14 @@
 
 
 from __future__ import division, print_function, unicode_literals
+from spectral.utilities.python23 import IS_PYTHON3
+
+if IS_PYTHON3:
+    readline = lambda fin: fin.readline()
+    open_file = lambda filename: open(filename, encoding='iso-8859-1')
+else:
+    readline = lambda fin: fin.readline().decode('iso-8859-1')
+    open_file = lambda filename: open(filename)
 
 table_schemas = [
     'CREATE TABLE Samples (SampleID INTEGER PRIMARY KEY, Name TEXT, Type TEXT, Class TEXT, SubClass TEXT, '
@@ -40,7 +48,7 @@ table_schemas = [
     'NumValues INTEGER, XData BLOB, YData BLOB)',
 ]
 
-arraytypecode = 'f'
+arraytypecode = chr(ord('f'))
 
 # These files contained malformed signature data and will be ignored.
 bad_files = [
@@ -53,8 +61,8 @@ def read_pair(fin, num_lines=1):
     '''Reads a colon-delimited attribute-value pair from the file stream.'''
     s = ''
     for i in range(num_lines):
-        s += " " + fin.readline().strip()
-    return [x.strip().decode('iso-8859-1').lower() for x in s.split(':')]
+        s += " " + readline(fin).strip()
+    return [x.strip().lower() for x in s.split(':')]
 
 
 class Signature:
@@ -66,7 +74,8 @@ class Signature:
 
 def read_file(filename):
     '''Reads an ASTER 2.x spectrum file.'''
-    fin = open(filename)
+    fin = open_file(filename)
+
     s = Signature()
 
     # Number of lines per metadata attribute value
@@ -77,7 +86,7 @@ def read_file(filename):
 
     haveCollectedBy = False
     for i in range(30):
-        line = fin.readline().strip()
+        line = readline(fin).strip()
         if line.find('Collected by:') >= 0:
             haveCollectedBy = True
             collectedByLineNum = i
@@ -220,7 +229,8 @@ class AsterDatabase:
         import os
         if os.path.isfile(filename):
             raise Exception('Error: Specified file already exists.')
-        db = AsterDatabase(filename)
+        db = AsterDatabase()
+        db._connect(filename)
         for schema in cls.schemas:
             db.cursor.execute(schema)
         if aster_data_dir:
