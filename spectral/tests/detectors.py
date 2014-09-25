@@ -78,6 +78,13 @@ class MatchedFilterTest(SpyTest):
         (i, j) = self.target_ij
         np.testing.assert_approx_equal(self.mf(self.data)[i, j], 1)
 
+    def test_mf_windowed_target_eq_one(self):
+        '''Windowed Matched Filter response of target pixel should be one.'''
+        X = self.data[:10, :10, :]
+        ij = (3, 3)
+        y = spy.matched_filter(X, X[ij], window=(3,7), cov=self.background.cov)
+        np.allclose(1, y[ij])
+
 
 class RXTest(SpyTest):
     def setup(self):
@@ -91,11 +98,101 @@ class RXTest(SpyTest):
         np.testing.assert_approx_equal(rx(stats.mean, background=stats), 0)
         
 
+class ACETest(SpyTest):
+    def setup(self):
+        self.data = spy.open_image('92AV3C.lan').load()
+        self.bg = spy.calc_stats(self.data)
+        self.X = self.data[:20, :20, :]
+
+    def test_ace_bg_eq_zero(self):
+        '''ACE score of background mean should be zero.'''
+        ij = (10, 10)
+        y = spy.ace(self.bg.mean, self.X[ij], background=self.bg)
+        assert(np.allclose(0, y))
+        
+    def test_ace_pixel_target_eq_one(self):
+        '''ACE score of target should be one for single pixel arg.'''
+        ij = (10, 10)
+        y = spy.ace(self.X[ij], self.X[ij], background=self.bg)
+        assert(np.allclose(1, y))
+
+    def test_ace_novec_pixel_target_eq_one(self):
+        '''ACE score of target should be one for single pixel arg.'''
+        ij = (10, 10)
+        y = spy.ace(self.X[ij], self.X[ij], background=self.bg, vectorize=False)
+        assert(np.allclose(1, y))
+
+    def test_ace_target_eq_one(self):
+        '''ACE score of target should be one.'''
+        ij = (10, 10)
+        y = spy.ace(self.X, self.X[ij], background=self.bg)
+        assert(np.allclose(1, y[ij]))
+
+    def test_ace_novec_target_eq_one(self):
+        '''ACE score (without vectorization) of target should be one.'''
+        ij = (10, 10)
+        y = spy.ace(self.X, self.X[ij], background=self.bg, vectorize=False)
+        assert(np.allclose(1, y[ij]))
+
+    def test_ace_multi_targets_eq_one(self):
+        '''ACE score of multiple targets should each be one.'''
+        ij1 = (10, 10)
+        ij2 = (3, 12)
+        y = spy.ace(self.X, [self.X[ij1], self.X[ij2]], background=self.bg)
+        assert(np.allclose(1, [y[ij1][0], y[ij2][1]]))
+
+    def test_ace__novec_multi_targets_eq_one(self):
+        '''ACE score of multiple targets should each be one.'''
+        ij1 = (10, 10)
+        ij2 = (3, 12)
+        y = spy.ace(self.X, [self.X[ij1], self.X[ij2]], background=self.bg,
+                    vectorize=False)
+        assert(np.allclose(1, [y[ij1][0], y[ij2][1]]))
+
+    def test_ace_multi_targets_bg_eq_zero(self):
+        '''ACE score of background for multiple targets should be one.'''
+        ij1 = (10, 10)
+        ij2 = (3, 12)
+        y = spy.ace(self.bg.mean, [self.X[ij1], self.X[ij2]],
+                    background=self.bg)
+        assert(np.allclose(0, y))
+
+    def test_ace_subspace_targets_eq_one(self):
+        '''ACE score of targets defining target subspace should each be one.'''
+        ij1 = (10, 10)
+        ij2 = (3, 12)
+        y = spy.ace(self.X, np.array([self.X[ij1], self.X[ij2]]),
+                    background=self.bg)
+        assert(np.allclose(1, [y[ij1], y[ij2]]))
+
+    def test_ace_novec_subspace_targets_eq_one(self):
+        '''ACE score of targets defining target subspace should each be one.'''
+        ij1 = (10, 10)
+        ij2 = (3, 12)
+        y = spy.ace(self.X, np.array([self.X[ij1], self.X[ij2]]),
+                    background=self.bg, vectorize=False)
+        assert(np.allclose(1, [y[ij1], y[ij2]]))
+
+    def test_ace_subspace_bg_eq_zero(self):
+        '''ACE score of background for target subspace should be zero.'''
+        ij1 = (10, 10)
+        ij2 = (3, 12)
+        y = spy.ace(self.bg.mean, np.array([self.X[ij1], self.X[ij2]]),
+                    background=self.bg)
+        assert(np.allclose(0, y))
+
+    def test_ace_windowed_target_eq_one(self):
+        '''ACE score of target for windowed background should be one.'''
+        ij = (10, 10)
+        y = spy.ace(self.X, self.X[ij], window=(3,7), cov=self.bg.cov)
+        assert(np.allclose(1, y[ij]))
+
+
 def run():
     print('\n' + '-' * 72)
     print('Running target detector tests.')
     print('-' * 72)
-    for T in [MatchedFilterTest, RXTest]:
+    for T in [MatchedFilterTest, RXTest, ACETest]:
         T().run()
 
 if __name__ == '__main__':
