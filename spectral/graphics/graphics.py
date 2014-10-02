@@ -432,27 +432,9 @@ def save_rgb(filename, data, bands=None, **kwargs):
             :mod:`PIL` (e.g., 'png', 'tiff', 'bmp').  If `format` is not
             provided, 'jpg' is assumed.
 
-        `colors` (list of 3-tuples of ints):
 
-            If this keyword is provided, `data` is interpeted to be a color map
-            into the `colors` color palette. This is the same `colors` keyword
-            used by the :func:`spectral.view_indexed` function. The parameter
-            is a list of 3-tuples defining RGB values, where R, G, and B are
-            in the range [0-255].
-
-        `stretch` (bool):
-
-            If `stretch` evaluates True, the highest value in the data source
-            will be scaled to maximum color channel intensity.
-
-        `stretch_all` (bool):
-
-            If `stretch_all` evaluates True, the highest value of the data
-            source in each color channel will be set to maximum intensity.
-
-        `bounds` (2-tuple of ints):
-
-            Clips the input data at (lower, upper) values.
+        See :func:`~spectral.graphics.graphics.get_rgb` for descriptions of
+        additional keyword arguments.
 
     Examples:
 
@@ -556,8 +538,7 @@ def get_rgb(source, bands=None, **kwargs):
             keyword is provided, then elements of `source` are assumed to be
             color index values that specify RGB values in `colors`.
 
-    Examples
-    --------
+    Examples:
 
     Select color limits corresponding to 2% tails in the data histogram:
 

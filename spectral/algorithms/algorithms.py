@@ -1741,8 +1741,7 @@ def ppi(X, niters, threshold=0, centered=False, start=None, display=0,
     the PPI values until they appear stable, then terminate iteration using
     ctrl-C.
 
-    References
-    ----------
+    References:
 
     Boardman J.W., Kruse F.A, and Green R.O., "Mapping Target Signatures via
     Partial Unmixing of AVIRIS Data," Pasadena, California, USA, 23 Jan 1995,
