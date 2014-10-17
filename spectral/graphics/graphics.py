@@ -372,7 +372,6 @@ def make_pil_image(*args, **kwargs):
 
     See `get_rgb` for description of arguments.
     '''
-
     import numpy
     import io
 
@@ -383,12 +382,7 @@ def make_pil_image(*args, **kwargs):
         import ImageDraw
 
     rgb = get_rgb(*args, **kwargs)
-
-    if "colors" not in kwargs:
-        rgb = (rgb * 255).astype(numpy.ubyte)
-    else:
-        rgb = rgb.astype(numpy.ubyte)
-
+    rgb = (rgb * 255).astype(numpy.ubyte)
     im = Image.fromarray(rgb)
     return im
 
