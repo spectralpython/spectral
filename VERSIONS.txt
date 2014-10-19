@@ -1,4 +1,43 @@
 ================================================================================
+SPy 0.16.0
+================================================================================
+Release date: 2014.10.18
+
+New Features
+------------
+
+* Adaptive Coherence/Cosine Estimator (ACE) target detector
+
+* Pixel Purity Index (PPI)
+
+* Adjustable linear color stretches (based on data limits or cumulative histogram)
+
+* Ability to save ENVI Classification files (thanks to @ohspite)
+
+* `ImageView` class has `set_title` method
+
+Changes
+-------
+
+* `imshow` image displays use a linear 2% color stretch by default (can
+  override this in `spectral.settings`)
+
+* Limited Python 3 compatibility (all functions except `view_cube` and `view_nd`) supported
+
+* `get_rgb` handles bands with no variation (color set to min value)
+
+* Modified `view_nd` to support change in PyOpenGL API
+
+Bug Fixes
+---------
+
+* [Issue #16] Incorrect handling of alternate file extensions in `envi.save_image`
+
+* [Issue #11] Incorrect handling of unsigned byte data type in ENVI files
+
+* [Issue #13] As of version 1.9, `numpy` no longer provides `oldnumeric` submodule
+
+================================================================================
 SPy 0.15.0
 ================================================================================
 Release date: 2014.06.04
