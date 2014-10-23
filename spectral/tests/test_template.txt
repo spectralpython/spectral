@@ -38,7 +38,7 @@ from __future__ import division, print_function, unicode_literals
 
 import numpy as np
 from numpy.testing import assert_allclose
-from spytest import SpyTest, test_method
+from .spytest import SpyTest
 
 
 class FooTest(SpyTest):
