@@ -54,7 +54,7 @@ class IteratorTest(SpyTest):
         data = self.image.load()
         pixels = data.reshape((-1, data.shape[-1]))
         sum = np.sum(pixels, 0)
-        itsum = reduce(np.add, iterator(data))
+        itsum = np.sum(np.array([x for x in iterator(data)]), 0)
         assert_allclose(sum, itsum)
 
     def test_iterator_nonzero(self):
@@ -64,7 +64,7 @@ class IteratorTest(SpyTest):
         classes = self.gt.ravel()
         pixels = data.reshape((-1, data.shape[-1]))
         sum = np.sum(pixels[classes > 0], 0)
-        itsum = reduce(np.add, iterator(data, classes))
+        itsum = np.sum(np.array([x for x in iterator(data, classes)]), 0)
         assert_allclose(sum, itsum)
 
     def test_iterator_index(self):
@@ -75,7 +75,7 @@ class IteratorTest(SpyTest):
         classes = self.gt.ravel()
         pixels = data.reshape((-1, data.shape[-1]))
         sum = np.sum(pixels[classes == 5], 0)
-        itsum = reduce(np.add, iterator(data, classes, 5))
+        itsum = np.sum(np.array([x for x in iterator(data, classes, 5)]), 0)
         assert_allclose(sum, itsum)
 
     def test_iterator_spyfile(self):
@@ -86,8 +86,6 @@ class IteratorTest(SpyTest):
         classes = self.gt.ravel()
         pixels = data.reshape((-1, data.shape[-1]))
         sum = np.sum(pixels[classes == 5], 0)
-        # Do not use `reduce` because the sample image is int16, which will
-        # cause 16-bit overflow
         itsum = np.sum(np.array([x for x in iterator(self.image, classes, 5)]),
                                 0)
         assert_allclose(sum, itsum)
@@ -101,8 +99,6 @@ class IteratorTest(SpyTest):
         pixels = data.reshape((-1, data.shape[-1]))
         sum = np.sum(pixels[classes == 5], 0)
         image = spy.open_image('92AV3C.lan')
-        # Do not use `reduce` because the sample image is int16, which will
-        # cause 16-bit overflow
         itsum = np.sum(np.array([x for x in iterator(image, classes, 5)]), 0)
         assert_allclose(sum, itsum)
 
