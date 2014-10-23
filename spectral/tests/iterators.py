@@ -34,6 +34,8 @@ To run the unit tests, type the following from the system command line:
     # python -m spectral.tests.iterators
 '''
 
+from __future__ import division, print_function, unicode_literals
+
 import numpy as np
 from numpy.testing import assert_allclose
 from spytest import SpyTest, test_method
@@ -106,9 +108,9 @@ class IteratorTest(SpyTest):
 
 
 def run():
-    print '\n' + '-' * 72
-    print 'Running iterator tests.'
-    print '-' * 72
+    print('\n' + '-' * 72)
+    print('Running iterator tests.')
+    print('-' * 72)
     test = IteratorTest()
     test.run()
 
