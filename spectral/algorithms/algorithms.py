@@ -92,9 +92,9 @@ class ImageMaskIterator(Iterator):
         self.index = index
         # Get the proper mask for the training set
         if index:
-            self.mask = numpy.equal(mask, index)
+            self.mask = np.equal(mask, index)
         else:
-            self.mask = not_equal(mask, 0)
+            self.mask = np.not_equal(mask, 0)
         self.numElements = sum(self.mask.ravel())
 
     def get_num_elements(self):
@@ -847,7 +847,6 @@ class TrainingClass:
 
     def size(self):
         '''Returns the number of pixels/samples in the training set.'''
-        from numpy import sum, equal
 
         # If the stats are invalid, the number of pixels in the
         # training set may have changed.
@@ -855,9 +854,9 @@ class TrainingClass:
             return self.stats.nsamples
 
         if self.index:
-            return sum(equal(self.mask, self.index).ravel())
+            return np.sum(np.equal(self.mask, self.index).ravel())
         else:
-            return sum(not_equal(self.mask, 0).ravel())
+            return np.sum(np.not_equal(self.mask, 0).ravel())
 
         
     def calc_stats(self):
