@@ -112,6 +112,7 @@ class ENVIWriteTest(SpyTest):
         md = {'lines': R,
               'samples': B,
               'bands': C,
+              'interleav': 'bsq',
               'data type': 12}
         fname = os.path.join(testdir, 'test_create_image_metadata.hdr')
         img = spectral.envi.create_image(fname, md)
@@ -120,6 +121,7 @@ class ENVIWriteTest(SpyTest):
         mm[r, b, c] = datum
         mm.flush()
         img = spectral.open_image(fname)
+        img._disable_memmap()
         assert_almost_equal(img[r, b, c], datum)
 
     def test_create_image_keywords(self):
@@ -131,6 +133,7 @@ class ENVIWriteTest(SpyTest):
         datum = 33
         fname = os.path.join(testdir, 'test_create_image_keywords.hdr')
         img = spectral.envi.create_image(fname, shape=(R,B,C),
+                                         interleave='bsq',
                                          dtype=np.uint16,
                                          offset=120)
         mm = img.open_memmap(writable=True)
@@ -138,6 +141,7 @@ class ENVIWriteTest(SpyTest):
         mm[r, b, c] = datum
         mm.flush()
         img = spectral.open_image(fname)
+        img._disable_memmap()
         assert_almost_equal(img[r, b, c], datum)
 
     def test_save_invalid_dtype_fails(self):
