@@ -502,6 +502,8 @@ def _prepared_data_and_metadata(hdr_file, image, **kwargs):
     if isinstance(image, np.ndarray):
         data = image
         src_interleave = 'bip'
+        if len(data.shape) == 2:
+            data = data[:, :, np.newaxis]
         swap = False
     elif isinstance(image, SpyFile):
         if image.using_memmap is True:
