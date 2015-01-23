@@ -113,7 +113,7 @@ class ENVIWriteTest(SpyTest):
         md = {'lines': R,
               'samples': B,
               'bands': C,
-              'interleav': 'bsq',
+              'interleave': 'bsq',
               'header offset': offset,
               'data type': 12}
         fname = os.path.join(testdir, 'test_create_image_metadata.hdr')
