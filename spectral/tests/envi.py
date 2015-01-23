@@ -108,11 +108,13 @@ class ENVIWriteTest(SpyTest):
         import spectral
         (R, B, C) = (10, 20, 30)
         (r, b, c) = (3, 8, 23)
+        offset = 1024
         datum = 33
         md = {'lines': R,
               'samples': B,
               'bands': C,
               'interleav': 'bsq',
+              'header offset': offset,
               'data type': 12}
         fname = os.path.join(testdir, 'test_create_image_metadata.hdr')
         img = spectral.envi.create_image(fname, md)
@@ -123,6 +125,7 @@ class ENVIWriteTest(SpyTest):
         img = spectral.open_image(fname)
         img._disable_memmap()
         assert_almost_equal(img[r, b, c], datum)
+        assert(img.offset == offset)
 
     def test_create_image_keywords(self):
         '''Test calling `envi.create_image` using keyword args.'''
@@ -130,12 +133,13 @@ class ENVIWriteTest(SpyTest):
         import spectral
         (R, B, C) = (10, 20, 30)
         (r, b, c) = (3, 8, 23)
+        offset = 1024
         datum = 33
         fname = os.path.join(testdir, 'test_create_image_keywords.hdr')
         img = spectral.envi.create_image(fname, shape=(R,B,C),
                                          interleave='bsq',
                                          dtype=np.uint16,
-                                         offset=120)
+                                         offset=offset)
         mm = img.open_memmap(writable=True)
         mm.fill(0)
         mm[r, b, c] = datum
@@ -143,6 +147,7 @@ class ENVIWriteTest(SpyTest):
         img = spectral.open_image(fname)
         img._disable_memmap()
         assert_almost_equal(img[r, b, c], datum)
+        assert(img.offset == offset)
 
     def test_save_invalid_dtype_fails(self):
         '''Should not be able to write unsupported data type to file.''' 

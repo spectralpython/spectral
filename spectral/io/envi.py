@@ -724,7 +724,7 @@ def create_image(hdr_file, metadata=None, **kwargs):
         else:
             metadata['bands'] = 1
     if 'offset' in kwargs:
-        metadata['offset'] = kwargs['offset']
+        metadata['header offset'] = kwargs['offset']
     if 'dtype' in kwargs:
         metadata['data type'] = dtype_to_envi[np.dtype(kwargs['dtype']).char]
     if 'interleave' in kwargs:
