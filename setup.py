@@ -1,11 +1,18 @@
 #!/usr/bin/env python
 
+import ast
+import re
 try:
     from setuptools import setup
 except:
     from distutils.core import setup
 
-import spectral
+
+# taken from Flask
+_version_re = re.compile(r'__version__\s+=\s+(.*)')
+with open('spectral/__init__.py', 'rb') as f:
+    version = str(ast.literal_eval(_version_re.search(
+        f.read().decode('utf-8')).group(1)))
 
 long_description = '''Spectral Python (SPy) is a pure Python module for
 processing hyperspectral image data (imaging spectroscopy data). It has
@@ -14,7 +21,7 @@ imagery. SPy is Free, Open Source Software (FOSS) distributed under the GNU
 General Public License.'''
 
 setup(name='spectral',
-      version=spectral.__version__,
+      version=version,
       description='Spectral Python (SPy) is a Python module for hyperspectral image processing.',
       long_description=long_description,
       author='Thomas Boggs',
