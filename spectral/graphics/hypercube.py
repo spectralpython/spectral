@@ -252,7 +252,7 @@ class HypercubeWindow(wx.Frame, SpyWindow):
                 bands = list(map(int, data.metadata['default bands']))
             else:
                 bands = list(range(3))
-            image = graphics.make_pil_image(data, bands, format='bmp')
+            image = graphics.make_pil_image(data, bands)
 
         # Read each image so it displays properly when viewed from the outside
         # of the cube with corners rendered from lower left CCW to upper left.
@@ -268,7 +268,7 @@ class HypercubeWindow(wx.Frame, SpyWindow):
         scaleMax = max([max(side.ravel()) for side in sides])
         scale.set_range(scaleMin, scaleMax)
         sideImages = [graphics.make_pil_image(side, color_scale=scale,
-                                              auto_scale=0, format='bmp')
+                                              auto_scale=0)
                       for side in sides]
         images = [image] + sideImages
 
