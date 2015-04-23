@@ -446,12 +446,11 @@ def save_rgb(filename, data, bands=None, **kwargs):
 
             save_image('results.jpg', clMap, colors=spectral.spy_colors)
     '''
-    im = make_pil_image(*(data, bands), **kwargs)
+    kwargs = kwargs.copy()
+    fmt = kwargs.pop('format', None)
 
-    if "format" in kwargs:
-        im.save(filename, kwargs['format'], quality=100)
-    else:
-        im.save(filename)
+    im = make_pil_image(*(data, bands), **kwargs)
+    im.save(filename, fmt, quality=100)
 
 
 def get_rgb(source, bands=None, **kwargs):
