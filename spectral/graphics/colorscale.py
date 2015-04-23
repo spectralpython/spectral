@@ -132,8 +132,16 @@ class ColorScale:
         self.span = max - min
 
 
-def create_default_color_scale():
-    '''Returns a black-blue-green-red-white color scale.'''
+def create_default_color_scale(ntics=0):
+    '''Returns a black-blue-green-red-yellow-white color scale.
+
+    Arguments:
+
+            `ntics` (integer):
+
+                Total number of colors in the scale. If this value is 0, no
+                interpolated colors will be used.
+    '''
     from numpy import array
     mycolors = array([[0, 0, 0],
                       [0, 0, 255],
@@ -141,8 +149,12 @@ def create_default_color_scale():
                       [255, 0, 0],
                       [255, 255, 0],
                       [255, 255, 255]])
+
+    if ntics != 0 and ntics < len(mycolors):
+        raise ValueError('Any non-zero value of `ntics` must be greater than'
+                         ' {}.'.format(len(mycolors)))
     levels = array([0., 10., 20., 30., 40., 50.])
-    scale = ColorScale(levels, mycolors)
+    scale = ColorScale(levels, mycolors, ntics)
     return scale
 
 default_color_scale = create_default_color_scale()

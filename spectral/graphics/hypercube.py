@@ -227,14 +227,14 @@ class HypercubeWindow(wx.Frame, SpyWindow):
         import spectral
         from spectral.spectral import Image
         from . import graphics
-        from spectral.graphics.colorscale import default_color_scale
+        from spectral.graphics.colorscale import create_default_color_scale
 
         global DEFAULT_TEXTURE_SIZE
 
         if 'scale' in self.kwargs:
             scale = self.kwargs['scale']
         else:
-            scale = default_color_scale
+            scale = create_default_color_scale(256)
 
         data = self.hsi
         s = data.shape
