@@ -1,4 +1,29 @@
 ================================================================================
+SPy 0.16.2
+================================================================================
+Release date: 2015.04.27
+
+Bug_Fix release.
+
+Bug Fixes
+---------
+
+* [Issue #19] Fixed handling of intereave keyword.
+
+* [Issue #20] envi.save_image fails when interleave keyword is provided for
+  single-band images.
+
+* [Issue #21] offset keyword has not effect in envi.create_image.
+
+* [Issue #22] setup.py fails if numpy is not already installed.
+
+* [Issue #24] save_rgb fails when format keyword is given.
+
+* [Issue #25] view_cube fails in HypercubeWindow.load_textures.
+
+* [Issue #26] Too few colors in view_cube side faces.
+
+================================================================================
 SPy 0.16.1
 ================================================================================
 Release date: 2014.10.18
