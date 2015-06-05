@@ -1116,7 +1116,8 @@ class ImageView(object):
     def __str__(self):
         meta = self.data_rgb_meta
         s = 'ImageView object:\n'
-        s += '  {0:<20}:  {1}\n'.format("Display bands", meta['bands'])
+        if 'bands' in meta:
+            s += '  {0:<20}:  {1}\n'.format("Display bands", meta['bands'])
         if self.interpolation == None:
             interp = "<default>"
         else:
