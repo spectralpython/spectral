@@ -62,7 +62,7 @@ dtype_map = [('1', np.uint8),                   # unsigned byte
              ('5', np.float64),                 # 64-bit float
              ('6', np.complex64),               # 2x32-bit complex
              ('9', np.complex128),              # 2x64-bit complex
-             ('12', np.uint16),                 # 6-bit unsigned int
+             ('12', np.uint16),                 # 16-bit unsigned int
              ('13', np.uint32),                 # 32-bit unsigned int
              ('14', np.int64),                  # 64-bit int
              ('15', np.uint64)]                 # 64-bit unsigned int
