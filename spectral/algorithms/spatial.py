@@ -34,7 +34,8 @@ Functions over spatial regions of images.
 
 from __future__ import division, print_function, unicode_literals
 
-__all__ = ['map_window', 'map_outer_window_stats']
+__all__ = ['map_window', 'map_outer_window_stats', 'map_class_ids',
+           'map_classes']
 
 import numpy as np
 
@@ -658,3 +659,129 @@ def inner_outer_window_mask_creator(image_shape, inner, outer):
              inner_jmin - outer_jmin : inner_jmax - outer_jmin] = True
         return (inner, outer, mask)
     return create_mask
+
+def map_class_ids(src_class_image, dest_class_image, unlabeled=None):
+    '''Create a mapping between class labels in two classification images.
+
+    Running a classification algorithm (particularly an unsupervised one)
+    multiple times on the same image can yield similar results but with
+    different class labels (indices) for the same classes. This function
+    produces a mapping of class indices from one classification image to
+    another by finding class indices that share the most pixels between the
+    two classification images.
+
+    Arguments:
+
+        `src_class_image` (ndarray):
+
+            An MxN integer array of class indices. The indices in this array
+            will be mapped to indices in `dest_class_image`.
+    
+        `dest_class_image` (ndarray):
+
+            An MxN integer array of class indices.
+
+        `unlabeled` (int or array of ints):
+
+            If this argument is provided, all pixels (in both images) will be
+            ignored when counting coincident pixels to determine the mapping.
+            If mapping a classification image to a ground truth image that has
+            a labeled background value, set `unlabeled` to that value.
+
+    Return Value:
+
+        A dictionary whose keys are class indices from `src_class_image` and
+        whose values are class indices from `dest_class_image`.
+
+    .. seealso::
+
+       :func:`map_classes`
+    '''
+    src_ids = list(set(src_class_image.ravel()))
+    dest_ids = list(set(dest_class_image.ravel()))
+    cmap = {}
+    if unlabeled is not None:
+        if isinstance(unlabeled, int):
+            unlabeled = [unlabeled]
+        for i in unlabeled:
+            if i in src_ids:
+                src_ids.remove(i)
+                cmap[i] = i
+            if i in dest_ids:
+                dest_ids.remove(i)
+    N_src = len(src_ids)
+    N_dest = len(dest_ids)
+
+    # Create matrix of coincidence counts between classes in src and dest.
+    matches = np.zeros((N_src, N_dest), np.uint16)
+    for i in range(N_src):
+        src_is_i = (src_class_image == src_ids[i])
+        for j in range(N_dest):
+            matches[i, j] = np.sum(np.logical_and(src_is_i,
+                                                  dest_class_image == dest_ids[j]))
+
+    unmapped = set(src_ids)
+    dest_available = set(dest_ids)
+    while len(unmapped) > 0:
+        (i, j) = tuple(np.argwhere(matches == np.max(matches))[0])
+        mmax = matches[i, j]
+        if mmax == 0:
+            # Nothing left to map. Pick unused indices from dest_class_image
+            for (old, new) in zip(sorted(unmapped), sorted(dest_available)):
+                cmap[old] = new
+                unmapped.remove(old)
+                dest_available.remove(new)
+            for old in unmapped:
+                cmap[old] = old
+            break
+        cmap[src_ids[i]] = dest_ids[j]
+        unmapped.remove(src_ids[i])
+        dest_available.remove(dest_ids[j])
+        matches[i, :] = 0
+        matches[:, j] = 0
+    return cmap
+
+def map_classes(class_image, class_id_map, allow_unmapped=False):
+    '''Modifies class indices according to a class index mapping.
+
+    Arguments:
+
+        `class_image`: (ndarray):
+
+            An MxN array of integer class indices.
+
+        `class_id_map`: (dict):
+
+            A dict whose keys are indices from `class_image` and whose values
+            are new values for the corresponding indices. This value is
+            usually the output of :func:`map_class_ids`.
+
+        `allow_unmapped` (bool, default False):
+
+            A flag indicating whether class indices can appear in `class_image`
+            without a corresponding key in `class_id_map`. If this value is
+            False and an index in the image is found without a mapping key,
+            a :class:`ValueError` is raised. If True, the unmapped index will
+            appear unmodified in the output image.
+
+    Return Value:
+
+        An integer-valued ndarray with same shape as `class_image`
+
+    Example:
+
+        >>> m = spy.map_class_ids(result, gt, unlabeled=0)
+        >>> result_mapped = spy.map_classes(result, m)
+
+    .. seealso::
+
+       :func:`map_class_ids`
+    '''
+    if not allow_unmapped  \
+      and not set(class_id_map.keys()).issuperset(set(class_image.ravel())):
+        raise ValueError('`src` has class values with no mapping key')
+    mapped = np.array(class_image)
+    for (i, j) in class_id_map.items():
+        mapped[class_image == i] = j
+    return mapped
+

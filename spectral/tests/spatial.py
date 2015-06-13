@@ -101,11 +101,135 @@ class SpatialWindowTest(SpyTest):
         t = np.mean(X[32:35, 72:77].reshape((-1, X.shape[-1])), axis=0)
         assert_allclose(y[1, 1], t)
 
+class MapClassesTest(SpyTest):
+    '''Test mapping of class indices between classification images.'''
+
+    def setup(self):
+        import spectral as spy
+        self.gt = spy.open_image('92AV3GT.GIS').read_band(0)
+
+    def test_map_class_ids_identity(self):
+        '''Mapping a class image back to itself should yield identity map.'''
+        from spectral.algorithms.spatial import map_class_ids
+        gt = np.array(self.gt)
+        d = map_class_ids(gt, gt)
+        for i in set(gt.ravel()):
+            assert(i in d)
+        for (i, j) in d.items():
+            assert(j == i)
+
+    def test_map_class_ids_identity_unlabeled(self):
+        '''Mapping a class image back to itself with an unlabeled class.'''
+        from spectral.algorithms.spatial import map_class_ids
+        gt = np.array(self.gt)
+        d = map_class_ids(gt, gt, unlabeled=0)
+        for i in set(gt.ravel()):
+            assert(i in d)
+        for (i, j) in d.items():
+            assert(j == i)
+
+    def test_map_class_ids_identity_multiple_unlabeled(self):
+        '''Mapping a class image back to itself with unlabeled classes.'''
+        from spectral.algorithms.spatial import map_class_ids
+        gt = np.array(self.gt)
+        d = map_class_ids(gt, gt, unlabeled=[2, 4])
+        for i in set(gt.ravel()):
+            assert(i in d)
+        for (i, j) in d.items():
+            assert(j == i)
+
+    def test_map_class_ids_isomorphic(self):
+        '''Test map_class_ids with isomorphic classes.'''
+        from spectral.algorithms.spatial import map_class_ids
+        gt = np.array(self.gt)
+        gt2 = gt + 1
+        d = map_class_ids(gt, gt2)
+        for (i, j) in d.items():
+            assert(j == i + 1)
+
+    def test_map_class_ids_isomorphic_background(self):
+        '''Test map_class_ids with isomorphic classes and background arg.'''
+        from spectral.algorithms.spatial import map_class_ids
+        gt = np.array(self.gt)
+        gt2 = gt + 1
+        d = map_class_ids(gt, gt2, unlabeled=0)
+        assert(d[0] == 0)
+        d.pop(0)
+        for (i, j) in d.items():
+            assert(j == i + 1)
+
+    def test_map_class_ids_src_gt_dest(self):
+        '''Test map_class_ids with more classes in source image.'''
+        from spectral.algorithms.spatial import map_class_ids
+        gt = np.array(self.gt)
+
+        (i, j) = (100, 30)
+        old_label = gt[i, j]
+        new_label = max(set(gt.ravel())) + 10
+        gt2 = np.array(gt)
+        gt2[i, j] = new_label
+        
+        d = map_class_ids(gt2, gt)
+        assert(d[new_label] == new_label)
+        d.pop(new_label)
+        for (i, j) in d.items():
+            assert(j == i)
+
+    def test_map_class_ids_dest_gt_src(self):
+        '''Test map_class_ids with more classes in dest image.'''
+        from spectral.algorithms.spatial import map_class_ids
+        gt = np.array(self.gt)
+
+        (i, j) = (100, 30)
+        old_label = gt[i, j]
+        new_label = max(set(gt.ravel())) + 10
+        gt2 = np.array(gt)
+        gt2[i, j] = new_label
+        
+        d = map_class_ids(gt, gt2)
+        for (i, j) in d.items():
+            assert(j == i)
+
+    def test_map_classes_isomorphic(self):
+        '''map_classes should map isomorphic class image back to original.'''
+        from spectral.algorithms.spatial import map_class_ids, map_classes
+        gt = np.array(self.gt)
+        gt2 = gt + 1
+        d = map_class_ids(gt2, gt)
+        result = map_classes(gt2, d)
+        assert(np.alltrue(result == gt))
+        
+    def test_map_fails_allow_unmapped_false(self):
+        '''map_classes should raise ValueError if image has unmapped value.'''
+        from spectral.algorithms.spatial import map_class_ids, map_classes
+        from warnings import warn
+        gt = np.array(self.gt)
+        gt2 = gt + 1
+        d = map_class_ids(gt2, gt)
+        d.pop(1)
+        try:
+            result = map_classes(gt2, d)
+        except ValueError:
+            pass
+        else:
+            assert(False)
+        
+    def test_map_allow_unmapped_true(self):
+        '''map_classes should raise ValueError if image has unmapped value.'''
+        from spectral.algorithms.spatial import map_class_ids, map_classes
+        from warnings import warn
+        gt = np.array(self.gt)
+        gt2 = gt + 1
+        d = map_class_ids(gt2, gt)
+        d.pop(1)
+        result = map_classes(gt2, d, allow_unmapped=True)
+        assert(np.alltrue(result[gt2 == 1] == 1))
+        
 def run():
     print('\n' + '-' * 72)
     print('Running spatial tests.')
     print('-' * 72)
-    for T in [SpatialWindowTest]:
+    for T in [SpatialWindowTest, MapClassesTest]:
         T().run()
 
 if __name__ == '__main__':
