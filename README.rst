@@ -20,8 +20,8 @@ so if you have `pip` installed, you can install SPy from the command line with
 
     pip install spectral
 
-Packaged distributions are also hosted at `PyPI`
-and `Sourceforge <https://sourceforge.net/projects/spectralpython/files/SPy/>`_
+Packaged distributions are also hosted at `PyPI <https://pypi.python.org/pypi/spectral>`_
+and `GitHub <https://github.com/spectralpython/spectral/releases/latest>`_
 so you can download and unpack the latest zip/tarball, then type
 
 .. code::
