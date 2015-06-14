@@ -777,30 +777,3 @@ def check_wx_app():
              UserWarning)
         spectral.app = wx.App()
 
-#Deprecated functions
-
-
-def hypercube(*args, **kwargs):
-    warn('Function `hypercube` has been deprecated.  Use `view_cube`.',
-         UserWarning)
-    return view_cube(*args, **kwargs)
-
-
-def ndwindow(*args, **kwargs):
-    warn('Function `ndwindow` has been deprecated.  Use `view_nd`.',
-         UserWarning)
-    return view_nd(*args, **kwargs)
-
-def save_image(*args, **kwargs):
-    '''See function `save_rgb`.'''
-    msg = 'Function `save_image` has been deprecated.  It has been' \
-         ' replaced by `save_rgb`.'
-    warn(msg, UserWarning)
-    return save_rgb(*args, **kwargs)
-    
-def get_image_display_data(source, bands=None, **kwargs):
-    '''Deprecated function. Use `get_rgb` instead.'''
-    msg = 'Function `get_image_display_data` has been deprecated.  It has' \
-          ' been replaced by `get_rgb`.'
-    warn(msg, UserWarning)
-    return get_rgb(source, bands, **kwargs)

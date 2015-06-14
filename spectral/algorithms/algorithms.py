@@ -905,12 +905,6 @@ class TrainingClass:
             transform._A, self.stats.cov).dot(transform._A.T)
         self.nbands = transform.dim_out
 
-    # Deprecated methods
-    def calcStatistics(self):
-        warn('TrainingClass.calcStatistics has been deprecated. '
-             + 'Use TrainingClass.calc_stats.', DeprecationWarning)
-        return self.calc_stats()
-
 
 class SampleIterator:
     '''Iterator over all classes and samples in a TrainingClassSet object.'''
@@ -1029,22 +1023,6 @@ class TrainingClassSet:
             self.add_class(c)
         f.close
             
-    #-------------------
-    # Deprecated methods
-    #-------------------
-    def addClass(self, cl):
-        '''DEPRECATED METHOD'''
-        warn('TrainingClassSet.addClass has been deprecated. '
-             + 'Use TrainingClassSet.add_class.', DeprecationWarning)
-        return self.add_class(cl)
-
-    def allSamples(self):
-
-        '''DEPRECATED METHOD'''
-        warn('TrainingClassSet.calcStatistics has been deprecated. '
-             + 'Use TrainingClassSet.all_samples.', DeprecationWarning)
-        return self.all_samples()
-
 
 def create_training_classes(image, class_mask, calc_stats=False, indices=None):
     '''

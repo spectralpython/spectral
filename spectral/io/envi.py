@@ -909,14 +909,3 @@ def write_envi_header(fileName, header_dict, is_library=False):
             _write_header_param(fout, k, d[k])
     fout.close()
 
-
-def readEnviHdr(file):
-    warn('readEnviHdr has been deprecated.  Use read_envi_header.',
-         DeprecationWarning)
-    return read_envi_header(file)
-
-
-def writeEnviHdr(fileName, header_dict, is_library=False):
-    warn('writeEnviHdr has been deprecated.  Use write_envi_header.',
-         DeprecationWarning)
-    return write_envi_header(fileName, header_dict, is_library)

@@ -719,16 +719,6 @@ class TransformedImage(Image):
 class MemmapFile(object):
     '''Interface class for SpyFile subclasses using `numpy.memmap` objects.'''
 
-    @property
-    def memmap(self):
-        '''Property method to return memmap (using deprecated interface).
-        Call `open_memmap` instead to return a memmap.
-        '''
-        from warnings import warn
-        warn('"memmap" member is deprecated. Use image.open_memmap().',
-             UserWarning)
-        return self._memmap
-
     def _disable_memmap(self):
         '''Disables memmap and reverts to direct file reads (slower).'''
         self._memmap = None

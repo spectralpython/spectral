@@ -269,11 +269,6 @@ class Image(object):
     def __repr__(self):
         return self.__str__()
 
-    def setParams(self, *args):
-        warn('Image.setParams has been deprecated.  Use Image.set_params',
-             DeprecationWarning)
-        return self.set_params(*args)
-
 
 class ImageArray(numpy.ndarray, Image):
     '''ImageArray is an interface to an image loaded entirely into memory.
@@ -330,31 +325,6 @@ class ImageArray(numpy.ndarray, Image):
 
         s += '\tData format:  %8s' % self.dtype.name
         return s
-
-    # Deprecated methods
-    def readBand(self, i):
-        warn(
-            'ImageArray.readBand is deprecated.  Use ImageArray.read_band.',
-            DeprecationWarning)
-        return self.read_band(i)
-
-    def readBands(self, bands):
-        warn(
-            'ImageArray.readBands is deprecated.  Use ImageArray.read_bands.',
-            DeprecationWarning)
-        return self.read_bands(bands)
-
-    def readPixel(self, row, col):
-        warn(
-            'ImageArray.readPixel is deprecated.  Use ImageArray.read_pixel.',
-            DeprecationWarning)
-        return self.read_pixel(bands)
-
-    def readDatum(self, i, j, k):
-        warn(
-            'ImageArray.readDatum is deprecated.  Use ImageArray.read_datum.',
-            DeprecationWarning)
-        return self.read_datum(i, j, k)
 
 
 def open_image(file):
@@ -473,29 +443,3 @@ def load_training_sets(file, image=None):
     ts.load(file, image)
     return ts
 
-# Deprecated Functions
-
-
-def tileImage(im, nrows, ncols):
-    warn('tile_image has been deprecated.  Use tile_image.',
-         DeprecationWarning)
-    return tile_image(im, nrows, ncols)
-
-
-def saveTrainingSets(sets, file):
-    warn('save_training_sets has been deprecated.  Use save_training_sets.',
-         DeprecationWarning)
-    return save_training_sets(sets, file)
-
-
-def loadTrainingSets(file, im=0):
-    warn('load_training_sets has been deprecated.  Use load_training_sets.',
-         DeprecationWarning)
-    return load_training_sets(file, im)
-
-def image(*args, **kwargs):
-    '''See function `open_image`.'''
-    msg = 'Function `image` has been deprecated.  It has been ' \
-         'replaced by `open_image`.'
-    warn(msg, UserWarning)
-    return open_image(*args, **kwargs)

@@ -234,8 +234,3 @@ def read_erdas_lan_header(fileName, byte_order=0):
 
     return h
 
-
-def readErdasLanHeader(fileName, byte_order=0):
-    warn('readErdasLanHeader has been deprecated.  Use read_erdas_lan_header.',
-         DeprecationWarning)
-    return read_erdas_lan_header(fileName, byte_order)

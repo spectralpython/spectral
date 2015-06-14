@@ -36,5 +36,3 @@ from .graphics import (save_rgb, view, view_indexed, view_cube, view_nd,
 from .spypylab import imshow, ImageView
 from .colorscale import ColorScale
 
-# Deprecated functions
-from .graphics import hypercube, ndwindow, save_image

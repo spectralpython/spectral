@@ -95,19 +95,6 @@ class Classifier(object):
         else:
             return self.classify_image(X, **kwargs)
 
-    #-------------------
-    # Deprecated methods
-    #-------------------
-    def classifySpectrum(self, *args, **kwargs):
-        warn('Classifier.classifySpectrum has been deprecated. '
-             + 'Use Classifier.classify_spectrum.', DeprecationWarning)
-        return self.classifySpectrum(*args, **kwargs)
-
-    def classifyImage(self, image):
-        warn('Classifier.addClass has been deprecated. '
-             + 'Use Classifier.classify_image.', DeprecationWarning)
-        return self.classify_image(image)
-
 
 class SupervisedClassifier(Classifier):
     def __init__(self):
@@ -243,11 +230,6 @@ class GaussianClassifier(SupervisedClassifier):
         mins = np.argmax(scores, axis=-1)
         return inds[mins].reshape(shape[:2])
 
-    def classifySpectrum(self, *args, **kwargs):
-        warn('GaussianClassifier.classifySpectrum has been deprecated. '
-             + 'Use GaussianClassifier.classify_spectrum.', DeprecationWarning)
-        return self.classifySpectrum(*args, **kwargs)
-
 
 class MahalanobisDistanceClassifier(GaussianClassifier):
     '''A Classifier using Mahalanobis distance for class discrimination'''
@@ -328,13 +310,6 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
         inds = np.array([c.index for c in self.classes], np.int16)
         mins = np.argmin(scores, axis=-1)
         return inds[mins]
-
-    def classifySpectrum(self, *args, **kwargs):
-        warn('MahalanobisDistanceClassifier.classifySpectrum has been '
-             + 'deprecated. Use '
-             + 'MahalanobisDistanceClassifier.classify_spectrum.',
-             DeprecationWarning)
-        return self.classify_spectrum(*args, **kwargs)
 
 
 from .perceptron import Perceptron

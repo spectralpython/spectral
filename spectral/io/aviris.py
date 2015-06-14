@@ -143,8 +143,3 @@ def read_aviris_bands(cal_filename):
     bands.band_unit = 'nm'
     return bands
 
-
-def readAvirisBands(calFilename):
-    warn('readAvirisBands has been deprecated.  Use read_aviris_bands.',
-         DeprecationWarning)
-    return read_aviris_bands(cal_filename)

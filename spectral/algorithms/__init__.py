@@ -37,7 +37,7 @@ from .algorithms import (mean_cov, covariance, principal_components, bdist,
                         calc_stats, cov_avg, msam, noise_from_diffs, mnf,
                         GaussianStats, ppi)
 from .classifiers import *
-from .clustering import L1, L2, kmeans, cluster, isoCluster
+from .clustering import L1, L2, kmeans
 from .resampling import BandResampler
 from .transforms import LinearTransform
 from .detectors import *

@@ -53,9 +53,6 @@ from .database import *
 # Import some submodules into top-level namespace
 from .algorithms import detectors
 
-# Deprecated functions
-from .spectral import image
-
 from .spectral import _init
 _init()
 del _init
