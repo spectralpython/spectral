@@ -380,6 +380,7 @@ class NDWindow(wx.Frame):
         self.classes = kwargs.get('classes',
                                   np.zeros(data.shape[:-1], np.int))
         self.features = kwargs.get('features', list(range(6)))
+        self.labels = kwargs.get('labels', list(range(data.shape[-1])))
         self.max_menu_class = int(np.max(self.classes.ravel() + 1))
 
         from matplotlib.cbook import CallbackRegistry
@@ -860,19 +861,33 @@ class NDWindow(wx.Frame):
         gl.glVertex3f(0.0, 0.0, -1.0)
         gl.glEnd()
 
+        def label_axis(x, y, z, label):
+            gl.glRasterPos3f(x, y, z)
+            glut.glutBitmapString(glut.GLUT_BITMAP_HELVETICA_18,
+                                  str(label))
+        def label_axis_for_feature(x, y, z, feature_ind):
+            feature = self.octant_features[feature_ind[0]][feature_ind[1]]
+            label_axis(x, y, z, self.labels[feature])
+
         if self._have_glut:
             try:
                 import OpenGL.GLUT as glut
-                if bool(glut.glutBitmapCharacter):
-                    gl.glRasterPos3f(1.05, 0.0, 0.0)
-                    glut.glutBitmapCharacter(glut.GLUT_BITMAP_HELVETICA_18,
-                                             ord('x'))
-                    gl.glRasterPos3f(0.0, 1.05, 0.0)
-                    glut.glutBitmapCharacter(glut.GLUT_BITMAP_HELVETICA_18,
-                                             ord('y'))
-                    gl.glRasterPos3f(0.0, 0.0, 1.05)
-                    glut.glutBitmapCharacter(glut.GLUT_BITMAP_HELVETICA_18,
-                                             ord('z'))
+                if bool(glut.glutBitmapString):
+                    if self.quadrant_mode == 'independent':
+                        label_axis(1.05, 0.0, 0.0, 'x')
+                        label_axis(0.0, 1.05, 0.0, 'y')
+                        label_axis(0.0, 0.0, 1.05, 'z')
+                    elif self.quadrant_mode == 'mirrored':
+                        label_axis_for_feature(1.05, 0.0, 0.0, (0, 0))
+                        label_axis_for_feature(0.0, 1.05, 0.0, (0, 1))
+                        label_axis_for_feature(0.0, 0.0, 1.05, (0, 2))
+                        label_axis_for_feature(-1.05, 0.0, 0.0, (6, 0))
+                        label_axis_for_feature(0.0, -1.05, 0.0, (6, 1))
+                        label_axis_for_feature(0.0, 0.0, -1.05, (6, 2))
+                    else:
+                        label_axis_for_feature(1.05, 0.0, 0.0, (0, 0))
+                        label_axis_for_feature(0.0, 1.05, 0.0, (0, 1))
+                        label_axis_for_feature(0.0, 0.0, 1.05, (0, 2))
             except:
                 pass
         gl.glEndList()

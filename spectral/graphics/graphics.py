@@ -188,7 +188,8 @@ def view_cube(data, *args, **kwargs):
 
 
 def view_nd(data, *args, **kwargs):
-    '''Creates a 3D window that displays ND data from an image.
+    '''
+    Creates a 3D window that displays ND data from an image.
 
     Arguments:
 
@@ -231,6 +232,14 @@ def view_nd(data, *args, **kwargs):
                around the negative half of the z-axis.  An octant triplet can
                be specified as None instead of a list, in which case nothing
                will be rendered in that octant.
+
+        `labels` (list):
+
+            List of labels to be displayed next to the axis assigned to a
+            feature.  If not specified, the feature index is shown by default.
+
+            The `str()` function will be called on each item of the list so,
+            for example, a list of wavelengths can be passed as the labels.
 
         `size` (2-tuple of ints)
 
