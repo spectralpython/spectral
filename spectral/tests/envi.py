@@ -115,7 +115,8 @@ class ENVIWriteTest(SpyTest):
               'bands': C,
               'interleave': 'bsq',
               'header offset': offset,
-              'data type': 12}
+              'data type': 12,
+              'USER DEFINED': 'test case insensitivity'}
         fname = os.path.join(testdir, 'test_create_image_metadata.hdr')
         img = spectral.envi.create_image(fname, md)
         mm = img.open_memmap(writable=True)
@@ -126,6 +127,9 @@ class ENVIWriteTest(SpyTest):
         img._disable_memmap()
         assert_almost_equal(img[r, b, c], datum)
         assert(img.offset == offset)
+        for key in md:
+            assert key.lower() in img.metadata
+            assert str(md[key]) == img.metadata[key.lower()]
 
     def test_create_image_keywords(self):
         '''Test calling `envi.create_image` using keyword args.'''

@@ -92,8 +92,9 @@ def read_envi_header(file):
     '''
     USAGE: hdr = read_envi_header(file)
 
-    Reads an ENVI ".hdr" file header and returns the parameters in
-    a dictionary as strings.
+    Reads an ENVI ".hdr" file header and returns the parameters in a
+    dictionary as strings.  Header field names are treated as case
+    insensitive and all keys in the dictionary are lowercase.
     '''
     f = builtins.open(file, 'r')
 
@@ -112,7 +113,7 @@ def read_envi_header(file):
             if line[0] == ';': continue
 
             (key, sep, val) = line.partition('=')
-            key = key.strip()
+            key = key.strip().lower()
             val = val.strip()
             if val and val[0] == '{':
                 str = val.strip()
