@@ -294,6 +294,8 @@ class ImageArray(numpy.ndarray, Image):
 
         Image.__init__(self, params, spyfile.metadata)
         self.bands = spyfile.bands
+        self.filename = spyfile.filename
+        self.interleave = 2 # bip
 
     def __repr__(self):
         return self.__str__()
@@ -310,9 +312,36 @@ class ImageArray(numpy.ndarray, Image):
         '''For SpyFile compatibility. Equivlalent to arr[row, col]'''
         return numpy.asarray(self[row, col])
 
+    def read_subregion(self, row_bounds, col_bounds, bands=None):
+        '''
+        For SpyFile compatibility.
+
+        Equivalent to arr[slice(*row_bounds), slice(*col_bounds), bands],
+        selecting all bands if none are specified.
+        '''
+        if bands:
+            return numpy.asarray(self[slice(*row_bounds),
+                                      slice(*col_bounds),
+                                      bands])
+        else:
+            return numpy.asarray(self[slice(*row_bounds),
+                                      slice(*col_bounds)])
+
+    def read_subimage(self, rows, cols, bands=None):
+        '''
+        For SpyFile compatibility.
+
+        Equivalent to arr[rows][:, cols][:, :, bands], selecting all bands if
+        none are specified.
+        '''
+        if bands:
+            return numpy.asarray(self[rows][:, cols][:, :, bands])
+        else:
+            return numpy.asarray(self[rows][:, cols])
+
     def read_datum(self, i, j, k):
         '''For SpyFile compatibility. Equivlalent to arr[i, j, k]'''
-        return np.asscalar(self[i, j, k])
+        return numpy.asscalar(self[i, j, k])
 
     def load(self):
         '''For compatibility with SpyFile objects. Returns self'''

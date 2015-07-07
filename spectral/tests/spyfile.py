@@ -163,7 +163,24 @@ class SpyFileTest(SpyTest):
     def test_load(self):
         (i, j, k) = self.datum
         data = self.image.load()
+        simg = self.image
         assert_almost_equal(data[i, j, k], self.value)
+        assert_almost_equal(data.read_band(0),
+                            simg.read_band(0))
+        assert_almost_equal(data.read_bands([0, 1]),
+                            simg.read_bands([0, 1]))
+        assert_almost_equal(data.read_pixel(1, 2),
+                            simg.read_pixel(1, 2))
+        assert_almost_equal(data.read_subregion([0, 3], [1, 2]),
+                            simg.read_subregion([0, 3], [1, 2]))
+        assert_almost_equal(data.read_subregion([0, 3], [1, 2], [0, 1]),
+                            simg.read_subregion([0, 3], [1, 2], [0, 1]))
+        assert_almost_equal(data.read_subimage([0, 2, 4], [6, 3]),
+                            simg.read_subimage([0, 2, 4], [6, 3]))
+        assert_almost_equal(data.read_subimage([0, 2, 4], [6, 3], [0, 1]),
+                            simg.read_subimage([0, 2, 4], [6, 3], [0, 1]))
+        assert_almost_equal(data.read_datum(1,2,8),
+                            simg.read_datum(1,2,8))
 
     def test_getitem_i_j_k(self):
         (i, j, k) = self.datum
