@@ -397,6 +397,21 @@ class ImageArray(numpy.ndarray, Image):
         s += '\tData format:  %8s' % self.dtype.name
         return s
 
+    def __array_wrap__(self, out_arr, context=None):
+        # The ndarray __array_wrap__ causes ufunc results to be of type
+        # ImageArray.  Instead, return a plain ndarray.
+        return out_arr
+
+    # Some methods do not call __array_wrap__ and will return an ImageArray.
+    # Currently, these need to be overridden individually or with
+    # __getattribute__ magic.
+
+    def __getattribute__(self, name):
+        if ((name in numpy.ndarray.__dict__) and
+            (name not in ImageArray.__dict__)):
+            return getattr(numpy.asarray(self), name)
+
+        return super(ImageArray, self).__getattribute__(name)
 
 def open_image(file):
     '''

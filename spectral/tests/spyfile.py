@@ -196,6 +196,14 @@ class SpyFileTest(SpyTest):
                     spyf.read_subimage([0, 2], [6, 3], [0, 1]))
         load_assert(data.read_datum(1,2,8), spyf.read_datum(1,2,8))
 
+        import spectral
+        ufunc_result = data + 1
+        assert isinstance(ufunc_result, np.ndarray)
+        assert not isinstance(ufunc_result, type(data))
+        non_ufunc_result = data.diagonal()
+        assert isinstance(non_ufunc_result, np.ndarray)
+        assert not isinstance(non_ufunc_result, type(data))
+
     def test_getitem_i_j_k(self):
         (i, j, k) = self.datum
         assert_almost_equal(self.image[i, j, k], self.value)
