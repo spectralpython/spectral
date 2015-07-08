@@ -298,11 +298,53 @@ class ImageArray(numpy.ndarray, Image):
         self.interleave = 2 # bip
 
     def __repr__(self):
-        return self.__str__()
+        return numpy.asarray(self).__str__()
+
+    def __getitem__(self, args):
+        # Duplicate the indexing behavior of SpyFile.  If args is iterable
+        # with length greater than one, and if not all of the args are
+        # scalars, then the scalars need to be replaced with slices.
+        import numbers
+
+        def parent_getitem(args):
+            result = super(ImageArray, self).__getitem__(args)
+            if isinstance(result, ImageArray):
+                return numpy.asarray(result)
+            else:
+                return result
+
+        try:
+            iterator = iter(args)
+        except TypeError:
+            if isinstance(args, numbers.Number):
+                updated_args = slice(args, args+1)
+            else:
+                updated_args = args
+            return parent_getitem(updated_args)
+
+        keep_original_args = True
+        updated_args = []
+        for arg in iterator:
+            if isinstance(arg, numbers.Number):
+                updated_args.append(slice(arg, arg+1))
+            elif isinstance(arg, numpy.bool_):
+                updated_args.append(arg)
+            else:
+                updated_args.append(arg)
+                keep_original_args = False
+
+        if keep_original_args:
+            updated_args = args
+        else:
+            updated_args = tuple(updated_args)
+
+        return parent_getitem(updated_args)
 
     def read_band(self, i):
-        '''For compatibility with SpyFile objects. Returns arr[:,:,i]'''
-        return numpy.asarray(self[:, :, i])
+        '''
+        For compatibility with SpyFile objects. Returns arr[:,:,i].squeeze()
+        '''
+        return numpy.asarray(self[:, :, i].squeeze())
 
     def read_bands(self, bands):
         '''For SpyFile compatibility. Equivlalent to arr.take(bands, 2)'''

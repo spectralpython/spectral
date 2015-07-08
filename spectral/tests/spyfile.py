@@ -163,24 +163,38 @@ class SpyFileTest(SpyTest):
     def test_load(self):
         (i, j, k) = self.datum
         data = self.image.load()
-        simg = self.image
-        assert_almost_equal(data[i, j, k], self.value)
-        assert_almost_equal(data.read_band(0),
-                            simg.read_band(0))
-        assert_almost_equal(data.read_bands([0, 1]),
-                            simg.read_bands([0, 1]))
-        assert_almost_equal(data.read_pixel(1, 2),
-                            simg.read_pixel(1, 2))
-        assert_almost_equal(data.read_subregion([0, 3], [1, 2]),
-                            simg.read_subregion([0, 3], [1, 2]))
-        assert_almost_equal(data.read_subregion([0, 3], [1, 2], [0, 1]),
-                            simg.read_subregion([0, 3], [1, 2], [0, 1]))
-        assert_almost_equal(data.read_subimage([0, 2, 4], [6, 3]),
-                            simg.read_subimage([0, 2, 4], [6, 3]))
-        assert_almost_equal(data.read_subimage([0, 2, 4], [6, 3], [0, 1]),
-                            simg.read_subimage([0, 2, 4], [6, 3], [0, 1]))
-        assert_almost_equal(data.read_datum(1,2,8),
-                            simg.read_datum(1,2,8))
+        spyf = self.image
+
+        load_assert = assert_same_shape_almost_equal
+        load_assert(data[i, j, k], self.value)
+        first_band = spyf[:, :, 0]
+        load_assert(data[:, :, 0], first_band)
+        # This is checking if different ImageArray and SpyFile indexing
+        # results are the same shape, so we can't just reuse the already
+        # loaded first band.
+        load_assert(data[:, 0, 0], spyf[:, 0, 0])
+        load_assert(data[0, 0, 0], spyf[0, 0, 0])
+        load_assert(data[0, 0], spyf[0, 0])
+        load_assert(data[(6, 25)], spyf[(6, 25)])
+
+        # The following test would currently fail, because
+        # SpyFile.__get_item__ treats [6,25] the same as (6,25).
+
+        # load_assert(data[[6, 25]],
+        #             spyf[[6, 25]])
+
+        load_assert(data.read_band(0), spyf.read_band(0))
+        load_assert(data.read_bands([0, 1]), spyf.read_bands([0, 1]))
+        load_assert(data.read_pixel(1, 2), spyf.read_pixel(1, 2))
+        load_assert(data.read_subregion([0, 3], [1, 2]),
+                    spyf.read_subregion([0, 3], [1, 2]))
+        load_assert(data.read_subregion([0, 3], [1, 2], [0, 1]),
+                    spyf.read_subregion([0, 3], [1, 2], [0, 1]))
+        load_assert(data.read_subimage([0, 2, 4], [6, 3]),
+                    spyf.read_subimage([0, 2, 4], [6, 3]))
+        load_assert(data.read_subimage([0, 2], [6, 3], [0, 1]),
+                    spyf.read_subimage([0, 2], [6, 3], [0, 1]))
+        load_assert(data.read_datum(1,2,8), spyf.read_datum(1,2,8))
 
     def test_getitem_i_j_k(self):
         (i, j, k) = self.datum
@@ -197,6 +211,24 @@ class SpyFileTest(SpyTest):
     def test_getitem_islice_jslice(self):
         (i, j, k) = self.datum
         assert_almost_equal(self.image[i-3:i+3, j-3:j+3][3, 3, k], self.value)
+
+def assert_same_shape_almost_equal(obj1, obj2, decimal=7, err_msg='',
+                                   verbose=True):
+    """
+    Assert that two objects are almost equal and have the same shape.
+
+    numpy.testing.assert_almost_equal does test for shape, but considers
+    arrays with one element and a scalar to be the same.
+    """
+    # Types might be different since ImageArray stores things as
+    # floats by default.
+    if np.isscalar(obj1):
+        assert np.isscalar(obj2), err_msg
+    else:
+        assert obj1.shape == obj2.shape, err_msg
+
+    assert_almost_equal(obj1, obj2, decimal=decimal, err_msg=err_msg,
+                        verbose=verbose)
 
 class SpyFileTestSuite(object):
     '''Tests reading by byte orders, data types, and interleaves. For a
