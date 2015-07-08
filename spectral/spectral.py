@@ -298,7 +298,8 @@ class ImageArray(numpy.ndarray, Image):
         self.interleave = 2 # bip
 
     def __repr__(self):
-        return numpy.asarray(self).__str__()
+        lst = numpy.array2string(numpy.asarray(self), prefix="ImageArray(")
+        return "{}({}, dtype={})".format('ImageArray', lst, self.dtype.name)
 
     def __getitem__(self, args):
         # Duplicate the indexing behavior of SpyFile.  If args is iterable
