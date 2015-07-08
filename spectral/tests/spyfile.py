@@ -175,6 +175,8 @@ class SpyFileTest(SpyTest):
         load_assert(data[:, 0, 0], spyf[:, 0, 0])
         load_assert(data[0, 0, 0], spyf[0, 0, 0])
         load_assert(data[0, 0], spyf[0, 0])
+        load_assert(data[-1, -1, -1], spyf[-1, -1, -1])
+        load_assert(data[-1, -3:-1], spyf[-1, -3:-1])
         load_assert(data[(6, 25)], spyf[(6, 25)])
 
         # The following test would currently fail, because

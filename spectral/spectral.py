@@ -306,27 +306,26 @@ class ImageArray(numpy.ndarray, Image):
         # scalars, then the scalars need to be replaced with slices.
         import numbers
 
-        def parent_getitem(args):
-            result = super(ImageArray, self).__getitem__(args)
-            if isinstance(result, ImageArray):
-                return numpy.asarray(result)
-            else:
-                return result
-
         try:
             iterator = iter(args)
         except TypeError:
             if isinstance(args, numbers.Number):
-                updated_args = slice(args, args+1)
+                if args == -1:
+                    updated_args = slice(args, None)
+                else:
+                    updated_args = slice(args, args+1)
             else:
                 updated_args = args
-            return parent_getitem(updated_args)
+            return self._parent_getitem(updated_args)
 
         keep_original_args = True
         updated_args = []
         for arg in iterator:
             if isinstance(arg, numbers.Number):
-                updated_args.append(slice(arg, arg+1))
+                if arg == -1:
+                    updated_args.append(slice(arg, None))
+                else:
+                    updated_args.append(slice(arg, arg+1))
             elif isinstance(arg, numpy.bool_):
                 updated_args.append(arg)
             else:
@@ -338,7 +337,10 @@ class ImageArray(numpy.ndarray, Image):
         else:
             updated_args = tuple(updated_args)
 
-        return parent_getitem(updated_args)
+        return self._parent_getitem(updated_args)
+
+    def _parent_getitem(self, args):
+        return numpy.ndarray.__getitem__(self, args)
 
     def read_band(self, i):
         '''
