@@ -288,10 +288,17 @@ class SpyFile(Image):
         if len(args) < 2:
             raise IndexError('Too few subscript indices.')
 
+        fix_negative_indices = self._fix_negative_indices
+
         if atypes[0] == atypes[1] == int and len(args) == 2:
-            return self.read_pixel(args[0], args[1])
+            row = fix_negative_indices(args[0], 0)
+            col = fix_negative_indices(args[1], 1)
+            return self.read_pixel(row, col)
         elif len(args) == 3 and atypes[0] == atypes[1] == atypes[2] == int:
-            return self.read_datum(args[0], args[1], args[2])
+            row = fix_negative_indices(args[0], 0)
+            col = fix_negative_indices(args[1], 1)
+            band = fix_negative_indices(args[2], 2)
+            return self.read_datum(row, col, band)
         else:
             #  At least one arg should be a slice
             if atypes[0] == slice:
@@ -343,9 +350,28 @@ class SpyFile(Image):
         if atypes[0] == slice and xstep == 1 \
           and atypes[1] == slice and ystep == 1 \
           and (bands is None or type(bands) == list):
-          return self.read_subregion((xstart, xstop), (ystart, ystop), bands)
+            xstart = fix_negative_indices(xstart, 0)
+            xstop = fix_negative_indices(xstop, 0)
+            ystart = fix_negative_indices(ystart, 0)
+            ystop = fix_negative_indices(ystop, 0)
+            bands = fix_negative_indices(bands, 2)
+            return self.read_subregion((xstart, xstop), (ystart, ystop), bands)
 
+        rows = fix_negative_indices(rows, 0)
+        cols = fix_negative_indices(cols, 1)
+        bands = fix_negative_indices(bands, 2)
         return self.read_subimage(rows, cols, bands)
+
+    def _fix_negative_indices(self, indices, dim):
+        if not indices:
+            return indices
+
+        dim_len = self.shape[dim]
+        try:
+            return [i if i >= 0 else dim_len + i
+                    for i in indices]
+        except:
+            return indices if indices >= 0 else dim_len + indices
 
     def params(self):
         '''Return an object containing the SpyFile parameters.'''

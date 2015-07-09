@@ -294,13 +294,60 @@ class ImageArray(numpy.ndarray, Image):
 
         Image.__init__(self, params, spyfile.metadata)
         self.bands = spyfile.bands
+        self.filename = spyfile.filename
+        self.interleave = 2 # bip
 
     def __repr__(self):
-        return self.__str__()
+        lst = numpy.array2string(numpy.asarray(self), prefix="ImageArray(")
+        return "{}({}, dtype={})".format('ImageArray', lst, self.dtype.name)
+
+    def __getitem__(self, args):
+        # Duplicate the indexing behavior of SpyFile.  If args is iterable
+        # with length greater than one, and if not all of the args are
+        # scalars, then the scalars need to be replaced with slices.
+        import numbers
+
+        try:
+            iterator = iter(args)
+        except TypeError:
+            if isinstance(args, numbers.Number):
+                if args == -1:
+                    updated_args = slice(args, None)
+                else:
+                    updated_args = slice(args, args+1)
+            else:
+                updated_args = args
+            return self._parent_getitem(updated_args)
+
+        keep_original_args = True
+        updated_args = []
+        for arg in iterator:
+            if isinstance(arg, numbers.Number):
+                if arg == -1:
+                    updated_args.append(slice(arg, None))
+                else:
+                    updated_args.append(slice(arg, arg+1))
+            elif isinstance(arg, numpy.bool_):
+                updated_args.append(arg)
+            else:
+                updated_args.append(arg)
+                keep_original_args = False
+
+        if keep_original_args:
+            updated_args = args
+        else:
+            updated_args = tuple(updated_args)
+
+        return self._parent_getitem(updated_args)
+
+    def _parent_getitem(self, args):
+        return numpy.ndarray.__getitem__(self, args)
 
     def read_band(self, i):
-        '''For compatibility with SpyFile objects. Returns arr[:,:,i]'''
-        return numpy.asarray(self[:, :, i])
+        '''
+        For compatibility with SpyFile objects. Returns arr[:,:,i].squeeze()
+        '''
+        return numpy.asarray(self[:, :, i].squeeze())
 
     def read_bands(self, bands):
         '''For SpyFile compatibility. Equivlalent to arr.take(bands, 2)'''
@@ -310,9 +357,36 @@ class ImageArray(numpy.ndarray, Image):
         '''For SpyFile compatibility. Equivlalent to arr[row, col]'''
         return numpy.asarray(self[row, col])
 
+    def read_subregion(self, row_bounds, col_bounds, bands=None):
+        '''
+        For SpyFile compatibility.
+
+        Equivalent to arr[slice(*row_bounds), slice(*col_bounds), bands],
+        selecting all bands if none are specified.
+        '''
+        if bands:
+            return numpy.asarray(self[slice(*row_bounds),
+                                      slice(*col_bounds),
+                                      bands])
+        else:
+            return numpy.asarray(self[slice(*row_bounds),
+                                      slice(*col_bounds)])
+
+    def read_subimage(self, rows, cols, bands=None):
+        '''
+        For SpyFile compatibility.
+
+        Equivalent to arr[rows][:, cols][:, :, bands], selecting all bands if
+        none are specified.
+        '''
+        if bands:
+            return numpy.asarray(self[rows][:, cols][:, :, bands])
+        else:
+            return numpy.asarray(self[rows][:, cols])
+
     def read_datum(self, i, j, k):
         '''For SpyFile compatibility. Equivlalent to arr[i, j, k]'''
-        return np.asscalar(self[i, j, k])
+        return numpy.asscalar(self[i, j, k])
 
     def load(self):
         '''For compatibility with SpyFile objects. Returns self'''
@@ -326,6 +400,21 @@ class ImageArray(numpy.ndarray, Image):
         s += '\tData format:  %8s' % self.dtype.name
         return s
 
+    def __array_wrap__(self, out_arr, context=None):
+        # The ndarray __array_wrap__ causes ufunc results to be of type
+        # ImageArray.  Instead, return a plain ndarray.
+        return out_arr
+
+    # Some methods do not call __array_wrap__ and will return an ImageArray.
+    # Currently, these need to be overridden individually or with
+    # __getattribute__ magic.
+
+    def __getattribute__(self, name):
+        if ((name in numpy.ndarray.__dict__) and
+            (name not in ImageArray.__dict__)):
+            return getattr(numpy.asarray(self), name)
+
+        return super(ImageArray, self).__getattribute__(name)
 
 def open_image(file):
     '''
