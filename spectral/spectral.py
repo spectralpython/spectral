@@ -392,6 +392,28 @@ class ImageArray(numpy.ndarray, Image):
         '''For compatibility with SpyFile objects. Returns self'''
         return self
 
+    def asarray(self, writable=False):
+        '''Returns an object with a standard numpy array interface.
+
+        The return value is the same as calling `numpy.asarray`, except
+        that the array is not writable by default to match the behavior
+        of `SpyFile.asarray`.
+
+        This function is for compatibility with SpyFile objects.
+
+        Keyword Arguments:
+
+            `writable` (bool, default False):
+
+                If `writable` is True, modifying values in the returned
+                array will result in corresponding modification to the
+                ImageArray object.
+        '''
+        arr = numpy.asarray(self)
+        if not writable:
+            arr.setflags(write=False)
+        return arr
+
     def info(self):
         s = '\t# Rows:         %6d\n' % (self.nrows)
         s += '\t# Samples:      %6d\n' % (self.ncols)

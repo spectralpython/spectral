@@ -806,6 +806,24 @@ class MemmapFile(object):
             return np.transpose(memmap, interleave_transpose(src_inter,
                                                              dst_inter))
 
+    def asarray(self, writable=False):
+        '''Returns an object with a standard numpy array interface.
+
+        The function returns a numpy memmap created with the
+        `open_memmap` method.
+
+        This function is for compatibility with ImageArray objects.
+
+        Keyword Arguments:
+
+            `writable` (bool, default False):
+
+                If `writable` is True, modifying values in the returned
+                memmap will result in corresponding modification to the
+                image data file.
+        '''
+        return self.open_memmap(writable=writable)
+
 def interleave_transpose(int1, int2):
     '''Returns the 3-tuple of indices to transpose between interleaves.
 
