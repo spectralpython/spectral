@@ -207,7 +207,8 @@ def check_compatibility(header):
     Verifies that all features of an ENVI header are supported.
     '''
     from .spyfile import find_file_path
-    if type(header) in [str, unicode]:
+    from spectral.utilities.python23 import is_string
+    if is_string(header):
         header = read_envi_header(find_file_path(header))
     if _has_frame_offset(header):
         raise EnviFeatureNotSupported(
