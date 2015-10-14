@@ -471,6 +471,8 @@ def open_image(file):
     # Try to open it as an ENVI header file.
     try:
         return envi.open(pathname)
+    except envi.EnviFeatureNotSupported:
+        raise
     except:
         pass
 

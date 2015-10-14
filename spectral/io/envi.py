@@ -78,6 +78,10 @@ class EnviDataTypeError(TypeError):
           'data type names.'.format(np.dtype(dtype).name)
         super(EnviDataTypeError, self).__init__(msg)
 
+class EnviFeatureNotSupported(NotImplementedError):
+    '''A specified ENVI capability is not supported by the spectral module.'''
+    pass
+
 def _validate_dtype(dtype):
     '''Raises EnviDataTypeError if dtype can not be written to ENVI file.'''
     typename = np.dtype(dtype).name
@@ -170,6 +174,44 @@ def gen_params(envi_header):
     p.filename = None
     return p
 
+def _has_frame_offset(params):
+    '''
+    Returns True if header params indicate non-zero frame offsets.
+
+    Arguments:
+
+        `params` (dict):
+
+            Dictionary of header parameters assocaited with hdr file.
+
+    Returns:
+
+        bool
+
+    This function returns True when either "major frame offsets" or
+    "minor frame offsets" is specified and contains a non-zero value.
+    '''
+    for param in ['major frame offsets', 'minor frame offsets']:
+        if param in params:
+            val = params[param]
+            if np.iterable(val):
+                offsets = [int(x) for x in val]
+            else:
+                offsets = [int(val)] * 2
+            if not np.all(np.equal(offsets, 0)):
+                return True
+    return False
+
+def check_compatibility(header):
+    '''
+    Verifies that all features of an ENVI header are supported.
+    '''
+    from .spyfile import find_file_path
+    if type(header) in [str, unicode]:
+        header = read_envi_header(find_file_path(header))
+    if _has_frame_offset(header):
+        raise EnviFeatureNotSupported(
+            'ENVI image frame offsets are not supported.')
 
 def open(file, image=None):
     '''
@@ -210,7 +252,7 @@ def open(file, image=None):
 
     headerPath = find_file_path(file)
     h = read_envi_header(headerPath)
-
+    check_compatibility(h)
     p = gen_params(h)
 
     inter = h["interleave"]
@@ -594,6 +636,7 @@ def _write_image(hdr_file, data, header, **kwargs):
     '''
     Write `data` as an ENVI file using the metadata in `header`.
     '''
+    check_compatibility(header)
     force = kwargs.get('force', False)
     img_ext = kwargs.get('ext', '.img')
     

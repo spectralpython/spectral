@@ -175,6 +175,60 @@ class ENVIWriteTest(SpyTest):
         gt2 = spy.open_image(fname).read_band(0)
         assert(np.all(gt == gt2))
 
+    def test_open_nonzero_frame_offset_fails(self):
+        '''Opening files with nonzero frame offsets should fail.'''
+        import os
+        import spectral as spy
+        img = spy.open_image('92AV3C.lan')
+        fname = os.path.join(testdir, 'test_open_nonzero_frame_offset_fails.hdr')
+        spy.envi.save_image(fname, img)
+        fout = open(fname, 'a')
+        fout.write('major frame offsets = 128\n')
+        fout.close()
+        try:
+            img2 = spy.envi.open(fname)
+        except spy.envi.EnviFeatureNotSupported:
+            pass
+        else:
+            raise Exception('File erroneously opened.')
+
+    def test_open_zero_frame_offset_passes(self):
+        '''Files with frame offsets set to zero should open.'''
+        import os
+        import spectral as spy
+        img = spy.open_image('92AV3C.lan')
+        fname = os.path.join(testdir, 'test_open_zero_frame_offset_passes.hdr')
+        spy.envi.save_image(fname, img)
+        fout = open(fname, 'a')
+        fout.write('major frame offsets = 0\n')
+        fout.write('minor frame offsets = {0, 0}\n')
+        fout.close()
+        img2 = spy.envi.open(fname)
+
+    def test_save_nonzero_frame_offset_fails(self):
+        '''Opening files with nonzero frame offsets should fail.'''
+        import os
+        import spectral as spy
+        img = spy.open_image('92AV3C.lan')
+        fname = os.path.join(testdir, 'test_save_nonzero_frame_offset_fails.hdr')
+        meta = {'major frame offsets' : [128, 0]}
+        try:
+            spy.envi.save_image(fname, img, metadata=meta)
+        except spy.envi.EnviFeatureNotSupported:
+            pass
+        else:
+            raise Exception('File erroneously saved.')
+
+    def test_save_zero_frame_offset_passes(self):
+        '''Opening files with nonzero frame offsets should fail.'''
+        import os
+        import spectral as spy
+        img = spy.open_image('92AV3C.lan')
+        fname = os.path.join(testdir, 'test_save_zero_frame_offset_passes.hdr')
+        meta = {'major frame offsets' : 0}
+        spy.envi.save_image(fname, img, metadata=meta)
+
+
 def run():
     print('\n' + '-' * 72)
     print('Running ENVI tests.')
