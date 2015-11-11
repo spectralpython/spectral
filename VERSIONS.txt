@@ -1,4 +1,38 @@
 ================================================================================
+SPy 0.17
+================================================================================
+Release date: 2015.11.11
+
+New Features
+------------
+
+* Functions `map_class_ids` and `map_classes` were added for mapping class
+  indices between images.
+
+* `view_nd` now accepts custom axis labels.
+
+* `ImageArray` and `SpyFile` have `asarray` method that provides numpy
+  array interface.
+
+Changes
+-------
+
+* ENVI header parameter names are case insensitive (converted to lower-case
+  after being read).
+
+* `ImageArray` objects have additional `SpyFile` methods/attributes and
+  indexing behavior is now like `SpyFile`'s.
+
+* An exception is now raised when attempting to open or save an image in
+  ENVI format with nonzero major or minor frame offsets (see issue #35).
+
+Bug Fixes
+---------
+
+* [Issue #27] ImageView.__str__ failed if image did not have "bands" in
+  metadata.
+
+================================================================================
 SPy 0.16.2
 ================================================================================
 Release date: 2015.04.27
