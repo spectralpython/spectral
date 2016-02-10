@@ -277,7 +277,12 @@ class HypercubeWindow(wx.Frame, SpyWindow):
         (a, b, c) = data.shape
         texSizes = [(b, a), (b, c), (a, c), (b, c), (a, c), (b, a)]
         for i in range(len(images)):
-            img = images[i].tobytes("raw", "RGBX", 0, -1)
+            try:
+                # API change for Pillow
+                img = images[i].tobytes("raw", "RGBX", 0, -1)
+            except:
+                # Fall back to old PIL API
+                img = images[i].tostring("raw", "RGBX", 0, -1)
             (dim_x, dim_y) = images[i].size
             texImages.append(img)
 
