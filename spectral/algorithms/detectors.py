@@ -180,8 +180,8 @@ def matched_filter(X, target, background=None, window=None, cov=None):
 
             An optional covariance to use. If this parameter is given, `cov`
             will be used for all matched filter calculations (background
-            covariance will not be recomputed in each window). Only the
-            background mean will be recomputed in each window). If the
+            covariance will not be recomputed in each window) and only the
+            background mean will be recomputed in each window. If the
             `window` argument is specified, providing `cov` will allow the
             result to be computed *much* faster.
 
@@ -377,8 +377,8 @@ def rx(X, background=None, window=None, cov=None):
 
             An optional covariance to use. If this parameter is given, `cov`
             will be used for all RX calculations (background covariance
-            will not be recomputed in each window). Only the background
-            mean will be recomputed in each window).
+            will not be recomputed in each window) and only the background
+            mean will be recomputed in each window.
 
     Returns numpy.ndarray:
 
@@ -638,8 +638,8 @@ def ace(X, target, background=None, window=None, cov=None, **kwargs):
 
             An optional covariance to use. If this parameter is given, `cov`
             will be used for all matched filter calculations (background
-            covariance will not be recomputed in each window). Only the
-            background mean will be recomputed in each window). If the
+            covariance will not be recomputed in each window) and only the
+            background mean will be recomputed in each window. If the
             `window` argument is specified, providing `cov` will allow the
             result to be computed *much* faster.
 
