@@ -90,7 +90,7 @@ class MouseHandler:
                 cmd = lambda: self.window.get_pixel_info(
                     x, self.window.size[1] - y)
                 self.window.add_display_command(cmd)
-                self.window.canvas.SetCurrent(self.canvas.context)
+                self.window.canvas.SetCurrent(self.window.canvas.context)
                 self.window.canvas.Refresh()
             elif wx.GetKeyState(wx.WXK_SHIFT):
                 # Switch to box selection mode.
@@ -828,7 +828,7 @@ class NDWindow(wx.Frame):
 
     def index_to_image_row_col(self, index):
         '''Converts the unraveled pixel ID to row/col of the N-D image.'''
-        rowcol = (index / self.data.shape[1], index % self.data.shape[1])
+        rowcol = (index // self.data.shape[1], index % self.data.shape[1])
         return rowcol
 
     def draw_data_set(self):
