@@ -141,7 +141,7 @@ class ACETest(SpyTest):
         y = spy.ace(self.X, [self.X[ij1], self.X[ij2]], background=self.bg)
         assert(np.allclose(1, [y[ij1][0], y[ij2][1]]))
 
-    def test_ace__novec_multi_targets_eq_one(self):
+    def test_ace_novec_multi_targets_eq_one(self):
         '''ACE score of multiple targets should each be one.'''
         ij1 = (10, 10)
         ij2 = (3, 12)
