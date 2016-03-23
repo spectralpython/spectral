@@ -166,7 +166,7 @@ def gen_params(envi_header):
     p.nbands = int(h["bands"])
     p.nrows = int(h["lines"])
     p.ncols = int(h["samples"])
-    p.offset = int(h["header offset"])
+    p.offset = int(h["header offset"]) if "header offset" in h else int(0)
     p.byte_order = int(h["byte order"])
     p.dtype = np.dtype(envi_to_dtype[str(h["data type"])]).str
     if p.byte_order != spectral.byte_order:
