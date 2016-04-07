@@ -94,7 +94,7 @@ class FileNotAnEnviHeader(EnviException):
 class MissingEnviHeaderParameter(EnviException):
     '''Raised when a mandatory header parameter is missing.'''
     def __init__(self, param):
-        msg = 'Mandatory parameter "{}" missing from header file.'.format(param)
+        msg = 'Mandatory parameter "%s" missing from header file.' % param
         super(MissingEnviHeaderParameter, self).__init__(msg)
 
 class EnviHeaderParsingError(EnviException):
