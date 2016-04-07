@@ -228,6 +228,61 @@ class ENVIWriteTest(SpyTest):
         meta = {'major frame offsets' : 0}
         spy.envi.save_image(fname, img, metadata=meta)
 
+    def test_catch_parse_error(self):
+        '''Failure to parse parameters should raise EnviHeaderParsingError.'''
+        import os
+        import spectral as spy
+        img = spy.open_image('92AV3C.lan')
+        fname = os.path.join(testdir, 'test_catch_parse_error.hdr')
+        spy.envi.save_image(fname, img)
+        fout = open(fname, 'a')
+        fout.write('foo = {{\n')
+        fout.close()
+        try:
+            img2 = spy.envi.open(fname)
+        except spy.envi.EnviHeaderParsingError:
+            pass
+        else:
+            raise Exception('Failed to raise EnviHeaderParsingError')
+
+    def test_header_missing_mandatory_parameter_fails(self):
+        '''Missing mandatory parameter should raise EnviMissingHeaderParameter.'''
+        import os
+        import spectral as spy
+        img = spy.open_image('92AV3C.lan')
+        fname = os.path.join(testdir, 'test_missing_param_fails.hdr')
+        spy.envi.save_image(fname, img)
+        lines = [line for line in open(fname).readlines() \
+                 if 'bands' not in line]
+        fout = open(fname, 'w')
+        for line in lines:
+            fout.write(line)
+        fout.close()
+        try:
+            img2 = spy.envi.open(fname)
+        except spy.envi.MissingEnviHeaderParameter:
+            pass
+        else:
+            raise Exception('Failed to raise EnviMissingHeaderParameter')
+
+    def test_missing_ENVI_in_header_fails(self):
+        '''FileNotAnEnviHeader should be raised if "ENVI" not on first line.'''
+        import os
+        import spectral as spy
+        img = spy.open_image('92AV3C.lan')
+        fname = os.path.join(testdir, 'test_header_missing_ENVI_fails.hdr')
+        spy.envi.save_image(fname, img)
+        lines = open(fname).readlines()
+        fout = open(fname, 'w')
+        for line in lines[1:]:
+            fout.write(line)
+        fout.close()
+        try:
+            img2 = spy.envi.open(fname)
+        except spy.envi.FileNotAnEnviHeader:
+            pass
+        else:
+            raise Exception('Failed to raise EnviMissingHeaderParameter')
 
 def run():
     print('\n' + '-' * 72)

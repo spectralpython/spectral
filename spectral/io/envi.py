@@ -69,6 +69,10 @@ dtype_map = [('1', np.uint8),                   # unsigned byte
 envi_to_dtype = dict((k, np.dtype(v).char) for (k, v) in dtype_map)
 dtype_to_envi = dict(tuple(reversed(item)) for item in list(envi_to_dtype.items()))
 
+class EnviException(Exception):
+    '''Base class for ENVI file-related exceptions.'''
+    pass
+
 class EnviDataTypeError(TypeError):
     '''Exception raised when saving invalid image data type to ENVI format.
     '''
@@ -81,6 +85,23 @@ class EnviDataTypeError(TypeError):
 class EnviFeatureNotSupported(NotImplementedError):
     '''A specified ENVI capability is not supported by the spectral module.'''
     pass
+
+class FileNotAnEnviHeader(EnviException):
+    '''Raised when "ENVI" does not appear on the first line of the file.'''
+    def __init__(self, msg):
+        super(FileNotAnEnviHeader, self).__init__(msg)
+
+class MissingEnviHeaderParameter(EnviException):
+    '''Raised when a mandatory header parameter is missing.'''
+    def __init__(self, param):
+        msg = 'Mandatory parameter "{}" missing from header file.'.format(param)
+        super(MissingEnviHeaderParameter, self).__init__(msg)
+
+class EnviHeaderParsingError(EnviException):
+    '''Raised upon failure to parse parameter/value pairs from a file.'''
+    def __init__(self):
+        msg = 'Failed to parse ENVI header file.'
+        super(EnviHeaderParsingError, self).__init__(msg)
 
 def _validate_dtype(dtype):
     '''Raises EnviDataTypeError if dtype can not be written to ENVI file.'''
@@ -102,9 +123,19 @@ def read_envi_header(file):
     '''
     f = builtins.open(file, 'r')
 
-    if f.readline().find("ENVI") == -1:
+    try:
+        pos = f.readline().find("ENVI")
+    except UnicodeDecodeError:
+        msg = 'File does not appear to be an ENVI header (appears to be a ' \
+          'binary file).'
         f.close()
-        raise IOError("Not an ENVI header.")
+        raise FileNotAnEnviHeader(msg)
+    else:
+        if pos == -1:
+            msg = 'File does not appear to be an ENVI header (missing "ENVI" \
+              on first line).'
+            f.close()
+            raise FileNotAnEnviHeader(msg)
 
     lines = f.readlines()
     f.close()
@@ -138,7 +169,7 @@ def read_envi_header(file):
 
         return dict
     except:
-        raise IOError("Error while reading ENVI file header.")
+        raise EnviHeaderParsingError()
 
 
 def gen_params(envi_header):
@@ -210,6 +241,13 @@ def check_compatibility(header):
     from spectral.utilities.python23 import is_string
     if is_string(header):
         header = read_envi_header(find_file_path(header))
+
+    mandatory_params = ['lines', 'samples', 'bands', 'data type',
+                        'interleave', 'byte order']
+    for p in mandatory_params:
+        if p not in header:
+            raise MissingEnviHeaderParameter(p)
+
     if _has_frame_offset(header):
         raise EnviFeatureNotSupported(
             'ENVI image frame offsets are not supported.')

@@ -469,10 +469,11 @@ def open_image(file):
     # Try to open it as an ENVI header file.
     try:
         return envi.open(pathname)
-    except envi.EnviFeatureNotSupported:
-        raise
-    except:
+    except envi.FileNotAnEnviHeader:
+        # It isn't an ENVI file so try another file type
         pass
+    except:
+        raise
 
     # Maybe it's an Erdas Lan file
     try:
