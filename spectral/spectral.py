@@ -187,10 +187,8 @@ def _init():
     '''Basic configuration of the spectral package.'''
     try:
         global settings
-        import pylab
         from .graphics import graphics as spygraphics
         from .graphics import spypylab
-        pylab.ion()
         settings.plotter = spypylab
         settings.viewer = spygraphics
     except:

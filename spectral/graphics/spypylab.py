@@ -745,10 +745,13 @@ class ImageView(object):
         '''
         import matplotlib.pyplot as plt
         from spectral import settings
+
         if self.is_shown:
             msg = 'ImageView.show should only be called once.'
             warnings.warn(UserWarning(msg))
             return
+
+        set_mpl_interactive()
 
         kwargs = {}
         if fignum is not None:
@@ -1240,6 +1243,8 @@ def imshow(data=None, bands=None, classes=None, source=None, colors=None,
     from spectral import settings
     from .graphics import get_rgb
 
+    set_mpl_interactive()
+
     view = ImageView()
     if data is not None:
         view.set_data(data, bands, **kwargs)
@@ -1270,11 +1275,12 @@ def plot(data, source=None):
     single series. If data is a 2D array, each column of data will
     be drawn as a separate series.
     '''
-    import pylab
-    from numpy import shape
+    import matplotlib.pyplot as plt
     import spectral
 
-    s = shape(data)
+    set_mpl_interactive()
+
+    s = np.shape(data)
 
     if source is not None and hasattr(source, 'bands'):
         xvals = source.bands.centers
@@ -1284,19 +1290,27 @@ def plot(data, source=None):
     if len(s) == 1:
         if not xvals:
             xvals = list(range(len(data)))
-        p = pylab.plot(xvals, data)
+        p = plt.plot(xvals, data)
     elif len(s) == 2:
         if not xvals:
             xvals = list(range(s[1]))
-        p = pylab.plot(xvals, data[0, :])
-        pylab.hold(1)
+        p = plt.plot(xvals, data[0, :])
+        plt.hold(1)
         for i in range(1, s[0]):
-            p = pylab.plot(xvals, data[i, :])
+            p = plt.plot(xvals, data[i, :])
     spectral._xyplot = p
-    pylab.grid(1)
+    plt.grid(1)
     if source is not None and hasattr(source, 'bands'):
         xlabel = source.bands.band_quantity
         if len(source.bands.band_unit) > 0:
             xlabel = xlabel + ' (' + source.bands.band_unit + ')'
-        pylab.xlabel(xlabel)
+        plt.xlabel(xlabel)
     return p
+
+def set_mpl_interactive():
+    '''Ensure matplotlib is in interactive mode.'''
+    import matplotlib.pyplot as plt
+
+    if not plt.isinteractive():
+        plt.interactive(True)
+
