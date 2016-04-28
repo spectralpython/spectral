@@ -124,16 +124,16 @@ def read_envi_header(file):
     f = builtins.open(file, 'r')
 
     try:
-        pos = f.readline().find("ENVI")
+        starts_with_ENVI = f.readline().strip().startswith('ENVI')
     except UnicodeDecodeError:
         msg = 'File does not appear to be an ENVI header (appears to be a ' \
           'binary file).'
         f.close()
         raise FileNotAnEnviHeader(msg)
     else:
-        if pos == -1:
+        if not starts_with_ENVI:
             msg = 'File does not appear to be an ENVI header (missing "ENVI" \
-              on first line).'
+              at beginning of first line).'
             f.close()
             raise FileNotAnEnviHeader(msg)
 
