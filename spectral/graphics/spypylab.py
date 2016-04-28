@@ -1301,9 +1301,15 @@ def plot(data, source=None):
     spectral._xyplot = p
     plt.grid(1)
     if source is not None and hasattr(source, 'bands'):
-        xlabel = source.bands.band_quantity
-        if len(source.bands.band_unit) > 0:
-            xlabel = xlabel + ' (' + source.bands.band_unit + ')'
+        if source.bands.band_quantity is not None:
+            xlabel = source.bands.band_quantity
+        else:
+            xlabel = ''
+        if source.bands.band_unit is not None:
+            if len(xlabel) > 0:
+                xlabel += ' (%s)' % source.bands.band_unit
+            else:
+                xlabel = str(source.bands.band_unit)
         plt.xlabel(xlabel)
     return p
 

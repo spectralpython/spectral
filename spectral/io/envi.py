@@ -351,8 +351,7 @@ def open(file, image=None):
             img.bands.bandwidths = [float(f) for f in h['fwhm']]
         except:
             pass
-    img.bands.band_unit = h.get('wavelength units', "")
-    img.bands.band_quantity = "Wavelength"
+    img.bands.band_unit = h.get('wavelength units', None)
 
     return img
 
@@ -666,8 +665,8 @@ def add_band_info_to_metadata(bands, metadata, overwrite=False):
     if bands.bandwidths is not None and (overwrite is True or
                                       'fwhm' not in metadata):
         metadata['fwhm'] = bands.bandwidths
-    if len(bands.band_unit) > 0 and (overwrite is True or
-                                     'wavelength units' not in metadata):
+    if bands.band_unit is not None and (overwrite is True or
+                                        'wavelength units' not in metadata):
         metadata['wavelength units'] = bands.band_unit
         
 

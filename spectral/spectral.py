@@ -221,8 +221,8 @@ class BandInfo:
         self.bandwidths = None
         self.centers_stdevs = None
         self.bandwidth_stdevs = None
-        self.band_quantity = ""
-        self.band_unit = ""
+        self.band_quantity = None
+        self.band_unit = None
 
 
 class Image(object):
