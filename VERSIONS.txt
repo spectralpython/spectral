@@ -1,4 +1,42 @@
 ================================================================================
+SPy 0.18
+================================================================================
+Release date: 2016.06.18
+
+Changes
+-------
+
+* Improved handling of ENVI header files:
+
+  * If "header offset" is missing, assume the offset is 0.
+
+  * Stricter check for "ENVI" in the first line of the file.
+
+  * [Issue #42] More-informative exceptions are raised when a problem is
+    encountered while reading and ENVI header.
+
+  * [Issue #46] No longer defaulting `band_quantity` to "Wavelength".
+
+Bug Fixes
+---------
+
+* [Issue #38 and #39] The `tostring` method has been deprecated in newer
+  versions of PIL/Pillow. Using `tobytes` now and falling back to `tostring`
+  if it fails.
+
+* [Issue #40] An exception was raised when trying to get a pixel's row/col
+  by CTRL-SHIFT-clicking in the ND window display.
+
+* [Issue #44] Matplotlib was being set to interactive mode even if no SPy
+  windows were displayed. This would affect behavior of other code using
+  Matplotlib. Interactive mode is now set only once the first display is
+  requested.
+
+* [Issue #49] `GaussianClassifier` and `MahalanobisDistanceClassifier` method
+  `classify_image` was failing when applied to an object that was not a
+  numpy.ndarray (e.g., a `SpyFile` or `TransformedImage`).
+
+================================================================================
 SPy 0.17
 ================================================================================
 Release date: 2015.11.11
