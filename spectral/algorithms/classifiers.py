@@ -193,7 +193,7 @@ class GaussianClassifier(SupervisedClassifier):
         '''
         import math
         import spectral
-        if not self.cache_class_scores:
+        if not (self.cache_class_scores and isinstance(image, np.ndarray)):
             return super(GaussianClassifier, self).classify_image(image)
 
         status = spectral._status
@@ -289,7 +289,7 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
         '''
         import spectral
         from .detectors import RX
-        if not self.cache_class_scores:
+        if not (self.cache_class_scores and isinstance(image, np.ndarray)):
             return super(MahalanobisDistanceClassifier,
                          self).classify_image(image)
 

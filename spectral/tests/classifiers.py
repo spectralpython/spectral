@@ -83,6 +83,31 @@ class ClassifierTest(SpyTest):
         assert(gmlc.classify_spectrum(data[2, 2]) == \
                gmlc.classify_image(data)[2, 2])
 
+    def test_gmlc_classify_spyfile_runs(self):
+        '''Tests that GaussianClassifier classifies a SpyFile object.'''
+        gmlc = spy.GaussianClassifier(self.ts, min_samples=600)
+        ret = gmlc.classify_image(self.image)
+
+    def test_gmlc_classify_transformedimage_runs(self):
+        '''Tests that GaussianClassifier classifies a TransformedImage object.'''
+        pc = spy.principal_components(self.data).reduce(num=3)
+        ximg = pc.transform(self.image)
+        ts = spy.create_training_classes(pc.transform(self.data), self.gt,
+                                              calc_stats=True)
+        gmlc = spy.GaussianClassifier(ts)
+        ret = gmlc.classify_image(ximg)
+
+    def test_gmlc_classify_ndarray_transformedimage_equal(self):
+        '''Gaussian classification of an ndarray and TransformedImage are equal'''
+        pc = spy.principal_components(self.data).reduce(num=3)
+        ximg = pc.transform(self.image)
+        ts = spy.create_training_classes(pc.transform(self.data), self.gt,
+                                              calc_stats=True)
+        gmlc = spy.GaussianClassifier(ts)
+        cl_ximg = gmlc.classify_image(ximg)
+        cl_ndarray = gmlc.classify_image(pc.transform(self.data))
+        assert(np.all(cl_ximg == cl_ndarray))
+
     def test_mahalanobis_class_mean(self):
         '''Test that a class's mean spectrum is classified as that class.
         Note this assumes that class priors are equal.
@@ -90,6 +115,31 @@ class ClassifierTest(SpyTest):
         mdc = spy.MahalanobisDistanceClassifier(self.ts)
         cl = mdc.classes[0]
         assert(mdc.classify(cl.stats.mean) == cl.index)
+
+    def test_mahalanobis_classify_spyfile_runs(self):
+        '''Mahalanobis classifier works with a SpyFile object.'''
+        mdc = spy.MahalanobisDistanceClassifier(self.ts)
+        ret = mdc.classify_image(self.image)
+
+    def test_mahalanobis_classify_transformedimage_runs(self):
+        '''Mahalanobis classifier works with a TransformedImage object.'''
+        pc = spy.principal_components(self.data).reduce(num=3)
+        ximg = pc.transform(self.image)
+        ts = spy.create_training_classes(pc.transform(self.data), self.gt,
+                                              calc_stats=True)
+        gmlc = spy.MahalanobisDistanceClassifier(ts)
+        ret = gmlc.classify_image(ximg)
+
+    def test_mahalanobis_classify_ndarray_transformedimage_equal(self):
+        '''Mahalanobis classification of ndarray and TransformedImage are equal'''
+        pc = spy.principal_components(self.data).reduce(num=3)
+        ximg = pc.transform(self.image)
+        ts = spy.create_training_classes(pc.transform(self.data), self.gt,
+                                              calc_stats=True)
+        mdc = spy.GaussianClassifier(ts)
+        cl_ximg = mdc.classify_image(ximg)
+        cl_ndarray = mdc.classify_image(pc.transform(self.data))
+        assert(np.all(cl_ximg == cl_ndarray))
 
     def test_perceptron_learns_and(self):
         '''Test that 2x1 network can learn the logical AND function.'''
