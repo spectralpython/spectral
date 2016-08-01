@@ -80,7 +80,7 @@ def matrix_sqrt(X=None, symmetric=False, inverse=False, eigs=None):
         return V.dot(SRV).dot(np.linalg.inv(V))
 
 
-def get_histogram_cdf_points(data, cdf_vals):
+def get_histogram_cdf_points(data, cdf_vals, ignore=None):
     '''Returns input values corresponding to the data's CDF values.
 
     Arguments:
@@ -96,16 +96,24 @@ def get_histogram_cdf_points(data, cdf_vals):
             example, to get the values of `data` corresponding to the 1% lower
             tail and 5% upper tail, this argument would be (0.01, 0.95).
 
+        `ignore` (numeric, default `None`):
+
+            A scalar value that should be ignored when computing histogram
+            points (e.g., a value that indicates bad data). If this valus is
+            not specified, all data are used.
+
     Return value:
 
         A list specifying the values in `data` that correspond to the
         associated CDF values in `cdf_vals`.
     '''
     data = data.ravel()
+    if ignore is not None and ignore in data:
+        data = data[np.where(data != ignore)]
     isort = np.argsort(data)
     N = len(data)
     return[data[isort[int(x * (N - 1))]] for x in cdf_vals]
-    
+
 
 class NaNValueWarning(UserWarning):
     pass

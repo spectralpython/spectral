@@ -687,18 +687,22 @@ def get_rgb_meta(source, bands=None, **kwargs):
         if stretch.shape not in ((2,), (3, 2)):
             raise ValueError("`stretch` keyword must be numeric or a " \
                              "sequence with shape (2,) or (3, 2).")
+        nondata = kwargs.get('ignore', None)
         if stretch.ndim == 1:
             if monochrome:
-                s = get_histogram_cdf_points(rgb[:, :, 0], stretch)
+                s = get_histogram_cdf_points(rgb[:, :, 0], stretch,
+                                             ignore=nondata)
                 rgb_lims = [s, s, s]
             elif stretch_all:
                 # Stretch each color component independently
-                rgb_lims = [get_histogram_cdf_points(rgb[:, :, i], stretch) \
+                rgb_lims = [get_histogram_cdf_points(rgb[:, :, i], stretch,
+                                                     ignore=nondata) \
                             for i in range(3)]
             else:
                 # Use a common lower/upper limit for each band by taking
                 # the lowest lower limit and greatest upper limit.
-                lims = np.array([get_histogram_cdf_points(rgb[:,:,i], stretch) \
+                lims = np.array([get_histogram_cdf_points(rgb[:,:,i], stretch,
+                                                          ignore=nondata) \
                         for i in range(3)])
                 minmax = np.array([lims[:,0].min(), lims[:,1].max()])
                 rgb_lims = minmax[np.newaxis, :].repeat(3, axis=0)
@@ -706,10 +710,12 @@ def get_rgb_meta(source, bands=None, **kwargs):
             if monochrome:
                 # Not sure why anyone would want separate RGB stretches for
                 # a gray-scale image but we'll let them.
-                rgb_lims = [get_histogram_cdf_points(rgb[:,:,0], stretch[i]) \
+                rgb_lims = [get_histogram_cdf_points(rgb[:,:,0], stretch[i],
+                                                     ignore=nondata) \
                             for i in range(3)]
             elif stretch_all:
-                rgb_lims = [get_histogram_cdf_points(rgb[:,:,i], stretch[i]) \
+                rgb_lims = [get_histogram_cdf_points(rgb[:,:,i], stretch[i],
+                                                     ignore=nondata) \
                             for i in range(3)]
             else:
                 msg = 'Can not use common stretch if different stretch ' \
@@ -730,7 +736,7 @@ def get_rgb_meta(source, bands=None, **kwargs):
 
 # For checking if valid keywords were supplied
 _get_rgb_kwargs = ('stretch', 'stretch_all', 'bounds', 'colors', 'color_scale',
-                   'auto_scale')
+                   'auto_scale', 'ignore')
 
 def running_ipython():
     '''Returns True if ipython is running.'''
