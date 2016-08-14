@@ -448,7 +448,7 @@ def principal_components(image):
 
     Arguments:
 
-        `image` (ndarray or :class:`spectral.Image`):
+        `image` (ndarray, :class:`spectral.Image`, :class:`GaussianStats`):
 
             An `MxNxB` image
 
@@ -478,9 +478,10 @@ def principal_components(image):
     '''
     from numpy import sqrt, sum
 
-    (M, N, B) = image.shape
-
-    stats = calc_stats(image)
+    if isinstance(image, GaussianStats):
+        stats = image
+    else:
+        stats = calc_stats(image)
 
     (L, V) = numpy.linalg.eig(stats.cov)
 

@@ -88,6 +88,17 @@ class DimensionalityTest(SpyTest):
         p2 = spy.ppi(data_centered, 4)
         np.all(p == p2)
 
+    def test_pca_runs(self):
+        '''Should be able to compute PCs and transform data.'''
+        data = self.data
+        xdata = spy.principal_components(data).transform(data)
+
+    def test_pca_runs_from_stats(self):
+        '''Should be able to pass image stats to PCA function.'''
+        data = self.data
+        stats = spy.calc_stats(data)
+        xdata = spy.principal_components(stats).transform(data)
+
 def run():
     print('\n' + '-' * 72)
     print('Running dimensionality tests.')
