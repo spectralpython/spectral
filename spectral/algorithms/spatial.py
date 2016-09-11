@@ -709,6 +709,8 @@ def map_class_ids(src_class_image, dest_class_image, unlabeled=None):
                 cmap[i] = i
             if i in dest_ids:
                 dest_ids.remove(i)
+    else:
+        unlabeled = []
     N_src = len(src_ids)
     N_dest = len(dest_ids)
 
@@ -732,7 +734,14 @@ def map_class_ids(src_class_image, dest_class_image, unlabeled=None):
                 unmapped.remove(old)
                 dest_available.remove(new)
             for old in unmapped:
-                cmap[old] = old
+                # The list of target classes has been exhausted. Pick the
+                # smallest dest value that isn't already used.
+                def next_id():
+                    from itertools import count
+                    for ii in count():
+                        if ii not in unlabeled and ii not in cmap.values():
+                            return ii
+                cmap[old] = next_id()
             break
         cmap[src_ids[i]] = dest_ids[j]
         unmapped.remove(src_ids[i])
