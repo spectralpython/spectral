@@ -170,7 +170,9 @@ class MapClassesTest(SpyTest):
         gt2[i, j] = new_label
         
         d = map_class_ids(gt2, gt)
-        assert(d[new_label] == new_label)
+        # There are enough pixels for each class that a new single-pixel class
+        # should not be mapped to one of the existing classes.
+        assert(d[new_label] not in gt)
         d.pop(new_label)
         for (i, j) in d.items():
             assert(j == i)
