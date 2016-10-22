@@ -59,12 +59,10 @@ def open(file, band_file=None):
 
         IOError
     '''
-
     import numpy as np
     from spectral.io.bipfile import BipFile
     import os
     import glob
-    from exceptions import IOError
     from .spyfile import find_file_path
     import spectral
 
