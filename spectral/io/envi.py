@@ -55,6 +55,10 @@ else:
 
 import numpy as np
 
+# Known ENVI data file extensions. Upper and lower case versions will be
+# recognized, as well as interleaves ('bil', 'bip', 'bsq'), and no extension.
+KNOWN_EXTS = ['img', 'dat', 'sli', 'hyspex']
+
 dtype_map = [('1', np.uint8),                   # unsigned byte
              ('2', np.int16),                   # 16-bit int
              ('3', np.int32),                   # 32-bit int
@@ -296,8 +300,8 @@ def open(file, image=None):
     import numpy
     import spectral
 
-    headerPath = find_file_path(file)
-    h = read_envi_header(headerPath)
+    header_path = find_file_path(file)
+    h = read_envi_header(header_path)
     check_compatibility(h)
     p = gen_params(h)
 
@@ -306,16 +310,15 @@ def open(file, image=None):
     #  Validate image file name
     if not image:
         #  Try to determine the name of the image file
-        headerDir = os.path.split(headerPath)
-        if headerPath[-4:].lower() == '.hdr':
-            headerPathTitle = headerPath[:-4]
-            exts = ['', 'img', 'IMG', 'dat', 'DAT', 'sli', 'SLI', 'hyspex'] +\
-                   [inter.lower(), inter.upper()]
+        (header_path_title, header_ext) = os.path.splitext(header_path)
+        if header_ext.lower() == '.hdr':
+            exts = [ext.lower() for ext in KNOWN_EXTS] + [inter.lower()]
+            exts = [''] + exts + [ext.upper() for ext in exts]
             for ext in exts:
                 if len(ext) == 0:
-                    testname = headerPathTitle
+                    testname = header_path_title
                 else:
-                    testname = headerPathTitle + '.' + ext
+                    testname = header_path_title + '.' + ext
                 if os.path.isfile(testname):
                     image = testname
                     break
