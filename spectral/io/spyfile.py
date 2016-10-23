@@ -128,9 +128,9 @@ def find_file_path(filename):
     '''
     import os
     pathname = None
-    dirs = ['.']
+    dirs = [os.curdir]
     if 'SPECTRAL_DATA' in os.environ:
-        dirs += os.environ['SPECTRAL_DATA'].split(':')
+        dirs += os.environ['SPECTRAL_DATA'].split(os.pathsep)
     for d in dirs:
         testpath = os.path.join(d, filename)
         if os.path.isfile(testpath):
