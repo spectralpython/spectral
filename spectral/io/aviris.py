@@ -57,13 +57,13 @@ def open(file, band_file=None):
 
     Raises:
 
-        IOError
+        spectral.io.spyfile.InvalidFileError
     '''
     import numpy as np
     from spectral.io.bipfile import BipFile
     import os
     import glob
-    from .spyfile import find_file_path
+    from .spyfile import find_file_path, InvalidFileError
     import spectral
 
     class Params:
@@ -75,7 +75,7 @@ def open(file, band_file=None):
     p.ncols = 614
     fileSize = os.stat(p.filename)[6]
     if fileSize % 275072 != 0:
-        raise IOError('File size not consistent with AVIRIS format.')
+        raise InvalidFileError('File size not consistent with AVIRIS format.')
     p.nrows = int(fileSize / 275072)
     p.byte_order = 1
     p.dtype = np.dtype('i2').str

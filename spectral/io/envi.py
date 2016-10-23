@@ -69,12 +69,15 @@ dtype_map = [('1', np.uint8),                   # unsigned byte
 envi_to_dtype = dict((k, np.dtype(v).char) for (k, v) in dtype_map)
 dtype_to_envi = dict(tuple(reversed(item)) for item in list(envi_to_dtype.items()))
 
-class EnviException(Exception):
+from spectral import SpyException
+from .spyfile import FileNotFoundError, InvalidFileError
+
+class EnviException(SpyException):
     '''Base class for ENVI file-related exceptions.'''
     pass
 
-class EnviDataTypeError(TypeError):
-    '''Exception raised when saving invalid image data type to ENVI format.
+class EnviDataTypeError(EnviException, TypeError):
+    '''Raised when saving invalid image data type to ENVI format.
     '''
     def __init__(self, dtype):
         msg = 'Image data type "{0}" can not be saved to ENVI data file. ' \
@@ -82,11 +85,11 @@ class EnviDataTypeError(TypeError):
           'data type names.'.format(np.dtype(dtype).name)
         super(EnviDataTypeError, self).__init__(msg)
 
-class EnviFeatureNotSupported(NotImplementedError):
+class EnviFeatureNotSupported(EnviException, NotImplementedError):
     '''A specified ENVI capability is not supported by the spectral module.'''
     pass
 
-class FileNotAnEnviHeader(EnviException):
+class FileNotAnEnviHeader(EnviException, InvalidFileError):
     '''Raised when "ENVI" does not appear on the first line of the file.'''
     def __init__(self, msg):
         super(FileNotAnEnviHeader, self).__init__(msg)
@@ -97,11 +100,15 @@ class MissingEnviHeaderParameter(EnviException):
         msg = 'Mandatory parameter "%s" missing from header file.' % param
         super(MissingEnviHeaderParameter, self).__init__(msg)
 
-class EnviHeaderParsingError(EnviException):
+class EnviHeaderParsingError(EnviException, InvalidFileError):
     '''Raised upon failure to parse parameter/value pairs from a file.'''
     def __init__(self):
         msg = 'Failed to parse ENVI header file.'
         super(EnviHeaderParsingError, self).__init__(msg)
+
+class EnviDataFileNotFoundError(EnviException, FileNotFoundError):
+    '''Raised when data file associated with a header is not found.'''
+    pass
 
 def _validate_dtype(dtype):
     '''Raises EnviDataTypeError if dtype can not be written to ENVI file.'''
@@ -273,7 +280,7 @@ def open(file, image=None):
 
     Raises:
 
-        TypeError, IOError.
+        TypeError, EnviDataFileNotFoundError
 
     If the specified file is not found in the current directory, all
     directories listed in the SPECTRAL_DATA environment variable will be
@@ -313,7 +320,10 @@ def open(file, image=None):
                     image = testname
                     break
         if not image:
-            raise IOError('Unable to determine image file name.')
+            msg = 'Unable to determine the ENVI data file name for the ' \
+              'given header file. You can specify the data file by passing ' \
+              'its name as the optional `image` argument to envi.open.'
+            raise EnviDataFileNotFoundError(msg)
     else:
         image = find_file_path(image)
 
@@ -367,15 +377,15 @@ def check_new_filename(hdr_file, img_ext, force):
     hdr_file = os.path.realpath(hdr_file)
     (base, ext) = os.path.splitext(hdr_file)
     if ext.lower() != '.hdr':
-        raise ValueError('Header file name must end in ".hdr" or ".HDR".')
+        raise EnviException('Header file name must end in ".hdr" or ".HDR".')
     image_file = base + img_ext
     if not force:
         if os.path.isfile(hdr_file):
-            raise Exception('Header file %s already exists. Use `force` '
-                            'keyword to force overwrite.' % hdr_file)
+            raise EnviException('Header file %s already exists. Use `force` '
+                                'keyword to force overwrite.' % hdr_file)
         if os.path.isfile(image_file):
-            raise Exception('Image file %s already exists. Use `force` '
-                            'keyword to force overwrite.' % image_file)
+            raise EnviException('Image file %s already exists. Use `force` '
+                                'keyword to force overwrite.' % image_file)
     return (hdr_file, image_file)
 
 
@@ -818,15 +828,15 @@ def create_image(hdr_file, metadata=None, **kwargs):
 
     # Verify minimal set of parameters have been provided
     if 'lines' not in metadata:
-        raise Exception('Number of image rows is not defined.')
+        raise EnviException('Number of image rows is not defined.')
     elif 'samples' not in metadata:
-        raise Exception('Number of image columns is not defined.')
+        raise EnviException('Number of image columns is not defined.')
     elif 'bands' not in metadata:
-        raise Exception('Number of image bands is not defined.')
+        raise EnviException('Number of image bands is not defined.')
     elif 'samples' not in metadata:
-        raise Exception('Number of image columns is not defined.')
+        raise EnviException('Number of image columns is not defined.')
     elif 'data type' not in metadata:
-        raise Exception('Image data type is not defined.')
+        raise EnviException('Image data type is not defined.')
 
     params = gen_params(metadata)
     dt = np.dtype(params.dtype).char

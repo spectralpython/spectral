@@ -105,13 +105,13 @@ def open(file):
 
     Raises:
 
-        IOError
+        spectral.io.spyfile.InvalidFileError
     '''
 
     import numpy as np
     import spectral
     from .bilfile import BilFile
-    from .spyfile import find_file_path
+    from .spyfile import find_file_path, InvalidFileError
 
 
     # ERDAS 7.5 headers do not specify byte order so we'll guess little endian.
@@ -141,10 +141,11 @@ def open(file):
     elif lh["packing"] == 0:
         p.dtype = np.dtype('i1').str
     elif lh["packing"] == 1:
-        raise Exception(
-            '4-bit data type not supported in SPy ERDAS/Lan format handler.')
+        msg = '4-bit data type not supported in SPy ERDAS/Lan format handler.'
+        raise InvalidFileError(msg)
     else:
-        raise Exception('Unexpected data type specified in ERDAS/Lan header.')
+        msg = 'Unexpected data type specified in ERDAS/Lan header.'
+        raise InvalidFileError(msg)
     if spectral.byte_order != 0:
         p.dtype = np.dtype(p.dtype).newbyteorder().str
 
@@ -168,6 +169,7 @@ def read_erdas_lan_header(fileName, byte_order=0):
     import sys
     import spectral
     from spectral.utilities.python23 import IS_PYTHON3, typecode
+    from .spyfile import InvalidFileError
     
     if IS_PYTHON3:
         import builtins
@@ -183,7 +185,7 @@ def read_erdas_lan_header(fileName, byte_order=0):
 
     h["type"] = f.read(6)
     if h["type"] not in (b'HEAD74', b'HEADER'):
-        raise IOError('Does not look like an ERDAS Lan header.')
+        raise InvalidFileError('Does not look like an ERDAS Lan header.')
 
     # Read all header data into arrays
     word = array(typecode('h'))

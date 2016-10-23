@@ -43,6 +43,10 @@ BSQ = 0
 BIL = 1
 BIP = 2
 
+class SpyException(Exception):
+    '''Base class for spectral module-specific exceptions.'''
+    pass
+
 from .spectral import (open_image, load_training_sets, save_training_sets,
                       settings, tile_image, spy_colors, BandInfo)
 from .io import *

@@ -284,6 +284,21 @@ class ENVIWriteTest(SpyTest):
         else:
             raise Exception('Failed to raise EnviMissingHeaderParameter')
 
+    def test_open_missing_data_raises_envidatafilenotfounderror(self):
+        '''EnviDataFileNotFound should be raise if data file is not found.'''
+        import os
+        import spectral as spy
+        img = spy.open_image('92AV3C.lan')
+        fname = os.path.join(testdir, 'header_without_data.hdr')
+        spy.envi.save_image(fname, img, ext='.img')
+        os.unlink(os.path.splitext(fname)[0] + '.img')
+        try:
+            img2 = spy.envi.open(fname)
+        except spy.envi.EnviDataFileNotFoundError:
+            pass
+        else:
+            raise Exception('Expected EnviDataFileNotFoundError')
+
 def run():
     print('\n' + '-' * 72)
     print('Running ENVI tests.')

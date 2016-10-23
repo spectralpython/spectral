@@ -112,9 +112,14 @@ from __future__ import division, print_function, unicode_literals
 
 import numpy
 import numpy as np
+from spectral import SpyException
 from spectral.spectral import Image
 
-class FileNotFoundError(Exception):
+class FileNotFoundError(SpyException):
+    pass
+
+class InvalidFileError(SpyException):
+    '''Raised when file contents are invalid for the exepected file type.'''
     pass
 
 def find_file_path(filename):
