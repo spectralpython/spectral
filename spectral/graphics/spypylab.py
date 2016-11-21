@@ -1126,7 +1126,7 @@ class ImageView(object):
         else:
             interp = self.interpolation
         s += '  {0:<20}:  {1}\n'.format("Interpolation", interp)
-        if meta.has_key('rgb range'):
+        if 'rgb range' in meta:
             s += '  {0:<20}:\n'.format("RGB data limits")
             for (c, r) in zip('RGB', meta['rgb range']):
                 s += '    {0}: {1}\n'.format(c, str(r))
