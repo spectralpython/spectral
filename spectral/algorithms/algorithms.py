@@ -1626,13 +1626,13 @@ def mnf(signal, noise):
         >>> # De-noise the data by eliminating NAPC components where SNR < 10.
         >>> # The de-noised data will be in the original coordinate space (at
         >>> # full dimensionality).
-        >>> denoised = mnfr.denoise(snr=10)
+        >>> denoised = mnfr.denoise(data, snr=10)
 
         >>> # Reduce dimensionality, retaining NAPC components where SNR >= 10.
-        >>> reduced = mnfr.reduce(snr=10)
+        >>> reduced = mnfr.reduce(data, snr=10)
 
         >>> # Reduce dimensionality, retaining top 50 NAPC components.
-        >>> reduced = mnfr.reduce(num=50)
+        >>> reduced = mnfr.reduce(data, num=50)
 
     References:
 
