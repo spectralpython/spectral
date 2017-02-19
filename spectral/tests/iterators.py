@@ -78,6 +78,28 @@ class IteratorTest(SpyTest):
         itsum = np.sum(np.array([x for x in iterator(data, self.gt, cls)]), 0)
         assert_allclose(sum, itsum)
 
+    def test_iterator_ij_nonzero(self):
+        '''Iteration over all non-background pixels.'''
+        from spectral.algorithms.algorithms import iterator_ij
+        data = self.image.load()
+        classes = self.gt.ravel()
+        pixels = data.reshape((-1, data.shape[-1]))
+        sum = np.sum(pixels[classes > 0], 0)
+        itsum = np.sum(np.array([data[ij] for ij in iterator_ij(data,
+                                                                self.gt)]), 0)
+        assert_allclose(sum, itsum)
+
+    def test_iterator_ij_index(self):
+        '''Iteration over single ground truth index'''
+        from spectral.algorithms.algorithms import iterator_ij
+        cls = 5
+        data = self.image.load()
+        classes = self.gt.ravel()
+        pixels = data.reshape((-1, data.shape[-1]))
+        sum = np.sum(pixels[classes == cls], 0)
+        itsum = np.sum(np.array([data[ij] for ij in iterator_ij(data, self.gt, cls)]), 0)
+        assert_allclose(sum, itsum)
+
     def test_iterator_spyfile(self):
         '''Iteration over SpyFile object for single ground truth index'''
         from spectral.algorithms.algorithms import iterator
