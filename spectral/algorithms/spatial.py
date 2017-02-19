@@ -81,7 +81,7 @@ def get_window_bounds(nrows, ncols, height, width, i, j):
     from the center of the widow.
 
     For an alternate function that clips window pixels near the border of the
-    image, see `get_clipped_window_bounds`.
+    image, see `get_window_bounds_clipped`.
     '''
     if height > nrows or width > ncols:
         raise ValueError('Window size is too large for image dimensions.')
@@ -167,7 +167,7 @@ def get_window_bounds_clipped(nrows, ncols, height, width, i, j):
     return (rmin, rmax, cmin, cmax)
 
 def map_window(func, image, window, rslice=(None,), cslice=(None,),
-               border='shift', dtype=None ):
+               border='shift', dtype=None):
     '''Applies a function over a rolling spatial window.
     
     Arguments:
@@ -265,25 +265,14 @@ def map_window(func, image, window, rslice=(None,), cslice=(None,),
     rvals = list(range(*slice(*rslice).indices(nrows)))
     cvals = list(range(*slice(*cslice).indices(ncols)))
 
-    nrows_out = len(rvals)
-    ncols_out = len(cvals)
+    def get_val(i, j):
+        (r0, r1, c0, c1) = get_window(nrows, ncols, height, width, i, j)
+        return func(image[r0:r1, c0:c1],
+                    (i - r0, j - c0)).astype(dtype)
 
-    # Call the function once to get output shape and dtype
-    (r0, r1, c0, c1) = get_window(nrows, ncols, height, width,
-                                  rvals[0], cvals[0])
-    y = func(image[r0:r1, c0:c1], (rvals[0] - r0, cvals[0] - c0))
-    if dtype is None:
-        dtype = np.array(y).dtype
-    out = np.empty((nrows_out, ncols_out) + np.shape(y), dtype=dtype)
+    return np.array([[get_val(r, c) for c in cvals]
+                     for r in rvals]).astype(dtype)
 
-    for i in range(nrows_out):
-        for j in range(ncols_out):
-            (r0, r1, c0, c1) = get_window(nrows, ncols, height, width,
-                                          rvals[i], cvals[j])
-            out[i, j] = func(image[r0:r1, c0:c1],
-                             (rvals[i] - r0, cvals[j] - c0))
-    return out
-            
 def map_outer_window_stats(func, image, inner, outer, dim_out=1, cov=None,
                            dtype=None, rslice=(None,), cslice=(None,)):
     '''Maps a function accepting `GaussianStats` over a rolling spatial window.
