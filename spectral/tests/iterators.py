@@ -64,42 +64,42 @@ class IteratorTest(SpyTest):
         classes = self.gt.ravel()
         pixels = data.reshape((-1, data.shape[-1]))
         sum = np.sum(pixels[classes > 0], 0)
-        itsum = np.sum(np.array([x for x in iterator(data, classes)]), 0)
+        itsum = np.sum(np.array([x for x in iterator(data, self.gt)]), 0)
         assert_allclose(sum, itsum)
 
     def test_iterator_index(self):
         '''Iteration over single ground truth index'''
         from spectral.algorithms.algorithms import iterator
-        i = 5
+        cls = 5
         data = self.image.load()
         classes = self.gt.ravel()
         pixels = data.reshape((-1, data.shape[-1]))
-        sum = np.sum(pixels[classes == 5], 0)
-        itsum = np.sum(np.array([x for x in iterator(data, classes, 5)]), 0)
+        sum = np.sum(pixels[classes == cls], 0)
+        itsum = np.sum(np.array([x for x in iterator(data, self.gt, cls)]), 0)
         assert_allclose(sum, itsum)
 
     def test_iterator_spyfile(self):
         '''Iteration over SpyFile object for single ground truth index'''
         from spectral.algorithms.algorithms import iterator
-        i = 5
+        cls = 5
         data = self.image.load()
         classes = self.gt.ravel()
         pixels = data.reshape((-1, data.shape[-1]))
-        sum = np.sum(pixels[classes == 5], 0)
-        itsum = np.sum(np.array([x for x in iterator(self.image, classes, 5)]),
+        sum = np.sum(pixels[classes == cls], 0)
+        itsum = np.sum(np.array([x for x in iterator(self.image, self.gt, cls)]),
                                 0)
         assert_allclose(sum, itsum)
 
     def test_iterator_spyfile_nomemmap(self):
         '''Iteration over SpyFile object without memmap'''
         from spectral.algorithms.algorithms import iterator
-        i = 5
+        cls = 5
         data = self.image.load()
         classes = self.gt.ravel()
         pixels = data.reshape((-1, data.shape[-1]))
-        sum = np.sum(pixels[classes == 5], 0)
+        sum = np.sum(pixels[classes == cls], 0)
         image = spy.open_image('92AV3C.lan')
-        itsum = np.sum(np.array([x for x in iterator(image, classes, 5)]), 0)
+        itsum = np.sum(np.array([x for x in iterator(image, self.gt, cls)]), 0)
         assert_allclose(sum, itsum)
 
 

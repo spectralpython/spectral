@@ -87,39 +87,29 @@ class ImageMaskIterator(Iterator):
     '''
     An iterator over all pixels in an image corresponding to a specified mask.
     '''
-    def __init__(self, im, mask, index=None):
-        self.image = im
+    def __init__(self, image, mask, index=None):
+        if mask.shape != image.shape[:len(mask.shape)]:
+            raise ValueError('Mask shape does not match image.')
+        self.image = image
         self.index = index
         # Get the proper mask for the training set
         if index:
             self.mask = np.equal(mask, index)
         else:
             self.mask = np.not_equal(mask, 0)
-        self.numElements = sum(self.mask.ravel())
+        self.n_elements = sum(self.mask.ravel())
 
     def get_num_elements(self):
-        return self.numElements
+        return self.n_elements
 
     def get_num_bands(self):
         return self.image.shape[2]
 
     def __iter__(self):
-        from numpy import transpose, indices, reshape, compress, not_equal
-        (nrows, ncols, nbands) = self.image.shape
-
-        # Translate the mask into indices into the data source
-        inds = transpose(indices((nrows, ncols)), (1, 2, 0))
-        inds = reshape(inds, (nrows * ncols, 2))
-        inds = compress(not_equal(self.mask.ravel(), 0), inds, 0).astype('h')
-
-        for i in range(inds.shape[0]):
-            sample = self.image[inds[i][0], inds[i][1]].astype(
-                self.image.dtype)
-            if len(sample.shape) == 3:
-                sample.shape = (sample.shape[2],)
-            (self.row, self.col) = inds[i][:2]
-            yield sample
-
+        coords = np.argwhere(self.mask)
+        for (i, j) in coords:
+            (self.row, self.col) = (i, j)
+            yield self.image[i, j].astype(self.image.dtype).squeeze()
 
 def iterator(image, mask=None, index=None):
     '''
