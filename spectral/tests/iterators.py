@@ -85,8 +85,7 @@ class IteratorTest(SpyTest):
         classes = self.gt.ravel()
         pixels = data.reshape((-1, data.shape[-1]))
         sum = np.sum(pixels[classes > 0], 0)
-        itsum = np.sum(np.array([data[ij] for ij in iterator_ij(data,
-                                                                self.gt)]), 0)
+        itsum = np.sum(np.array([data[ij] for ij in iterator_ij(self.gt)]), 0)
         assert_allclose(sum, itsum)
 
     def test_iterator_ij_index(self):
@@ -97,7 +96,9 @@ class IteratorTest(SpyTest):
         classes = self.gt.ravel()
         pixels = data.reshape((-1, data.shape[-1]))
         sum = np.sum(pixels[classes == cls], 0)
-        itsum = np.sum(np.array([data[ij] for ij in iterator_ij(data, self.gt, cls)]), 0)
+        itsum = np.sum(np.array([data[ij] for ij in iterator_ij(self.gt,
+                                                                cls)]),
+                       0)
         assert_allclose(sum, itsum)
 
     def test_iterator_spyfile(self):

@@ -149,20 +149,16 @@ def iterator(image, mask=None, index=None):
         return ImageIterator(image)
 
 
-def iterator_ij(image, mask=None, index=None):
+def iterator_ij(mask, index=None):
     '''
     Returns an iterator over image pixel coordinates for a given mask.
 
     Arguments:
 
-        `image` (ndarray or :class:`spectral.Image`):
-
-            An image over whose pixels will be iterated.
-
         `mask` (ndarray) [default None]:
 
-            An array of integers that specify over which pixels in `image`
-            iteration should be performed.
+            An array of integers that specify which coordinates should
+            be returned.
 
         `index` (int) [default None]:
 
@@ -173,29 +169,19 @@ def iterator_ij(image, mask=None, index=None):
         An iterator over image pixel coordinates. Each returned item is a
         2-tuple of the form (row, col).
 
-    If neither `mask` nor `index` are defined, iteration is performed over all
-    pixels.  If `mask` (but not `index`) is defined, iteration is performed
-    over all pixels for which `mask` is nonzero.  If both `mask` and `index`
-    are defined, iteration is performed over all pixels `image[i,j]` for which
-    `mask[i,j] == index`.
+    If `index` is not defined, iteration is performed over all non-zero
+    elements.  If `index` is defined, iteration is performed over all
+    coordinates for whch `mask[i,j] == index`.
     '''
 
-    if mask is None and index is None:
-        # Iterate over all pixels
-        (nrows, ncols) = image.shape[:2]
-        for r in range(nrows):
-            for c in range(ncols):
-                yield (r, c)
+    if mask.ndim != 2:
+        raise ValueError('Invalid mask shape.')
+    if index is None:
+        mask = mask != 0
     else:
-        if mask.shape != image.shape[:len(mask.shape)]:
-            raise ValueError('Mask shape does not match image.')
-
-        if index is None:
-            mask = mask != 0
-        else:
-            mask = mask == index
-        for rc in np.argwhere(mask):
-            yield tuple(rc)
+        mask = mask == index
+    for rc in np.argwhere(mask):
+        yield tuple(rc)
 
 
 def mean_cov(image, mask=None, index=None):
