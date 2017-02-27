@@ -783,3 +783,33 @@ def map_classes(class_image, class_id_map, allow_unmapped=False):
         mapped[class_image == i] = j
     return mapped
 
+def expand_binary_mask_for_window(mask, height, width):
+    '''Returns a new mask including window around each pixel in source mask.
+
+    Arguments:
+
+        `mask` (2D ndarray):
+
+            An ndarray whose non-zero elements define a mask.
+
+        `height` (int):
+
+            Height of the window.
+
+        `width` (int):
+
+            Width of the window
+
+    Returns a new mask of ones and zeros with same shape as `mask`. For each
+    non-zero element in mask, the returned mask will contain a value of one
+    for all pixels in the `height`x`width` window about the pixel and zeros
+    elsewhere.
+    '''
+    from spectral.algorithms.algorithms import iterator_ij
+    m = np.zeros_like(mask)
+    (mask_height, mask_width) = mask.shape
+    for (i, j) in iterator_ij(mask):
+        (r0, r1, c0, c1) = get_window_bounds_clipped(mask_height, mask_width,
+                                                     height, width, i, j)
+        m[r0:r1, c0:c1] = 1
+    return m
