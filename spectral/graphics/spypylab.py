@@ -1280,24 +1280,22 @@ def plot(data, source=None):
 
     set_mpl_interactive()
 
-    s = np.shape(data)
-
     if source is not None and hasattr(source, 'bands'):
         xvals = source.bands.centers
     else:
-        xvals = None
+        xvals = list(range(data.shape[-1]))
 
-    if len(s) == 1:
-        if not xvals:
-            xvals = list(range(len(data)))
-        p = plt.plot(xvals, data)
-    elif len(s) == 2:
-        if not xvals:
-            xvals = list(range(s[1]))
-        p = plt.plot(xvals, data[0, :])
+    if data.ndim == 1:
+        data = data[np.newaxis, :]
+    data = data.reshape(-1, data.shape[-1])
+    if source is not None and hasattr(source, 'metadata') and \
+       'bbl' in source.metadata:
+        # Do not plot bad bands
+        data = np.array(data)
+        data[:, np.array(source.metadata['bbl']) == 0] = None
+    for x in data:
+        p = plt.plot(xvals, x)
         plt.hold(1)
-        for i in range(1, s[0]):
-            p = plt.plot(xvals, data[i, :])
     spectral._xyplot = p
     plt.grid(1)
     if source is not None and hasattr(source, 'bands'):

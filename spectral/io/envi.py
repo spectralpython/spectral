@@ -366,6 +366,11 @@ def open(file, image=None):
             pass
     img.bands.band_unit = h.get('wavelength units', None)
 
+    if 'bbl' in h:
+        try:
+            h['bbl'] = [int(b) for b in h['bbl']]
+        except:
+            print('Unable to parse bad band list (bbl) in header as integers.')
     return img
 
 
@@ -599,6 +604,7 @@ def _prepared_data_and_metadata(hdr_file, image, **kwargs):
         if len(data.shape) == 2:
             data = data[:, :, np.newaxis]
         swap = False
+        metadata = {}    
     elif isinstance(image, SpyFile):
         if image.using_memmap is True:
             data = image._memmap
@@ -609,12 +615,17 @@ def _prepared_data_and_metadata(hdr_file, image, **kwargs):
             data = image.load(dtype=image.dtype, scale=False)
             src_interleave = 'bip'
             swap = False
+        metadata = image.metadata.copy()
     else:
-        data = image.load()
+        data = image.load(scale=False)
         src_interleave = 'bip'
         swap = False
+        if hasattr(image, 'metadata'):
+            metadata = image.metadata.copy()
+        else:
+            metadata = {}
 
-    metadata = kwargs.get('metadata', {}).copy()
+    metadata.update(kwargs.get('metadata', {}))
     add_image_info_to_metadata(image, metadata)
     if hasattr(image, 'bands'):
         add_band_info_to_metadata(image.bands, metadata)
