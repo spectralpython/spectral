@@ -132,6 +132,8 @@ def read_envi_header(file):
     dictionary as strings.  Header field names are treated as case
     insensitive and all keys in the dictionary are lowercase.
     '''
+    import warnings
+    from spectral import settings
     f = builtins.open(file, 'r')
 
     try:
@@ -152,6 +154,8 @@ def read_envi_header(file):
     f.close()
 
     dict = {}
+    have_nonlowercase_param = False
+    support_nonlowercase_params = settings.envi_support_nonlowercase_params
     try:
         while lines:
             line = lines.pop(0)
@@ -159,7 +163,11 @@ def read_envi_header(file):
             if line[0] == ';': continue
 
             (key, sep, val) = line.partition('=')
-            key = key.strip().lower()
+            key = key.strip()
+            if not key.islower():
+                have_nonlowercase_param = True
+                if not support_nonlowercase_params:
+                    key = key.lower()
             val = val.strip()
             if val and val[0] == '{':
                 str = val.strip()
@@ -178,6 +186,14 @@ def read_envi_header(file):
             else:
                 dict[key] = val
 
+        if have_nonlowercase_param and not support_nonlowercase_params:
+            msg = 'Parameters with non-lowercase names encountered ' \
+                  'and converted to lowercase. To retain source file ' \
+                  'parameter name capitalization, set ' \
+                  'spectral.setttings.envi_support_nonlowercase_params to ' \
+                  'True.'
+            warnings.warn(msg)
+            print('Header parameter names converted to lower case.')
         return dict
     except:
         raise EnviHeaderParsingError()

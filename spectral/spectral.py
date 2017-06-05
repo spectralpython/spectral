@@ -53,6 +53,12 @@ class SpySettings:
             If calls to `view_cube` or `view_nd` result in windows with blank
             canvases, try reducing this value.
 
+        `envi_support_nonlowercase_params` (bool, default False)
+
+            By default, ENVI headers are read with parameter names converted
+            to lower case. If this attribute is set to True, parameters will
+            be read with original capitalization retained.
+
         `show_progress` (bool, default True):
     
             Indicates whether long-running algorithms should display progress
@@ -122,6 +128,8 @@ class SpySettings:
     # Parameter used by GLCanvas objects in view_cube and view_nd. If the
     # canvas does not render, try reducing this value (e.g., 16).
     WX_GL_DEPTH_SIZE = 24
+
+    envi_support_nonlowercase_params = False
 
     # Should algorithms show completion progress of algorithms?
     show_progress = True

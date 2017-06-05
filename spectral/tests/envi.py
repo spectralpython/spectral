@@ -43,6 +43,18 @@ from numpy.testing import assert_almost_equal
 from .spytest import SpyTest
 from spectral.tests import testdir
 
+MIXED_CASE_HEADER = '''ENVI
+samples = 145
+lines = 145
+bands = 220
+header offset = 0
+file type = ENVI Standard
+data type = 4
+interleave = bip
+byte order = 0
+some Param = 0
+'''
+
 class ENVIWriteTest(SpyTest):
     '''Tests that SpyFile memmap interfaces read and write properly.'''
     def __init__(self):
@@ -264,6 +276,28 @@ class ENVIWriteTest(SpyTest):
             pass
         else:
             raise Exception('Failed to raise EnviMissingHeaderParameter')
+
+    def test_param_name_converted_to_lower_case(self):
+        '''By default, parameter names are converted to lower case.'''
+        import spectral as spy
+        header = 'mixed_case_header.hdr'
+        open(header, 'w').write(MIXED_CASE_HEADER)
+        h = spy.envi.read_envi_header(header)
+        assert('some param' in h)
+
+    def test_support_nonlowercase_params(self):
+        '''By default, parameter names are converted to lower case.'''
+        import spectral as spy
+        from spectral import settings
+        header = 'mixed_case_header.hdr'
+        open(header, 'w').write(MIXED_CASE_HEADER)
+        orig = settings.envi_support_nonlowercase_params
+        try:
+            settings.envi_support_nonlowercase_params = True
+            h = spy.envi.read_envi_header(header)
+        finally:
+            settings.envi_support_nonlowercase_params = orig
+        assert('some Param' in h)
 
     def test_missing_ENVI_in_header_fails(self):
         '''FileNotAnEnviHeader should be raised if "ENVI" not on first line.'''
