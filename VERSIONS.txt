@@ -1,4 +1,45 @@
 ================================================================================
+SPy 0.19
+================================================================================
+Release date: 2017.06.04
+
+New Features
+------------
+
+* Rendering functions accept an "ignore" keyword to indicate a bad data value
+  that will be ignored when calculating color histogram stretches.
+
+* Added `iterator_ij` to iterate over all pixel coordinates for a given
+  image mask.
+
+* Added `expand_binary_mask_for_window` to expand an image mask to include
+  all pixels within a fixed size window around each masked pixel.
+
+* Added support for bad band lists (bbl) in ENVI headers and suppress display
+  of bad bands in spectral plots
+
+* Added optional support for non-lowercase ENVI header parameter names.
+
+Changes
+-------
+
+* `principal_components` also accepts a `GaussianStats` object, which can
+  avoid the need to recompute image/class statistics.
+
+* Added a `SpyException` base class for package-specific exceptions.
+
+Bug Fixes
+---------
+
+* Fixed a bug that potentially produced incorrect results in `map_class_ids`
+  (issue #53).
+
+* Removed unecessary import that cause python3 compatibility error in
+  `aviris.open` (issue #54).
+
+* Removed `has_key` call breaking python3 compatibility (issue #56).
+
+================================================================================
 SPy 0.18
 ================================================================================
 Release date: 2016.06.18
