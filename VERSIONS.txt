@@ -28,6 +28,8 @@ Changes
 
 * Added a `SpyException` base class for package-specific exceptions.
 
+* Added "raw" to the list of checked ENVI image data file extensions.
+
 Bug Fixes
 ---------
 
