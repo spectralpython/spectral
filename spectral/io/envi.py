@@ -387,6 +387,12 @@ def open(file, image=None):
             h['bbl'] = [int(b) for b in h['bbl']]
         except:
             print('Unable to parse bad band list (bbl) in header as integers.')
+        try:
+            print('Attempting to parse bad band list (bbl) in header as floats.')
+            h['bbl'] = [float(b) for b in h['bbl']]
+            print('Successfully parsed bad band list (bbl) in header as floats.')
+        except:
+            print('Unable to parse bad band list (bbl) in header as floats.')
     return img
 
 
