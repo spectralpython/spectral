@@ -32,54 +32,25 @@
 Functions for resampling a spectrum from one band discretization to another.
 '''
 
-# The following function is taken from:
-#     http://www.cs.princeton.edu/introcs/21function/ErrorFunction.java.html
-# Implements the Gauss error function.
-#   erf(z) = 2 / sqrt(pi) * integral(exp(-t*t), t = 0..z)
-#
-# fractional error in math formula less than 1.2 * 10 ^ -7.
-# although subject to catastrophic cancellation when z in very close to 0
-# from Chebyshev fitting formula for erf(z) from Numerical Recipes, 6.2
-
-
 from __future__ import division, print_function, unicode_literals
 
-def erf(z):
-    '''The error function (used to calculate the gaussian integral).'''
-    import math
-    t = 1.0 / (1.0 + 0.5 * abs(z))
-    # use Horner's method
-    ans = 1 - t * math.exp(-z*z - 1.26551223 +
-                           t * (1.00002368 +
-                                t * (0.37409196 +
-                                     t * (0.09678418 +
-                                          t * (-0.18628806 +
-                                               t * (0.27886807 +
-                                                    t * (-1.13520398 +
-                                                         t * (1.48851587 +
-                                                              t * (-0.82215223 +
-                                                                   t * (0.17087277))))))))))
-    if z >= 0.0:
-        return ans
-    else:
-        return -ans
-
+try:
+    from math import erf
+except:
+    from scipy.special import erf
 
 def erfc(z):
     '''Complement of the error function.'''
     return 1.0 - erf(z)
-
 
 def normal_cdf(x):
     '''CDF of the normal distribution.'''
     sqrt2 = 1.4142135623730951
     return 0.5 * erfc(-x / sqrt2)
 
-
 def normal_integral(a, b):
     '''Integral of the normal distribution from a to b.'''
     return normal_cdf(b) - normal_cdf(a)
-
 
 def ranges_overlap(R1, R2):
     '''Returns True if there is overlap between ranges of pairs R1 and R2.'''
@@ -88,17 +59,14 @@ def ranges_overlap(R1, R2):
         return False
     return True
 
-
 def overlap(R1, R2):
     '''Returns (min, max) of overlap between the ranges of pairs R1 and R2.'''
     return (max(R1[0], R2[0]), min(R1[1], R2[1]))
-
 
 def normal(mean, stdev, x):
     from math import exp, pi
     sqrt_2pi = 2.5066282746310002
     return exp(-((x - mean) / stdev)**2 / 2.0) / (sqrt_2pi * stdev)
-
 
 def build_fwhm(centers):
     '''Returns FWHM list, assuming FWHM is midway between adjacent bands.
@@ -109,7 +77,6 @@ def build_fwhm(centers):
     for i in range(1, len(centers) - 1):
         fwhm[i] = (centers[i + 1] - centers[i - 1]) / 2.0
     return fwhm
-
 
 def create_resampling_matrix(centers1, fwhm1, centers2, fwhm2):
     '''
@@ -181,7 +148,6 @@ def create_resampling_matrix(centers1, fwhm1, centers2, fwhm2):
         for k in range(len(matches)):
             M[i, matches[k]] = contribs[k]
     return M
-
 
 class BandResampler:
     '''A callable object for resampling spectra between band discretizations.
