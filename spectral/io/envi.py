@@ -633,7 +633,7 @@ def _prepared_data_and_metadata(hdr_file, image, **kwargs):
             swap = False
         metadata = image.metadata.copy()
     else:
-        data = image.load(scale=False)
+        data = image.load()
         src_interleave = 'bip'
         swap = False
         if hasattr(image, 'metadata'):
