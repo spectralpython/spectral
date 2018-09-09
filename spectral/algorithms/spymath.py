@@ -80,7 +80,7 @@ def matrix_sqrt(X=None, symmetric=False, inverse=False, eigs=None):
         return V.dot(SRV).dot(np.linalg.inv(V))
 
 
-def get_histogram_cdf_points(data, cdf_vals, ignore=None):
+def get_histogram_cdf_points(data, cdf_vals, ignore=None, mask=None):
     '''Returns input values corresponding to the data's CDF values.
 
     Arguments:
@@ -108,11 +108,13 @@ def get_histogram_cdf_points(data, cdf_vals, ignore=None):
         associated CDF values in `cdf_vals`.
     '''
     data = data.ravel()
+    if mask is not None:
+        data = data[mask.ravel() != 0]
     if ignore is not None and ignore in data:
         data = data[np.where(data != ignore)]
     isort = np.argsort(data)
     N = len(data)
-    return[data[isort[int(x * (N - 1))]] for x in cdf_vals]
+    return [data[isort[int(x * (N - 1))]] for x in cdf_vals]
 
 
 class NaNValueWarning(UserWarning):

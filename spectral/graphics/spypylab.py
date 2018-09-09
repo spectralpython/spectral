@@ -1280,7 +1280,8 @@ def plot(data, source=None):
 
     set_mpl_interactive()
 
-    if source is not None and hasattr(source, 'bands'):
+    if source is not None and hasattr(source, 'bands') and \
+       source.bands.centers is not None:
         xvals = source.bands.centers
     else:
         xvals = list(range(data.shape[-1]))

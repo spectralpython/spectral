@@ -70,6 +70,10 @@ class SpySettings:
             Width and height (in inches) of windows opened with `imshow`. If
             this value is `None`, matplotlib's default size is used.
     
+        `imshow_background_color` (3-tuple of integers, default (0,0,0)):
+
+            Default color to use for masked pixels in `imshow` displays.
+
         `imshow_interpolation` (str, default `None`):
 
             Pixel interpolation to be used in imshow windows. If this value
@@ -136,6 +140,7 @@ class SpySettings:
 
     # imshow settings
     imshow_figure_size = None
+    imshow_background_color = (0, 0, 0)
     imshow_interpolation = None
     imshow_stretch = (0.0, 1.0)
     imshow_stretch_all = True

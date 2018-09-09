@@ -556,6 +556,12 @@ def get_rgb(source, bands=None, **kwargs):
     '''
     return get_rgb_meta(source, bands, **kwargs)[0]
 
+def _fill_mask(arr, mask, fill_value):
+    if mask is None:
+        return arr
+    arr[mask == 0] = np.array(fill_value) / 255.
+    return arr
+
 def get_rgb_meta(source, bands=None, **kwargs):
     '''Same as get_rgb but also returns some metadata.
 
@@ -579,6 +585,8 @@ def get_rgb_meta(source, bands=None, **kwargs):
 
     meta = {}
     monochrome = False
+    mask = kwargs.get('mask', None)
+    bg = kwargs.get('bg', settings.imshow_background_color)
 
     if isinstance(source, Image) and len(source.shape) == 3:
         # Figure out which bands to display
@@ -637,7 +645,7 @@ def get_rgb_meta(source, bands=None, **kwargs):
             rgb = rgb.astype(int)
             pal = kwargs["colors"]
             rgb = pal[rgb[:,:,0]] / 255.
-            return (rgb, meta)
+            return (_fill_mask(rgb, mask, bg), meta)
         elif color_scale is not None:
             # Colors should be generated from the supplied color scale
             # This section assumes rgb colors in the range 0-255.
@@ -648,7 +656,7 @@ def get_rgb_meta(source, bands=None, **kwargs):
             rgb3 = np.zeros((s[0], s[1], 3), int)
             rgb3 = np.apply_along_axis(scale, 2, rgb)
             rgb = rgb3.astype(np.float) / 255.
-            return (rgb, meta)
+            return (_fill_mask(rgb, mask, bg), meta)
         else:
             # Only one band of data to display but still need to determine how
             # to scale the data values
@@ -732,11 +740,11 @@ def get_rgb_meta(source, bands=None, **kwargs):
             rgb[:, :, i] = 0
         else:
             rgb[:, :, i] = np.clip((rgb[:, :, i] - lower) / span, 0, 1)
-    return (rgb, meta)
+    return (_fill_mask(rgb, mask, bg), meta)
 
 # For checking if valid keywords were supplied
 _get_rgb_kwargs = ('stretch', 'stretch_all', 'bounds', 'colors', 'color_scale',
-                   'auto_scale', 'ignore')
+                   'auto_scale', 'ignore', 'mask', 'bg')
 
 def running_ipython():
     '''Returns True if ipython is running.'''
