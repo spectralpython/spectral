@@ -110,8 +110,12 @@ def get_histogram_cdf_points(data, cdf_vals, ignore=None, mask=None):
     data = data.ravel()
     if mask is not None:
         data = data[mask.ravel() != 0]
+        if len(data) == 0:
+            raise Exception('All pixels are masked.')
     if ignore is not None and ignore in data:
         data = data[np.where(data != ignore)]
+        if len(data) == 0:
+            raise Exception('No data to display after masking and ignoring.')
     isort = np.argsort(data)
     N = len(data)
     return [data[isort[int(x * (N - 1))]] for x in cdf_vals]
