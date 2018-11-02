@@ -55,7 +55,7 @@ class DimensionalityTest(SpyTest):
         noise = spy.noise_from_diffs(data[117: 137, 85: 122, :])
         mnfr = spy.mnf(signal, noise)
         denoised = mnfr.denoise(data, num=data.shape[-1])
-        assert_allclose(denoised, data)
+        assert(np.allclose(denoised, data))
 
     def test_ppi(self):
         '''Tests that ppi function runs'''
@@ -75,7 +75,7 @@ class DimensionalityTest(SpyTest):
         np.random.set_state(s)
         p2 = spy.ppi(data, 2)
         p2 = spy.ppi(data, 2, start=p2)
-        np.all(p == p2)
+        assert(np.all(p == p2))
 
     def test_ppi_centered(self):
         '''Tests that ppi with mean-subtracted data works as expected.'''
@@ -86,7 +86,7 @@ class DimensionalityTest(SpyTest):
         np.random.set_state(s)
         data_centered = data - spy.calc_stats(data).mean
         p2 = spy.ppi(data_centered, 4)
-        np.all(p == p2)
+        assert(np.all(p == p2))
 
     def test_pca_runs(self):
         '''Should be able to compute PCs and transform data.'''
