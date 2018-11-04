@@ -523,6 +523,7 @@ class AsterDatabase:
         from spectral.algorithms.resampling import BandResampler
         from spectral.io.envi import SpectralLibrary
         import numpy
+        import unicodedata
         spectra = numpy.empty((len(spectrumIDs), len(bandInfo.centers)))
         names = []
         for i in range(len(spectrumIDs)):
@@ -530,7 +531,8 @@ class AsterDatabase:
             resample = BandResampler(
                 sig.x, bandInfo.centers, None, bandInfo.bandwidths)
             spectra[i] = resample(sig.y)
-            names.append(sig.sample_name)
+            names.append(unicodedata.normalize('NFKD', sig.sample_name).
+                         encode('ascii', 'ignore'))
         header = {}
         header['wavelength units'] = 'um'
         header['spectra names'] = names
