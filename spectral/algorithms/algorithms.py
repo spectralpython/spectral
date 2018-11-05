@@ -1333,23 +1333,13 @@ def spectral_angles(data, members):
     assert members.shape[1] == data.shape[2], \
         'Matrix dimensions are not aligned.'
 
-    (M, N, B) = data.shape
     m = np.array(members, np.float64)
-    C = m.shape[0]
+    m /= np.sqrt(np.einsum('ij,ij->i', m, m))[:, np.newaxis]
 
-    # Normalize endmembers
-    for i in range(C):
-        m[i] /= np.sqrt(m[i].dot(m[i]))
-
-    angles = np.zeros((M, N, C), np.float64)
-
-    for i in range(M):
-        for j in range(N):
-            v = data[i, j].astype(float)
-            v = v / np.sqrt(v.dot(v))
-            for k in range(C):
-                angles[i, j, k] = np.clip(v.dot(m[k]), -1, 1)
-    return np.arccos(angles)
+    norms = np.sqrt(np.einsum('ijk,ijk->ij', data, data))
+    dots = np.einsum('ijk,mk->ijm', data, m)
+    dots = np.clip(dots / norms[:, :, np.newaxis], -1, 1)
+    return np.arccos(dots)
 
 def msam(data, members):
     '''Modified SAM scores according to Oshigami, et al [1]. Endmembers are
