@@ -576,6 +576,15 @@ def principal_components(image):
         `reduce`:
 
             A method to reduce the number of eigenvalues.
+
+        `denoise`:
+
+            A callable function to denoise data using a reduced set of
+            principal components.
+
+        `get_denoising_transform`:
+
+            A callable function that returns a function for denoising data.
     '''
     from numpy import sqrt, sum
 
