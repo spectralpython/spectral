@@ -389,6 +389,15 @@ class PrincipalComponents:
             A method to return a reduced set of principal components based
             on either a fixed number of components or a fraction of total
             variance.
+
+        `denoise`:
+
+            A callable function to denoise data using a reduced set of
+            principal components.
+
+        `get_denoising_transform`:
+
+            A callable function that returns a function for denoising data.
     '''
     def __init__(self, vals, vecs, stats):
         from .transforms import LinearTransform
@@ -461,6 +470,73 @@ class PrincipalComponents:
         else:
             raise Exception('Must specify one of the following keywords:'
                             '`num`, `eigs`, `fraction`.')
+
+    def denoise(self, X, **kwargs):
+        '''Returns a de-noised version of `X`.
+
+        Arguments:
+
+            `X` (np.ndarray):
+
+                Data to be de-noised. Can be a single pixel or an image.
+
+        Keyword Arguments (one of the following must be specified):
+
+            `num` (integer):
+
+                Number of eigenvalues/eigenvectors to use.  The top `num`
+                eigenvalues will be used.
+
+            `eigs` (list):
+
+                A list of indices of eigenvalues/eigenvectors to be used.
+
+            `fraction` (float):
+
+                The fraction of total image variance to retain.  Eigenvalues
+                will be included (starting from greatest to smallest) until
+                `fraction` of total image variance is retained.
+
+        Returns denoised image data with same shape as `X`.
+
+        Note that calling this method is equivalent to calling the
+        `get_denoising_transform` method with same keyword and applying the
+        returned transform to `X`. If you only intend to denoise data with the
+        same parameters multiple times, then it is more efficient to get the
+        denoising transform and reuse it, rather than calling this method
+        multilple times.
+        '''
+        f = self.get_denoising_transform(**kwargs)
+        return f(X)
+
+    def get_denoising_transform(self, **kwargs):
+        '''Returns a function for denoising image data.
+
+        Keyword Arguments (one of the following must be specified):
+
+            `num` (integer):
+
+                Number of eigenvalues/eigenvectors to use.  The top `num`
+                eigenvalues will be used.
+
+            `eigs` (list):
+
+                A list of indices of eigenvalues/eigenvectors to be used.
+
+            `fraction` (float):
+
+                The fraction of total image variance to retain.  Eigenvalues
+                will be included (starting from greatest to smallest) until
+                `fraction` of total image variance is retained.
+
+        Returns a callable :class:`~spectral.algorithms.transforms.LinearTransform`
+        object for denoising image data.
+        '''
+        from .transforms import LinearTransform
+        V = self.reduce(self, **kwargs).eigenvectors
+        f = LinearTransform(V.dot(V.T), pre=-self.mean,
+                            post=self.mean)
+        return f
 
 
 def principal_components(image):
@@ -674,7 +750,7 @@ class GaussianStats(object):
         `principal_components`:
 
             The principal components of the data, based on mean and cov.
-    '''            
+    '''
 
     def __init__(self, mean=None, cov=None, nsamples=None, inv_cov=None):
         self.cov = cov
@@ -698,7 +774,7 @@ class GaussianStats(object):
         if self._inv_cov is None:
             self._inv_cov = np.linalg.inv(self._cov)
         return self._inv_cov
-    
+
     def reset_derived_stats(self):
         self._cov = self._inv_cov = None
         self._sqrt_cov = self._sqrt_inv_cov = self._pcs = None
@@ -717,7 +793,7 @@ class GaussianStats(object):
                                                pcs.eigenvectors),
                                          symmetric=True)
         return self._sqrt_cov
-        
+
     @property
     def sqrt_inv_cov(self):
         '''Property method returning matrix square root of inverse of cov.
@@ -732,7 +808,7 @@ class GaussianStats(object):
                                              symmetric=True,
                                              inverse=True)
         return self._sqrt_inv_cov
-        
+
     @property
     def principal_components(self):
         if self._pcs is None:
@@ -884,7 +960,7 @@ class TrainingClass:
         else:
             return np.sum(np.not_equal(self.mask, 0).ravel())
 
-        
+
     def calc_stats(self):
         '''
         Calculates statistics for the class.
@@ -1019,7 +1095,7 @@ class TrainingClassSet:
                     c.calc_stats()
         f = open(filename, 'wb')
         ids = sorted(self.classes.keys())
-        pickle.dump(self.classes[ids[0]].mask, f)        
+        pickle.dump(self.classes[ids[0]].mask, f)
         pickle.dump(len(self), f)
         for id in ids:
             c = self.classes[id]
@@ -1048,7 +1124,7 @@ class TrainingClassSet:
                 c.nbands = len(mean)
             self.add_class(c)
         f.close
-            
+
 
 def create_training_classes(image, class_mask, calc_stats=False, indices=None):
     '''
@@ -1376,9 +1452,9 @@ def msam(data, members):
     '''
     # The modifications to the `spectral_angles` function were contributed by
     # Christian Mielke.
-    
+
     import math
-    
+
     assert members.shape[1] == data.shape[2], \
         'Matrix dimensions are not aligned.'
 
@@ -1443,7 +1519,7 @@ def noise_from_diffs(X, direction='lowerright'):
         deltas = X[:, :-1, :] - X[:, 1:, :]
     else:
         deltas = X[:-1, :, :] - X[1:, :, :]
-        
+
     stats = calc_stats(deltas)
     stats.cov /= 2.0
     return stats
@@ -1668,7 +1744,7 @@ def mnf(signal, noise):
     wstats = GaussianStats(mean=np.zeros_like(L), cov=C)
     napc = PrincipalComponents(L, V, wstats)
     return MNFResult(signal, noise, napc)
- 
+
 def ppi(X, niters, threshold=0, centered=False, start=None, display=0,
         **imshow_kwargs):
     '''Returns pixel purity indices for an image.
@@ -1743,7 +1819,7 @@ def ppi(X, niters, threshold=0, centered=False, start=None, display=0,
     from numbers import Integral
     import spectral as spy
     from spectral.algorithms.algorithms import calc_stats
-    
+
 
     if display is not None:
         if not isinstance(display, Integral) or isinstance(display, bool) or \
@@ -1758,7 +1834,7 @@ def ppi(X, niters, threshold=0, centered=False, start=None, display=0,
     shape = X.shape
     X = X.reshape(-1, X.shape[-1])
     nbands = X.shape[-1]
-    
+
     fig = None
     updating = False
 
@@ -1814,7 +1890,7 @@ def ppi(X, niters, threshold=0, centered=False, start=None, display=0,
               'values may be corrupt. Returning None'
             spy._status.write(msg)
             return None
-        
+
     spy._status.end_percentage()
 
     return counts.reshape(shape[:2])
