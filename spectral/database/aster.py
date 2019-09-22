@@ -27,9 +27,10 @@
 # Send comments to:
 # Thomas Boggs, tboggs@users.sourceforge.net
 #
-
+'''Code for reading and managing ASTER spectral library data.'''
 
 from __future__ import division, print_function, unicode_literals
+
 from spectral.utilities.python23 import IS_PYTHON3
 
 if IS_PYTHON3:
@@ -72,7 +73,7 @@ class Signature:
         self.measurement = {}
 
 
-def read_file(filename):
+def read_aster_file(filename):
     '''Reads an ASTER 2.x spectrum file.'''
     fin = open_file(filename)
 
@@ -159,6 +160,7 @@ def read_file(filename):
 
 
 class AsterDatabase:
+    '''A relational database to manage ASTER spectral library data.'''
     schemas = table_schemas
 
     def _add_sample(self, name, sampleType, sampleClass, subClass,
@@ -229,12 +231,12 @@ class AsterDatabase:
         import os
         if os.path.isfile(filename):
             raise Exception('Error: Specified file already exists.')
-        db = AsterDatabase()
+        db = cls()
         db._connect(filename)
         for schema in cls.schemas:
             db.cursor.execute(schema)
         if aster_data_dir:
-            db._import_aster_files(aster_data_dir)
+            db._import_files(aster_data_dir)
         return db
 
     def __init__(self, sqlite_filename=None):
@@ -258,15 +260,21 @@ class AsterDatabase:
             self.db = None
             self.cursor = None
 
-    def _import_aster_files(self, aster_data_dir):
+    def read_file(self, filename):
+        return read_aster_file(filename)
+
+    def _import_files(self, data_dir, ignore=bad_files):
         '''Read each file in the ASTER library and convert to AVIRIS bands.'''
         from glob import glob
         import numpy
         import os
 
-        if not os.path.isdir(aster_data_dir):
+        if not os.path.isdir(data_dir):
             raise Exception('Error: Invalid directory name specified.')
-        filesToIgnore = [aster_data_dir + '/' + f for f in bad_files]
+        if ignore is not None:
+            filesToIgnore = [data_dir + '/' + f for f in ignore]
+        else:
+            filesToIgnore = []
 
         numFiles = 0
         numIgnored = 0
@@ -277,13 +285,13 @@ class AsterDatabase:
             pass
         sigs = []
 
-        for f in glob(aster_data_dir + '/*spectrum.txt'):
+        for f in glob(data_dir + '/*spectrum.txt'):
             if f in filesToIgnore:
                 numIgnored += 1
                 continue
-            print(('Importing %s.' % f))
+            print('Importing %s.' % f)
             numFiles += 1
-            sig = read_file(f)
+            sig = self.read_file(f)
             s = sig.sample
             if s['particle size'].lower == 'liquid':
                 phase = 'liquid'
@@ -315,8 +323,8 @@ class AsterDatabase:
                                 m['x units'], yUnit, m['first x value'],
                                 m['last x value'], sig.x, sig.y)
         if numFiles == 0:
-            print('No ASTER data files were found in directory "%s".' \
-                  % aster_data_dir)
+            print('No data files were found in directory "%s".' \
+                  % data_dir)
         else:
             print('Processed %d files.' % numFiles)
         if numIgnored > 0:

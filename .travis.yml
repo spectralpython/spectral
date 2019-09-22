@@ -1,15 +1,18 @@
 language: python
 sudo: false
-dist: trusty
-python:
-  - "2.6"
-  - "2.7"
-  - "3.3"
-  - "3.5"
-  - "3.6"
+
+python: ["2.7", "3.5", "3.6", "3.7"]
+matrix:
+  include:
+    - python: 2.6
+      dist: trusty
+    - python: 3.3
+      dist: trusty
+
 install:
   - pip install numpy
   - python setup.py install
+
 before_script:
   - git clone https://github.com/spectralpython/sample-data.git ~/spectral_data
 script: SPECTRAL_DATA=~/spectral_data python -m spectral.tests.run
