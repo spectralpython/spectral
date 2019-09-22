@@ -7,8 +7,6 @@ matrix:
       dist: trusty
     - python: 3.3
       dist: trusty
-    - python: 3.4
-      dist: trusty
 
   install:
   - pip install numpy
