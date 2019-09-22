@@ -284,11 +284,11 @@ class Image(object):
 class ImageArray(numpy.ndarray, Image):
     '''ImageArray is an interface to an image loaded entirely into memory.
     ImageArray objects are returned by :meth:`spectral.SpyFile.load`.
-    This class inherits from both numpy.ndarray and SpyFile, providing the
+    This class inherits from both numpy.ndarray and Image, providing the
     interfaces of both classes.
     '''
 
-    format = 'f'        # Use 4-byte floats form data arrays
+    format = 'f'        # Use 4-byte floats for data arrays
 
     def __new__(subclass, data, spyfile):
         obj = numpy.asarray(data).view(subclass)
