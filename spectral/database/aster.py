@@ -31,7 +31,7 @@
 
 from __future__ import division, print_function, unicode_literals
 
-from spectral.utilities.python23 import IS_PYTHON3
+from spectral.utilities.python23 import IS_PYTHON3, tobytes, frombytes
 
 if IS_PYTHON3:
     readline = lambda fin: fin.readline()
@@ -183,8 +183,8 @@ class AsterDatabase:
         sql = '''INSERT INTO Spectra (SampleID, SensorCalibrationID, Instrument,
                  Environment, Measurement, XUnit, YUnit, MinWavelength, MaxWavelength,
                  NumValues, XData, YData) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
-        xBlob = sqlite3.Binary(array.array(arraytypecode, xData).tostring())
-        yBlob = sqlite3.Binary(array.array(arraytypecode, yData).tostring())
+        xBlob = sqlite3.Binary(tobytes(array.array(arraytypecode, xData)))
+        yBlob = sqlite3.Binary(tobytes(array.array(arraytypecode, yData)))
         numValues = len(xData)
         self.cursor.execute(
             sql, (
@@ -375,9 +375,9 @@ class AsterDatabase:
         if len(rows) < 1:
             raise 'Measurement record not found'
         x = array.array(arraytypecode)
-        x.fromstring(rows[0][0])
+        frombytes(x, rows[0][0])
         y = array.array(arraytypecode)
-        y.fromstring(rows[0][1])
+        frombytes(y, rows[0][1])
         return (list(x), list(y))
 
     def get_signature(self, spectrumID):

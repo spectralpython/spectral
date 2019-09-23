@@ -36,7 +36,7 @@ from __future__ import division, print_function, unicode_literals
 
 import numpy as np
 from .spyfile import SpyFile, MemmapFile
-from spectral.utilities.python23 import typecode
+from spectral.utilities.python23 import typecode, tobytes, frombytes
 
 byte_typecode = typecode('b')
 
@@ -112,7 +112,7 @@ class BipFile(SpyFile, MemmapFile):
             f.seek(delta, 1)
         vals.fromfile(f, sample_size)
 
-        arr = np.fromstring(vals.tostring(), dtype=self.dtype)
+        arr = np.fromstring(tobytes(vals), dtype=self.dtype)
         arr = arr.reshape(self.nrows, self.ncols)
 
         if self.scale_factor != 1:
@@ -169,7 +169,7 @@ class BipFile(SpyFile, MemmapFile):
             for j in range(len(bands)):
                 f.seek(pixelOffset + delta_b[j], 0)        # Next band
                 vals.fromfile(f, sample_size)
-        arr = np.fromstring(vals.tostring(), dtype=self.dtype)
+        arr = np.fromstring(tobytes(vals), dtype=self.dtype)
         arr = arr.reshape(self.nrows, self.ncols, len(bands))
 
         if self.scale_factor != 1:
@@ -213,7 +213,7 @@ class BipFile(SpyFile, MemmapFile):
         # Pixel format is BIP so read entire pixel.
         vals.fromfile(f, self.nbands * self.sample_size)
 
-        pixel = np.fromstring(vals.tostring(), dtype=self.dtype)
+        pixel = np.fromstring(tobytes(vals), dtype=self.dtype)
 
         if self.scale_factor != 1:
             return pixel / float(self.scale_factor)
@@ -304,7 +304,7 @@ class BipFile(SpyFile, MemmapFile):
                     for k in range(len(bands)):
                         f.seek(pixelPos + delta_b[k], 0)    # Next band
                         vals.fromfile(f, sample_size)
-        arr = np.fromstring(vals.tostring(), dtype=self.dtype)
+        arr = np.fromstring(tobytes(vals), dtype=self.dtype)
         arr = arr.reshape(nSubRows, nSubCols, nSubBands)
 
         if self.scale_factor != 1:
@@ -391,7 +391,7 @@ class BipFile(SpyFile, MemmapFile):
                                k * d_band, 0)
                         vals.fromfile(f, sample_size)
 
-        arr = np.fromstring(vals.tostring(), dtype=self.dtype)
+        arr = np.fromstring(tobytes(vals), dtype=self.dtype)
         arr = arr.reshape(nSubRows, nSubCols, nSubBands)
 
         if self.scale_factor != 1:
@@ -430,5 +430,5 @@ class BipFile(SpyFile, MemmapFile):
                * (self.nbands * (i * self.ncols + j) + k), 0)
         # Pixel format is BIP so read entire pixel.
         vals.fromfile(f, self.sample_size)
-        arr = np.fromstring(vals.tostring(), dtype=self.dtype)
+        arr = np.fromstring(tobytes(vals), dtype=self.dtype)
         return arr.tolist()[0] / float(self.scale_factor)

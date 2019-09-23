@@ -114,6 +114,7 @@ import numpy
 import numpy as np
 from spectral import SpyException
 from spectral.spectral import Image
+from spectral.utilities.python23 import typecode, tobytes, frombytes
 
 class FileNotFoundError(SpyException):
     pass
@@ -222,7 +223,6 @@ class SpyFile(Image):
         '''
         import spectral
         from spectral.spectral import ImageArray
-        from spectral.utilities.python23 import typecode
         from array import array
         import warnings
         from spectral.algorithms.spymath import has_nan, NaNValueWarning
@@ -235,7 +235,7 @@ class SpyFile(Image):
         self.fid.seek(self.offset)
         data.fromfile(self.fid, self.nrows * self.ncols *
                       self.nbands * self.sample_size)
-        npArray = np.fromstring(data.tostring(), dtype=self.dtype)
+        npArray = np.fromstring(tobytes(data), dtype=self.dtype)
         if self.interleave == spectral.BIL:
             npArray.shape = (self.nrows, self.nbands, self.ncols)
             npArray = npArray.transpose([0, 2, 1])

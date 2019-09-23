@@ -36,7 +36,7 @@ from __future__ import division, print_function, unicode_literals
 
 import numpy as np
 from .spyfile import SpyFile, MemmapFile
-from spectral.utilities.python23 import typecode
+from spectral.utilities.python23 import typecode, tobytes, frombytes
 
 byte_typecode = typecode('b')
 
@@ -109,7 +109,7 @@ class BsqFile(SpyFile, MemmapFile):
         f.seek(offset, 0)
         vals.fromfile(f, self.nrows * self.ncols * self.sample_size)
 
-        arr = np.fromstring(vals.tostring(), dtype=self.dtype)
+        arr = np.fromstring(tobytes(vals), dtype=self.dtype)
         arr = arr.reshape(self.nrows, self.ncols)
 
         if self.scale_factor != 1:
@@ -162,7 +162,7 @@ class BsqFile(SpyFile, MemmapFile):
             f.seek(offset, 0)
             vals.fromfile(f, self.nrows * self.ncols * self.sample_size)
 
-            band = np.fromstring(vals.tostring(), dtype=self.dtype)
+            band = np.fromstring(tobytes(vals), dtype=self.dtype)
             arr[:, :, j] = band.reshape(self.nrows, self.ncols)
 
         if self.scale_factor != 1:
@@ -219,7 +219,7 @@ class BsqFile(SpyFile, MemmapFile):
                    + col * sampleSize, 0)
             vals.fromfile(f, sampleSize)
 
-        pixel = np.fromstring(vals.tostring(), dtype=self.dtype)
+        pixel = np.fromstring(tobytes(vals), dtype=self.dtype)
 
         if self.scale_factor != 1:
             return pixel / float(self.scale_factor)
@@ -305,7 +305,7 @@ class BsqFile(SpyFile, MemmapFile):
                        + j * rowSize
                        + colStartOffset, 0)
                 vals.fromfile(f, nSubCols * sampleSize)
-            subArray = np.fromstring(vals.tostring(),
+            subArray = np.fromstring(tobytes(vals),
                                      dtype=self.dtype).reshape((nSubRows,
                                                                 nSubCols))
             arr[:, :, i] = subArray
@@ -397,7 +397,7 @@ class BsqFile(SpyFile, MemmapFile):
                            + rowOffset
                            + k * sampleSize, 0)
                     vals.fromfile(f, sampleSize)
-        arr = np.fromstring(vals.tostring(), dtype=self.dtype)
+        arr = np.fromstring(tobytes(vals), dtype=self.dtype)
         arr = arr.reshape(nSubBands, nSubRows, nSubCols)
         arr = np.transpose(arr, (1, 2, 0))
 
@@ -441,5 +441,5 @@ class BsqFile(SpyFile, MemmapFile):
                          + j) * sampleSize, 0)
         vals = array.array(byte_typecode)
         vals.fromfile(self.fid, sampleSize)
-        arr = np.fromstring(vals.tostring(), dtype=self.dtype)
+        arr = np.fromstring(tobytes(vals), dtype=self.dtype)
         return arr.tolist()[0] / float(self.scale_factor)

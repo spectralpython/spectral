@@ -61,3 +61,11 @@ if IS_PYTHON3:
 else:
     def is_string(s):
         return isinstance(s, basestring)
+
+# array.tostring is deprecated in python3
+if IS_PYTHON3:
+    tobytes = lambda array: array.tobytes()
+    frombytes = lambda array, src: array.frombytes(src)
+else:
+    tobytes = lambda array: array.tostring()
+    frombytes = lambda array, src: array.fromstring(src)
