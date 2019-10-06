@@ -1,4 +1,37 @@
 ================================================================================
+SPy 0.20
+================================================================================
+Release date: 2019.10.06
+
+New Features
+------------
+
+* Support for ECOSTRESS spectral library (supercedes ASTER library).
+
+* Accept "mask" and "bg" keywords in `imshow` and `get_rgb` (affects color
+  scaling).
+
+* Denoising methods added to `PrincipalComponents` (issue #91) added by
+  @gemmaellen.
+
+* Added "raw" to list of checked ENVI data file extensions.
+
+Changes
+-------
+
+* Increase speed of `spectral_angles` computation by ~30x using `einsum`.
+
+* Eliminate `tostring` deprecation warnings by migrating to `tobytes`.
+
+Bug Fixes
+---------
+
+* Support parsing ENV bbl values as floats (issue #67).
+
+* Removed "scale" keyword to handle TransformedImage objects in
+  `envi.save_image` (issue #83).
+
+================================================================================
 SPy 0.19
 ================================================================================
 Release date: 2017.06.04

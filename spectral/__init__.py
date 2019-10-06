@@ -31,7 +31,7 @@
 
 from __future__ import division, print_function, unicode_literals
 
-__version__ = '0.19'
+__version__ = '0.20'
 
 import sys
 if sys.byteorder == 'little':
