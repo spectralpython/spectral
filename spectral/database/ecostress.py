@@ -105,6 +105,10 @@ def read_ecostress_file(filename):
 
     [x, y] = [list(v) for v in zip(*pairs)]
 
+    # Make sure wavelengths are ascending
+    if float(x[0]) > float(x[-1]):
+        x.reverse()
+        y.reverse()
     s.x = [float(val) for val in x]
     s.y = [float(val) for val in y]
     s.measurement['first x value'] = x[0]
