@@ -190,7 +190,7 @@ def read_envi_header(file):
             msg = 'Parameters with non-lowercase names encountered ' \
                   'and converted to lowercase. To retain source file ' \
                   'parameter name capitalization, set ' \
-                  'spectral.setttings.envi_support_nonlowercase_params to ' \
+                  'spectral.settings.envi_support_nonlowercase_params to ' \
                   'True.'
             warnings.warn(msg)
             print('Header parameter names converted to lower case.')
