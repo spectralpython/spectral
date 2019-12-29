@@ -469,7 +469,7 @@ class ImageViewMouseHandler(ImageViewCallback):
                     except:
                         f = plt.figure()
                         self.view.spectrum_plot_fig_id = f.number
-                    s = plt.subplot(111)
+                    s = f.gca()
                     settings.plotter.plot(self.view.source[r, c],
                                           self.view.source)
                     s.xaxis.axes.relim()
@@ -659,8 +659,8 @@ class ImageView(object):
         # If it is a gray-scale image, only keep the first RGB component so
         # matplotlib imshow's cmap can still be used.
         if self.data_rgb_meta['mode'] == 'monochrome' and \
-           self.data_rgb.ndim ==3:
-          (self.bands is not None and len(self.bands) == 1)
+           self.data_rgb.ndim == 3:
+            self.data_rgb = self.data_rgb[:, :, 0]
 
     def set_classes(self, classes, colors=None, **kwargs):
         '''Sets the array of class values associated with the image data.
@@ -1064,8 +1064,8 @@ class ImageView(object):
         view.imshow_data_kwargs.update(kwargs)
         view.imshow_class_kwargs = self.imshow_class_kwargs.copy()
         view.imshow_class_kwargs.update(kwargs)
-        view.set_display_mode(self.display_mode)
         view.callbacks_common = self.callbacks_common
+        view.spectrum_plot_fig_id = self.spectrum_plot_fig_id
         view.show(fignum=fig.number, mode=self.display_mode)
         view.axes.set_xlim(0, size)
         view.axes.set_ylim(size, 0)
@@ -1296,7 +1296,6 @@ def plot(data, source=None):
         data[:, np.array(source.metadata['bbl']) == 0] = None
     for x in data:
         p = plt.plot(xvals, x)
-        plt.hold(1)
     spectral._xyplot = p
     plt.grid(1)
     if source is not None and hasattr(source, 'bands'):
