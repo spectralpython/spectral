@@ -931,38 +931,64 @@ class SpectralLibrary:
 
     '''
 
-    def __init__(self, data, header, params):
+    def __init__(self, data, header=None, params=None):
+        '''Creates a new spectral library array
+
+        Arguments:
+
+            `data` (array-like):
+
+                Array with shape `CxB`, where `C` is the number of spectra in
+                the library and `B` is the number of bands for each spectrum.
+
+            `header` (dict):
+
+                Optional dict of ENVI header parameters.
+
+            `params` (Params):
+
+                Optional SpyFile Params object
+        '''
         from spectral.spectral import BandInfo
+
         self.spectra = data
+        (n_spectra, n_bands) = data.shape
+
+        if header is None:
+            header = {}
+        header = header.copy()
+
         self.bands = BandInfo()
-        if 'wavelength' in header:
-            try:
-                self.bands.centers = [float(b) for b in header['wavelength']]
-            except:
-                pass
-        if 'fwhm' in header:
-            try:
-                self.bands.bandwidths = [float(f) for f in header['fwhm']]
-            except:
-                pass
-        if 'spectra names' in header:
-            self.names = header['spectra names']
+        centers = header.pop('wavelength', None)
+        if centers is not None:
+            if len(centers) != n_bands:
+                raise ValueError('Number of band centers does not match data')
+            self.bands.centers = [float(c) for c in centers]
+        fwhm = header.pop('fwhm', None)
+        if fwhm is not None:
+            if len(fwhm) != n_bands:
+                raise ValueError('Number of fwhm values does not match data')
+            self.bands.bandwidths = [float(f) for f in fwhm]
+        names = header.pop('spectra names', None)
+        if names is not None:
+            if len(names) != n_spectra:
+                raise ValueError('Number of spectrum names does not match data')
+            self.names = names
         else:
-            self.names = [''] * self.bands.shape[0]
-        self.bands.band_unit = header.get('wavelength units', "")
+            self.names = [str(i + 1) for i in range(n_spectra)]
+        self.bands.band_unit = header.get('wavelength units', "<unspecified>")
         self.bands.band_quantity = "Wavelength"
         self.params = params
-        self.metadata = {}
-        self.metadata.update(header)
+        self.metadata = header.copy()
         self.metadata['data ignore value'] = 'NaN'
 
-    def save(self, fileBaseName, description=None):
+    def save(self, file_basename, description=None):
         '''
         Saves the spectral library to a library file.
 
         Arguments:
 
-            `fileBaseName` (str):
+            `file_basename` (str):
 
                 Name of the file (without extension) to save.
 
@@ -970,16 +996,12 @@ class SpectralLibrary:
 
                 Optional text description of the library.
 
-        This method creates two files: `fileBaseName`.hdr and
-        `fileBaseName`.sli.
+        This method creates two files: `file_basename`.hdr and
+        `file_basename`.sli.
         '''
         import spectral
-        meta = {}
-        meta.update(self.metadata)
-        if self.bands.centers:
-            meta['samples'] = len(self.bands.centers)
-        else:
-            meta['samples'] = len(self.spectra.shape[0])
+        meta = self.metadata.copy()
+        meta['samples'] = self.spectra.shape[1]
         meta['lines'] = self.spectra.shape[0]
         meta['bands'] = 1
         meta['header offset'] = 0
@@ -988,12 +1010,14 @@ class SpectralLibrary:
         meta['byte order'] = spectral.byte_order
         meta['wavelength units'] = self.bands.band_unit
         meta['spectra names'] = [str(n) for n in self.names]
-        meta['wavelength'] = self.bands.centers
-        meta['fwhm'] = self.bands.bandwidths
+        if self.bands.centers is not None:
+            meta['wavelength'] = self.bands.centers
+        if self.bands.bandwidths is not None:
+            meta['fwhm'] = self.bands.bandwidths
         if (description):
             meta['description'] = description
-        write_envi_header(fileBaseName + '.hdr', meta, True)
-        fout = builtins.open(fileBaseName + '.sli', 'wb')
+        write_envi_header(file_basename + '.hdr', meta, True)
+        fout = builtins.open(file_basename + '.sli', 'wb')
         self.spectra.astype('f').tofile(fout)
         fout.close()
 

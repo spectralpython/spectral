@@ -333,6 +333,33 @@ class ENVIWriteTest(SpyTest):
         else:
             raise Exception('Expected EnviDataFileNotFoundError')
 
+    def test_create_spectral_lib_with_header(self):
+        '''Can create ENVI spectral library from numpy array with bands.'''
+        import os
+        import spectral as spy
+        from spectral.io.envi import SpectralLibrary
+        img = spy.open_image('92AV3C.lan')
+        (nrows, ncols, nbands) = img.shape
+        header = {'wavelength': np.arange(nbands).astype(np.float32)}
+        slib = SpectralLibrary(img[0, :20, :].squeeze(), header)
+        basename = os.path.join(testdir, 'slib')
+        slib.save(basename)
+        slib = spy.envi.open(basename + '.hdr')
+        assert(slib.spectra.shape == (20, nbands))
+
+    def test_create_spectral_lib_without_header(self):
+        '''Can create ENVI spectral library from numpy array without bands.'''
+        import os
+        import spectral as spy
+        from spectral.io.envi import SpectralLibrary
+        img = spy.open_image('92AV3C.lan')
+        (nrows, ncols, nbands) = img.shape
+        slib = SpectralLibrary(img[0, :20, :].squeeze())
+        basename = os.path.join(testdir, 'slib')
+        slib.save(basename)
+        slib = spy.envi.open(basename + '.hdr')
+        assert(slib.spectra.shape == (20, nbands))
+
 def run():
     print('\n' + '-' * 72)
     print('Running ENVI tests.')
