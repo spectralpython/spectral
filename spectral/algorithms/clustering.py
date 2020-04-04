@@ -33,10 +33,12 @@ Unsupervised clustering algorithms.
 
 from __future__ import division, print_function, unicode_literals
 
+import logging
 import numpy
+from warnings import warn
+
 from .classifiers import Classifier
 
-from warnings import warn
 
 
 def L1(v1, v2):
@@ -164,6 +166,8 @@ def kmeans(image, nclusters=10, max_iterations=20, **kwargs):
     import spectral
     import numpy
 
+    logger = logging.getLogger('spectral')
+
     if isinstance(image, numpy.ndarray):
         return kmeans_ndarray(*(image, nclusters, max_iterations), **kwargs)
 
@@ -203,7 +207,7 @@ def kmeans(image, nclusters=10, max_iterations=20, **kwargs):
         nclusters clusters in the startCenters array.'
         centers = numpy.array(start_clusters)
     else:
-        print('Initializing clusters along diagonal of N-dimensional bounding box.')
+        logging.debug('Initializing clusters along diagonal of N-dimensional bounding box.')
         centers = numpy.empty((nclusters, nbands), float)
         boxMin = image[0, 0]
         boxMax = image[0, 0]
@@ -272,8 +276,8 @@ def kmeans(image, nclusters=10, max_iterations=20, **kwargs):
             print("KeyboardInterrupt: Returning clusters from previous iteration")
             return (old_clusters, old_centers)
 
-    print('kmeans terminated with', len(set(old_clusters.ravel())), \
-        'clusters after', itnum - 1, 'iterations.', file=status)
+    logger.info('kmeans terminated with %d clusters after %d iterations',
+                len(set(old_clusters.ravel())), itnum - 1)
     return (old_clusters, centers)
 
 
@@ -344,11 +348,11 @@ def kmeans_ndarray(image, nclusters=10, max_iterations=20, **kwargs):
     import numpy as np
     from spectral.algorithms.spymath import has_nan, NaNValueError
 
+    logger = logging.getLogger('spectral')
+
     if has_nan(image):
         raise NaNValueError('Image data contains NaN values.')
 
-    status = spectral._status
-    
     # defaults for kwargs
     start_clusters = None
     compare = None
@@ -384,7 +388,8 @@ def kmeans_ndarray(image, nclusters=10, max_iterations=20, **kwargs):
         nclusters clusters in the startCenters array.'
         centers = numpy.array(start_clusters)
     else:
-        print('Initializing clusters along diagonal of N-dimensional bounding box.')
+        logger.debug('Initializing clusters along diagonal of N-dimensional' \
+                     ' bounding box.')
         boxMin = np.amin(image, 0)
         boxMax = np.amax(image, 0)
         delta = (boxMax - boxMin) / (nclusters - 1)
@@ -400,8 +405,6 @@ def kmeans_ndarray(image, nclusters=10, max_iterations=20, **kwargs):
     itnum = 1
     while (itnum <= max_iterations):
         try:
-            status.display_percentage('Iteration %d...' % itnum)
-
             # Assign all pixels
             for i in range(nclusters):
                 diffs = np.subtract(image, centers[i], out=diffs)
@@ -423,16 +426,13 @@ def kmeans_ndarray(image, nclusters=10, max_iterations=20, **kwargs):
                 iterations.append(clusters.reshape(nrows, ncols))
 
             if compare and compare(old_clusters, clusters):
-                status.end_percentage('done.')
                 break
             else:
                 nChanged = numpy.sum(clusters != old_clusters)
+                logger.info('k-means iteration {} - {} pixels reassigned.' \
+                            .format(itnum, nChanged))
                 if nChanged == 0:
-                    status.end_percentage('0 pixels reassigned.')
                     break
-                else:
-                    status.end_percentage('%d pixels reassigned.' \
-                                          % (nChanged))
 
             old_clusters[:] = clusters
             old_centers[:] = centers
@@ -442,7 +442,7 @@ def kmeans_ndarray(image, nclusters=10, max_iterations=20, **kwargs):
             print("KeyboardInterrupt: Returning clusters from previous iteration.")
             return (old_clusters.reshape(nrows, ncols), old_centers)
 
-    print('kmeans terminated with', len(set(old_clusters.ravel())), \
-        'clusters after', itnum - 1, 'iterations.', file=status)
+    logger.info('kmeans terminated with %d clusters after %d iterations.',
+                len(set(old_clusters.ravel())), itnum - 1)
     return (old_clusters.reshape(nrows, ncols), centers)
 

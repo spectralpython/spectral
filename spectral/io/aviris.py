@@ -34,9 +34,6 @@ Functions for handling AVIRIS image files.
 
 from __future__ import division, print_function, unicode_literals
 
-from warnings import warn
-
-
 def open(file, band_file=None):
     '''
     Returns a SpyFile object for an AVIRIS image file.
@@ -89,19 +86,7 @@ def open(file, band_file=None):
 
     if band_file:
         img.bands = read_aviris_bands(find_file_path(band_file))
-    else:
-        # Let user know if band cal files are available
-        fileDir = os.path.split(p.filename)[0]
-        calFiles = glob.glob(fileDir + '/*.spc')
-        if len(calFiles) > 0:
-            print('\nThe following band calibration files are located in ' \
-                'the same directory as the opened AVIRIS file:\n')
-            for f in calFiles:
-                print("    " + os.path.split(f)[1])
-            print('\nTo associate a band calibration file with an AVIRIS ' \
-                  'data file, re-open the AVIRIS file with the following ' \
-                  'syntax:\n')
-            print('    >>> img = aviris.open(fileName, calFileName)\n')
+
     return img
 
 

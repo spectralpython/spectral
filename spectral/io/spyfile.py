@@ -46,7 +46,7 @@ Let's open our sample image.
     In [3]: img.__class__
     Out[3]: spectral.io.bilfile.BilFile
 
-    In [4]: print img
+    In [4]: print(img)
             Data Source:   '/Users/thomas/spectral_data/92AV3C.lan'
             # Rows:            145
             # Samples:         145

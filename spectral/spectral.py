@@ -36,6 +36,7 @@ from __future__ import division, print_function, unicode_literals
 
 import numpy
 
+import logging
 from warnings import warn
 
 
@@ -198,6 +199,7 @@ spy_colors = numpy.array([[0, 0, 0],
 
 def _init():
     '''Basic configuration of the spectral package.'''
+    _setup_logger()
     try:
         global settings
         from .graphics import graphics as spygraphics
@@ -212,6 +214,13 @@ def _init():
     from .utilities import status
     spectral._status = status.StatusDisplay()
 
+def _setup_logger():
+    logger = logging.getLogger('spectral')
+    logger.setLevel(logging.INFO)
+    ch = logging.StreamHandler()
+    formatter = logging.Formatter('%(name)s:%(levelname)s: %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
 
 class BandInfo:
     '''A BandInfo object characterizes the spectral bands associated with an
@@ -472,7 +481,6 @@ def open_image(file):
     be searched until the file is found.  If the file being opened is an ENVI
     file, the `file` argument should be the name of the header file.
     '''
-
     import os
     from .io import aviris, envi, erdas, spyfile
     from .io.spyfile import find_file_path

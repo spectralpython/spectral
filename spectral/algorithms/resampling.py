@@ -34,6 +34,9 @@ Functions for resampling a spectrum from one band discretization to another.
 
 from __future__ import division, print_function, unicode_literals
 
+import logging
+import numpy as np
+
 def erf_local(x):
     import math
     # save the sign of x
@@ -106,7 +109,7 @@ def create_resampling_matrix(centers1, fwhm1, centers2, fwhm2):
     to another.  Arguments are the band centers and full-width half maximum
     spectral response for the original and new band discretizations.
     '''
-    import numpy
+    logger = logging.getLogger('spectral')
 
     sqrt_8log2 = 2.3548200450309493
 
@@ -117,7 +120,7 @@ def create_resampling_matrix(centers1, fwhm1, centers2, fwhm2):
     bounds2 = [[centers2[i] - fwhm2[i] / 2.0, centers2[i] + fwhm2[i] /
                 2.0] for i in range(N2)]
 
-    M = numpy.zeros([N2, N1])
+    M = np.zeros([N2, N1])
 
     jStart = 0
     nan = float('nan')
@@ -130,7 +133,7 @@ def create_resampling_matrix(centers1, fwhm1, centers2, fwhm2):
             j += 1
 
         if j == N1:
-            print(('No overlap for target band %d (%f / %f)' % (
+            logger.info(('No overlap for target band %d (%f / %f)' % (
                 i, centers2[i], fwhm2[i])))
             M[i, 0] = nan
             continue
@@ -146,8 +149,8 @@ def create_resampling_matrix(centers1, fwhm1, centers2, fwhm2):
         # Put NaN in first element of any row that doesn't produce a band in
         # the new schema.
         if len(matches) == 0:
-            print(('No overlap for target band %d (%f / %f)' % (
-                i, centers2[i], fwhm2[i])))
+            logger.info('No overlap for target band %d (%f / %f)',
+                         i, centers2[i], fwhm2[i])
             M[i, 0] = nan
             continue
 
@@ -157,7 +160,7 @@ def create_resampling_matrix(centers1, fwhm1, centers2, fwhm2):
         # case can be handled.
 
         overlaps = [overlap(bounds1[k], bounds2[i]) for k in matches]
-        contribs = numpy.zeros(len(matches))
+        contribs = np.zeros(len(matches))
         A = 0.
         for k in range(len(matches)):
             #endNorms = [normal(centers2[i], stdev, x) for x in overlaps[k]]
@@ -262,5 +265,4 @@ class BandResampler:
 
         Any target bands that do not have at lease one overlapping source band
         will contain `float('nan')` as the resampled band value.'''
-        import numpy
-        return numpy.dot(self.matrix, spectrum)
+        return np.dot(self.matrix, spectrum)

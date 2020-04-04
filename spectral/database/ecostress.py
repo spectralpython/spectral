@@ -32,6 +32,7 @@
 from __future__ import division, print_function, unicode_literals
 
 import itertools
+import logging
 
 from spectral.utilities.python23 import IS_PYTHON3
 from .aster import AsterDatabase, Signature
@@ -47,6 +48,7 @@ else:
 def read_ecostress_file(filename):
     '''Reads an ECOSTRESS v1 spectrum file.'''
 
+    logger = logging.getLogger('spectral')
     lines = open_file(filename).readlines()
     if not IS_PYTHON3:
         lines = [line.decode('iso-8859-1') for line in lines]
@@ -63,7 +65,7 @@ def read_ecostress_file(filename):
         try:
             s.sample[pair[0].lower()] = pair[1]
         except:
-            print('line {}: {}'.format(i, lines[i]))
+            logger.error('Failed to parse line: {}: {}'.format(i, lines[i]))
             raise
 
     # Read measurment metadata
@@ -84,21 +86,23 @@ def read_ecostress_file(filename):
 
         # Try to handle invalid values on signature lines
         if nItems == 1:
-            print('single item (%s) on signature line, %s' \
-                  %  (pair[0], filename))
+            logger.info('Skipping single item (%s) on signature line for %s',
+                  pair[0], filename)
             continue
         elif nItems > 2:
-            print('more than 2 values on signature line,', filename)
+            logger.info('Skipping more than 2 values on signature line for %s',
+                        filename)
             continue
         try:
             x = float(pair[0])
         except:
-            print('corrupt signature line,', filename)
+            logger.info('Corrupt signature line in file %s', filename)
         if x == 0:
-#           print 'Zero wavelength value', filename
+            logger.info('Skipping zero wavelength value in file %s', filename)
             continue
         elif x < 0:
-            print('Negative wavelength value,', filename)
+            logger.info('Skipping negative wavelength value in file %s',
+                        filename)
             continue
 
         pairs.append(pair)
@@ -173,6 +177,7 @@ class EcostressDatabase(AsterDatabase):
         import numpy
         import os
 
+        logger = logging.getLogger('spectral')
         if not os.path.isdir(data_dir):
             raise Exception('Error: Invalid directory name specified.')
         if ignore is not None:
@@ -193,7 +198,7 @@ class EcostressDatabase(AsterDatabase):
             if f in filesToIgnore:
                 numIgnored += 1
                 continue
-            print('Importing %s.' % f)
+            logger.info('Importing ECOSTRESS file %s.', f)
             numFiles += 1
             sig = self.read_file(f)
             s = sig.sample
@@ -233,13 +238,14 @@ class EcostressDatabase(AsterDatabase):
                                 m['x units'], yUnit, m['first x value'],
                                 m['last x value'], sig.x, sig.y)
         if numFiles == 0:
-            print('No data files were found in directory "%s".' \
-                  % data_dir)
+            logger.warning('No ECOSTRESS data files were found in "%s".',
+                           data_dir)
         else:
-            print('Processed %d files.' % numFiles)
+            logger.info('Processed %d ECOSTRESS files.', numFiles)
         if numIgnored > 0:
-            print('Ignored the following %d bad files:' % (numIgnored))
+            msg = 'Ignored the following %d bad files:' % (numIgnored)
             for f in filesToIgnore:
-                print('\t' + f)
+                msg += '\n\t' + f
+            logger.info(msg)
 
         return sigs

@@ -34,6 +34,7 @@ Tools for handling files that are band sequential (BSQ).
 
 from __future__ import division, print_function, unicode_literals
 
+import logging
 import numpy as np
 from .spyfile import SpyFile, MemmapFile
 from spectral.utilities.python23 import typecode, tobytes, frombytes
@@ -58,13 +59,14 @@ class BsqFile(SpyFile, MemmapFile):
     def _open_memmap(self, mode):
         import os
         import sys
+        logger = logging.getLogger('spectral')
         if (os.path.getsize(self.filename) < sys.maxsize):
             try:
                 (R, C, B) = self.shape
                 return np.memmap(self.filename, dtype=self.dtype, mode=mode,
                                  offset=self.offset, shape=(B, R, C))
             except:
-                print('Unable to create memmap interface.')
+                logger.debug('Unable to create memmap interface.')
                 return None
         else:
             return None

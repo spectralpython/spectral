@@ -47,13 +47,15 @@ from __future__ import division, print_function, unicode_literals
 
 from spectral.utilities.python23 import IS_PYTHON3
 
-
 if IS_PYTHON3:
     import builtins
 else:
     import __builtin__ as builtins
 
+import logging
 import numpy as np
+
+logger = logging.getLogger('spectral')
 
 # Known ENVI data file extensions. Upper and lower case versions will be
 # recognized, as well as interleaves ('bil', 'bip', 'bsq'), and no extension.
@@ -193,7 +195,7 @@ def read_envi_header(file):
                   'spectral.settings.envi_support_nonlowercase_params to ' \
                   'True.'
             warnings.warn(msg)
-            print('Header parameter names converted to lower case.')
+            logger.debug('ENVI header parameter names converted to lower case.')
         return dict
     except:
         raise EnviHeaderParsingError()
@@ -386,7 +388,8 @@ def open(file, image=None):
         try:
             h['bbl'] = [int(float(b)) for b in h['bbl']]
         except:
-            print('Unable to parse bad band list (bbl) in header as integers.')
+            logger.warning('Unable to parse bad band list (bbl) in ENVI ' \
+                           'header as integers.')
     return img
 
 
@@ -683,7 +686,7 @@ def add_image_info_to_metadata(image, metadata):
     # the provided metadata.
     offset = int(metadata.get('header offset', 0))
     if offset != 0:
-        print('Ignoring non-zero header offset in provided metadata.')
+        logger.debug('Ignoring non-zero header offset in provided metadata.')
     metadata['header offset'] = 0
 
     metadata['lines'] = image.shape[0]
@@ -720,7 +723,7 @@ def _write_image(hdr_file, data, header, **kwargs):
     
     (hdr_file, img_file) = check_new_filename(hdr_file, img_ext, force)
     write_envi_header(hdr_file, header, is_library=False)
-    print('Saving', img_file)
+    logger.debug('Saving', img_file)
     # bufsize = data.shape[0] * data.shape[1] * np.dtype(dtype).itemsize
     bufsize = data.shape[0] * data.shape[1] * data.dtype.itemsize
     fout = builtins.open(img_file, 'wb', bufsize)

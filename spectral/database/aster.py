@@ -426,10 +426,10 @@ class AsterDatabase:
         sig.sample_name = results[0][0]
         sig.sample_id = results[0][1]
         x = array.array(arraytypecode)
-        x.fromstring(results[0][2])
+        frombytes(x, results[0][2])
         sig.x = list(x)
         y = array.array(arraytypecode)
-        y.fromstring(results[0][3])
+        frombytes(y, results[0][3])
         sig.y = list(y)
         return sig
 

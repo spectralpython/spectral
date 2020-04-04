@@ -31,6 +31,9 @@
 
 from __future__ import division, print_function, unicode_literals
 
+import sys
+from spectral import settings
+
 class StatusDisplay:
     '''
     A class to sequentially display percentage completion of an iterative
@@ -44,22 +47,18 @@ class StatusDisplay:
 
     def display_percentage(self, text, percent=0.0, format='% 5.1f'):
         '''Called when initializing display of a process status.'''
-        import sys
-        from spectral import settings
         self._overwrite = True
         self._pretext = text
         self._percent_fmt = format
         text = self._pretext + self._percent_fmt % percent + '%'
         self._text_len = len(text)
-        if settings.show_progress:
+        if hasattr(sys, 'ps1') and settings.show_progress:
             sys.stdout.write(text)
             sys.stdout.flush()
 
     def update_percentage(self, percent):
         '''Called whenever an update of the displayed status is desired.'''
-        import sys
-        from spectral import settings
-        if not settings.show_progress:
+        if not (hasattr(sys, 'ps1') and settings.show_progress):
             return
         text = self._pretext + self._percent_fmt % percent + '%'
         sys.stdout.write('\b' * self._text_len)
@@ -69,13 +68,11 @@ class StatusDisplay:
 
     def end_percentage(self, text='done'):
         '''Prints a final status and resumes normal text display.'''
-        import sys
-        from spectral import settings
         text = self._pretext + text
         sys.stdout.write('\b' * self._text_len)
         fmt = '%%-%ds\n' % self._text_len
         self._text_len = len(text)
-        if settings.show_progress:
+        if hasattr(sys, 'ps1') and settings.show_progress:
             sys.stdout.write(fmt % text)
             sys.stdout.flush()
         self._overwrite = False
@@ -85,7 +82,8 @@ class StatusDisplay:
         Called to display text on a new line without interrupting
         progress display.
         '''
-        import sys
+        if not (hasattr(sys, 'ps1') and settings.show_progress):
+            return
         if self._overwrite and text != '\n':
             sys.stdout.write('\n')
         sys.stdout.write(text)

@@ -40,10 +40,12 @@ from __future__ import division, print_function, unicode_literals
 DEFAULT_X_SIZE = 600
 DEFAULT_Y_SIZE = 600
 
+import logging
 from wx import *
 #from Numeric import *
 from spectral.graphics import *
 
+logger = logging.getLogger('spectral')
 
 #---------------------------------------------------------------------------
 #wxEVT_VIEW_IMAGE = wxID_HIGHEST + 1
@@ -130,7 +132,7 @@ class WxImageFrame(wx.Frame):
         dc.EndDrawing()
 
     def left_double_click(self, evt):
-        print((evt.m_y, evt.m_x))
+        logger.debug('LEFT DOUBLE-CLICK at {}'.format((evt.m_y, evt.m_x)))
         from spectral import settings
         if "data source" in self.kwargs:
             settings.plotter.plot(self.kwargs["data source"][evt.m_y, evt.m_x],

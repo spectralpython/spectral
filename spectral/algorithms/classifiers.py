@@ -32,6 +32,7 @@
 
 from __future__ import division, print_function, unicode_literals
 
+import logging
 import numpy
 import numpy as np
 
@@ -137,17 +138,18 @@ class GaussianClassifier(SupervisedClassifier):
 
                 Data for the training classes.
         '''
+        logger = logging.getLogger('spectral')
         if not self.min_samples:
             # Set minimum number of samples to the number of bands in the image
             self.min_samples = training_data.nbands
-            print('Setting min samples to', self.min_samples)
+            logger.info('Setting min samples to %d', self.min_samples)
         self.classes = []
         for cl in training_data:
             if cl.size() >= self.min_samples:
                 self.classes.append(cl)
             else:
-                print('  Omitting class %3d : only %d samples present' % (
-                    cl.index, cl.size()))
+                logger.warn('Omitting class %3d : only %d samples present',
+                            cl.index, cl.size())
         for cl in self.classes:
             if not hasattr(cl, 'stats') or not cl.stats_valid():
                 cl.calc_stats()
