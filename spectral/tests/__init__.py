@@ -48,6 +48,7 @@ _num_tests_failed = 0
 # Subdirectory to be created for unit test files
 testdir = 'spectral_test_files'
 
+from . import database
 from . import spyfile
 from . import transforms
 from . import memmap
@@ -61,4 +62,4 @@ from . import iterators
 
 # List of all submodules to be run from the `run` submodule.
 all_tests = [spyfile, memmap, iterators, transforms, envi, spymath, detectors,
-             classifiers, dimensionality, spatial]
+             classifiers, dimensionality, spatial, database]

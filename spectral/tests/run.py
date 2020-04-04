@@ -35,6 +35,7 @@ To run all unit tests, type the following from the system command line:
 '''
 from __future__ import division, print_function, unicode_literals
 
+import logging
 import spectral.tests
 
 def parse_args():
@@ -62,6 +63,7 @@ def print_summary():
     print('-' * 72)
 
 if __name__ == '__main__':
+    logging.getLogger('spectral').setLevel(logging.ERROR)
     parse_args()
     reset_stats()
     for test in spectral.tests.all_tests:
