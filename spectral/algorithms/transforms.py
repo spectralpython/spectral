@@ -33,10 +33,10 @@
 Base classes for various types of transforms
 '''
 
-from __future__ import division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
-import numpy as np
 import collections
+import numpy as np
 
 
 class LinearTransform:

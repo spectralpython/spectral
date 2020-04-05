@@ -1,41 +1,16 @@
-#########################################################################
-#
-#   bipfile.py - This file is part of the Spectral Python (SPy) package.
-#
-#   Copyright (C) 2001-2010 Thomas Boggs
-#
-#   Spectral Python is free software; you can redistribute it and/
-#   or modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   Spectral Python is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this software; if not, write to
-#
-#               Free Software Foundation, Inc.
-#               59 Temple Place, Suite 330
-#               Boston, MA 02111-1307
-#               USA
-#
-#########################################################################
-#
-# Send comments to:
-# Thomas Boggs, tboggs@users.sourceforge.net
-#
-
 '''
-Tools for handling files that are band interleaved by pixel (BIP).
+Code for handling files that are band interleaved by pixel (BIP).
 '''
 
-from __future__ import division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
+import array
 import logging
 import numpy as np
+import os
+import sys
+
+import spectral as spy
 from .spyfile import SpyFile, MemmapFile
 from spectral.utilities.python23 import typecode, tobytes, frombytes
 
@@ -46,8 +21,7 @@ class BipFile(SpyFile, MemmapFile):
     A class to interface image files stored with bands interleaved by pixel.
     '''
     def __init__(self, params, metadata=None):
-        import spectral
-        self.interleave = spectral.BIP
+        self.interleave = spy.BIP
         if metadata is None:
             metadata = {}
         SpyFile.__init__(self, params, metadata)
@@ -55,8 +29,6 @@ class BipFile(SpyFile, MemmapFile):
         self._memmap = self._open_memmap('r')
 
     def _open_memmap(self, mode):
-        import os
-        import sys
         logger = logging.getLogger('spectral')
         if (os.path.getsize(self.filename) < sys.maxsize):
             try:
@@ -90,16 +62,13 @@ class BipFile(SpyFile, MemmapFile):
 
                 An `MxN` array of values for the specified band.
         '''
-
-        from array import array
-
         if self._memmap is not None and use_memmap is True:
             data = np.array(self._memmap[:, :, band])
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
             return data
 
-        vals = array(byte_typecode)
+        vals = array.array(byte_typecode)
         delta = self.sample_size * (self.nbands - 1)
         nVals = self.nrows * self.ncols
         sample_size = self.sample_size
@@ -144,15 +113,13 @@ class BipFile(SpyFile, MemmapFile):
                 are the number of rows & columns in the image and `L` equals
                 len(`bands`).
         '''
-        from array import array
-
         if self._memmap is not None and use_memmap is True:
             data = np.array(self._memmap[:, :, bands])
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
             return data
 
-        vals = array(byte_typecode)
+        vals = array.array(byte_typecode)
         offset = self.offset
         delta = self.sample_size * self.nbands
         nVals = self.nrows * self.ncols
@@ -199,15 +166,13 @@ class BipFile(SpyFile, MemmapFile):
 
                 A length-`B` array, where `B` is the number of image bands.
         '''
-        from array import array
-
         if self._memmap is not None and use_memmap is True:
             data = np.array(self._memmap[row, col, :])
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
             return data
 
-        vals = array(byte_typecode)
+        vals = array.array(byte_typecode)
 
         f = self.fid
         f.seek(self.offset + self.sample_size
@@ -253,8 +218,6 @@ class BipFile(SpyFile, MemmapFile):
 
                 An `MxNxL` array.
         '''
-        import array
-
         if self._memmap is not None and use_memmap is True:
             if bands is None:
                 data = np.array(self._memmap[row_bounds[0]: row_bounds[1],
@@ -345,8 +308,6 @@ class BipFile(SpyFile, MemmapFile):
                 An `MxNxL` array, where `M` = len(`rows`), `N` = len(`cols`),
                 and `L` = len(bands) (or # of image bands if `bands` == None).
         '''
-        import array
-
         if self._memmap is not None and use_memmap is True:
             if bands is None:
                 data = np.array(self._memmap.take(rows, 0).take(cols, 1))
@@ -418,15 +379,13 @@ class BipFile(SpyFile, MemmapFile):
         Using this function is not an efficient way to iterate over bands or
         pixels. For such cases, use readBands or readPixel instead.
         '''
-        from array import array
-
         if self._memmap is not None and use_memmap is True:
             datum = self._memmap[i, j, k]
             if self.scale_factor != 1:
                 datum /= float(self.scale_factor)
             return datum
 
-        vals = array(byte_typecode)
+        vals = array.array(byte_typecode)
         f = self.fid
         f.seek(self.offset + self.sample_size
                * (self.nbands * (i * self.ncols + j) + k), 0)

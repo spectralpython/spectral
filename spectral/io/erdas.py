@@ -1,33 +1,3 @@
-#########################################################################
-#
-#   erdas.py - This file is part of the Spectral Python (SPy) package.
-#
-#   Copyright (C) 2001-2010 Thomas Boggs
-#
-#   Spectral Python is free software; you can redistribute it and/
-#   or modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   Spectral Python is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this software; if not, write to
-#
-#               Free Software Foundation, Inc.
-#               59 Temple Place, Suite 330
-#               Boston, MA 02111-1307
-#               USA
-#
-#########################################################################
-#
-# Send comments to:
-# Thomas Boggs, tboggs@users.sourceforge.net
-#
-
 '''
 Functions for reading Erdas files.
 '''
@@ -87,7 +57,24 @@ Functions for reading Erdas files.
 #  +----------------------------------------------------------+
 
 
-from __future__ import division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+import array
+import numpy as np
+import sys
+
+import spectral as spy
+from ..utilities.python23 import IS_PYTHON3, typecode
+from .bilfile import BilFile
+from .spyfile import find_file_path, InvalidFileError
+from .spyfile import InvalidFileError
+
+if IS_PYTHON3:
+    import builtins
+else:
+    import __builtin__ as builtins
+
+
 
 def open(file):
     '''
@@ -107,12 +94,6 @@ def open(file):
 
         spectral.io.spyfile.InvalidFileError
     '''
-
-    import numpy as np
-    import spectral
-    from .bilfile import BilFile
-    from .spyfile import find_file_path, InvalidFileError
-
 
     # ERDAS 7.5 headers do not specify byte order so we'll guess little endian.
     # If any of the parameters look weird, we'll try again with big endian.
@@ -146,7 +127,7 @@ def open(file):
     else:
         msg = 'Unexpected data type specified in ERDAS/Lan header.'
         raise InvalidFileError(msg)
-    if spectral.byte_order != 0:
+    if spy.byte_order != 0:
         p.dtype = np.dtype(p.dtype).newbyteorder().str
 
     return BilFile(p, lh)
@@ -165,17 +146,6 @@ def read_erdas_lan_header(fileName, byte_order=0):
 
             Specifies whether to read as little (0) or big (1) endian.
     '''
-    from array import array
-    import sys
-    import spectral
-    from spectral.utilities.python23 import IS_PYTHON3, typecode
-    from .spyfile import InvalidFileError
-    
-    if IS_PYTHON3:
-        import builtins
-    else:
-        import __builtin__ as builtins
-
     f = builtins.open(fileName, "rb")
 
     h = {}
@@ -188,9 +158,9 @@ def read_erdas_lan_header(fileName, byte_order=0):
         raise InvalidFileError('Does not look like an ERDAS Lan header.')
 
     # Read all header data into arrays
-    word = array(typecode('h'))
-    dword = array(typecode('i'))
-    float = array(typecode('f'))
+    word = array.array(typecode('h'))
+    dword = array.array(typecode('i'))
+    float = array.array(typecode('f'))
     word.fromfile(f, 2)
     f.seek(16)
     if h["type"] == b'HEAD74':
@@ -203,7 +173,7 @@ def read_erdas_lan_header(fileName, byte_order=0):
     word.fromfile(f, 1)
     float.fromfile(f, 5)
 
-    if byte_order != spectral.byte_order:
+    if byte_order != spy.byte_order:
         word.byteswap()
         dword.byteswap()
         float.byteswap()

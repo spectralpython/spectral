@@ -1,38 +1,23 @@
-#########################################################################
-#
-#   aviris.py - This file is part of the Spectral Python (SPy) package.
-#
-#   Copyright (C) 2001-2010 Thomas Boggs
-#
-#   Spectral Python is free software; you can redistribute it and/
-#   or modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   Spectral Python is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this software; if not, write to
-#
-#               Free Software Foundation, Inc.
-#               59 Temple Place, Suite 330
-#               Boston, MA 02111-1307
-#               USA
-#
-#########################################################################
-#
-# Send comments to:
-# Thomas Boggs, tboggs@users.sourceforge.net
-#
-
 '''
 Functions for handling AVIRIS image files.
 '''
 
-from __future__ import division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+import numpy as np
+import glob
+import os
+
+import spectral as spy
+from ..spectral import BandInfo
+from ..utilities.python23 import IS_PYTHON3
+from .bipfile import BipFile
+from .spyfile import find_file_path, InvalidFileError
+
+if IS_PYTHON3:
+    import builtins
+else:
+    import __builtin__ as builtins
 
 def open(file, band_file=None):
     '''
@@ -56,13 +41,6 @@ def open(file, band_file=None):
 
         spectral.io.spyfile.InvalidFileError
     '''
-    import numpy as np
-    from spectral.io.bipfile import BipFile
-    import os
-    import glob
-    from .spyfile import find_file_path, InvalidFileError
-    import spectral
-
     class Params:
         pass
     p = Params()
@@ -76,7 +54,7 @@ def open(file, band_file=None):
     p.nrows = int(fileSize / 275072)
     p.byte_order = 1
     p.dtype = np.dtype('i2').str
-    if spectral.byte_order != 1:
+    if spy.byte_order != 1:
         p.dtype = np.dtype(p.dtype).newbyteorder().str
     metadata = {'default bands': ['29', '18', '8']}
     p.offset = 0
@@ -104,13 +82,6 @@ def read_aviris_bands(cal_filename):
 
         A :class:`spectral.BandInfo` object
     '''
-    from spectral.utilities.python23 import IS_PYTHON3
-    if IS_PYTHON3:
-        import builtins
-    else:
-        import __builtin__ as builtins
-    from spectral import BandInfo
-    from .spyfile import find_file_path
     bands = BandInfo()
     bands.band_quantity = 'Wavelength'
     bands.band_unit = 'nm'

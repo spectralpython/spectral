@@ -32,13 +32,15 @@
 Functions for resampling a spectrum from one band discretization to another.
 '''
 
-from __future__ import division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+import math
 import numpy as np
 
+from ..spectral import BandInfo
+
 def erf_local(x):
-    import math
     # save the sign of x
     sign = 1 if x >= 0 else -1
     x = abs(x)
@@ -89,9 +91,8 @@ def overlap(R1, R2):
     return (max(R1[0], R2[0]), min(R1[1], R2[1]))
 
 def normal(mean, stdev, x):
-    from math import exp, pi
     sqrt_2pi = 2.5066282746310002
-    return exp(-((x - mean) / stdev)**2 / 2.0) / (sqrt_2pi * stdev)
+    return math.exp(-((x - mean) / stdev)**2 / 2.0) / (sqrt_2pi * stdev)
 
 def build_fwhm(centers):
     '''Returns FWHM list, assuming FWHM is midway between adjacent bands.
@@ -233,7 +234,6 @@ class BandResampler:
         If bandwidths are not specified, the associated bands are assumed to
         have FWHM values that span half the distance to the adjacent bands.
         '''
-        from spectral.spectral import BandInfo
         if isinstance(centers1, BandInfo):
             fwhm1 = centers1.bandwidths
             centers1 = centers1.centers

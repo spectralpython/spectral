@@ -108,13 +108,19 @@ instance of a :class:`~spectral.BandInfo` object that contains optional
 information about the images spectral bands.
 '''
 
-from __future__ import division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
-import numpy
+import array
 import numpy as np
-from spectral import SpyException
-from spectral.spectral import Image
-from spectral.utilities.python23 import typecode, tobytes, frombytes
+import os
+import warnings
+
+import spectral as spy
+from .. import SpyException
+from ..image import Image, ImageArray
+from ..utilities.errors import has_nan, NaNValueWarning
+from ..utilities.python23 import typecode, tobytes, frombytes
+
 
 class FileNotFoundError(SpyException):
     pass
@@ -127,7 +133,6 @@ def find_file_path(filename):
     '''
     Search cwd and SPECTRAL_DATA directories for the given file.
     '''
-    import os
     pathname = None
     dirs = [os.curdir]
     if 'SPECTRAL_DATA' in os.environ:
@@ -154,16 +159,13 @@ class SpyFile(Image):
         self.scale_factor = 1.0
 
     def set_params(self, params, metadata):
-        import spectral
-        import array
-
         Image.set_params(self, params, metadata)
 
         try:
             self.filename = params.filename
             self.offset = params.offset
             self.byte_order = params.byte_order
-            if spectral.byte_order != self.byte_order:
+            if spy.byte_order != self.byte_order:
                 self.swap = 1
             else:
                 self.swap = 0
@@ -184,7 +186,6 @@ class SpyFile(Image):
 
     def __str__(self):
         '''Prints basic parameters of the associated file.'''
-        import spectral as spy
         s = '\tData Source:   \'%s\'\n' % self.filename
         s += '\t# Rows:         %6d\n' % (self.nrows)
         s += '\t# Samples:      %6d\n' % (self.ncols)
@@ -202,7 +203,7 @@ class SpyFile(Image):
         return s
 
     def load(self, **kwargs):
-        '''Loads entire image into memory in a :class:`spectral.ImageArray`.
+        '''Loads entire image into memory in a :class:`spectral.image.ImageArray`.
 
         Keyword Arguments:
 
@@ -215,31 +216,25 @@ class SpyFile(Image):
                 Specifies whether any applicable scale factor should be applied
                 to the data after loading.
 
-        :class:`spectral.ImageArray` is derived from both
-        :class:`spectral.Image` and :class:`numpy.ndarray` so it supports the
+        :class:`spectral.image.ImageArray` is derived from both
+        :class:`spectral.image.Image` and :class:`numpy.ndarray` so it supports the
         full :class:`numpy.ndarray` interface.  The returns object will have
         shape `(M,N,B)`, where `M`, `N`, and `B` are the numbers of rows,
         columns, and bands in the image.
         '''
-        import spectral
-        from spectral.spectral import ImageArray
-        from array import array
-        import warnings
-        from spectral.algorithms.spymath import has_nan, NaNValueWarning
-
         for k in list(kwargs.keys()):
             if k not in ('dtype', 'scale'):
                 raise ValueError('Invalid keyword %s.' % str(k))
         dtype = kwargs.get('dtype', ImageArray.format)
-        data = array(typecode('b'))
+        data = array.array(typecode('b'))
         self.fid.seek(self.offset)
         data.fromfile(self.fid, self.nrows * self.ncols *
                       self.nbands * self.sample_size)
         npArray = np.fromstring(tobytes(data), dtype=self.dtype)
-        if self.interleave == spectral.BIL:
+        if self.interleave == spy.BIL:
             npArray.shape = (self.nrows, self.nbands, self.ncols)
             npArray = npArray.transpose([0, 2, 1])
-        elif self.interleave == spectral.BSQ:
+        elif self.interleave == spy.BSQ:
             npArray.shape = (self.nbands, self.nrows, self.ncols)
             npArray = npArray.transpose([1, 2, 0])
         else:
@@ -270,7 +265,7 @@ class SpyFile(Image):
         instead of an array object in memory.  For frequent access or when
         accessing a large fraction of the image data, consider calling
         :meth:`spectral.SpyFile.load` to load the data into an
-        :meth:`spectral.ImageArray` object and using its subscript operator
+        :meth:`spectral.image.ImageArray` object and using its subscript operator
         instead.
 
         Examples:
@@ -380,8 +375,6 @@ class SpyFile(Image):
 
     def params(self):
         '''Return an object containing the SpyFile parameters.'''
-        from spectral.spectral import Image
-
         p = Image.params(self)
 
         p.filename = self.filename
@@ -532,8 +525,10 @@ class SubImage(SpyFile):
                 An `MxNxL` array, where `M` = len(`rows`), `N` = len(`cols`),
                 and `L` = len(bands) (or # of image bands if `bands` == None).
         '''
-        return self.parent.read_subimage(list(array(rows) + self.row_offset),
-                                         list(array(cols) + self.col_offset),
+        return self.parent.read_subimage(list(array.array(rows) \
+                                              + self.row_offset),
+                                         list(array.array(cols) \
+                                              + self.col_offset),
                                          bands)
 
     def read_subregion(self, row_bounds, col_bounds, bands=None):
@@ -561,12 +556,42 @@ class SubImage(SpyFile):
 
                 An `MxNxL` array.
         '''
-        return self.parent.read_subimage(
-            list(array(row_bounds) + self.row_offset),
-            list(array(
-                 col_bounds) + self.col_offset),
-            bands)
+        return self.parent.read_subimage(list(np.array(row_bounds) \
+                                              + self.row_offset),
+                                         list(np.array(col_bounds) \
+                                              + self.col_offset),
+                                         bands)
 
+
+def tile_image(im, nrows, ncols):
+    '''
+    Break an image into nrows x ncols tiles.
+
+    USAGE: tiles = tile_image(im, nrows, ncols)
+
+    ARGUMENTS:
+        im              The SpyFile to tile.
+        nrows           Number of tiles in the veritical direction.
+        ncols           Number of tiles in the horizontal direction.
+
+    RETURN VALUE:
+        tiles           A list of lists of SubImage objects. tiles
+                        contains nrows lists, each of which contains
+                        ncols SubImage objects.
+    '''
+    x = (np.array(list(range(nrows + 1))) * float(im.nrows) / nrows).astype(np.int)
+    y = (np.array(list(range(ncols + 1))) * float(im.ncols) / ncols).astype(np.int)
+    x[-1] = im.nrows
+    y[-1] = im.ncols
+
+    tiles = []
+    for r in range(len(x) - 1):
+        row = []
+        for c in range(len(y) - 1):
+            si = SubImage(im, [x[r], x[r + 1]], [y[c], y[c + 1]])
+            row.append(si)
+        tiles.append(row)
+    return tiles
 
 def transform_image(transform, img):
     '''Applies a linear transform to an image.
@@ -589,8 +614,7 @@ def transform_image(transform, img):
     a :class:`spectral.SpyFile`, then a
     :class:`spectral.spyfile.TransformedImage` is returned.
     '''
-    import numpy as np
-    from spectral.algorithms.transforms import LinearTransform
+    from ..algorithms.transforms import LinearTransform
     if isinstance(img, np.ndarray):
         if isinstance(transform, LinearTransform):
             return transform(img)
@@ -611,13 +635,12 @@ class TransformedImage(Image):
     dtype = np.dtype('f4').char
 
     def __init__(self, transform, img):
-        from spectral.algorithms.transforms import LinearTransform
-
+        from ..algorithms.transforms import LinearTransform
         if not isinstance(img, Image):
             raise Exception(
                 'Invalid image argument to to TransformedImage constructor.')
 
-        if isinstance(transform, numpy.ndarray):
+        if isinstance(transform, np.ndarray):
             transform = LinearTransform(transform)
         self.transform = transform
 
@@ -650,7 +673,6 @@ class TransformedImage(Image):
         '''
         Get data from the image and apply the transform.
         '''
-        from numpy import zeros, dot, take
         if len(args) < 2:
             raise Exception('Must pass at least two subscript arguments')
 
@@ -675,17 +697,17 @@ class TransformedImage(Image):
 
         orig = self.image.__getitem__(args[:2])
         if len(orig.shape) == 1:
-            orig = orig[numpy.newaxis, numpy.newaxis, :]
+            orig = orig[np.newaxis, np.newaxis, :]
         elif len(orig.shape) == 2:
-            orig = orig[numpy.newaxis, :]
-        transformed_xy = zeros(orig.shape[:2] + (self.shape[2],),
-                               self.transform.dtype)
+            orig = orig[np.newaxis, :]
+        transformed_xy = np.zeros(orig.shape[:2] + (self.shape[2],),
+                                  self.transform.dtype)
         for i in range(transformed_xy.shape[0]):
             for j in range(transformed_xy.shape[1]):
                 transformed_xy[i, j] = self.transform(orig[i, j])
         # Remove unnecessary dimensions
 
-        transformed = take(transformed_xy, bands, 2)
+        transformed = np.take(transformed_xy, bands, 2)
 
         return transformed.squeeze()
 
@@ -713,11 +735,10 @@ class TransformedImage(Image):
         specifies column min and max.  If third argument containing list
         of band indices is not given, all bands are read.
         '''
-        from numpy import zeros, dot
         data = self.image.read_subregion(row_bounds, col_bounds)
         xdata = self.transform(data)
         if bands:
-            return numpy.take(xdata, bands, 2)
+            return np.take(xdata, bands, 2)
         else:
             return xdata
 
@@ -728,11 +749,10 @@ class TransformedImage(Image):
         Second arg specifies column min and max. If third argument
         containing list of band indices is not given, all bands are read.
         '''
-        from numpy import zeros, dot
         data = self.image.read_subimage(rows, cols)
         xdata = self.transform(data)
         if bands:
-            return numpy.take(xdata, bands, 2)
+            return np.take(xdata, bands, 2)
         else:
             return xdata
 
@@ -741,7 +761,7 @@ class TransformedImage(Image):
 
     def read_bands(self, bands):
         shape = (self.image.nrows, self.image.ncols, len(bands))
-        data = numpy.zeros(shape, float)
+        data = np.zeros(shape, float)
         for i in range(shape[0]):
             for j in range(shape[1]):
                 data[i, j] = self.read_pixel(i, j)[bands]
@@ -790,8 +810,6 @@ class MemmapFile(object):
                 will result in corresponding modification to the image data
                 file.
         '''        
-        import spectral as spy
-        
         src_inter = {spy.BIL: 'bil',
                      spy.BIP: 'bip',
                      spy.BSQ: 'bsq'}[self.interleave]

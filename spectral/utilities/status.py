@@ -32,7 +32,7 @@
 from __future__ import division, print_function, unicode_literals
 
 import sys
-from spectral import settings
+from .. import settings
 
 class StatusDisplay:
     '''
@@ -68,13 +68,14 @@ class StatusDisplay:
 
     def end_percentage(self, text='done'):
         '''Prints a final status and resumes normal text display.'''
+        if not (hasattr(sys, 'ps1') and settings.show_progress):
+            return
         text = self._pretext + text
         sys.stdout.write('\b' * self._text_len)
         fmt = '%%-%ds\n' % self._text_len
         self._text_len = len(text)
-        if hasattr(sys, 'ps1') and settings.show_progress:
-            sys.stdout.write(fmt % text)
-            sys.stdout.flush()
+        sys.stdout.write(fmt % text)
+        sys.stdout.flush()
         self._overwrite = False
 
     def write(self, text):

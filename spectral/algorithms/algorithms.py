@@ -32,13 +32,18 @@
 '''
 Various functions and algorithms for processing spectral data.
 '''
-from __future__ import division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
-import numpy
+import math
+from numbers import Integral
 import numpy as np
+import pickle
 
-from warnings import warn
-
+import spectral as spy
+from ..io.spyfile import SpyFile, TransformedImage
+from ..utilities.errors import has_nan, NaNValueError
+from .spymath import matrix_sqrt
+from .transforms import LinearTransform
 
 class Iterator:
     '''
@@ -233,11 +238,7 @@ def mean_cov(image, mask=None, index=None):
     Calculate the mean and covariance of of the given vectors. The argument
     can be an Iterator, a SpyFile object, or an `MxNxB` array.
     '''
-    import spectral
-    import numpy as np
-    from numpy import zeros, transpose, dot, newaxis
-
-    status = spectral._status
+    status = spy._status
 
     if isinstance(image, np.ndarray):
         X = image.astype(np.float64)
@@ -262,8 +263,8 @@ def mean_cov(image, mask=None, index=None):
     nSamples = it.get_num_elements()
     B = it.get_num_bands()
 
-    sumX = zeros((B,), 'd')
-    sumX2 = zeros((B, B), 'd')
+    sumX = np.zeros((B,), 'd')
+    sumX2 = np.zeros((B, B), 'd')
     count = 0
 
     statusInterval = max(1, nSamples / 100)
@@ -273,10 +274,10 @@ def mean_cov(image, mask=None, index=None):
             status.update_percentage(float(count) / nSamples * 100.)
         count += 1
         sumX += x
-        x = x.astype(np.float64)[:, newaxis]
+        x = x.astype(np.float64)[:, np.newaxis]
         sumX2 += x.dot(x.T)
     mean = (sumX / count)
-    sumX = sumX[:, newaxis]
+    sumX = sumX[:, np.newaxis]
     cov = (sumX2 - sumX.dot(sumX.T) / count) / (count - 1)
     status.end_percentage()
     return (mean, cov, count)
@@ -400,7 +401,6 @@ class PrincipalComponents:
             A callable function that returns a function for denoising data.
     '''
     def __init__(self, vals, vecs, stats):
-        from .transforms import LinearTransform
         self.eigenvalues = vals
         self.eigenvectors = vecs
         self.stats = stats
@@ -434,9 +434,7 @@ class PrincipalComponents:
                 will be retained (starting from greatest to smallest) until
                 `fraction` of total image variance is retained.
         '''
-        import spectral
-
-        status = spectral._status
+        status = spy._status
 
         num = kwargs.get('num', None)
         eigs = kwargs.get('eigs', None)
@@ -453,7 +451,7 @@ class PrincipalComponents:
             if not 0 < fraction <= 1:
                 raise Exception('fraction must be in range (0,1].')
             N = len(self.eigenvalues)
-            cumsum = numpy.cumsum(self.eigenvalues)
+            cumsum = np.cumsum(self.eigenvalues)
             sum = cumsum[-1]
             # Count how many values to retain.
             for i in range(N):
@@ -532,7 +530,6 @@ class PrincipalComponents:
         Returns a callable :class:`~spectral.algorithms.transforms.LinearTransform`
         object for denoising image data.
         '''
-        from .transforms import LinearTransform
         V = self.reduce(self, **kwargs).eigenvectors
         f = LinearTransform(V.dot(V.T), pre=-self.mean,
                             post=self.mean)
@@ -586,14 +583,12 @@ def principal_components(image):
 
             A callable function that returns a function for denoising data.
     '''
-    from numpy import sqrt, sum
-
     if isinstance(image, GaussianStats):
         stats = image
     else:
         stats = calc_stats(image)
 
-    (L, V) = numpy.linalg.eig(stats.cov)
+    (L, V) = np.linalg.eig(stats.cov)
 
     # numpy says eigenvalues may not be sorted so we'll sort them, if needed.
     if not np.alltrue(np.diff(L) <= 0):
@@ -635,7 +630,6 @@ class FisherLinearDiscriminant:
             linear discriminant.
     '''
     def __init__(self, vals, vecs, mean, cov_b, cov_w):
-        from .transforms import LinearTransform
         self.eigenvalues = vals
         self.eigenvectors = vecs
         self.mean = mean
@@ -673,8 +667,6 @@ def linear_discriminant(classes, whiten=True):
         Richards, J.A. & Jia, X. Remote Sensing Digital Image Analysis: An
         Introduction. (Springer: Berlin, 1999).
     '''
-    import math
-
     C = len(classes)            # Number of training sets
     rank = len(classes) - 1
 
@@ -716,7 +708,7 @@ lda = linear_discriminant
 
 
 def log_det(x):
-    return sum(numpy.log([eigv for eigv in numpy.linalg.eigvals(x)
+    return sum(np.log([eigv for eigv in np.linalg.eigvals(x)
                           if eigv > 0]))
 
 
@@ -796,7 +788,6 @@ class GaussianStats(object):
         such that S.dot(S) == C.
         '''
         if self._sqrt_cov is None:
-            from spectral.algorithms.spymath import matrix_sqrt
             pcs = self.principal_components
             self._sqrt_cov = matrix_sqrt(eigs=(pcs.eigenvalues,
                                                pcs.eigenvectors),
@@ -810,7 +801,6 @@ class GaussianStats(object):
         such that S.dot(S) == inv(C).
         '''
         if self._sqrt_inv_cov is None:
-            from spectral.algorithms.spymath import matrix_sqrt
             pcs = self.principal_components
             self._sqrt_inv_cov = matrix_sqrt(eigs=(pcs.eigenvalues,
                                                    pcs.eigenvectors),
@@ -834,7 +824,6 @@ class GaussianStats(object):
 
     def transform(self, xform):
         '''Returns a version of the stats transformed by a linear transform.'''
-        from spectral.algorithms.transforms import LinearTransform
         if not isinstance(xform, LinearTransform):
             raise TypeError('Expected a LinearTransform object.')
         m = xform(self.mean)
@@ -843,8 +832,6 @@ class GaussianStats(object):
 
     def get_whitening_transform(self):
         '''Returns transform that centers and whitens data for these stats.'''
-        from spectral.algorithms.transforms import LinearTransform
-        from spectral.algorithms.spymath import matrix_sqrt
         C_1 = np.linalg.inv(self.cov)
         return LinearTransform(matrix_sqrt(C_1, True), pre=-self.mean)
 
@@ -887,7 +874,6 @@ def calc_stats(image, mask=None, index=None, allow_nan=False):
 
             This object will have members `mean`, `cov`, and `nsamples`.
     '''
-    from spectral.algorithms.spymath import has_nan, NaNValueError
     (mean, cov, N) = mean_cov(image, mask, index)
     if has_nan(mean) and not allow_nan:
         raise NaNValueError('NaN values present in data.')
@@ -1003,12 +989,6 @@ class TrainingClass:
 
         After `transform` is applied, the class statistics will have `C` bands.
         '''
-
-        from .transforms import LinearTransform
-        from numpy.linalg import det, inv
-        import math
-        from spectral.io.spyfile import TransformedImage
-
         if isinstance(transform, np.ndarray):
             transform = LinearTransform(transform)
         self.stats.mean = transform(self.stats.mean)
@@ -1090,7 +1070,6 @@ class TrainingClassSet:
         self.nbands = list(self.classes.values())[0].nbands
 
     def save(self, filename, calc_stats=False):
-        import pickle
         for c in list(self.classes.values()):
             if c.stats is None:
                 if calc_stats == False:
@@ -1116,7 +1095,6 @@ class TrainingClassSet:
         f.close()
 
     def load(self, filename, image):
-        import pickle
         f = open(filename, 'rb')
         mask = pickle.load(f)
         nclasses = pickle.load(f)
@@ -1255,14 +1233,10 @@ def bdist_terms(a, b):
     RETURN VALUE:
                             A 2-tuple of the linear and quadratic terms
     '''
-    from math import exp
-    from numpy import dot, transpose
-    from numpy.linalg import inv
-
     m = a.stats.mean - b.stats.mean
     avgCov = (a.stats.cov + b.stats.cov) / 2
 
-    lin_term = (1 / 8.) * dot(transpose(m), dot(inv(avgCov), m))
+    lin_term = (1 / 8.) * np.dot(np.transpose(m), np.dot(np.inv(avgCov), m))
 
     quad_term = 0.5 * (log_det(avgCov)
                        - 0.5 * a.stats.log_det_cov
@@ -1293,18 +1267,15 @@ def transform_image(matrix, image):
         :class:`spectral.TransformedImage` object and no transformation of data
         will occur until elements of the object are accessed.
     '''
-    from spectral.io.spyfile import TransformedImage
-    from spectral.io.spyfile import SpyFile
-
     if isinstance(image, SpyFile):
         return TransformedImage(matrix, image)
     elif isinstance(image, np.ndarray):
         (M, N, B) = image.shape
-        ximage = numpy.zeros((M, N, matrix.shape[0]), float)
+        ximage = np.zeros((M, N, matrix.shape[0]), float)
 
         for i in range(M):
             for j in range(N):
-                ximage[i, j] = numpy.dot(matrix, image[i, j].astype(float))
+                ximage[i, j] = np.dot(matrix, image[i, j].astype(float))
         return ximage
     else:
         raise 'Unrecognized image type passed to transform_image.'
@@ -1331,25 +1302,22 @@ def orthogonalize(vecs, start=0):
         A new `CxB` containing an orthonormal basis for the given vectors.
     '''
 
-    from numpy import transpose, dot, identity
-    from numpy.linalg import inv
-    from math import sqrt
-
     (M, N) = vecs.shape
-    basis = numpy.array(transpose(vecs))
+    basis = np.array(np.transpose(vecs))
     eye = identity(N).astype(float)
     if start == 0:
-        basis[:, 0] /= sqrt(dot(basis[:, 0], basis[:, 0]))
+        basis[:, 0] /= math.sqrt(np.dot(basis[:, 0], basis[:, 0]))
         start = 1
 
     for i in range(start, M):
-        v = basis[:, i] / sqrt(dot(basis[:, i], basis[:, i]))
+        v = basis[:, i] / math.sqrt(np.dot(basis[:, i], basis[:, i]))
         U = basis[:, :i]
-        P = eye - dot(U, dot(inv(dot(transpose(U), U)), transpose(U)))
-        basis[:, i] = dot(P, v)
-        basis[:, i] /= sqrt(dot(basis[:, i], basis[:, i]))
+        P = eye - np.dot(U, np.dot(np.inv(np.dot(np.transpose(U), U)),
+                                   np.transpose(U)))
+        basis[:, i] = np.dot(P, v)
+        basis[:, i] /= math.sqrt(np.dot(basis[:, i], basis[:, i]))
 
-    return transpose(basis)
+    return np.transpose(basis)
 
 
 def unmix(data, members):
@@ -1373,23 +1341,19 @@ def unmix(data, members):
     Note that depending on endmembers given, fractional abundances for
     endmembers may be negative.
     '''
-
-    from numpy import transpose, dot, zeros
-    from numpy.linalg import inv
-
     assert members.shape[1] == data.shape[2], \
         'Matrix dimensions are not aligned.'
 
     members = members.astype(float)
     # Calculate the pseudo inverse
-    pi = dot(members, transpose(members))
-    pi = dot(inv(pi), members)
+    pi = np.dot(members, np.transpose(members))
+    pi = np.dot(np.inv(pi), members)
 
     (M, N, B) = data.shape
-    unmixed = zeros((M, N, members.shape[0]), float)
+    unmixed = np.zeros((M, N, members.shape[0]), float)
     for i in range(M):
         for j in range(N):
-            unmixed[i, j] = dot(pi, data[i, j].astype(float))
+            unmixed[i, j] = np.dot(pi, data[i, j].astype(float))
     return unmixed
 
 
@@ -1461,8 +1425,6 @@ def msam(data, members):
     '''
     # The modifications to the `spectral_angles` function were contributed by
     # Christian Mielke.
-
-    import math
 
     assert members.shape[1] == data.shape[2], \
         'Matrix dimensions are not aligned.'
@@ -1623,7 +1585,6 @@ class MNFResult(object):
         Returns a callable :class:`~spectral.algorithms.transforms.LinearTransform`
         object for denoising image data.
         '''
-        from spectral.algorithms.transforms import LinearTransform
         N = self._num_from_kwargs(**kwargs)
         V = self.napc.eigenvectors
         Vr = np.array(V)
@@ -1681,7 +1642,6 @@ class MNFResult(object):
         Returns a callable :class:`~spectral.algorithms.transforms.LinearTransform`
         object for reducing the dimensionality of image data.
         '''
-        from spectral.algorithms.transforms import LinearTransform
         N = self._num_from_kwargs(**kwargs)
         V = self.napc.eigenvectors
         f = LinearTransform(V[:, :N].T.dot(self.noise.sqrt_inv_cov),
@@ -1741,8 +1701,6 @@ def mnf(signal, noise):
         principal components transform." Geoscience and Remote Sensing, IEEE
         Transactions on 28.3 (1990): 295-304.
     '''
-    from spectral.algorithms.transforms import LinearTransform
-    from spectral.algorithms.algorithms import PrincipalComponents, GaussianStats
     C = noise.sqrt_inv_cov.dot(signal.cov).dot(noise.sqrt_inv_cov)
     (L, V) = np.linalg.eig(C)
     # numpy says eigenvalues may not be sorted so we'll sort them, if needed.
@@ -1825,11 +1783,6 @@ def ppi(X, niters, threshold=0, centered=False, start=None, display=0,
     Partial Unmixing of AVIRIS Data," Pasadena, California, USA, 23 Jan 1995,
     URI: http://hdl.handle.net/2014/33635
     '''
-    from numbers import Integral
-    import spectral as spy
-    from spectral.algorithms.algorithms import calc_stats
-
-
     if display is not None:
         if not isinstance(display, Integral) or isinstance(display, bool) or \
             display < 0:

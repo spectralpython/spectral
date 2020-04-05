@@ -31,7 +31,7 @@
 
 from __future__ import division, print_function, unicode_literals
 
-__version__ = '0.20'
+__version__ = '0.21-dev'
 
 import sys
 if sys.byteorder == 'little':
@@ -43,12 +43,12 @@ BSQ = 0
 BIL = 1
 BIP = 2
 
-class SpyException(Exception):
-    '''Base class for spectral module-specific exceptions.'''
-    pass
+from .utilities.errors import SpyException
+from .config import SpySettings, spy_colors
+settings = SpySettings()
 
 from .spectral import (open_image, load_training_sets, save_training_sets,
-                      settings, tile_image, spy_colors, BandInfo)
+                      BandInfo)
 from .io import *
 from .algorithms import *
 from .graphics import *

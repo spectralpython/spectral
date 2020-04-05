@@ -1,34 +1,5 @@
-#########################################################################
-#
-#   memmap.py - This file is part of the Spectral Python (SPy) package.
-#
-#   Copyright (C) 2013 Thomas Boggs
-#
-#   Spectral Python is free software; you can redistribute it and/
-#   or modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   Spectral Python is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this software; if not, write to
-#
-#               Free Software Foundation, Inc.
-#               59 Temple Place, Suite 330
-#               Boston, MA 02111-1307
-#               USA
-#
-#########################################################################
-#
-# Send comments to:
-# Thomas Boggs, tboggs@users.sourceforge.net
-#
-# spyfile.py
-'''Runs unit tests of image file interfaces using numpy memmaps.
+'''
+Runs unit tests of image file interfaces using numpy memmaps.
 
 The unit tests in this module assume the example file "92AV3C.lan" is in the
 spectral data path.  After the file is opened it is saved in various formats
@@ -40,12 +11,15 @@ To run the unit tests, type the following from the system command line:
     # python -m spectral.tests.memmap
 '''
 
-from __future__ import division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
 from numpy.testing import assert_almost_equal
-from .spytest import SpyTest
+
+import spectral as spy
+from spectral.io.spyfile import find_file_path, FileNotFoundError
 from spectral.tests import testdir
+from spectral.tests.spytest import SpyTest
 
 class SpyFileMemmapTest(SpyTest):
     '''Tests that SpyFile memmap interfaces read and write properly.'''
@@ -80,20 +54,19 @@ class SpyFileMemmapTest(SpyTest):
         self.src_inter = src_inter
 
     def setup(self):
-        import spectral
         self.create_test_image_file()
 
     def create_test_image_file(self):
         import os
         import spectral
-        img = spectral.open_image(self.file)
+        img = spy.open_image(self.file)
         fname = os.path.join(testdir, 'memmap_test_%s.hdr' % self.src_inter)
-        spectral.envi.save_image(fname,
-                                 img,
-                                 dtype = img.dtype,
-                                 interleave = self.src_inter,
-                                 force=True)
-        self.image = spectral.open_image(fname)
+        spy.envi.save_image(fname,
+                            img,
+                            dtype = img.dtype,
+                            interleave = self.src_inter,
+                            force=True)
+        self.image = spy.open_image(fname)
         
     def test_spyfile_has_memmap(self):
         assert(self.image.using_memmap == True)
@@ -187,7 +160,6 @@ class SpyFileMemmapTestSuite(object):
 
 
 def run():
-    from spectral.io.spyfile import find_file_path, FileNotFoundError
     suite = SpyFileMemmapTestSuite('92AV3C.lan', (30, 40, 50), 5420.0)
     suite.run()
 

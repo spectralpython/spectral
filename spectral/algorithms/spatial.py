@@ -32,12 +32,16 @@
 Functions over spatial regions of images.
 '''
 
-from __future__ import division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 __all__ = ['map_window', 'map_outer_window_stats', 'map_class_ids',
            'map_classes']
 
+import itertools
 import numpy as np
+
+import spectral as spy
+from .algorithms import GaussianStats, iterator_ij
 
 def get_window_bounds(nrows, ncols, height, width, i, j):
     '''Returns boundaries of an image window centered on a specified pixel.
@@ -441,8 +445,6 @@ class WindowedGaussianBackgroundMapper(object):
             An array whose elements correspond to the outputs from the
             object's callable function.
         '''
-        import spectral
-        from spectral.algorithms.algorithms import GaussianStats
         (R, C, B) = image.shape
         (row_border, col_border) = [x // 2 for x in self.outer]
 
@@ -485,7 +487,7 @@ class WindowedGaussianBackgroundMapper(object):
         (i_interior_start, i_interior_stop) = (row_border, R - row_border)
         (j_interior_start, j_interior_stop) = (col_border, C - col_border)
 
-        status = spectral._status
+        status = spy._status
         status.display_percentage('Processing image: ')
         if self.cov is not None:
             # Since we already have the covariance, just use np.mean to get
@@ -726,8 +728,7 @@ def map_class_ids(src_class_image, dest_class_image, unlabeled=None):
                 # The list of target classes has been exhausted. Pick the
                 # smallest dest value that isn't already used.
                 def next_id():
-                    from itertools import count
-                    for ii in count():
+                    for ii in itertools.count():
                         if ii not in unlabeled and ii not in cmap.values():
                             return ii
                 cmap[old] = next_id()
@@ -805,7 +806,6 @@ def expand_binary_mask_for_window(mask, height, width):
     for all pixels in the `height`x`width` window about the pixel and zeros
     elsewhere.
     '''
-    from spectral.algorithms.algorithms import iterator_ij
     m = np.zeros_like(mask)
     (mask_height, mask_width) = mask.shape
     for (i, j) in iterator_ij(mask):

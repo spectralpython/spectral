@@ -33,7 +33,7 @@
 Miscellaneous math functions
 '''
 
-from __future__ import division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
 
@@ -121,12 +121,3 @@ def get_histogram_cdf_points(data, cdf_vals, ignore=None, mask=None):
     return [data[isort[int(x * (N - 1))]] for x in cdf_vals]
 
 
-class NaNValueWarning(UserWarning):
-    pass
-
-class NaNValueError(ValueError):
-    pass
-
-def has_nan(X):
-    '''returns True if ndarray `X` contains a NaN value.'''
-    return bool(np.isnan(np.min(X)))

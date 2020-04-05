@@ -32,9 +32,12 @@
 Classes and functions for classification with neural networks.
 '''
 
-from __future__ import division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
+import itertools
+import math
 import numpy as np
+import os
 import sys
 
 class PerceptronLayer:
@@ -76,7 +79,6 @@ class PerceptronLayer:
         The bias weight will be in the range [0, 1). The remaining weights will
         correspond to a vector with unit length and uniform random orienation.
         '''
-        import math
         self.weights = 1. - 2. * np.random.rand(*self.shape)
         for row in self.weights:
             row[1:] /= math.sqrt(np.sum(row[1:]**2))
@@ -272,9 +274,6 @@ class Perceptron:
                 training status messages somewhere other than stdout. To
                 suppress output, set `stats` to None.
         '''
-        import itertools
-        import os
-
         if stdout is None:
             stdout = open(os.devnull, 'w')
 

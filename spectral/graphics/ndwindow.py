@@ -35,33 +35,44 @@ in 3D using OpenGL.
 
 from __future__ import division, print_function, unicode_literals
 
+import math
+import numpy as np
+import os
+from pprint import pprint
+import random
+import time
+
 try:
     import wx
     from wx import glcanvas
 except ImportError:
     raise ImportError("Required dependency wx.glcanvas not present")
 
+from .. import settings
+from ..config import spy_colors
+from .colorscale import ColorScale
+from .spypylab import ImageView, MplCallback, SpyMplEvent
+from .graphics import WindowProxy
+
 DEFAULT_WIN_SIZE = (500, 500)           # Default dimensions of image frame
 
 
 def rtp_to_xyz(r, theta, phi):
     '''Convert spherical polar coordinates to Cartesian'''
-    from math import pi, cos, sin
-    theta *= pi / 180.0
-    phi *= pi / 180.0
-    s = r * sin(theta)
-    return [s * cos(phi), s * sin(phi), r * cos(theta)]
+    theta *= math.pi / 180.0
+    phi *= math.pi / 180.0
+    s = r * math.sin(theta)
+    return [s * math.cos(phi), s * math.sin(phi), r * math.cos(theta)]
 
 
 def xyz_to_rtp(x, y, z):
     '''Convert Cartesian coordinates to Spherical Polar.'''
-    from math import asin, acos, sqrt, pi
-    r = sqrt(x * x + y * y + z * z)
-    rho = sqrt(x * x + y * y)
-    phi = asin(y / rho) * 180. / pi
+    r = math.sqrt(x * x + y * y + z * z)
+    rho = math.sqrt(x * x + y * y)
+    phi = math.asin(y / rho) * 180. / math.pi
     if x < 0.0:
         phi += 180
-    theta = acos(z / r) * 180. / pi
+    theta = math.acos(z / r) * 180. / math.pi
     return [r, theta, phi]
 
 (DOWN, UP) = (1, 0)
@@ -124,7 +135,6 @@ class MouseHandler:
 
     def motion(self, event):
         '''Handles panning & zooming for mouse click+drag events.'''
-        import numpy as np
         if DOWN not in (self.left, self.right):
             return
         #print 'Mouse movement:', x, y
@@ -168,11 +178,6 @@ class MouseHandler:
         ymax = max(self.event_position[1], self.position[1])
         R = self.window.size[1]
         self.window._selection_box = (xmin, R - ymax, xmax, R - ymin)
-
-from spectral.graphics.colorscale import ColorScale
-from spectral import spy_colors
-import numpy as np
-
 
 class MouseMenu(wx.Menu):
     '''Right-click menu for reassigning points to different classes.'''
@@ -230,7 +235,6 @@ def create_mirrored_octants(feature_indices):
 
 def random_subset(sequence, nsamples):
     '''Returns a list of `nsamples` unique random elements from `sequence`.'''
-    import random
     if len(sequence) < nsamples:
         raise Exception('Sequence in random_triplet must have at least ' +
                         '3 elements.')
@@ -238,8 +242,6 @@ def random_subset(sequence, nsamples):
     while len(set(triplet)) != nsamples:
         triplet = [random.choice(sequence) for i in range(nsamples)]
     return triplet
-
-from spectral.graphics.graphics import WindowProxy
 
 
 class NDWindowProxy(WindowProxy):
@@ -320,7 +322,6 @@ class NDWindow(wx.Frame):
     '''A widow class for displaying N-dimensional data points.'''
 
     def __init__(self, data, parent, id, *args, **kwargs):
-        from spectral import settings
         global DEFAULT_WIN_SIZE
         self.kwargs = kwargs
         self.size = kwargs.get('size', DEFAULT_WIN_SIZE)
@@ -580,8 +581,6 @@ class NDWindow(wx.Frame):
 
     def randomize_features(self):
         '''Randomizes data features displayed using current display mode.'''
-        import random
-        from pprint import pprint
         ids = list(range(self.data.shape[2]))
         if self.quadrant_mode == 'single':
             features = random_subset(ids, 3)
@@ -594,7 +593,6 @@ class NDWindow(wx.Frame):
         self.set_octant_display_features(features)
 
     def set_features(self, features, mode='single'):
-        from pprint import pprint
         if mode == 'single':
             if len(features) != 3:
                 raise Exception(
@@ -642,7 +640,6 @@ class NDWindow(wx.Frame):
 
     def on_paint(self, event):
         '''Renders the entire scene.'''
-        import time
         import OpenGL.GL as gl
         import OpenGL.GLU as glu
 
@@ -709,7 +706,6 @@ class NDWindow(wx.Frame):
         reassigned pixels from the display list, then reassigning again,
         repeating until there are no more pixels in the selction box.
         '''
-        import spectral
         nreassigned_tot = 0
         i = 1
         print('Reassigning points', end=' ')
@@ -740,7 +736,6 @@ class NDWindow(wx.Frame):
             self.max_menu_class += 1
 
         if nreassigned_tot > 0:
-            from .spypylab import SpyMplEvent
             event = SpyMplEvent('spy_classes_modified')
             event.classes = self.classes
             event.nchanged = nreassigned_tot
@@ -1016,7 +1011,6 @@ class NDWindow(wx.Frame):
         window. `args` and `kwargs` are additional arguments passed on to the
         `ImageView` constructor. Return value is the ImageView object.
         '''
-        from .spypylab import ImageView, MplCallback
         view = ImageView(classes=self.classes, *args, **kwargs)
         view.callbacks_common = self.callbacks
         view.show()
@@ -1024,7 +1018,6 @@ class NDWindow(wx.Frame):
 
     def print_help(self):
         '''Prints a list of accepted keyboard/mouse inputs.'''
-        import os
         print('''Mouse functions:
 ---------------
 Left-click & drag       -->     Rotate viewing geometry (or pan)
@@ -1052,7 +1045,6 @@ u       -->     Toggle display of unassigned points (points with class == 0)
 
 def validate_args(data, *args, **kwargs):
     '''Validates arguments to the `ndwindow` function.'''
-    import numpy as np
     if not isinstance(data, np.ndarray):
         raise TypeError('`data` argument must be a numpy ndarray.')
     if len(data.shape) != 3:
