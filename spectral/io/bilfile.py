@@ -1,43 +1,18 @@
-#########################################################################
-#
-#   bilfile.py - This file is part of the Spectral Python (SPy) package.
-#
-#   Copyright (C) 2001-2010 Thomas Boggs
-#
-#   Spectral Python is free software; you can redistribute it and/
-#   or modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   Spectral Python is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this software; if not, write to
-#
-#               Free Software Foundation, Inc.
-#               59 Temple Place, Suite 330
-#               Boston, MA 02111-1307
-#               USA
-#
-#########################################################################
-#
-# Send comments to:
-# Thomas Boggs, tboggs@users.sourceforge.net
-#
-
 '''
-Tools for handling files that are band interleaved by line (BIL).
+Code for handling files that are band interleaved by line (BIL).
 '''
 
-from __future__ import division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
+import array
 import logging
 import numpy as np
+import os
+import sys
+
+import spectral as spy
+from ..utilities.python23 import typecode, tobytes, frombytes
 from .spyfile import SpyFile, MemmapFile
-from spectral.utilities.python23 import typecode, tobytes, frombytes
 
 byte_typecode = typecode('b')
 
@@ -49,8 +24,7 @@ class BilFile(SpyFile, MemmapFile):
     '''
 
     def __init__(self, params, metadata=None):
-        import spectral
-        self.interleave = spectral.BIL
+        self.interleave = spy.BIL
         if metadata is None:
             metadata = {}
         SpyFile.__init__(self, params, metadata)
@@ -58,8 +32,6 @@ class BilFile(SpyFile, MemmapFile):
         self._memmap = self._open_memmap('r')
 
     def _open_memmap(self, mode):
-        import os
-        import sys
         logger = logging.getLogger('spectral')
         if (os.path.getsize(self.filename) < sys.maxsize):
             try:
@@ -93,17 +65,13 @@ class BilFile(SpyFile, MemmapFile):
 
                 An `MxN` array of values for the specified band.
         '''
-
-        from array import array
-        import numpy
-
         if self._memmap is not None and use_memmap is True:
             data = np.array(self._memmap[:, band, :])
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
             return data
 
-        vals = array(byte_typecode)
+        vals = array.array(byte_typecode)
         offset = self.offset + band * self.sample_size * self.ncols
 
         f = self.fid
@@ -114,7 +82,7 @@ class BilFile(SpyFile, MemmapFile):
                    self.ncols, 0)
             vals.fromfile(f, self.ncols * self.sample_size)
 
-        arr = numpy.fromstring(tobytes(vals), dtype=self.dtype)
+        arr = np.fromstring(tobytes(vals), dtype=self.dtype)
         arr = arr.reshape((self.nrows, self.ncols))
 
         if self.scale_factor != 1:
@@ -144,10 +112,6 @@ class BilFile(SpyFile, MemmapFile):
                 are the number of rows & columns in the image and `L` equals
                 len(`bands`).
         '''
-
-        from array import array
-        import numpy
-
         if self._memmap is not None and use_memmap is True:
             data = np.array(self._memmap[:, bands, :]).transpose((0, 2, 1))
             if self.scale_factor != 1:
@@ -156,10 +120,10 @@ class BilFile(SpyFile, MemmapFile):
 
         f = self.fid
 
-        arr = numpy.empty((self.nrows, self.ncols, len(bands)), self.dtype)
+        arr = np.empty((self.nrows, self.ncols, len(bands)), self.dtype)
 
         for i in range(self.nrows):
-            vals = array(byte_typecode)
+            vals = array.array(byte_typecode)
             row_offset = self.offset + i * (self.sample_size * self.nbands *
                                             self.ncols)
 
@@ -168,7 +132,7 @@ class BilFile(SpyFile, MemmapFile):
                 f.seek(row_offset + bands[j] * self.sample_size * self.ncols, 0)
                 vals.fromfile(f, self.ncols * self.sample_size)
 
-            frame = numpy.fromstring(tobytes(vals), dtype=self.dtype)
+            frame = np.fromstring(tobytes(vals), dtype=self.dtype)
             arr[i, :, :] = frame.reshape((len(bands), self.ncols)).transpose()
 
         if self.scale_factor != 1:
@@ -197,17 +161,13 @@ class BilFile(SpyFile, MemmapFile):
 
                 A length-`B` array, where `B` is the number of image bands.
         '''
-
-        from array import array
-        import numpy
-
         if self._memmap is not None and use_memmap is True:
             data = np.array(self._memmap[row, :, col])
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
             return data
 
-        vals = array(byte_typecode)
+        vals = array.array(byte_typecode)
         delta = self.sample_size * (self.nbands - 1)
         offset = self.offset + row * self.nbands * self.ncols \
             * self.sample_size + col * self.sample_size
@@ -220,7 +180,7 @@ class BilFile(SpyFile, MemmapFile):
             f.seek(offset + i * sample_size * ncols, 0)
             vals.fromfile(f, sample_size)
 
-        pixel = numpy.fromstring(tobytes(vals), dtype=self.dtype)
+        pixel = np.fromstring(tobytes(vals), dtype=self.dtype)
 
         if self.scale_factor != 1:
             return pixel / float(self.scale_factor)
@@ -258,18 +218,14 @@ class BilFile(SpyFile, MemmapFile):
 
                 An `MxNxL` array.
         '''
-
-        from array import array
-        import numpy
-
         if self._memmap is not None and use_memmap is True:
             if bands is None:
                 data = np.array(self._memmap[row_bounds[0]: row_bounds[1], :,
                                              col_bounds[0]: col_bounds[1]])
             else:
-                data = np.array(
-                    self._memmap[row_bounds[0]: row_bounds[1], bands,
-                                 col_bounds[0]: col_bounds[1]])
+                data = np.array(self._memmap[row_bounds[0]: row_bounds[1],
+                                             bands,
+                                             col_bounds[0]: col_bounds[1]])
             data = data.transpose((0, 2, 1))
             if self.scale_factor != 1:
                 data = data / float(self.scale_factor)
@@ -288,7 +244,7 @@ class BilFile(SpyFile, MemmapFile):
             # Read all bands.
             bands = list(range(self.nbands))
 
-        arr = numpy.empty((nSubRows, nSubCols, len(bands)), self.dtype)
+        arr = np.empty((nSubRows, nSubCols, len(bands)), self.dtype)
 
         offset = self.offset
         ncols = self.ncols
@@ -299,13 +255,13 @@ class BilFile(SpyFile, MemmapFile):
         for i in range(row_bounds[0], row_bounds[1]):
             f.seek(offset + i * d_row + colStartPos, 0)
             rowPos = f.tell()
-            vals = array(byte_typecode)
+            vals = array.array(byte_typecode)
             for j in bands:
                 f.seek(rowPos + j * ncols * sampleSize, 0)
                 vals.fromfile(f, nSubCols * sampleSize)
-            subArray = numpy.fromstring(tobytes(vals), dtype=self.dtype)
+            subArray = np.fromstring(tobytes(vals), dtype=self.dtype)
             subArray = subArray.reshape((nSubBands, nSubCols))
-            arr[i - row_bounds[0], :, :] = numpy.transpose(subArray)
+            arr[i - row_bounds[0], :, :] = np.transpose(subArray)
 
         if self.scale_factor != 1:
             return arr / float(self.scale_factor)
@@ -343,10 +299,6 @@ class BilFile(SpyFile, MemmapFile):
                 An `MxNxL` array, where `M` = len(`rows`), `N` = len(`cols`),
                 and `L` = len(bands) (or # of image bands if `bands` == None).
         '''
-
-        from array import array
-        import numpy
-
         if self._memmap is not None and use_memmap is True:
             if bands is None:
                 data = np.array(self._memmap.take(rows, 0).take(cols, 2))
@@ -373,10 +325,10 @@ class BilFile(SpyFile, MemmapFile):
             bands = list(range(self.nbands))
         nSubBands = len(bands)
 
-        arr = numpy.empty((nSubRows, nSubCols, nSubBands), self.dtype)
+        arr = np.empty((nSubRows, nSubCols, nSubBands), self.dtype)
 
         offset = self.offset
-        vals = array(byte_typecode)
+        vals = array.array(byte_typecode)
         sample_size = self.sample_size
 
         # Pixel format is BIL
@@ -388,7 +340,7 @@ class BilFile(SpyFile, MemmapFile):
                            j * d_col +
                            k * d_band, 0)
                     vals.fromfile(f, sample_size)
-        subArray = numpy.fromstring(tobytes(vals), dtype=self.dtype)
+        subArray = np.fromstring(tobytes(vals), dtype=self.dtype)
         subArray = subArray.reshape((nSubRows, nSubCols, nSubBands))
 
         if self.scale_factor != 1:
@@ -413,8 +365,6 @@ class BilFile(SpyFile, MemmapFile):
         Using this function is not an efficient way to iterate over bands or
         pixels. For such cases, use readBands or readPixel instead.
         '''
-        import array
-
         if self._memmap is not None and use_memmap is True:
             datum = self._memmap[i, k, j]
             if self.scale_factor != 1:

@@ -1,34 +1,5 @@
-#########################################################################
-#
-#   spyfile.py - This file is part of the Spectral Python (SPy) package.
-#
-#   Copyright (C) 2013 Thomas Boggs
-#
-#   Spectral Python is free software; you can redistribute it and/
-#   or modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   Spectral Python is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this software; if not, write to
-#
-#               Free Software Foundation, Inc.
-#               59 Temple Place, Suite 330
-#               Boston, MA 02111-1307
-#               USA
-#
-#########################################################################
-#
-# Send comments to:
-# Thomas Boggs, tboggs@users.sourceforge.net
-#
-# spyfile.py
-'''Runs unit tests of spectral file I/O functions.
+'''
+Runs unit tests of spectral file I/O functions.
 
 The unit tests in this module assume the example file "92AV3C.lan" is in the
 spectral data path.  After the file is opened it is saved in various formats
@@ -43,8 +14,16 @@ To run the unit tests, type the following from the system command line:
 
 from __future__ import division, print_function, unicode_literals
 
+import itertools
 import numpy as np
-from .spytest import SpyTest
+import os
+
+
+import spectral as spy
+from spectral.io.spyfile import find_file_path, FileNotFoundError, SpyFile
+from spectral.tests import testdir
+from spectral.tests.spytest import SpyTest
+
 
 def assert_almost_equal(a, b, **kwargs):
     if not np.allclose(a, b, **kwargs):
@@ -78,12 +57,10 @@ class SpyFileTest(SpyTest):
         self.value = value
 
     def setup(self):
-        import spectral
-        from spectral.io.spyfile import SpyFile
         if isinstance(self.file, SpyFile):
             self.image = self.file
         else:
-            self.image = spectral.open_image(self.file)
+            self.image = spy.open_image(self.file)
 
     def test_read_datum(self):
         assert_almost_equal(self.image.read_datum(*self.datum, use_memmap=True),
@@ -200,7 +177,6 @@ class SpyFileTest(SpyTest):
                     spyf.read_subimage([0, 2], [6, 3], [0, 1]))
         load_assert(data.read_datum(1,2,8), spyf.read_datum(1,2,8))
 
-        import spectral
         ufunc_result = data + 1
         assert isinstance(ufunc_result, np.ndarray)
         assert not isinstance(ufunc_result, type(data))
@@ -283,18 +259,13 @@ class SpyFileTestSuite(object):
         self.dtypes = [np.dtype(d).name for d in self.dtypes]
 
     def run(self):
-        import os
-        import itertools
-        import spectral
-        from spectral.tests import testdir
-
         print('\n' + '-' * 72)
         print('Running SpyFile read tests.')
         print('-' * 72)
 
         if not os.path.isdir(testdir):
             os.mkdir(testdir)
-        image = spectral.open_image(self.filename)
+        image = spy.open_image(self.filename)
         basename = os.path.join(testdir,
                                 os.path.splitext(self.filename)[0])
         interleaves = ('bil', 'bip', 'bsq')
@@ -303,11 +274,11 @@ class SpyFileTestSuite(object):
         for (inter, dtype, endian) in cases:
             fname = '%s_%s_%s_%s.hdr' % (basename, inter, dtype,
                                          endian)
-            spectral.envi.save_image(fname, image, interleave=inter,
-                                     dtype=dtype, byteorder=endian)
+            spy.envi.save_image(fname, image, interleave=inter,
+                                dtype=dtype, byteorder=endian)
             msg = 'Running SpyFile read tests on %s %s %s-endian file ' \
                 % (inter.upper(), np.dtype(dtype).name, endian)
-            testimg = spectral.open_image(fname)
+            testimg = spy.open_image(fname)
             if testimg.using_memmap is True:
                 print('\n' + '-' * 72)
                 print(msg + 'using memmap...')
@@ -329,8 +300,6 @@ class SpyFileTestSuite(object):
 
 
 def run():
-    from spectral.io.spyfile import find_file_path, FileNotFoundError
-
     tests = [('92AV3C.lan', (99, 99, 99), 2057.0)]
 #    tests = [('92AV3C.lan', (99, 99, 99), 2057.0),
 #             ('f970619t01p02_r02_sc04.a.rfl', (99, 99, 99), 0.2311),

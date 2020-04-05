@@ -1,45 +1,19 @@
-#########################################################################
-#
-#   iterators.py - This file is part of the Spectral Python (SPy) package.
-#
-#   Copyright (C) 2014 Thomas Boggs
-#
-#   Spectral Python is free software; you can redistribute it and/
-#   or modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   Spectral Python is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this software; if not, write to
-#
-#               Free Software Foundation, Inc.
-#               59 Temple Place, Suite 330
-#               Boston, MA 02111-1307
-#               USA
-#
-#########################################################################
-#
-# Send comments to:
-# Thomas Boggs, tboggs@users.sourceforge.net
-#
-'''Runs unit tests for iterators
+'''
+Runs unit tests for iterators.
 
 To run the unit tests, type the following from the system command line:
 
     # python -m spectral.tests.iterators
 '''
 
-from __future__ import division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
 from numpy.testing import assert_allclose
-from .spytest import SpyTest
+
 import spectral as spy
+from spectral.algorithms.algorithms import iterator, iterator_ij
+from spectral.tests.spytest import SpyTest
 
 class IteratorTest(SpyTest):
     '''Tests various math functions.'''
@@ -50,7 +24,6 @@ class IteratorTest(SpyTest):
 
     def test_iterator_all(self):
         '''Iteration over all pixels.'''
-        from spectral.algorithms.algorithms import iterator
         data = self.image.load()
         pixels = data.reshape((-1, data.shape[-1]))
         sum = np.sum(pixels, 0)
@@ -59,7 +32,6 @@ class IteratorTest(SpyTest):
 
     def test_iterator_nonzero(self):
         '''Iteration over all non-background pixels.'''
-        from spectral.algorithms.algorithms import iterator
         data = self.image.load()
         classes = self.gt.ravel()
         pixels = data.reshape((-1, data.shape[-1]))
@@ -69,7 +41,6 @@ class IteratorTest(SpyTest):
 
     def test_iterator_index(self):
         '''Iteration over single ground truth index'''
-        from spectral.algorithms.algorithms import iterator
         cls = 5
         data = self.image.load()
         classes = self.gt.ravel()
@@ -80,7 +51,6 @@ class IteratorTest(SpyTest):
 
     def test_iterator_ij_nonzero(self):
         '''Iteration over all non-background pixels.'''
-        from spectral.algorithms.algorithms import iterator_ij
         data = self.image.load()
         classes = self.gt.ravel()
         pixels = data.reshape((-1, data.shape[-1]))
@@ -90,7 +60,6 @@ class IteratorTest(SpyTest):
 
     def test_iterator_ij_index(self):
         '''Iteration over single ground truth index'''
-        from spectral.algorithms.algorithms import iterator_ij
         cls = 5
         data = self.image.load()
         classes = self.gt.ravel()
@@ -103,7 +72,6 @@ class IteratorTest(SpyTest):
 
     def test_iterator_spyfile(self):
         '''Iteration over SpyFile object for single ground truth index'''
-        from spectral.algorithms.algorithms import iterator
         cls = 5
         data = self.image.load()
         classes = self.gt.ravel()
@@ -115,7 +83,6 @@ class IteratorTest(SpyTest):
 
     def test_iterator_spyfile_nomemmap(self):
         '''Iteration over SpyFile object without memmap'''
-        from spectral.algorithms.algorithms import iterator
         cls = 5
         data = self.image.load()
         classes = self.gt.ravel()

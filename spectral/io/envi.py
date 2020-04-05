@@ -1,33 +1,3 @@
-#########################################################################
-#
-#   envi.py - This file is part of the Spectral Python (SPy) package.
-#
-#   Copyright (C) 2001-2010 Thomas Boggs
-#
-#   Spectral Python is free software; you can redistribute it and/
-#   or modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   Spectral Python is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this software; if not, write to
-#
-#               Free Software Foundation, Inc.
-#               59 Temple Place, Suite 330
-#               Boston, MA 02111-1307
-#               USA
-#
-#########################################################################
-#
-# Send comments to:
-# Thomas Boggs, tboggs@users.sourceforge.net
-#
-
 '''
 ENVI [#envi-trademark]_ is a popular commercial software package for processing
 and analyzing geospatial imagery.  SPy supports reading imagery with associated
@@ -43,17 +13,30 @@ the data file has an unusual file extension that SPy can not identify.
 .. [#envi-trademark] ENVI is a registered trademark of Exelis, Inc.
 '''
 
-from __future__ import division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
-from spectral.utilities.python23 import IS_PYTHON3
+import logging
+import numpy as np
+import os
+import sys
+import warnings
+
+import spectral as spy
+from ..spectral import BandInfo
+from ..utilities.python23 import IS_PYTHON3, is_string
+from ..utilities.errors import SpyException
+from .bilfile import BilFile
+from .bipfile import BipFile
+from .bsqfile import BsqFile
+from .spyfile import (FileNotFoundError, find_file_path, interleave_transpose,
+                      InvalidFileError, SpyFile)
+
+
 
 if IS_PYTHON3:
     import builtins
 else:
     import __builtin__ as builtins
-
-import logging
-import numpy as np
 
 logger = logging.getLogger('spectral')
 
@@ -74,9 +57,6 @@ dtype_map = [('1', np.uint8),                   # unsigned byte
              ('15', np.uint64)]                 # 64-bit unsigned int
 envi_to_dtype = dict((k, np.dtype(v).char) for (k, v) in dtype_map)
 dtype_to_envi = dict(tuple(reversed(item)) for item in list(envi_to_dtype.items()))
-
-from spectral import SpyException
-from .spyfile import FileNotFoundError, InvalidFileError
 
 class EnviException(SpyException):
     '''Base class for ENVI file-related exceptions.'''
@@ -134,8 +114,6 @@ def read_envi_header(file):
     dictionary as strings.  Header field names are treated as case
     insensitive and all keys in the dictionary are lowercase.
     '''
-    import warnings
-    from spectral import settings
     f = builtins.open(file, 'r')
 
     try:
@@ -157,7 +135,7 @@ def read_envi_header(file):
 
     dict = {}
     have_nonlowercase_param = False
-    support_nonlowercase_params = settings.envi_support_nonlowercase_params
+    support_nonlowercase_params = spy.settings.envi_support_nonlowercase_params
     try:
         while lines:
             line = lines.pop(0)
@@ -211,10 +189,7 @@ def gen_params(envi_header):
 
         A dict or an `.hdr` file name
     '''
-    import spectral
-
     if not isinstance(envi_header, dict):
-        from .spyfile import find_file_path
         headerPath = find_file_path(envi_header)
         h = read_envi_header(headerPath)
     else:
@@ -229,7 +204,7 @@ def gen_params(envi_header):
     p.offset = int(h["header offset"]) if "header offset" in h else int(0)
     p.byte_order = int(h["byte order"])
     p.dtype = np.dtype(envi_to_dtype[str(h["data type"])]).str
-    if p.byte_order != spectral.byte_order:
+    if p.byte_order != spy.byte_order:
         p.dtype = np.dtype(p.dtype).newbyteorder().str
     p.filename = None
     return p
@@ -266,8 +241,6 @@ def check_compatibility(header):
     '''
     Verifies that all features of an ENVI header are supported.
     '''
-    from .spyfile import find_file_path
-    from spectral.utilities.python23 import is_string
     if is_string(header):
         header = read_envi_header(find_file_path(header))
 
@@ -313,11 +286,6 @@ def open(file, image=None):
     Capitalized versions of the file extensions are also searched.
     '''
 
-    import os
-    from .spyfile import find_file_path
-    import numpy
-    import spectral
-
     header_path = find_file_path(file)
     h = read_envi_header(header_path)
     check_compatibility(h)
@@ -352,20 +320,17 @@ def open(file, image=None):
 
     if h.get('file type') == 'ENVI Spectral Library':
         # File is a spectral library
-        data = numpy.fromfile(p.filename, p.dtype, p.ncols * p.nrows)
+        data = np.fromfile(p.filename, p.dtype, p.ncols * p.nrows)
         data.shape = (p.nrows, p.ncols)
         return SpectralLibrary(data, h, p)
 
     #  Create the appropriate object type for the interleave format.
     inter = h["interleave"]
     if inter == 'bil' or inter == 'BIL':
-        from spectral.io.bilfile import BilFile
         img = BilFile(p, h)
     elif inter == 'bip' or inter == 'BIP':
-        from spectral.io.bipfile import BipFile
         img = BipFile(p, h)
     else:
-        from spectral.io.bsqfile import BsqFile
         img = BsqFile(p, h)
 
     img.scale_factor = float(h.get('reflectance scale factor', 1.0))
@@ -396,7 +361,6 @@ def open(file, image=None):
 def check_new_filename(hdr_file, img_ext, force):
     '''Raises an exception if the associated header or image file names exist.
     '''
-    import os
     if img_ext is None:
         img_ext = ''
     elif len(img_ext) > 0 and img_ext[0] != '.':
@@ -563,8 +527,6 @@ def save_classification(hdr_file, image, **kwargs):
     (e.g., wavelengths do not apply to classification results).
 
     '''
-    from spectral import spy_colors
-    
     data, metadata = _prepared_data_and_metadata(hdr_file, image, **kwargs)
     metadata['file type'] = "ENVI Classification"
 
@@ -595,7 +557,7 @@ def save_classification(hdr_file, image, **kwargs):
     if len(colors) < n_classes * 3:
         colors = []
         for i in range(n_classes):
-            colors += list(spy_colors[i % len(spy_colors)])
+            colors += list(spy.spy_colors[i % len(spy.spy_colors)])
     metadata['class lookup'] = colors
 
     _write_image(hdr_file, data, metadata, **kwargs)
@@ -604,11 +566,6 @@ def _prepared_data_and_metadata(hdr_file, image, **kwargs):
     '''
     Return data array and metadata dict representing `image`.
     '''
-    import os
-    import sys
-    import spectral
-    from spectral.io.spyfile import SpyFile, interleave_transpose
-
     endian_out = str(kwargs.get('byteorder', sys.byteorder)).lower()
     if endian_out in ('0', 'little'):
         endian_out = 'little'
@@ -627,8 +584,8 @@ def _prepared_data_and_metadata(hdr_file, image, **kwargs):
     elif isinstance(image, SpyFile):
         if image.using_memmap is True:
             data = image._memmap
-            src_interleave = {spectral.BSQ: 'bsq', spectral.BIL: 'bil',
-                              spectral.BIP: 'bip'}[image.interleave]
+            src_interleave = {spy.BSQ: 'bsq', spy.BIL: 'bil',
+                              spy.BIP: 'bip'}[image.interleave]
             swap = image.swap
         else:
             data = image.load(dtype=image.dtype, scale=False)
@@ -676,9 +633,6 @@ def add_image_info_to_metadata(image, metadata):
     '''
     Set keys in metadata dict to values appropriate for image.
     '''
-    from spectral.io.spyfile import SpyFile, interleave_transpose
-    import colorsys
-
     if isinstance(image, SpyFile) and image.scale_factor != 1:
         metadata['reflectance scale factor'] = image.scale_factor
 
@@ -824,10 +778,6 @@ def create_image(hdr_file, metadata=None, **kwargs):
             >>> mm[30, 30] = 100
 
     '''
-    import numpy as np
-    import os
-    import spectral
-
     force = kwargs.get('force', False)
     img_ext = kwargs.get('ext', '.img')
     memmap_mode = kwargs.get('memmap_mode', 'w+')
@@ -857,7 +807,7 @@ def create_image(hdr_file, metadata=None, **kwargs):
     if 'interleave' in kwargs:
         metadata['interleave'] = kwargs['interleave']
 
-    metadata['byte order'] = spectral.byte_order
+    metadata['byte order'] = spy.byte_order
 
     # Verify minimal set of parameters have been provided
     if 'lines' not in metadata:
@@ -888,19 +838,16 @@ def create_image(hdr_file, metadata=None, **kwargs):
     if inter.lower() not in ['bil', 'bip', 'bsq']:
         raise ValueError('Invalid interleave specified: %s.' % str(inter))
     if inter.lower() == 'bil':
-        from spectral.io.bilfile import BilFile
         memmap = np.memmap(img_file, dtype=dt, mode=memmap_mode,
                            offset=params.offset, shape=(R, B, C))
         img = BilFile(params, metadata)
         img._memmap = memmap
     elif inter.lower() == 'bip':
-        from spectral.io.bipfile import BipFile
         memmap = np.memmap(img_file, dtype=dt, mode=memmap_mode,
                            offset=params.offset, shape=(R, C, B))
         img = BipFile(params, metadata)
         img._memmap = memmap
     else:
-        from spectral.io.bsqfile import BsqFile
         memmap = np.memmap(img_file, dtype=dt, mode=memmap_mode,
                            offset=params.offset, shape=(B, R, C))
         img = BsqFile(params, metadata)
@@ -952,8 +899,6 @@ class SpectralLibrary:
 
                 Optional SpyFile Params object
         '''
-        from spectral.spectral import BandInfo
-
         self.spectra = data
         (n_spectra, n_bands) = data.shape
 
@@ -1002,7 +947,6 @@ class SpectralLibrary:
         This method creates two files: `file_basename`.hdr and
         `file_basename`.sli.
         '''
-        import spectral
         meta = self.metadata.copy()
         meta['samples'] = self.spectra.shape[1]
         meta['lines'] = self.spectra.shape[0]
@@ -1010,7 +954,7 @@ class SpectralLibrary:
         meta['header offset'] = 0
         meta['data type'] = 4           # 32-bit float
         meta['interleave'] = 'bsq'
-        meta['byte order'] = spectral.byte_order
+        meta['byte order'] = spy.byte_order
         meta['wavelength units'] = self.bands.band_unit
         meta['spectra names'] = [str(n) for n in self.names]
         if self.bands.centers is not None:
@@ -1025,7 +969,6 @@ class SpectralLibrary:
         fout.close()
 
 def _write_header_param(fout, paramName, paramVal):
-    from spectral.utilities.python23 import is_string
     if paramName.lower() == 'description':
         valStr = '{\n%s}' % '\n'.join(['  ' + line for line
                                        in paramVal.split('\n')])
