@@ -35,10 +35,17 @@ Common functions for extracting and manipulating data for graphical display.
 
 from __future__ import division, print_function, unicode_literals
 
-from warnings import warn
+import io
+from numbers import Number
 import numpy as np
-import spectral
+import sys
+import time
+import warnings
 
+from ..algorithms.spymath import get_histogram_cdf_points
+from ..config import spy_colors
+from ..image import Image
+from ..spectral import settings
 
 class WindowProxy(object):
     '''Base class for proxy objects to access data from display windows.'''
@@ -101,10 +108,7 @@ def view(*args, **kwargs):
     middle, and last bands will be displayed in the RGB channels, unless
     `bands` is specified.
     '''
-    from . import graphics
-    from spectral.spectral import Image
-    from spectral.graphics.rasterwindow import RasterWindow
-
+    from .rasterwindow import RasterWindow
     if not running_ipython():
         warn_no_ipython()
     check_wx_app()
@@ -175,7 +179,7 @@ def view_cube(data, *args, **kwargs):
     inputs are printed to the console output.  Focus must be on the 3D window
     to accept keyboard input.
     '''
-    from spectral.graphics.hypercube import HypercubeWindow
+    from .hypercube import HypercubeWindow
 
     if not running_ipython():
         warn_no_ipython()
@@ -253,10 +257,7 @@ def view_nd(data, *args, **kwargs):
     current class labels associated with data points and a `set_features`
     member to specify which features are displayed.
     '''
-    import spectral
-    import time
-    from spectral.graphics.ndwindow import NDWindow, validate_args
-
+    from .ndwindow import NDWindow, validate_args
     if not running_ipython():
         warn_no_ipython()
     check_wx_app()
@@ -297,8 +298,6 @@ def view_indexed(*args, **kwargs):
 
     The default color palette used is defined by :obj:`spectral.spy_colors`.
     '''
-    from spectral import settings, spy_colors
-
     if not running_ipython():
         warn_no_ipython()
     check_wx_app()
@@ -344,7 +343,6 @@ def imshow(data, bands=None, **kwargs):
     keyword `cmap=None`.
     '''
     import matplotlib.pyplot as plt
-
     show_xaxis = True
     show_yaxis = True
     if 'show_xaxis' in kwargs:
@@ -381,9 +379,6 @@ def make_pil_image(*args, **kwargs):
 
     See `get_rgb` for description of arguments.
     '''
-    import numpy
-    import io
-
     try:
         from PIL import Image, ImageDraw
     except ImportError:
@@ -391,9 +386,9 @@ def make_pil_image(*args, **kwargs):
         import ImageDraw
 
     rgb = get_rgb(*args, **kwargs)
-    rgb = (rgb * 255).astype(numpy.ubyte)
-    im = Image.fromarray(rgb)
-    return im
+    rgb = (rgb * 255).astype(np.ubyte)
+    img = Image.fromarray(rgb)
+    return img
 
 
 def save_rgb(filename, data, bands=None, **kwargs):
@@ -569,11 +564,6 @@ def get_rgb_meta(source, bands=None, **kwargs):
     first element is the get_rgb return array and whose second element is a
     dictionary containing some metadata values for the data RGB conversion.
     '''
-    from spectral.spectral import Image, settings
-    from spectral.algorithms.spymath import get_histogram_cdf_points
-    from numbers import Number
-    from warnings import warn
-
     for k in kwargs:
         if k not in _get_rgb_kwargs:
             raise ValueError('Invalid keyword: {0}'.format(k))
@@ -600,7 +590,7 @@ def get_rgb_meta(source, bands=None, **kwargs):
                 except:
                     msg = 'Unable to interpret "default bands" in image ' \
                       'metadata. Defaulting to first, middle, & last band.'
-                    warn(msg)
+                    warnings.warn(msg)
             elif source.shape[-1] == 1:
                 bands = [0]
         if len(bands) == 0:
@@ -685,7 +675,7 @@ def get_rgb_meta(source, bands=None, **kwargs):
         if stretch in (True, False):
             msg = 'Boolean values for `stretch` keyword are deprected. See ' \
               'docstring for `get_rgb`'
-            warn(msg)
+            warnings.warn(msg)
             stretch = settings.imshow_stretch
         elif isinstance(stretch, Number):
             if not (0 <= stretch <= 1):
@@ -757,7 +747,6 @@ def running_ipython():
 
 def warn_no_ipython():
     '''Warns that user is calling a GUI function outside of ipython.'''
-    import sys
     msg = '''
 #############################################################################
 SPy graphics functions are inteded to be run from IPython with the
@@ -785,7 +774,7 @@ starting your ipython session:
     In [2]: app = wx.App()
 #############################################################################
 '''
-    warn(msg, UserWarning)
+    warnings.warn(msg, UserWarning)
 
 
 def check_wx_app():
@@ -796,7 +785,7 @@ def check_wx_app():
     import spectral
     import wx
     if wx.GetApp() is None and spectral.settings.START_WX_APP == True:
-        warn('\nThere is no current wx.App object - creating one now.',
-             UserWarning)
+        warnings.warn('\nThere is no current wx.App object - creating one now.',
+                      UserWarning)
         spectral.app = wx.App()
 

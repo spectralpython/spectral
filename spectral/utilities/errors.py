@@ -1,9 +1,9 @@
 #########################################################################
 #
-#   algorithms/__init__.py - This file is part of the Spectral Python
-#  (SPy) package.
+#   errors.py - This file is part of the Spectral Python (SPy)
+#   package.
 #
-#   Copyright (C) 2001-2006 Thomas Boggs
+#   Copyright (C) 2001-2020 Thomas Boggs
 #
 #   Spectral Python is free software; you can redistribute it and/
 #   or modify it under the terms of the GNU General Public License
@@ -29,16 +29,18 @@
 # Thomas Boggs, tboggs@users.sourceforge.net
 #
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+import numpy as np
 
-from .algorithms import (mean_cov, covariance, principal_components, bdist,
-                        linear_discriminant, create_training_classes, ndvi,
-                        orthogonalize, transform_image, unmix, spectral_angles,
-                        calc_stats, cov_avg, msam, noise_from_diffs, mnf,
-                        GaussianStats, ppi)
-from .classifiers import *
-from .clustering import L1, L2, kmeans
-from .resampling import BandResampler
-from .transforms import LinearTransform
-from .detectors import *
-from .spatial import *
+class SpyException(Exception):
+    '''Base class for spectral module-specific exceptions.'''
+    pass
+
+class NaNValueWarning(UserWarning):
+    pass
+
+class NaNValueError(ValueError):
+    pass
+
+def has_nan(X):
+    '''returns True if ndarray `X` contains a NaN value.'''
+    return bool(np.isnan(np.min(X)))

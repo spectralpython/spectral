@@ -28,15 +28,21 @@
 # Send comments to:
 # Thomas Boggs, tboggs@users.sourceforge.net
 #
-'''Base classes for classifiers and basic classifiers.'''
+'''Base classes for classifiers.'''
 
-from __future__ import division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+import math
 import numpy
 import numpy as np
 
 from warnings import warn
+
+import spectral as spy
+from .algorithms import GaussianStats, ImageIterator
+from .detectors import RX
+from .perceptron import Perceptron
 
 __all__ = ('GaussianClassifier', 'MahalanobisDistanceClassifier',
            'PerceptronClassifier')
@@ -73,13 +79,10 @@ class Classifier(object):
 
             An `MxN` ndarray of integers specifying the class for each pixel.
         '''
-        import spectral
-        from .algorithms import ImageIterator
-        from numpy import zeros
-        status = spectral._status
+        status = spy._status
         status.display_percentage('Classifying image...')
         it = ImageIterator(image)
-        class_map = zeros(image.shape[:2], np.int16)
+        class_map = np.zeros(image.shape[:2], np.int16)
         N = it.get_num_elements()
         i, inc = (0, N / 100)
         for spectrum in it:
@@ -171,12 +174,10 @@ class GaussianClassifier(SupervisedClassifier):
                 The index for the :class:`~spectral.algorithms.TrainingClass`
                 to which `x` is classified.
         '''
-        from math import log
-
         scores = np.empty(len(self.classes))
         for (i, cl) in enumerate(self.classes):
             delta = (x - cl.stats.mean)
-            scores[i] = log(cl.class_prob) - 0.5 * cl.stats.log_det_cov \
+            scores[i] = math.log(cl.class_prob) - 0.5 * cl.stats.log_det_cov \
                - 0.5 * delta.dot(cl.stats.inv_cov).dot(delta)
         return self.classes[np.argmax(scores)].index
             
@@ -193,12 +194,10 @@ class GaussianClassifier(SupervisedClassifier):
 
             An `MxN` ndarray of integers specifying the class for each pixel.
         '''
-        import math
-        import spectral
         if not (self.cache_class_scores and isinstance(image, np.ndarray)):
             return super(GaussianClassifier, self).classify_image(image)
 
-        status = spectral._status
+        status = spy._status
         status.display_percentage('Processing...')
         shape = image.shape
         image = image.reshape(-1, shape[-1])
@@ -244,7 +243,6 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
 
                 Data for the training classes.
         '''
-        from .algorithms import GaussianStats
         GaussianClassifier.train(self, trainingData)
 
         covariance = numpy.zeros(self.classes[0].stats.cov.shape, numpy.float)
@@ -289,8 +287,6 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
 
             An `MxN` ndarray of integers specifying the class for each pixel.
         '''
-        import spectral
-        from .detectors import RX
         if not (self.cache_class_scores and isinstance(image, np.ndarray)):
             return super(MahalanobisDistanceClassifier,
                          self).classify_image(image)
@@ -300,7 +296,7 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
         # background mean to the mean of the particular class being evaluated.
 
         scores = np.empty(image.shape[:2] + (len(self.classes),), np.float64)
-        status = spectral._status
+        status = spy._status
         status.display_percentage('Processing...')
         rx = RX()
         for (i, c) in enumerate(self.classes):
@@ -313,8 +309,6 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
         mins = np.argmin(scores, axis=-1)
         return inds[mins]
 
-
-from .perceptron import Perceptron
 
 class PerceptronClassifier(Perceptron, SupervisedClassifier):
     '''A multi-layer perceptron classifier with backpropagation learning.
@@ -423,7 +417,9 @@ class PerceptronClassifier(Perceptron, SupervisedClassifier):
         (e.g., increased learning rate or momentum) to increase the convergence
         rate.
         '''
-        from spectral import _status, settings
+        status = spy._status
+        settings = spy.settings
+
         # Number of Perceptron inputs must equal number of features in the
         # training data.
         if len(training_data) != self.layers[-1].shape[0]:
@@ -447,7 +443,7 @@ class PerceptronClassifier(Perceptron, SupervisedClassifier):
         if 'stdout' in kwargs:
             stdout = kwargs.pop('stdout')
         elif settings.show_progress is True:
-            stdout = _status
+            stdout = status
         else:
             stdout = None
         return Perceptron.train(self, X, Y, *args, stdout=stdout, **kwargs)
@@ -473,6 +469,5 @@ class PerceptronClassifier(Perceptron, SupervisedClassifier):
         return self.indices[np.argmax(y)]
 
     def classify(self, X, **kwargs):
-        from .classifiers import Classifier
         return Classifier.classify(self, X, **kwargs)
 

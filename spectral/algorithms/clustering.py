@@ -31,25 +31,24 @@
 Unsupervised clustering algorithms.
 '''
 
-from __future__ import division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import numpy
-from warnings import warn
+import numpy as np
 
+import spectral as spy
 from .classifiers import Classifier
-
-
+from ..utilities.errors import has_nan, NaNValueError
 
 def L1(v1, v2):
     'Returns L1 distance between 2 rank-1 arrays.'
-    return numpy.sum(abs((v1 - v2)))
+    return np.sum(abs((v1 - v2)))
 
 
 def L2(v1, v2):
     'Returns Euclidean distance between 2 rank-1 arrays.'
     delta = v1 - v2
-    return numpy.sqrt(numpy.dot(delta, delta))
+    return np.sqrt(np.dot(delta, delta))
 
 
 class KmeansClusterer(Classifier):
@@ -163,15 +162,12 @@ def kmeans(image, nclusters=10, max_iterations=20, **kwargs):
     while the algorithm is executing, clusters are returned from the previously
     completed iteration.
     '''
-    import spectral
-    import numpy
-
     logger = logging.getLogger('spectral')
 
-    if isinstance(image, numpy.ndarray):
+    if isinstance(image, np.ndarray):
         return kmeans_ndarray(*(image, nclusters, max_iterations), **kwargs)
 
-    status = spectral._status
+    status = spy._status
 
     # defaults for kwargs
     start_clusters = None
@@ -200,22 +196,22 @@ def kmeans(image, nclusters=10, max_iterations=20, **kwargs):
             raise NameError('Unsupported keyword argument.')
 
     (nrows, ncols, nbands) = image.shape
-    clusters = numpy.zeros((nrows, ncols), int)
-    old_clusters = numpy.copy(clusters)
+    clusters = np.zeros((nrows, ncols), int)
+    old_clusters = np.copy(clusters)
     if start_clusters is not None:
         assert (start_clusters.shape[0] == nclusters), 'There must be \
         nclusters clusters in the startCenters array.'
-        centers = numpy.array(start_clusters)
+        centers = np.array(start_clusters)
     else:
         logging.debug('Initializing clusters along diagonal of N-dimensional bounding box.')
-        centers = numpy.empty((nclusters, nbands), float)
+        centers = np.empty((nclusters, nbands), float)
         boxMin = image[0, 0]
         boxMax = image[0, 0]
         for i in range(nrows):
             for j in range(ncols):
                 x = image[i, j]
-                boxMin = numpy.where(boxMin < x, boxMin, x)
-                boxMax = numpy.where(boxMax > x, boxMax, x)
+                boxMin = np.where(boxMin < x, boxMin, x)
+                boxMax = np.where(boxMax > x, boxMax, x)
         boxMin = boxMin.astype(float)
         boxMax = boxMax.astype(float)
         delta = (boxMax - boxMin) / (nclusters - 1)
@@ -239,7 +235,7 @@ def kmeans(image, nclusters=10, max_iterations=20, **kwargs):
                             minDist = dist
 
             # Update cluster centers
-            sums = numpy.zeros((nclusters, nbands), 'd')
+            sums = np.zeros((nclusters, nbands), 'd')
             counts = ([0] * nclusters)
             for i in range(nrows):
                 for j in range(ncols):
@@ -250,7 +246,7 @@ def kmeans(image, nclusters=10, max_iterations=20, **kwargs):
             for i in range(nclusters):
                 if (counts[i] > 0):
                     centers[i] = sums[i] / counts[i]
-            centers = numpy.array(centers)
+            centers = np.array(centers)
 
             if iterations is not None:
                 iterations.append(clusters)
@@ -259,7 +255,7 @@ def kmeans(image, nclusters=10, max_iterations=20, **kwargs):
                 status.end_percentage('done.')
                 break
             else:
-                nChanged = numpy.sum(clusters != old_clusters)
+                nChanged = np.sum(clusters != old_clusters)
                 if nChanged == 0:
                     status.end_percentage('0 pixels reassigned.')
                     break
@@ -269,7 +265,7 @@ def kmeans(image, nclusters=10, max_iterations=20, **kwargs):
 
             old_clusters = clusters
             old_centers = centers
-            clusters = numpy.zeros((nrows, ncols), int)
+            clusters = np.zeros((nrows, ncols), int)
             itnum += 1
 
         except KeyboardInterrupt:
@@ -344,10 +340,6 @@ def kmeans_ndarray(image, nclusters=10, max_iterations=20, **kwargs):
     while the algorithm is executing, clusters are returned from the previously
     completed iteration.
     '''
-    import spectral
-    import numpy as np
-    from spectral.algorithms.spymath import has_nan, NaNValueError
-
     logger = logging.getLogger('spectral')
 
     if has_nan(image):
@@ -382,11 +374,11 @@ def kmeans_ndarray(image, nclusters=10, max_iterations=20, **kwargs):
     (nrows, ncols, nbands) = image.shape
     N = nrows * ncols
     image = image.reshape((N, nbands))
-    clusters = numpy.zeros((N,), int)
+    clusters = np.zeros((N,), int)
     if start_clusters is not None:
         assert (start_clusters.shape[0] == nclusters), 'There must be \
         nclusters clusters in the startCenters array.'
-        centers = numpy.array(start_clusters)
+        centers = np.array(start_clusters)
     else:
         logger.debug('Initializing clusters along diagonal of N-dimensional' \
                      ' bounding box.')
@@ -428,7 +420,7 @@ def kmeans_ndarray(image, nclusters=10, max_iterations=20, **kwargs):
             if compare and compare(old_clusters, clusters):
                 break
             else:
-                nChanged = numpy.sum(clusters != old_clusters)
+                nChanged = np.sum(clusters != old_clusters)
                 logger.info('k-means iteration {} - {} pixels reassigned.' \
                             .format(itnum, nChanged))
                 if nChanged == 0:

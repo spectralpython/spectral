@@ -66,11 +66,20 @@ call the function "hypercube".
 
 from __future__ import division, print_function, unicode_literals
 
+import math
+import numpy as np
+
 try:
     import wx
     from wx import glcanvas
 except ImportError:
     raise ImportError("Required dependency wx.glcanvas not present")
+
+from .. import settings
+from ..image import Image
+from ..io.spyfile import SpyFile
+from .colorscale import create_default_color_scale
+from .graphics import make_pil_image, SpyWindow
 
 DEFAULT_WIN_SIZE = (500, 500)           # Default dimensions of image frame
 DEFAULT_TEXTURE_SIZE = (
@@ -79,22 +88,20 @@ DEFAULT_TEXTURE_SIZE = (
 
 def rtp_to_xyz(r, theta, phi):
     '''Convert spherical polar coordinates to Cartesian'''
-    from math import pi, cos, sin
-    theta *= pi / 180.0
-    phi *= pi / 180.0
-    s = r * sin(theta)
-    return [s * cos(phi), s * sin(phi), r * cos(theta)]
+    theta *= math.pi / 180.0
+    phi *= math.pi / 180.0
+    s = r * math.sin(theta)
+    return [s * math.cos(phi), s * math.sin(phi), r * math.cos(theta)]
 
 
 def xyz_to_rtp(x, y, z):
     '''Convert Cartesian coordinates to Spherical Polar.'''
-    from math import asin, acos, sqrt, pi
-    r = sqrt(x * x + y * y + z * z)
-    rho = sqrt(x * x + y * y)
-    phi = asin(y / rho) * 180. / pi
+    r = math.sqrt(x * x + y * y + z * z)
+    rho = math.sqrt(x * x + y * y)
+    phi = math.asin(y / rho) * 180. / math.pi
     if x < 0.0:
         phi += 180
-    theta = acos(z / r) * 180. / pi
+    theta = math.acos(z / r) * 180. / math.pi
     return [r, theta, phi]
 
 (DOWN, UP) = (1, 0)
@@ -125,7 +132,6 @@ class MouseHandler:
 
     def motion(self, event):
         '''Handles panning & zooming for mouse click+drag events.'''
-        import numpy as np
         if DOWN not in (self.left, self.right):
             return
         #print 'Mouse movement:', x, y
@@ -160,15 +166,11 @@ class MouseHandler:
         self.window.Refresh()
         event.Skip()
 
-from spectral.graphics.graphics import SpyWindow
-
-
 class HypercubeWindow(wx.Frame, SpyWindow):
     """A simple class for using OpenGL with wxPython."""
 
     def __init__(self, data, parent, id, *args, **kwargs):
         global DEFAULT_WIN_SIZE
-        from spectral import settings
 
         self.kwargs = kwargs
         self.size = kwargs.get('size', DEFAULT_WIN_SIZE)
@@ -222,12 +224,7 @@ class HypercubeWindow(wx.Frame, SpyWindow):
         self.canvas.Bind(wx.EVT_CHAR, self.on_char)
 
     def load_textures(self):
-        import numpy as np
         import OpenGL.GL as gl
-        import spectral
-        from spectral.spectral import Image
-        from . import graphics
-        from spectral.graphics.colorscale import create_default_color_scale
 
         global DEFAULT_TEXTURE_SIZE
 
@@ -243,16 +240,16 @@ class HypercubeWindow(wx.Frame, SpyWindow):
         if 'top' in self.kwargs:
             image = self.kwargs['top']
             if isinstance(image, np.ndarray):
-                image = graphics.make_pil_image(image)
+                image = make_pil_image(image)
         else:
             if 'bands' in self.kwargs:
                 bands = self.kwargs['bands']
-            elif isinstance(data, spectral.io.SpyFile) and \
+            elif isinstance(data, SpyFile) and \
                     'default bands' in data.metadata:
                 bands = list(map(int, data.metadata['default bands']))
             else:
                 bands = list(range(3))
-            image = graphics.make_pil_image(data, bands)
+            image = make_pil_image(data, bands)
 
         # Read each image so it displays properly when viewed from the outside
         # of the cube with corners rendered from lower left CCW to upper left.
@@ -267,8 +264,7 @@ class HypercubeWindow(wx.Frame, SpyWindow):
         scaleMin = min([min(side.ravel()) for side in sides])
         scaleMax = max([max(side.ravel()) for side in sides])
         scale.set_range(scaleMin, scaleMax)
-        sideImages = [graphics.make_pil_image(side, color_scale=scale,
-                                              auto_scale=0)
+        sideImages = [make_pil_image(side, color_scale=scale, auto_scale=0)
                       for side in sides]
         images = [image] + sideImages
 

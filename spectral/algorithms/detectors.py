@@ -32,12 +32,18 @@
 Spectral target detection algorithms
 '''
 
-from __future__ import division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 __all__ = ['MatchedFilter', 'matched_filter', 'RX', 'rx', 'ace']
 
+import math
 import numpy as np
-from spectral.algorithms.transforms import LinearTransform
+
+from .algorithms import calc_stats
+from .transforms import LinearTransform
+from .spatial import map_outer_window_stats
+from .spymath import matrix_sqrt
+
 
 class MatchedFilter(LinearTransform):
     r'''A callable linear matched filter.
@@ -67,9 +73,6 @@ class MatchedFilter(LinearTransform):
 
                 Length-K target mean
         '''
-        from math import sqrt
-        from spectral.algorithms.transforms import LinearTransform
-
         self.background = background
         self.u_b = background.mean
         self.u_t = target
@@ -99,10 +102,6 @@ class MatchedFilter(LinearTransform):
         Returns an array of same size as `X` but linearly transformed to the
         whitened space of the filter.
         '''
-        import math
-        from spectral.algorithms.transforms import LinearTransform
-        from spectral.algorithms.spymath import matrix_sqrt
-
         if self._whitening_transform is None:
             A = math.sqrt(self.coef) * self.background.sqrt_inv_cov
             self._whitening_transform = LinearTransform(A, pre=-self.u_b)
@@ -195,13 +194,11 @@ def matched_filter(X, target, background=None, window=None, cov=None):
         raise ValueError('`background` and `window` are mutually ' \
                          'exclusive arguments.')
     if window is not None:
-        from .spatial import map_outer_window_stats
         def mf_wrapper(bg, x):
             return MatchedFilter(bg, target)(x)
         return map_outer_window_stats(mf_wrapper, X, window[0], window[1],
                                       dim_out=1, cov=cov)
     else:
-        from spectral.algorithms.algorithms import calc_stats
         if background is None:
             background = calc_stats(X)
         return MatchedFilter(background, target)(X)
@@ -239,7 +236,6 @@ class RX():
             provided, they will be estimated based on data passed to the
             detector.
         '''
-        from math import sqrt
         if background is not None:
             self.set_background(background)
         else:
@@ -267,7 +263,6 @@ class RX():
             will be returned; otherwise, the return value will be an ndarray
             of floats with one less dimension than the input.
         '''
-        from spectral.algorithms.algorithms import calc_stats
         if not isinstance(X, np.ndarray):
             raise TypeError('Expected a numpy.ndarray.')
 
@@ -396,7 +391,6 @@ def rx(X, background=None, window=None, cov=None):
         raise ValueError('`background` and `window` keywords are mutually ' \
                          'exclusive.')
     if window is not None:
-        from .spatial import map_outer_window_stats
         rx = RX()
         def rx_wrapper(bg, x):
             rx.set_background(bg)
@@ -524,7 +518,6 @@ class ACE():
             will be returned; otherwise, the return value will be an ndarray
             of floats with one less dimension than the input.
         '''
-        from spectral.algorithms.algorithms import calc_stats
         if not isinstance(X, np.ndarray):
            raise TypeError('Expected a numpy.ndarray.')
 
@@ -664,7 +657,6 @@ def ace(X, target, background=None, window=None, cov=None, **kwargs):
     Invariant GLRT," IEEE Trans. Signal Processing., vol. 47 no. 9, pp. 2538-41,
     Sep. 1999
     '''
-    import spectral as spy
     if background is not None and window is not None:
         raise ValueError('`background` and `window` keywords are mutually ' \
                          'exclusive.')
@@ -677,7 +669,7 @@ def ace(X, target, background=None, window=None, cov=None, **kwargs):
         else:
             # Separate score arrays for each target in target list
             if background is None:
-                detector.set_background(spy.calc_stats(X))
+                detector.set_background(calc_stats(X))
             def apply_to_target(t):
                 detector.set_target(t)
                 return detector(X)
@@ -686,7 +678,6 @@ def ace(X, target, background=None, window=None, cov=None, **kwargs):
                 result = result.transpose(1, 2, 0)
     else:
         # Compute local background statistics for each pixel
-        from spectral.algorithms.spatial import map_outer_window_stats
         if isinstance(target, np.ndarray):
             # Single detector score for target subspace for each pixel
             def ace_wrapper(bg, x):
