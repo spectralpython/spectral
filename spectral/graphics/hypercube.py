@@ -1,34 +1,7 @@
-#########################################################################
-#
-#   hypercube.py - This file is part of the Spectral Python (SPy)
-#   package.
-#
-#   Copyright (C) 2001-2012 Thomas Boggs
-#
-#   Spectral Python is free software; you can redistribute it and/
-#   or modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   Spectral Python is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this software; if not, write to
-#
-#               Free Software Foundation, Inc.
-#               59 Temple Place, Suite 330
-#               Boston, MA 02111-1307
-#               USA
-#
-#########################################################################
-#
-# Send comments to:
-# Thomas Boggs, tboggs@users.sourceforge.net
-#
-#
+'''
+Code for rendering and manipulating hypercubes.
+Most users will only need to call the function "hypercube".
+'''
 # The OpenGL code in this file was adapted from a number of OpenGL demo
 # scripts that were created, ported, and adapted by various authors
 # including Richard Campbell, John Ferguson, Tony Colston, Tarn Weisner,
@@ -59,12 +32,7 @@
 # modified by Y. Wong
 #------------------------------------------------------------------------
 
-'''
-Code for rendering and manipulating hypercubes. Most users will only need to
-call the function "hypercube".
-'''
-
-from __future__ import division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import math
 import numpy as np
