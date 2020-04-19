@@ -17,8 +17,8 @@ with open('spectral/__init__.py', 'rb') as f:
 long_description = '''Spectral Python (SPy) is a pure Python module for
 processing hyperspectral image data (imaging spectroscopy data). It has
 functions for reading, displaying, manipulating, and classifying hyperspectral
-imagery. SPy is Free, Open Source Software (FOSS) distributed under the GNU
-General Public License.'''
+imagery. SPy is Free, Open Source Software (FOSS) distributed under the MIT
+License.'''
 
 setup(name='spectral',
       version=version,
@@ -26,7 +26,7 @@ setup(name='spectral',
       long_description=long_description,
       author='Thomas Boggs',
       author_email='thomas.boggs@gmail.com',
-      license='GPL',
+      license='MIT',
       url='http://spectralpython.net',
       download_url='https://github.com/spectralpython/spectral/releases/latest',
       packages=['spectral', 'spectral.algorithms', 'spectral.database',
@@ -37,17 +37,15 @@ setup(name='spectral',
                     'spectral.tests.data.ecostress': ['*.txt']},
       platforms=['Platform-Independent'],
       install_requires=['numpy'],
-      classifiers=[	'Development Status :: 4 - Beta',
-                    'License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)',
-                    'Operating System :: OS Independent',
-                    'Programming Language :: Python :: 2.6',
-                    'Programming Language :: Python :: 2.7',
-                    'Environment :: Console',
-                    'Natural Language :: English',
-                    'Intended Audience :: Science/Research',
-                    'Topic :: Scientific/Engineering :: Image Recognition',
-                    'Topic :: Scientific/Engineering :: GIS',
-                    'Topic :: Scientific/Engineering :: Information Analysis',
-                    'Topic :: Scientific/Engineering :: Visualization'
-      ]
-)
+      classifiers=['Development Status :: 4 - Beta',
+                   'License :: OSI Approved :: MIT License',
+                   'Operating System :: OS Independent',
+                   'Programming Language :: Python :: 2.6',
+                   'Programming Language :: Python :: 2.7',
+                   'Environment :: Console',
+                   'Natural Language :: English',
+                   'Intended Audience :: Science/Research',
+                   'Topic :: Scientific/Engineering :: Image Recognition',
+                   'Topic :: Scientific/Engineering :: GIS',
+                   'Topic :: Scientific/Engineering :: Information Analysis',
+                   'Topic :: Scientific/Engineering :: Visualization'])
