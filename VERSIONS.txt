@@ -1,4 +1,28 @@
 ================================================================================
+SPy 0.21
+================================================================================
+Release date: 2020.04.26
+
+Changes
+-------
+
+* As of version 0.21, Spectral Python (SPy) is release uder the MIT License.
+
+* Switched most console `print` statements to logging statements for finer
+  control of module output.
+
+* Cleaned up a lot of code to put imports at module (file) level.
+
+Bug Fixes
+---------
+
+* [Issue #99] matplotlib's "cmap" keyword now works again with `spy.imshow`.
+
+* [Issue #102] Creating a `SpectralLibrary` no longer fails when some
+  optional band parameters are not provided.
+
+
+================================================================================
 SPy 0.20
 ================================================================================
 Release date: 2019.10.06
