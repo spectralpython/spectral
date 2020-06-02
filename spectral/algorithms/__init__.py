@@ -11,3 +11,4 @@ from .resampling import BandResampler
 from .transforms import LinearTransform
 from .detectors import *
 from .spatial import *
+from .continuum import spectral_continuum, remove_continuum, continuum_points
