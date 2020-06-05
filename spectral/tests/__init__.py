@@ -31,7 +31,8 @@ from . import classifiers
 from . import dimensionality
 from . import spatial
 from . import iterators
+from . import continuum
 
 # List of all submodules to be run from the `run` submodule.
 all_tests = [spyfile, memmap, iterators, transforms, envi, spymath, detectors,
-             classifiers, dimensionality, spatial, database]
+             classifiers, dimensionality, spatial, database, continuum]
