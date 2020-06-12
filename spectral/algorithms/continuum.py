@@ -175,7 +175,7 @@ def _process_continuum(spectra, bands, remove_continuum, segmented, out):
     if not isinstance(spectra, np.ndarray):
         raise TypeError('Expected spectra to be a numpy.ndarray.')
     if not isinstance(bands, np.ndarray):
-        raise TypeError('Expected spectra to be a numpy.ndarray.')
+        raise TypeError('Expected bands to be a numpy.ndarray.')
     if out is not None and not isinstance(out, np.ndarray):
         raise TypeError('Expected out to be a numpy.ndarray or None.')
     if len(spectra.shape) not in (1, 2, 3):
@@ -242,6 +242,8 @@ def continuum_points(spectrum, bands, mode='convex'):
 
             1d :class:`numpy.ndarray`, holding band values of spectra.
             Length of `bands` should be the same as `spectrum`.
+            Note that bands should be sorted in ascending order (which is often
+            not the case with AVIRIS), otherwise unexpected results could occure.
 
         `mode` (string, default 'convex'):
 
@@ -287,6 +289,8 @@ def spectral_continuum(spectra, bands, mode='convex', out=None):
 
             1d :class:`numpy.ndarray`, holding band values of spectra.
             Length of `bands` should be the same as last dimension of `spectra`.
+            Note that bands should be sorted in ascending order (which is often
+            not the case with AVIRIS), otherwise unexpected results could occure.
 
         `mode` (string, default 'convex'):
 
@@ -326,6 +330,8 @@ def remove_continuum(spectra, bands, mode='convex', out=None):
 
             1d :class:`numpy.ndarray`, holding band values of spectra.
             Length of `bands` should be the same as last dimension of `spectra`.
+            Note that bands should be sorted in ascending order (which is often
+            not the case with AVIRIS), otherwise unexpected results could occure.
 
         `mode` (string, default 'convex'):
 
