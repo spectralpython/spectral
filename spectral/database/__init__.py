@@ -2,3 +2,4 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from .aster import AsterDatabase
 from .ecostress import EcostressDatabase
+from .usgs import USGSDatabase
