@@ -31,7 +31,7 @@ table_schemas = [
     'AssumedWLSpmeterDataID INTEGER, '
     'NumValues INTEGER, MinValue FLOAT, MaxValue FLOAT, ValuesArray BLOB)',
     'CREATE TABLE SpectrometerData (SpectrometerDataID INTEGER PRIMARY KEY, LibName TEXT, '
-    'Record INTEGER, MeasurementType TEXT, Unit TEXT, Name TEXT, FullName TEXT, Description TEXT, FileName TEXT, '
+    'Record INTEGER, MeasurementType TEXT, Unit TEXT, Name TEXT, Description TEXT, FileName TEXT, '
     'NumValues INTEGER, MinValue FLOAT, MaxValue FLOAT, ValuesArray BLOB)'
 ]
 
@@ -48,26 +48,36 @@ def array_to_blob(arr):
     return sqlite3.Binary(tobytes(array.array(arraytypecode, arr)))
 
 
-def _get_pure_spectrometer_name(name):
-    # Split 'AVIRIS13' into ['', 'AVIRIS', '13', ''].
-    # Split 'BECK' into ['BECK'], 'NIC4' into ['NIC4'].
-    splitted = re.split('([A-Z]+)([0-9][0-9]+)', name)
-    return splitted[1] if len(splitted) > 1 else splitted[0]
-
+# Actually these are not all spectrometer names, but kind of it.
+_spectrometer_names = {
+    'ASD': ['ASD'],
+    'ASTER': ['ASTER'],
+    'AVIRIS': ['AVIRIS', 'aviris'],
+    'BECK': ['BECK'],
+    'CRISM JOINED MTR3': ['CRISM Bandpass(FWHM) JOINED MTR3', 'CRISM Waves JOINED MTR3', 'CRISM Bandpass JOINED MTR3', 'CRISM JOINED MTR3'],
+    'CRISM GLOBAL': ['CRISM Bandpass(FWHM) GLOBAL', 'CRISM Wavelengths GLOBAL', 'CRISM Waves GLOBAL', 'CRISM GLOBAL'],
+    'Hyperion': ['Hyperion'],
+    'HyMap2': ['HyMap2'],
+    'Landsat8': ['Landsat8'],
+    'M3': ['M3'],
+    'NIC4': ['NIC4'],
+    'Sentinel2': ['Sentinel2', 'Sentinel-2'],
+    'VIMS': ['VIMS'],
+    'WorldView3': ['WorldView3']
+}
 
 class SpectrometerData:
     '''
         Holds data for spectrometer, from USGS spectral library.
     '''
 
-    def __init__(self, libname, record, measurement_type, unit, spectrometer_name, full_name,
+    def __init__(self, libname, record, measurement_type, unit, spectrometer_name,
                  description, file_name, values):
         self.libname = libname
         self.record = record
         self.measurement_type = measurement_type
         self.unit = unit
         self.spectrometer_name = spectrometer_name
-        self.full_name = full_name
         self.description = description
         self.file_name = file_name
         self.values = values
@@ -77,8 +87,8 @@ class SpectrometerData:
             Returns:
                 String representation of basic meta data.
         '''
-        return '{} Record={}: {} {} {}'.format(self.libname, self.record,  self.measurement,
-                                               self.full_name, self.description)
+        return '{} Record={}: {} {} {}'.format(self.libname, self.record,
+                                               self.measurement, self.description)
 
     @ classmethod
     def read_from_file(cls, filename):
@@ -98,12 +108,15 @@ class SpectrometerData:
         logger = logging.getLogger('spectral')
         with open_file(filename) as f:
             header_line = readline(f)
-            libname, record, measurement_type, unit, spectrometer_name, full_name, description = \
+            if not header_line:
+                raise Exception(
+                    '{} has empty header line or no lines at all.'.format(filename))
+            libname, record, measurement_type, unit, spectrometer_name, description = \
                 SpectrometerData._parse_header(header_line.strip())
 
             values = []
             for line in f:
-                if len(line) == 0:
+                if not line:
                     break
                 try:
                     values.append(float(line.strip()))
@@ -111,31 +124,57 @@ class SpectrometerData:
                     logger.error('In file %s found unparsable line.', filename)
 
             file_name = os.path.basename(filename)
-            return cls(libname, record, measurement_type, unit, spectrometer_name, full_name, description, file_name, values)
+            return cls(libname, record, measurement_type, unit, spectrometer_name, description, file_name, values)
+
+    @staticmethod
+    def _find_spectrometer_name(header_line):
+        for sname, alt_names in _spectrometer_names.items():
+            for alt_name in alt_names:
+                if alt_name in header_line:
+                    return sname
+
+        raise Exception(
+            'Could not find spectrometer for header {}'.format(header_line))
+
+    @staticmethod
+    def _assume_measurement_type(header_line):
+        header_line = header_line.lower()
+        # The order of checking these things is important.
+        if 'wavelength' in header_line or 'waves' in header_line:
+            return 'Wavelengths'
+        if 'bandpass' in header_line or 'fwhm' in header_line or 'bandwidths' in header_line:
+            return 'Bandpass'
+        if 'resolution' in header_line:
+            return 'Resolution'
+        if 'wavenumber' in header_line:
+            return 'Wavenumber'
+        if 'srf' in header_line:
+            return 'SRF'
+        raise Exception(
+            'Could not assume measurement type for header line {}'.format(header_line))
 
     @ staticmethod
-    def _do_replacements(header_line):
-        header_line = re.sub(r'SRF Band ([0-9]+)', r'SRF_Band_\1', header_line)
-        header_line = re.sub(r'AVIRIS ([0-9]+)', r'AVIRIS\1', header_line)
-        header_line = header_line.replace('Bandpass (FWHM)', 'Bandpass_FWHM')
-        return header_line
-
-    @ staticmethod
-    def _assume_unit(header_line):
-        if re.search(r'\bnm\b', header_line) is not None:
-            return 'nanometer'
-        if 'nanometer' in header_line:
-            return 'nanometer'
-        # 'um', 'microns' are usually found in these files, but this is default
-        # anyway.
-        return 'micrometer'
+    def _assume_unit(header_line, measurement_type):
+        if measurement_type == 'Wavelengths' or measurement_type == 'Bandpass' or measurement_type == 'Resolution':
+            if re.search(r'\bnm\b', header_line) is not None:
+                return 'nanometer'
+            if 'nanometer' in header_line:
+                return 'nanometer'
+            # 'um', 'microns' are usually found in these files, but this is default
+            # anyway.
+            return 'micrometer'
+        elif measurement_type == 'Wavenumber':
+            return 'cm^-1'
+        elif measurement_type == 'SRF':
+            return 'none'
+        else:
+            return 'unknown'
 
     @ staticmethod
     def _parse_header(header_line):
         # It is difficult to parse this data,
         # things are separated by spaces, but inside of what should be single datum,
         # there are spaces, so only human can get it right.
-        header_line = SpectrometerData._do_replacements(header_line)
         elements = header_line.split()
 
         libname = elements[0]
@@ -143,14 +182,16 @@ class SpectrometerData:
         # From 'Record=1234:' extract 1234.
         record = int(elements[1].split('=')[1][:-1])
 
-        measurement_type = elements[2]
-        full_name = elements[3]
-        spectrometer_name = _get_pure_spectrometer_name(full_name)
-        description = ' '.join(elements[4:])
+        # Join everything after record into description.
+        description = ' '.join(elements[2:])
 
-        unit = SpectrometerData._assume_unit(header_line)
+        measurement_type = SpectrometerData._assume_measurement_type(
+            header_line)
+        unit = SpectrometerData._assume_unit(header_line, measurement_type)
+        spectrometer_name = SpectrometerData._find_spectrometer_name(
+            header_line)
 
-        return libname, record, measurement_type, unit, spectrometer_name, full_name, description
+        return libname, record, measurement_type, unit, spectrometer_name, description
 
 
 class SampleData:
@@ -188,11 +229,15 @@ class SampleData:
         # From 'Record=1234:' extract 1234.
         record = int(elements[1].split('=')[1][:-1])
 
-        # Join everything between record and spectrometer into description.
-        description = ' '.join(elements[2:-2])
+        # Join everything after record into description.
+        description = ' '.join(elements[2:])
 
         # Split 'AVIRIS13aa' into ['', 'AVIRIS13', 'aa', ''].
         smpurity = re.split('([A-Z0-9]+)([a-z]+)', elements[-2])
+        # There is case with capital leters like 'NIC4AA'
+        if len(smpurity) == 1:
+            smpurity = re.split('([A-Z]+[0-9])([A-Z]+)', elements[-2])
+            smpurity[2] = smpurity[2].lower()
         spectrometer = smpurity[1]
         purity = smpurity[2]
 
@@ -218,12 +263,15 @@ class SampleData:
         logger = logging.getLogger('spectral')
         with open(filename) as f:
             header_line = f.readline()
+            if not header_line:
+                raise Exception(
+                    '{} has empty header line or no lines at all.'.format(filename))
             libname, record, description, spectrometer, purity, measurement_type = \
                 SampleData._parse_header(header_line.strip())
 
             values = []
             for line in f:
-                if len(line) == 0:
+                if not line:
                     break
                 try:
                     values.append(float(line.strip()))
@@ -297,8 +345,7 @@ class USGSDatabase(SpectralDatabase):
         num_values = len(spdata.values)
         min_value = min(spdata.values)
         max_value = max(spdata.values)
-        assumedWLSpmeterDataID = self._assume_wavelength_spectrometer_data_id(
-            spdata)
+        assumedWLSpmeterDataID = self._assume_wavelength_spectrometer_data_id(spdata)
         self.cursor.execute(sql, (spdata.libname, spdata.record, spdata.description,
                                   spdata.spectrometer, spdata.purity, spdata.measurement_type,
                                   spdata.chapter, spdata.file_name, assumedWLSpmeterDataID,
@@ -309,15 +356,15 @@ class USGSDatabase(SpectralDatabase):
 
     def _add_spectrometer_data(self, spdata):
         sql = '''INSERT INTO SpectrometerData (LibName, Record, MeasurementType, Unit,
-                Name, FullName, Description, FileName, NumValues, MinValue, MaxValue, ValuesArray)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
+                Name, Description, FileName, NumValues, MinValue, MaxValue, ValuesArray)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
         values = array_to_blob(spdata.values)
         num_values = len(spdata.values)
         min_value = min(spdata.values)
         max_value = max(spdata.values)
         self.cursor.execute(
             sql, (spdata.libname, spdata.record, spdata.measurement_type, spdata.unit,
-                  spdata.spectrometer_name, spdata.full_name, spdata.description,
+                  spdata.spectrometer_name, spdata.description,
                   spdata.file_name, num_values, min_value, max_value, values))
         rowId = self.cursor.lastrowid
         self.db.commit()
@@ -403,6 +450,8 @@ class USGSDatabase(SpectralDatabase):
 
         num_sample_files = 0
         num_spectrometer_files = 0
+        num_failed_sample_files = 0
+        num_failed_spectromter_files = 0
 
         for sublib in os.listdir(data_dir):
             sublib_dir = os.path.join(data_dir, sublib)
@@ -412,24 +461,40 @@ class USGSDatabase(SpectralDatabase):
             # Process instrument data one by one.
             for f in glob(sublib_dir + '/*.txt'):
                 logger.info('Importing spectrometer file %s', f)
-                spdata = SpectrometerData.read_from_file(f)
-                self._add_spectrometer_data(spdata)
-                num_spectrometer_files += 1
+                try:
+                    spdata = SpectrometerData.read_from_file(f)
+                    self._add_spectrometer_data(spdata)
+                    num_spectrometer_files += 1
+                except Exception as e:
+                    logger.error('Failed to import spectrometer file %s', f)
+                    logger.error(e)
+                    num_failed_spectromter_files += 1
 
             # Go into each chapter directory and process individual samples.
             for chapter in os.listdir(sublib_dir):
+                # Skip errorbars directory. Maybe add support for parsing it later.
+                if chapter == 'errorbars':
+                    continue
                 chapter_dir = os.path.join(sublib_dir, chapter)
                 if not os.path.isdir(chapter_dir):
                     continue
 
                 for f in glob(chapter_dir + '/*.txt'):
                     logger.info('Importing sample file %s', f)
-                    spdata = SampleData.read_from_file(f, chapter)
-                    self._add_sample_data(spdata)
-                    num_sample_files += 1
+                    try:
+                        spdata = SampleData.read_from_file(f, chapter)
+                        self._add_sample_data(spdata)
+                        num_sample_files += 1
+                    except Exception as e:
+                        logger.error(
+                            'Failed to import sample file %s', f)
+                        logger.error(e)
+                        num_failed_sample_files += 1
 
-        logger.info('Imported %d sample files and %d spectrometer files.',
-                    num_sample_files, num_spectrometer_files)
+        logger.info('Imported %d sample files and %d spectrometer files. '
+                    '%d failed sample files, and %d failed spectrometer files.',
+                    num_sample_files, num_spectrometer_files, num_failed_sample_files,
+                    num_failed_spectromter_files)
 
     def get_spectrum(self, sampleID):
         '''Returns a spectrum from the database.
@@ -502,6 +567,7 @@ class USGSDatabase(SpectralDatabase):
         resampled to the same discretization specified by the bandInfo
         parameter. See :class:`spectral.BandResampler` for details on the
         resampling method used.
+        Note that expected units for bands are micrometers. 
         '''
         from spectral.algorithms.resampling import BandResampler
         from spectral.io.envi import SpectralLibrary
@@ -513,7 +579,7 @@ class USGSDatabase(SpectralDatabase):
                                     FROM Samples AS a INNER JOIN SpectrometerData AS b
                                     ON a.AssumedWLSpmeterDataID = b.SpectrometerDataID
                                     WHERE a.SampleID IN ({})'''.format(','.join(['?']*len(spectrumIDs))),
-                                    spectrumIDs)
+                                     spectrumIDs)
 
         names = []
 
@@ -522,6 +588,8 @@ class USGSDatabase(SpectralDatabase):
             x = array_from_blob(s[1])
             name = s[2]
             unit = s[3]
+            if unit == 'nanometers':
+                x /= 1000
             resample = BandResampler(
                 x, bandInfo.centers, None, bandInfo.bandwidths)
             spectra[i] = resample(y)
@@ -529,8 +597,7 @@ class USGSDatabase(SpectralDatabase):
                          encode('ascii', 'ignore'))
 
         header = {}
-        # It seem it will actually always be 'um', but to be sure...
-        header['wavelength units'] = 'nm' if unit == 'nanometer' else 'um'
+        header['wavelength units'] = 'um'
         header['spectra names'] = names
         header['wavelength'] = bandInfo.centers
         header['fwhm'] = bandInfo.bandwidths

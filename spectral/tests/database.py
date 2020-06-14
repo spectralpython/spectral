@@ -111,7 +111,8 @@ class USGSDatabaseTest(SpyTest):
                     AssumedWLSpmeterDataID,
                     NumValues, MinValue, MaxValue
                     FROM Samples
-                    WHERE LibName='liba' AND Record=1 AND Description='Material a b0 0' AND
+                    WHERE LibName='liba' AND Record=1 AND
+                    Description='Material a b0 0 ASDFRa AREF' AND
                     Spectrometer='ASDFR' AND Purity='a' AND MeasurementType='AREF'
                     '''))[0]
         assert(some_sample[0] == 'ChapterB_b0')
@@ -121,7 +122,7 @@ class USGSDatabaseTest(SpyTest):
         assert_almost_equal(some_sample[5], 0.51682192)
 
         some_spectrometer_data = list(self.db.query('''SELECT LibName, Record, MeasurementType, Unit,
-                Name, FullName, Description, FileName, NumValues, MinValue, MaxValue
+                Name, Description, FileName, NumValues, MinValue, MaxValue
                 FROM SpectrometerData
                 WHERE SpectrometerDataID=?
                 ''', (some_sample[2],)))[0]
@@ -130,18 +131,17 @@ class USGSDatabaseTest(SpyTest):
         assert(some_spectrometer_data[2] == 'Wavelengths')
         assert(some_spectrometer_data[3] == 'micrometer')
         assert(some_spectrometer_data[4] == 'ASD')
-        assert(some_spectrometer_data[5] == 'ASD')
-        assert(some_spectrometer_data[6] == '0.35-2.5 um')
-        assert(some_spectrometer_data[7] ==
+        assert(some_spectrometer_data[5] == 'Wavelengths ASD 0.35-2.5 um')
+        assert(some_spectrometer_data[6] ==
                'liba_Wavelengths_ASD_0.35-2.5_um.txt')
-        assert(some_spectrometer_data[8] == 24)
-        assert_almost_equal(some_spectrometer_data[9], 0.35)
-        assert_almost_equal(some_spectrometer_data[10], 2.5)
+        assert(some_spectrometer_data[7] == 24)
+        assert_almost_equal(some_spectrometer_data[8], 0.35)
+        assert_almost_equal(some_spectrometer_data[9], 2.5)
 
     def test_get_spectrum(self):
         some_sample_id = list(self.db.query('''SELECT SampleID
             FROM Samples
-            WHERE LibName='libc' AND Description='Material D 2'
+            WHERE LibName='libc' AND Description='Material D 2 AVIRISb RTGC'
             '''))[0][0]
         (x, y) = self.db.get_spectrum(some_sample_id)
         assert(len(x) == len(y))
