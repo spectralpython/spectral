@@ -201,7 +201,7 @@ class SpyFile(Image):
         self.fid.seek(self.offset)
         data.fromfile(self.fid, self.nrows * self.ncols *
                       self.nbands * self.sample_size)
-        npArray = np.fromstring(tobytes(data), dtype=self.dtype)
+        npArray = np.frombuffer(tobytes(data), dtype=self.dtype)
         if self.interleave == spy.BIL:
             npArray.shape = (self.nrows, self.nbands, self.ncols)
             npArray = npArray.transpose([0, 2, 1])
