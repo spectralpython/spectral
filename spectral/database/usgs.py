@@ -14,6 +14,8 @@ from .spectral_database import SpectralDatabase
 
 import re
 import logging
+import sqlite3
+import array
 
 if IS_PYTHON3:
     def readline(fin): return fin.readline()
@@ -21,6 +23,7 @@ if IS_PYTHON3:
 else:
     def readline(fin): return fin.readline().decode('iso-8859-1')
     def open_file(filename): return open(filename)
+
 
 table_schemas = [
     'CREATE TABLE Samples (SampleID INTEGER PRIMARY KEY, LibName TEXT, Record INTEGER, '
@@ -33,6 +36,16 @@ table_schemas = [
 ]
 
 arraytypecode = chr(ord('f'))
+
+
+def array_from_blob(blob):
+    a = array.array(arraytypecode)
+    frombytes(a, blob)
+    return a
+
+
+def array_to_blob(arr):
+    return sqlite3.Binary(tobytes(array.array(arraytypecode, arr)))
 
 
 def _get_pure_spectrometer_name(name):
@@ -275,15 +288,12 @@ class USGSDatabase(SpectralDatabase):
         return rows[0][0]
 
     def _add_sample_data(self, spdata):
-        import sqlite3
-        import array
         sql = '''INSERT INTO Samples (LibName, Record,
                     Description, Spectrometer, Purity, MeasurementType, Chapter, FileName,
                     AssumedWLSpmeterDataID,
                     NumValues, MinValue, MaxValue, ValuesArray)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
-        values = sqlite3.Binary(
-            tobytes(array.array(arraytypecode, spdata.values)))
+        values = array_to_blob(spdata.values)
         num_values = len(spdata.values)
         min_value = min(spdata.values)
         max_value = max(spdata.values)
@@ -298,13 +308,10 @@ class USGSDatabase(SpectralDatabase):
         return rowId
 
     def _add_spectrometer_data(self, spdata):
-        import sqlite3
-        import array
         sql = '''INSERT INTO SpectrometerData (LibName, Record, MeasurementType, Unit,
                 Name, FullName, Description, FileName, NumValues, MinValue, MaxValue, ValuesArray)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
-        values = sqlite3.Binary(
-            tobytes(array.array(arraytypecode, spdata.values)))
+        values = array_to_blob(spdata.values)
         num_values = len(spdata.values)
         min_value = min(spdata.values)
         max_value = max(spdata.values)
@@ -458,8 +465,7 @@ class USGSDatabase(SpectralDatabase):
         rows = result.fetchall()
         if len(rows) < 1:
             raise Exception('Measurement record not found.')
-        y = array.array(arraytypecode)
-        frombytes(y, rows[0][0])
+        y = array_from_blob(rows[0][0])
         assumedWLSpmeterDataID = rows[0][1]
 
         query = '''SELECT ValuesArray FROM SpectrometerData WHERE SpectrometerDataID = ?'''
@@ -468,7 +474,64 @@ class USGSDatabase(SpectralDatabase):
         rows = result.fetchall()
         if len(rows) < 1:
             raise Exception('Measurement (wavelengths) record not found.')
-        x = array.array(arraytypecode)
-        frombytes(x, rows[0][0])
+        x = array_from_blob(rows[0][0])
 
         return (list(x), list(y))
+
+    def create_envi_spectral_library(self, spectrumIDs, bandInfo):
+        '''Creates an ENVI-formatted spectral library for a list of spectra.
+
+        Arguments:
+
+            `spectrumIDs` (list of ints):
+
+                List of **SampleID** values for of spectra in the "Samples"
+                table of the USGS database.
+
+            `bandInfo` (:class:`~spectral.BandInfo`):
+
+                The spectral bands to which the original USGS library spectra
+                will be resampled.
+
+        Returns:
+
+            A :class:`~spectral.io.envi.SpectralLibrary` object.
+
+        The IDs passed to the method should correspond to the SampleID field
+        of the USGS database "Samples" table.  All specified spectra will be
+        resampled to the same discretization specified by the bandInfo
+        parameter. See :class:`spectral.BandResampler` for details on the
+        resampling method used.
+        '''
+        from spectral.algorithms.resampling import BandResampler
+        from spectral.io.envi import SpectralLibrary
+        import numpy
+        import unicodedata
+        spectra = numpy.empty((len(spectrumIDs), len(bandInfo.centers)))
+        cursor = self.cursor.execute('''
+                                    SELECT a.ValuesArray, b.ValuesArray, a.Description, b.Unit
+                                    FROM Samples AS a INNER JOIN SpectrometerData AS b
+                                    ON a.AssumedWLSpmeterDataID = b.SpectrometerDataID
+                                    WHERE a.SampleID IN ({})'''.format(','.join(['?']*len(spectrumIDs))),
+                                    spectrumIDs)
+
+        names = []
+
+        for i, s in enumerate(cursor):
+            y = array_from_blob(s[0])
+            x = array_from_blob(s[1])
+            name = s[2]
+            unit = s[3]
+            resample = BandResampler(
+                x, bandInfo.centers, None, bandInfo.bandwidths)
+            spectra[i] = resample(y)
+            names.append(unicodedata.normalize('NFKD', name).
+                         encode('ascii', 'ignore'))
+
+        header = {}
+        # It seem it will actually always be 'um', but to be sure...
+        header['wavelength units'] = 'nm' if unit == 'nanometer' else 'um'
+        header['spectra names'] = names
+        header['wavelength'] = bandInfo.centers
+        header['fwhm'] = bandInfo.bandwidths
+        return SpectralLibrary(spectra, header, {})

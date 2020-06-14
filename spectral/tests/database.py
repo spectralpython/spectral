@@ -149,6 +149,17 @@ class USGSDatabaseTest(SpyTest):
         assert_almost_equal(y[0], 0.010381651)
         assert_almost_equal(x[-1], 2.2020326)
 
+    def test_create_envi_lib(self):
+        '''Can resample spectra and create an ENVI spectral library.'''
+        bands = read_aviris_bands(AVIRIS_BAND_FILE)
+        cursor = self.db.query('SELECT SampleID FROM Samples')
+        ids = [r[0] for r in cursor]
+        bands.centers = [x / 1000. for x in bands.centers]
+        bands.bandwidths = [x / 1000. for x in bands.bandwidths]
+        slib = self.db.create_envi_spectral_library(ids, bands)
+        assert(slib.spectra.shape == (8, 220))
+
+
 def run():
     print('\n' + '-' * 72)
     print('Running database tests.')
