@@ -7,3 +7,4 @@ build/
 TAGS
 .project
 .pydevproject
+spectral_test_files/

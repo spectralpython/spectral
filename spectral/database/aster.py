@@ -6,6 +6,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from spectral.utilities.python23 import IS_PYTHON3, tobytes, frombytes
 
+from .spectral_database import SpectralDatabase
+
 if IS_PYTHON3:
     readline = lambda fin: fin.readline()
     open_file = lambda filename: open(filename, encoding='iso-8859-1')
@@ -132,7 +134,7 @@ def read_aster_file(filename):
     return s
 
 
-class AsterDatabase:
+class AsterDatabase(SpectralDatabase):
     '''A relational database to manage ASTER spectral library data.'''
     schemas = table_schemas
 
@@ -307,12 +309,6 @@ class AsterDatabase:
 
         return sigs
 
-    def _connect(self, sqlite_filename):
-        '''Establishes a connection to the Specbase sqlite database.'''
-        import sqlite3
-        self.db = sqlite3.connect(sqlite_filename)
-        self.cursor = self.db.cursor()
-
     def get_spectrum(self, spectrumID):
         '''Returns a spectrum from the database.
 
@@ -405,76 +401,6 @@ class AsterDatabase:
         frombytes(y, results[0][3])
         sig.y = list(y)
         return sig
-
-    def query(self, sql, args=None):
-        '''Returns the result of an arbitrary SQL statement.
-
-        Arguments:
-
-            `sql` (str):
-
-                An SQL statement to be passed to the database. Use "?" for
-                variables passed into the statement.
-
-            `args` (tuple):
-
-                Optional arguments which will replace the "?" placeholders in
-                the `sql` argument.
-
-        Returns:
-
-            An :class:`sqlite3.Cursor` object with the query results.
-
-        Example::
-
-            >>> sql = r'SELECT SpectrumID, Name FROM Samples, Spectra ' +
-            ...        'WHERE Spectra.SampleID = Samples.SampleID ' +
-            ...        'AND Name LIKE "%grass%" AND MinWavelength < ?'
-            >>> args = (0.5,)
-            >>> cur = db.query(sql, args)
-            >>> for row in cur:
-            ...     print row
-            ...
-            (356, u'dry grass')
-            (357, u'grass')
-        '''
-        if args:
-            return self.cursor.execute(sql, args)
-        else:
-            return self.cursor.execute(sql)
-
-    def print_query(self, sql, args=None):
-        '''Prints the text result of an arbitrary SQL statement.
-
-        Arguments:
-
-            `sql` (str):
-
-                An SQL statement to be passed to the database. Use "?" for
-                variables passed into the statement.
-
-            `args` (tuple):
-
-                Optional arguments which will replace the "?" placeholders in
-                the `sql` argument.
-
-        This function performs the same query function as
-        :meth:`spectral.database.Asterdatabase.query` except query results are
-        printed to **stdout** instead of returning a cursor object.
-
-        Example:
-
-            >>> sql = r'SELECT SpectrumID, Name FROM Samples, Spectra ' +
-            ...        'WHERE Spectra.SampleID = Samples.SampleID ' +
-            ...        'AND Name LIKE "%grass%" AND MinWavelength < ?'
-            >>> args = (0.5,)
-            >>> db.print_query(sql, args)
-            356|dry grass
-            357|grass
-        '''
-        ret = self.query(sql, args)
-        for row in ret:
-            print("|".join([str(x) for x in row]))
 
     def create_envi_spectral_library(self, spectrumIDs, bandInfo):
         '''Creates an ENVI-formatted spectral library for a list of spectra.
