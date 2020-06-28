@@ -87,7 +87,7 @@ class SpectrometerData:
             Returns:
                 String representation of basic meta data.
         '''
-        return '{} Record={}: {} {} {}'.format(self.libname, self.record,
+        return '{0} Record={1}: {2} {3} {4}'.format(self.libname, self.record,
                                                self.measurement, self.description)
 
     @ classmethod
@@ -110,7 +110,7 @@ class SpectrometerData:
             header_line = readline(f)
             if not header_line:
                 raise Exception(
-                    '{} has empty header line or no lines at all.'.format(filename))
+                    '{0} has empty header line or no lines at all.'.format(filename))
             libname, record, measurement_type, unit, spectrometer_name, description = \
                 SpectrometerData._parse_header(header_line.strip())
 
@@ -134,7 +134,7 @@ class SpectrometerData:
                     return sname
 
         raise Exception(
-            'Could not find spectrometer for header {}'.format(header_line))
+            'Could not find spectrometer for header {0}'.format(header_line))
 
     @staticmethod
     def _assume_measurement_type(header_line):
@@ -151,7 +151,7 @@ class SpectrometerData:
         if 'srf' in header_line:
             return 'SRF'
         raise Exception(
-            'Could not assume measurement type for header line {}'.format(header_line))
+            'Could not assume measurement type for header line {0}'.format(header_line))
 
     @ staticmethod
     def _assume_unit(header_line, measurement_type):
@@ -216,7 +216,7 @@ class SampleData:
             Returns:
                 String representation of basic meta data.
         '''
-        return '{} Record={}: {} {}{} {}'.format(self.libname, self.record,
+        return '{0} Record={1}: {2} {3}{4} {5}'.format(self.libname, self.record,
                                                  self.description, self.spectrometer,
                                                  self.purity, self.measurement_type)
 
@@ -265,7 +265,7 @@ class SampleData:
             header_line = f.readline()
             if not header_line:
                 raise Exception(
-                    '{} has empty header line or no lines at all.'.format(filename))
+                    '{0} has empty header line or no lines at all.'.format(filename))
             libname, record, description, spectrometer, purity, measurement_type = \
                 SampleData._parse_header(header_line.strip())
 
@@ -328,7 +328,7 @@ class USGSDatabase(SpectralDatabase):
         result = self.cursor.execute(query, (libname, num_values))
         rows = result.fetchall()
         if len(rows) < 1:
-            raise Exception('Wavelengths for spectrometer not found, for LibName = {} and NumValues = {}, from file {}'.format(
+            raise Exception('Wavelengths for spectrometer not found, for LibName = {0} and NumValues = {1}, from file {2}'.format(
                 libname, num_values, sampleData.file_name))
         if len(rows) > 1:
             logger.warning('Found multiple spectrometers with measurement_type Wavelengths, '
@@ -578,7 +578,7 @@ class USGSDatabase(SpectralDatabase):
                                     SELECT a.ValuesArray, b.ValuesArray, a.Description, b.Unit
                                     FROM Samples AS a INNER JOIN SpectrometerData AS b
                                     ON a.AssumedWLSpmeterDataID = b.SpectrometerDataID
-                                    WHERE a.SampleID IN ({})'''.format(','.join(['?']*len(spectrumIDs))),
+                                    WHERE a.SampleID IN ({0})'''.format(','.join(['?']*len(spectrumIDs))),
                                      spectrumIDs)
 
         names = []
