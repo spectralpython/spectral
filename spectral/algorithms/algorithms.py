@@ -1826,3 +1826,126 @@ def ppi(X, niters, threshold=0, centered=False, start=None, display=0,
     spy._status.end_percentage()
 
     return counts.reshape(shape[:2])
+
+
+def smacc(spectra, min_endmembers=None, max_residual_norm=float('Inf')):
+    '''Returns SMACC decomposition (H = F * S + R) matrices for an image or
+    array of spectra.
+
+    Let `H` be matrix of shape NxB, where B is number of bands, and N number of
+    spectra, then if `spectra` is of the same shape, `H` will be equal to `spectra`.
+    Otherwise, `spectra` is assumed to be 3D spectral image, and it is reshaped
+    to match shape of `H`.
+
+    Arguments:
+
+        `spectra` (ndarray):
+
+            Image data for which to calculate SMACC decomposition matrices.
+
+        `min_endmembers` (int):
+
+            Minimal number of endmembers to find. Defaults to rank of `H`,
+            computed numerically with `numpy.linalg.matrix_rank`.
+
+        `max_residual_norm`:
+
+            Maximum value of residual vectors' norms. Algorithm will keep finding
+            new endmembers until max value of residual norms is less than this
+            argument. Defaults to float('Inf')
+
+    Returns:
+        3 matrices, S, F and R, such that H = F * S + R (but it might not always hold).
+        F is matrix of expansion coefficients of shape N x num_endmembers.
+        All values of F are equal to, or greater than zero.
+        S is matrix of endmember spectra, extreme vectors, of shape num_endmembers x B.
+        R is matrix of residuals of same shape as H (N x B).
+
+        If values of H are large (few tousands), H = F * S + R, might not hold,
+        because of numeric errors. It is advisable to scale numbers, by dividing
+        by 10000, for example. Depending on how accurate you want it to be,
+        you can check if H is really strictly equal to F * S + R,
+        and adjust R: R = H - np.matmul(F, S).
+
+    References:
+
+        John H. Gruninger, Anthony J. Ratkowski, and Michael L. Hoke "The sequential
+        maximum angle convex cone (SMACC) endmember model", Proc. SPIE 5425, Algorithms
+        and Technologies for Multispectral, Hyperspectral, and Ultraspectral Imagery X,
+        (12 August 2004); https://doi.org/10.1117/12.543794
+    '''
+    # Indices of vectors in S.
+    q = []
+
+    H = spectra if len(spectra.shape) == 2 else spectra.reshape(
+        (spectra.shape[0] * spectra.shape[1], spectra.shape[2]))
+    R = H
+    Fs = []
+
+    F = None
+    S = None
+
+    if min_endmembers is None:
+        min_endmembers = np.linalg.matrix_rank(H)
+
+    # Add the longest vector to q.
+    residual_norms = np.sqrt(np.einsum('ij,ij->i', H, H))
+    current_max_residual_norm = np.max(residual_norms)
+
+    if max_residual_norm is None:
+        max_residual_norm = current_max_residual_norm / min_endmembers
+
+    while len(q) < min_endmembers or current_max_residual_norm > max_residual_norm:
+        q.append(np.argmax(residual_norms))
+        n = len(q) - 1
+        # Current basis vector.
+        w = R[q[n]]
+        # Temporary to be used for projection calculation.
+        wt = w / (np.dot(w, w))
+        # Calculate projection coefficients.
+        On = np.dot(R, wt)
+        alpha = np.ones(On.shape, dtype=np.float64)
+        # Make corrections to satisfy convex cone conditions.
+        # First correct alphas for oblique projection when needed.
+        for k in range(len(Fs)):
+            t = On * Fs[k][q[n]]
+            # This is not so important for the algorithm itself.
+            # These values correpond to values where On == 0.0, and these
+            # will be zeroed out below. But to avoid divide-by-zero warning
+            # we set small values instead of zero.
+            t[t == 0.0] = 1e-10
+            np.minimum(Fs[k]/t, alpha, out=alpha)
+        # Clip negative projection coefficients.
+        alpha[On <= 0.0] = 0.0
+        # Current extreme vector should always be removed completely.
+        alpha[q[n]] = 1.0
+        # Calculate oblique projection coefficients.
+        Fn = alpha * On
+        # Correction for numerical stability.
+        Fn[Fn <= 0.0] = 0.0
+        # Remove projection to current basis from R.
+        R = R - np.outer(Fn, w)
+        # Update projection coefficients.
+        for k in range(len(Fs)):
+            Fs[k] -= Fs[k][q[n]] * Fn
+            # Correction because of numerical problems.
+            Fs[k][Fs[k] <= 0.0] = 0.0
+
+        # Add new Fn.
+        Fs.append(Fn)
+
+        residual_norms[:] = np.sqrt(np.einsum('ij,ij->i', R, R))
+        current_max_residual_norm = np.max(residual_norms)
+        print('Found {0} endmembers, current max residual norm is {1:.4f}\r'
+            .format(len(q), current_max_residual_norm), end='')
+
+    # Correction as suggested in the SMACC paper.
+    for k, s in enumerate(q):
+        Fs[k][q] = 0.0
+        Fs[k][s] = 1.0
+
+    F = np.array(Fs).T
+    S = H[q]
+
+    # H = F * S + R
+    return S, F, R
