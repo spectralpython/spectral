@@ -1271,22 +1271,18 @@ def orthogonalize(vecs, start=0):
 
         A new `CxB` containing an orthonormal basis for the given vectors.
     '''
-
     (M, N) = vecs.shape
     basis = np.array(np.transpose(vecs))
-    eye = identity(N).astype(float)
-    if start == 0:
-        basis[:, 0] /= math.sqrt(np.dot(basis[:, 0], basis[:, 0]))
-        start = 1
-
+    eye = np.identity(N).astype(float)
     for i in range(start, M):
-        v = basis[:, i] / math.sqrt(np.dot(basis[:, i], basis[:, i]))
+        if i == 0:
+            basis[:, 0] /= np.linalg.norm(basis[:, 0])
+            continue
+        v = basis[:, i] / np.linalg.norm(basis[:, i])
         U = basis[:, :i]
-        P = eye - np.dot(U, np.dot(np.inv(np.dot(np.transpose(U), U)),
-                                   np.transpose(U)))
-        basis[:, i] = np.dot(P, v)
-        basis[:, i] /= math.sqrt(np.dot(basis[:, i], basis[:, i]))
-
+        P = eye - U.dot(np.linalg.inv(U.T.dot(U)).dot(U.T))
+        basis[:, i] = P.dot(v)
+        basis[:, i] /= np.linalg.norm(basis[:, i])
     return np.transpose(basis)
 
 

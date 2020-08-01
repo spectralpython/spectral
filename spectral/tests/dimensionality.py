@@ -126,6 +126,36 @@ class DimensionalityTest(SpyTest):
         stats = spy.calc_stats(data)
         xdata = spy.principal_components(stats).transform(data)
 
+    def test_orthogonalize(self):
+        '''Can correctly create an orthogonal basis from vectors.'''
+        x = np.linspace(0, np.pi, 1001)
+        # Create sin and cos vectors of unit length
+        sin_h = np.sin(x)
+        sin_h /= np.linalg.norm(sin_h)
+        cos_h = np.cos(x)
+        cos_h /= np.linalg.norm(cos_h)
+
+        X = np.array([50 * sin_h, 75 * cos_h])
+        Y = spy.orthogonalize(X)
+        assert(np.allclose(Y.dot(Y.T), np.array([[1, 0], [0, 1]])))
+        assert(np.allclose(X.dot(Y.T), np.array([[50, 0], [0, 75]])))
+
+    def test_orthogonalize_subset(self):
+        '''Can correctly create an orthogonal basis from vector subset.'''
+        x = np.linspace(0, np.pi, 1001)
+        # Create sin and cos vectors of unit length
+        sin_h = np.sin(x)
+        sin_h /= np.linalg.norm(sin_h)
+        cos_h = np.cos(x)
+        cos_h /= np.linalg.norm(cos_h)
+
+        # First vector in X will already be a unit vector
+        X = np.array([sin_h, 75 * cos_h])
+        Y = spy.orthogonalize(X, start=1)
+        assert(np.allclose(Y.dot(Y.T), np.array([[1, 0], [0, 1]])))
+        assert(np.allclose(X.dot(Y.T), np.array([[1, 0], [0, 75]])))
+
+
 def run():
     print('\n' + '-' * 72)
     print('Running dimensionality tests.')
