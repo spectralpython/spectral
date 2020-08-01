@@ -62,7 +62,7 @@ class DimensionalityTest(SpyTest):
         assert(np.all(p == p2))
 
     def test_smacc_minimal(self):
-        '''Tests smacc correcntess on minimal example.'''
+        '''Tests smacc correctness on minimal example.'''
         H = np.array([
             [1.0, 0.0, 0.0],
             [0.0, 1.0, 0.0],
@@ -70,7 +70,7 @@ class DimensionalityTest(SpyTest):
             [0.0, 1.0, 1.0]
         ])
         S, F, R = spy.smacc(H)
-        assert_allclose(np.matmul(F, S) + R, H)
+        assert(np.allclose(np.matmul(F, S) + R, H))
         assert(np.min(F) == 0.0)
         expected_S = np.array([
             # First two longer ones.
