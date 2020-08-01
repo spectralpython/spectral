@@ -1,4 +1,26 @@
 ================================================================================
+SPy 0.22
+================================================================================
+Release date: 2020.08.01
+
+New Features (thanks to @kormang)
+---------------------------------
+
+* Continuum computation and removal
+
+  * See functions `spectral_continuum`, `remove_continuum`, `continuum_points`
+
+* Support for USGS spectral library (`spectral.USGSDatabase`)
+
+* SMACC algorithm for endmember extraction (`spectral.algorithms.smacc`)
+
+Bug Fixes
+---------
+
+* [Issue #113] `orthogonalize` was broken in release 0.21.
+
+
+================================================================================
 SPy 0.21
 ================================================================================
 Release date: 2020.04.26
@@ -6,7 +28,7 @@ Release date: 2020.04.26
 Changes
 -------
 
-* As of version 0.21, Spectral Python (SPy) is release uder the MIT License.
+* As of version 0.21, Spectral Python (SPy) is released under the MIT License.
 
 * Switched most console `print` statements to logging statements for finer
   control of module output.
