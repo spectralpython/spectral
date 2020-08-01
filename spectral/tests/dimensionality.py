@@ -110,7 +110,7 @@ class DimensionalityTest(SpyTest):
         S, F, R = spy.smacc(scaled_data, 9, 0.8)
         data_shape = scaled_data.shape
         H = scaled_data.reshape(data_shape[0] * data_shape[1], data_shape[2])
-        assert_allclose(np.matmul(F, S) + R, H)
+        assert(np.allclose(np.matmul(F, S) + R, H))
         assert(np.min(F) == 0.0)
         residual_norms = np.einsum('ij,ij->i', R, R)
         assert(np.max(residual_norms) <= 0.8)
