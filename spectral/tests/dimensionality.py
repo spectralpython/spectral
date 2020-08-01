@@ -9,7 +9,6 @@ To run the unit tests, type the following from the system command line:
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
-from numpy.testing import assert_allclose
 
 import spectral as spy
 from spectral.tests.spytest import SpyTest, test_method
@@ -88,7 +87,7 @@ class DimensionalityTest(SpyTest):
         S, F, R = spy.smacc(scaled_data)
         data_shape = scaled_data.shape
         H = scaled_data.reshape(data_shape[0] * data_shape[1], data_shape[2])
-        assert_allclose(np.matmul(F, S) + R, H)
+        assert(np.allclose(np.matmul(F, S) + R, H))
         assert(np.min(F) == 0.0)
         assert(len(S.shape) == 2 and S.shape[0] == 9 and S.shape[1] == 220)
 
@@ -99,7 +98,7 @@ class DimensionalityTest(SpyTest):
         S, F, R = spy.smacc(scaled_data, 10)
         data_shape = scaled_data.shape
         H = scaled_data.reshape(data_shape[0] * data_shape[1], data_shape[2])
-        assert_allclose(np.matmul(F, S) + R, H)
+        assert(np.allclose(np.matmul(F, S) + R, H))
         assert(np.min(F) == 0.0)
         assert(len(S.shape) == 2 and S.shape[0] == 10 and S.shape[1] == 220)
 
