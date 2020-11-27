@@ -24,7 +24,6 @@ def check_disable_mpl_callbacks():
     mpl.rcParams['keymap.xscale'] = ''
     mpl.rcParams['keymap.yscale'] = ''
     mpl.rcParams['keymap.home'] = 'r'
-    mpl.rcParams['keymap.all_axes'] = ''
 
 def xy_to_rowcol(x, y):
     '''Converts image (x, y) coordinate to pixel (row, col).'''
