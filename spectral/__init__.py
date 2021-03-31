@@ -4,7 +4,7 @@ Basic package setup and global imports.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-__version__ = '0.22.1'
+__version__ = '0.22.2'
 
 import sys
 if sys.byteorder == 'little':
