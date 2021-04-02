@@ -895,8 +895,7 @@ class ImageView(object):
         cm = ListedColormap(np.array(self.class_colors) / 255.)
         self._update_class_rgb()
         kwargs = self.imshow_class_kwargs.copy()
-
-        kwargs.update({'cmap': cm, 'vmin': 0, 'norm': NoNorm(),
+        kwargs.update({'cmap': cm, 'norm':NoNorm(),
                        'interpolation': self._interpolation})
         if self.axes is not None:
             # A figure has already been created for the view. Make it current.
