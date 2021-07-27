@@ -188,7 +188,7 @@ class EcostressDatabase(AsterDatabase):
             else:
                 sampleNum = ''
             subclass = s.get('subclass', 'none')
-            if subclass is 'none' and 'genus' in s:
+            if subclass == 'none' and 'genus' in s:
                 subclass = s['genus']
             id = self._add_sample(s['name'], s['type'], s['class'], subclass,
                                   s['particle size'], sampleNum, s['owner'],
