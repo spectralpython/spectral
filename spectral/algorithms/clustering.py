@@ -22,54 +22,6 @@ def L2(v1, v2):
     return np.sqrt(np.dot(delta, delta))
 
 
-class KmeansClusterer(Classifier):
-    '''An unsupervised classifier using an iterative clustering algorithm'''
-    def __init__(self, nclusters=10, maxIter=20, endCondition=None,
-                 distanceMeasure=L1):
-        '''
-        ARGUMENTS:
-            nclusters       Number of clusters to create. Default is 8
-            maxIter         Max number of iterations. Default is 20
-            endCondition    Optional comparison function. This should be a
-                            function which takes 2 MxN NumPy arrays as its
-                            arguments and returns non-zero when clustering
-                            is to be terminated. The two arguments are the
-                            cluster maps for the previous and current cluster
-                            cycle, respectively.
-            distanceMeasure The distance measure to use for comparison. The
-                            default is the L1 distance. For  Euclidean
-                            distance, specify L2 (no quotes).
-        '''
-        self.nclusters = nclusters
-        self.maxIterations = maxIter
-        self.endCondition = endCondition
-        self.distanceMeasure = distanceMeasure
-
-    def classify_image(self, image, startClusters=None, iterations=None):
-        '''
-        Performs iterative self-organizing clustering of image data.
-
-        USAGE: (clMap, centers) = cl.classify_image(image
-                                                   [, startClusters = None]
-                                                   [, iterations = None])
-
-        ARGUMENTS:
-            image           A SpyFile or an MxNxB NumPy array
-            startClusters   Initial cluster centers. This must be an
-                            nclusters x B array.
-            iterations      If this argument is passed and is a list object,
-                            each intermediate cluster map is appended to
-                            the list.
-        RETURN VALUES:
-            clMap           An MxN array whos values are the indices of the
-                            cluster for the corresponding element of image.
-            centers         An nclusters x B array of cluster centers.
-        '''
-        return isoCluster(
-            image, self.nclusters, self.maxIterations, startClusters,
-            self.endCondition, self.distanceMeasure, iterations)
-
-
 def kmeans(image, nclusters=10, max_iterations=20, **kwargs):
     '''
     Performs iterative clustering using the k-means algorithm.
@@ -162,7 +114,7 @@ def kmeans(image, nclusters=10, max_iterations=20, **kwargs):
             if not hasattr(val, 'append'):
                 raise TypeError('"frames" keyword argument must have "append"'
                                 'attribute.')
-            iterations = frames
+            iterations = val
         else:
             raise NameError('Unsupported keyword argument.')
 
