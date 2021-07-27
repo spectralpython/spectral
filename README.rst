@@ -2,7 +2,7 @@ Spectral Python (SPy)
 ---------------------
 
 .. image:: https://github.com/spectralpython/spectral/actions/workflows/python-package.yml/badge.svg?branch=master
-   :target: https://github.com/spectralpython/spectral
+   :target: https://github.com/spectralpython/spectral/actions/workflows/python-package.yml
 
 .. image:: https://badges.gitter.im/spectralpython/spectral.svg
    :alt: Join the chat at https://gitter.im/spectralpython/spectral
