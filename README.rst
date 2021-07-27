@@ -1,8 +1,8 @@
 Spectral Python (SPy)
 ---------------------
 
-.. image:: https://travis-ci.org/spectralpython/spectral.svg?branch=master
-   :target: https://travis-ci.org/spectralpython/spectral
+.. image:: https://github.com/spectralpython/spectral/actions/workflows/python-package.yml/badge.svg?branch=master
+   :target: https://github.com/spectralpython/spectral
 
 .. image:: https://badges.gitter.im/spectralpython/spectral.svg
    :alt: Join the chat at https://gitter.im/spectralpython/spectral
