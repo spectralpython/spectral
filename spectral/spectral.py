@@ -119,25 +119,6 @@ def open_image(file):
     raise IOError('Unable to determine file type or type not supported.')
 
 
-
-def save_training_sets(sets, file):
-    '''
-    Saves a list of TrainingSet objects to a file.  This function assumes
-    that all the sets in the list refer to the same image and mask array.
-    If that is not the case, this function should not be used.
-    '''
-    f = open(file, 'w')
-    z = array.array([])
-
-    pickle.dump(len(sets), f)
-    DumpArray(sets[0].mask, f)
-    for s in sets:
-        s.mask = z
-        s.dump(f)
-
-    f.close()
-
-
 def load_training_sets(file, image=None):
     '''
     Loads a list of TrainingSet objects from a file.  This function assumes

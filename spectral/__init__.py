@@ -20,8 +20,7 @@ from .utilities.errors import SpyException
 from .config import SpySettings, spy_colors
 settings = SpySettings()
 
-from .spectral import (open_image, load_training_sets, save_training_sets,
-                      BandInfo)
+from .spectral import (open_image, load_training_sets, BandInfo)
 from .io import *
 from .algorithms import *
 from .graphics import *
