@@ -966,6 +966,7 @@ class NDWindow(wx.Frame):
 
     def update_window_title(self):
         '''Prints current file name and current point color to window title.'''
+        from OpenGL.GLUT import glutSetWindowTitle
         s = 'SPy N-D Data Set'
         glutSetWindowTitle(s)
 
