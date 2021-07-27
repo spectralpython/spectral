@@ -793,7 +793,7 @@ class ImageView(object):
             self.selector = None
             msg = 'Failed to create RectangleSelector object. Interactive ' \
               'pixel class labeling will be unavailable.'
-            warn(msg)
+            warnings.warn(msg)
 
     def label_region(self, rectangle, class_id):
         '''Assigns all pixels in the rectangle to the specified class.
