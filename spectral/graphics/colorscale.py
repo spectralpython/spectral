@@ -4,6 +4,8 @@ Code for converting pixel data to RGB values.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import numpy as np
+
 class ColorScale:
     '''
     A color scale class to map scalar values to rgb colors.  The class allows
@@ -81,7 +83,7 @@ class ColorScale:
             return self.colorTics[int((float(val) - self.min)
                                   / self.span * self.size)]
 
-    def set_background_color(color):
+    def set_background_color(self, color):
         '''Sets RGB color used for values below the scale minimum.
 
         Arguments:
@@ -89,7 +91,7 @@ class ColorScale:
             `color` (3-tuple): An RGB triplet
         '''
         if type(color) in (list, tuple):
-            color = array(color)
+            color = np.array(color)
         if len(color.shape) != 1 or color.shape[0] != 3:
             raise 'Color value must be have exactly 3 elements.'
         self.bgColor = color
@@ -115,18 +117,17 @@ def create_default_color_scale(ntics=0):
                 Total number of colors in the scale. If this value is 0, no
                 interpolated colors will be used.
     '''
-    from numpy import array
-    mycolors = array([[0, 0, 0],
-                      [0, 0, 255],
-                      [0, 255, 0],
-                      [255, 0, 0],
-                      [255, 255, 0],
-                      [255, 255, 255]])
+    mycolors = np.array([[0, 0, 0],
+                         [0, 0, 255],
+                         [0, 255, 0],
+                         [255, 0, 0],
+                         [255, 255, 0],
+                         [255, 255, 255]])
 
     if ntics != 0 and ntics < len(mycolors):
         raise ValueError('Any non-zero value of `ntics` must be greater than'
                          ' {}.'.format(len(mycolors)))
-    levels = array([0., 10., 20., 30., 40., 50.])
+    levels = np.array([0., 10., 20., 30., 40., 50.])
     scale = ColorScale(levels, mycolors, ntics)
     return scale
 
