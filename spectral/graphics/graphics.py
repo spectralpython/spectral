@@ -537,7 +537,7 @@ def get_rgb_meta(source, bands=None, **kwargs):
         if k not in _get_rgb_kwargs:
             raise ValueError('Invalid keyword: {0}'.format(k))
 
-    if not bands:
+    if bands is None:
         bands = []
     if len(bands) not in (0, 1, 3):
         raise Exception("Invalid number of bands specified.")
