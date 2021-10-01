@@ -1,4 +1,17 @@
 ================================================================================
+SPy 0.22.3
+================================================================================
+Release date: 2021.10.01
+
+Bug Fixes
+---------
+
+* [#127] Use `any` instead of `not` for sequence logic
+* [#123,#124] Fixed Matplotlib deprecation warnings
+* [#130] Fix deprecation warnings caused by np.int and np.float
+* Fixed several missing imports leftover from code refactoring
+
+================================================================================
 SPy 0.22.2
 ================================================================================
 Release date: 2021.03.31
