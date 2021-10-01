@@ -566,7 +566,7 @@ def get_rgb_meta(source, bands=None, **kwargs):
             # Pick the first, middle, and last bands
             n = source.shape[-1]
             bands = [0, n // 2, n - 1]
-        rgb = source.read_bands(bands).astype(np.float)
+        rgb = source.read_bands(bands).astype(float)
         meta['bands'] = bands
     else:
         # It should be a numpy array
@@ -587,7 +587,7 @@ def get_rgb_meta(source, bands=None, **kwargs):
             # first, middle, & last bands.
             bands = [0, s[2] / 2, s[2] - 1]
 
-        rgb = np.take(source, bands, 2).astype(np.float)
+        rgb = np.take(source, bands, 2).astype(float)
         if rgb.ndim == 2:
             rgb = rgb[:, :, np.newaxis]
         meta['bands'] = bands
@@ -614,14 +614,14 @@ def get_rgb_meta(source, bands=None, **kwargs):
                 scale.set_range(min(rgb.ravel()), max(rgb.ravel()))
             rgb3 = np.zeros((s[0], s[1], 3), int)
             rgb3 = np.apply_along_axis(scale, 2, rgb)
-            rgb = rgb3.astype(np.float) / 255.
+            rgb = rgb3.astype(float) / 255.
             return (_fill_mask(rgb, mask, bg), meta)
         else:
             # Only one band of data to display but still need to determine how
             # to scale the data values
             meta['mode'] = 'monochrome'
             monochrome = True
-            rgb = np.repeat(rgb, 3, 2).astype(np.float)
+            rgb = np.repeat(rgb, 3, 2).astype(float)
 
     # Perform any requested color enhancements.
 

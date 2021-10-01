@@ -550,8 +550,8 @@ def tile_image(im, nrows, ncols):
                         contains nrows lists, each of which contains
                         ncols SubImage objects.
     '''
-    x = (np.array(list(range(nrows + 1))) * float(im.nrows) / nrows).astype(np.int)
-    y = (np.array(list(range(ncols + 1))) * float(im.ncols) / ncols).astype(np.int)
+    x = (np.array(list(range(nrows + 1))) * float(im.nrows) / nrows).astype(int)
+    y = (np.array(list(range(ncols + 1))) * float(im.ncols) / ncols).astype(int)
     x[-1] = im.nrows
     y[-1] = im.ncols
 

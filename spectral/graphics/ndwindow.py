@@ -348,7 +348,7 @@ class NDWindow(wx.Frame):
 
         self.data = data
         self.classes = kwargs.get('classes',
-                                  np.zeros(data.shape[:-1], np.int))
+                                  np.zeros(data.shape[:-1], int))
         self.features = kwargs.get('features', list(range(6)))
         self.labels = kwargs.get('labels', list(range(data.shape[-1])))
         self.max_menu_class = int(np.max(self.classes.ravel() + 1))

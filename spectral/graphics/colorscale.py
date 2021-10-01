@@ -52,13 +52,13 @@ class ColorScale:
         if type(levels) in (list, tuple):
             levels = [float(x) for x in levels]
         elif isinstance(levels, np.ndarray):
-            levels = levels.astype(np.float)
+            levels = levels.astype(float)
 
         self.span = levels[-1] - levels[0]
         self.max = levels[-1]
         self.min = levels[0]
         self.tics = np.linspace(self.min, self.max, num_tics)
-        self.colorTics = np.zeros((len(self.tics), 3), np.int)
+        self.colorTics = np.zeros((len(self.tics), 3), int)
         self.size = len(self.tics)
         self.bgColor = np.array([0, 0, 0])
 
@@ -71,7 +71,7 @@ class ColorScale:
                 dcolor = colors[j] - colors[j - 1]
                 dlevel = levels[j] - levels[j - 1]
             self.colorTics[i] = (colors[j - 1] + (self.tics[i] - levels[j - 1])
-                                 / dlevel * dcolor).astype(np.int)
+                                 / dlevel * dcolor).astype(int)
 
     def __call__(self, val):
         '''Returns the scale color associated with the given value.'''
