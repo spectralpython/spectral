@@ -4,7 +4,10 @@ Base classes for various types of transforms.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import collections
+try:
+    from collections.abc import Callable
+except:
+    from collections import Callable
 import numpy as np
 
 
@@ -85,7 +88,7 @@ class LinearTransform:
         __init__.
         '''
         if not isinstance(X, np.ndarray):
-            if hasattr(X, 'transform') and isinstance(X.transform, collections.Callable):
+            if hasattr(X, 'transform') and isinstance(X.transform, Callable):
                 return X.transform(self)
             else:
                 raise TypeError('Unable to apply transform to object.')

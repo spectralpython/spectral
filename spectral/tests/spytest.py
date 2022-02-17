@@ -4,7 +4,10 @@ Base class for all tests.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import collections
+try:
+    from collections.abc import Callable
+except:
+    from collections import Callable
 import sys
 
 class SpyTest(object):
@@ -39,7 +42,7 @@ class SpyTest(object):
                 pass
         null = NullStdOut()
         methods = [getattr(self, s) for s in sorted(dir(self)) if s.startswith('test_')]
-        methods = [m for m in methods if isinstance(m, collections.Callable)]
+        methods = [m for m in methods if isinstance(m, Callable)]
         stdout = sys.stdout
         for method in methods:
             print(format('Testing ' + method.__name__.split('_', 1)[-1],
