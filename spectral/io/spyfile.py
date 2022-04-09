@@ -196,7 +196,7 @@ class SpyFile(Image):
         for k in list(kwargs.keys()):
             if k not in ('dtype', 'scale'):
                 raise ValueError('Invalid keyword %s.' % str(k))
-        ctypes = [np.dtype(f'complex{b}').name for b in (64, 128, 256)]
+        ctypes = [np.dtype('complex{}'.format(b)).name for b in (64, 128, 256)]
         if 'dtype' in kwargs:
             dtype = kwargs['dtype']
         elif np.dtype(self.dtype).name in ctypes:
