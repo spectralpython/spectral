@@ -309,7 +309,7 @@ def create_complex_test_files(dtypes):
     for t in dtypes:
         X = np.array(np.random.rand(*shape) + 1j * np.random.rand(*shape),
                      dtype=t)
-        fname = os.path.join(testdir, f'test_{t}.hdr')
+        fname = os.path.join(testdir, 'test_{}.hdr'.format(t))
         spy.envi.save_image(fname, X)
         tests.append((fname, datum, X[datum]))
     return tests
