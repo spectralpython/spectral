@@ -23,7 +23,7 @@ import warnings
 
 import spectral as spy
 from ..spectral import BandInfo
-from ..utilities.python23 import IS_PYTHON3, is_string
+from ..utilities.python23 import IS_PYTHON3, is_string, tobytes
 from ..utilities.errors import SpyException
 from .bilfile import BilFile
 from .bipfile import BipFile
@@ -681,7 +681,7 @@ def _write_image(hdr_file, data, header, **kwargs):
     # bufsize = data.shape[0] * data.shape[1] * np.dtype(dtype).itemsize
     bufsize = data.shape[0] * data.shape[1] * data.dtype.itemsize
     fout = builtins.open(img_file, 'wb', bufsize)
-    fout.write(data.tostring())
+    fout.write(tobytes(data))
     fout.close()
 
 

@@ -8,6 +8,8 @@ import logging
 import wx
 from spectral.graphics.graphics import SpyWindow
 
+from ..utilities.python23 import tobytes
+
 logger = logging.getLogger('spectral')
 
 class RasterWindow(wx.Frame, SpyWindow):
@@ -26,7 +28,7 @@ class RasterWindow(wx.Frame, SpyWindow):
 
         img = wx.EmptyImage(rgb.shape[0], rgb.shape[1])
         img = wx.EmptyImage(rgb.shape[1], rgb.shape[0])
-        img.SetData(rgb.tostring())
+        img.SetData(tobytes(rgb))
         self.bmp = img.ConvertToBitmap()
         self.kwargs = kwargs
         wx.Frame.__init__(self, parent, index, title,
