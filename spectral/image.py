@@ -118,11 +118,11 @@ class ImageArray(np.ndarray, Image):
     def _parent_getitem(self, args):
         return np.ndarray.__getitem__(self, args)
 
-    def read_band(self, i):
+    def read_band(self, band):
         '''
         For compatibility with SpyFile objects. Returns arr[:,:,i].squeeze()
         '''
-        return np.asarray(self[:, :, i].squeeze())
+        return np.asarray(self[:, :, band].squeeze())
 
     def read_bands(self, bands):
         '''For SpyFile compatibility. Equivlalent to arr.take(bands, 2)'''
@@ -161,7 +161,7 @@ class ImageArray(np.ndarray, Image):
 
     def read_datum(self, i, j, k):
         '''For SpyFile compatibility. Equivlalent to arr[i, j, k]'''
-        return np.asscalar(self[i, j, k])
+        return self[i, j, k]
 
     def load(self):
         '''For compatibility with SpyFile objects. Returns self'''
