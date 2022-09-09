@@ -472,8 +472,8 @@ class WindowedGaussianBackgroundMapper(object):
                     mean_out = np.mean(image[outer[0]: outer[1],
                                              outer[2]: outer[3]].reshape(-1, B),
                                              axis=0)
-                    mean_in = np.mean(image[outer[0]: outer[1],
-                                            outer[2]: outer[3]].reshape(-1, B),
+                    mean_in = np.mean(image[inner[0]: inner[1],
+                                            inner[2]: inner[3]].reshape(-1, B),
                                             axis=0)
                     mean = mean_out * (float(N_tot) / (N_tot - N_in)) - \
                            mean_in * (float(N_in) / (N_tot - N_in))
