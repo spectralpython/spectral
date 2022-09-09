@@ -1,4 +1,21 @@
 ================================================================================
+SPy 0.23
+================================================================================
+Release date: 2022.09.09
+
+Changes
+-------
+
+* `calc_stats` and `mean_cov` produce consistent results for 2D input
+* [#135] Complex data types in ENVI files are not converted to scalars
+
+Bug Fixes
+---------
+
+* [#142] Fixed incorrect outer window mean for rx, ace, and matched_filter
+* [#136, #140] Avoid deprecation warnings
+
+================================================================================
 SPy 0.22.4
 ================================================================================
 Release date: 2021.10.05
