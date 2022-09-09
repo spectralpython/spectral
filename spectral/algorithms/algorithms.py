@@ -171,8 +171,8 @@ def mean_cov(image, mask=None, index=None):
 
         `image` (ndarrray, :class:`~spectral.Image`, or :class:`spectral.Iterator`):
 
-            If an ndarray, it should have shape `MxNxB` and the mean &
-            covariance will be calculated for each band (third dimension).
+            If an ndarray, it should have 2 or 3 dimensions and the mean &
+            covariance will be calculated for the last dimension.
 
         `mask` (ndarray):
 
@@ -214,6 +214,10 @@ def mean_cov(image, mask=None, index=None):
         X = image.astype(np.float64)
         if X.ndim == 3:
             X = image.reshape(-1, image.shape[-1]).T
+        elif X.ndim == 2:
+            X = image.T
+        else:
+            raise ValueError('ndarray must have 2 or 3 dimensions.')
         if mask is not None:
             mask = mask.ravel()
             if index is not None:
@@ -813,8 +817,8 @@ def calc_stats(image, mask=None, index=None, allow_nan=False):
 
         `image` (ndarrray, :class:`~spectral.Image`, or :class:`spectral.Iterator`):
 
-            If an ndarray, it should have shape `MxNxB` and the mean &
-            covariance will be calculated for each band (third dimension).
+            If an ndarray, it should have 2 or 3 dimensions and the mean &
+            covariance will be calculated for the last dimension.
 
         `mask` (ndarray):
 
