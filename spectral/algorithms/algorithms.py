@@ -1208,11 +1208,11 @@ def bdist_terms(a, b):
                             A 2-tuple of the linear and quadratic terms
     '''
     m = a.stats.mean - b.stats.mean
-    avgCov = (a.stats.cov + b.stats.cov) / 2
+    avg_cov = (a.stats.cov + b.stats.cov) / 2
 
-    lin_term = (1 / 8.) * np.dot(np.transpose(m), np.dot(np.inv(avgCov), m))
+    lin_term = (1 / 8.) * np.dot(np.transpose(m), np.dot(np.linalg.inv(avg_cov), m))
 
-    quad_term = 0.5 * (log_det(avgCov)
+    quad_term = 0.5 * (log_det(avg_cov)
                        - 0.5 * a.stats.log_det_cov
                        - 0.5 * b.stats.log_det_cov)
 
@@ -1317,7 +1317,7 @@ def unmix(data, members):
     members = members.astype(float)
     # Calculate the pseudo inverse
     pi = np.dot(members, np.transpose(members))
-    pi = np.dot(np.inv(pi), members)
+    pi = np.dot(np.linalg.inv(pi), members)
 
     (M, N, B) = data.shape
     unmixed = np.zeros((M, N, members.shape[0]), float)
