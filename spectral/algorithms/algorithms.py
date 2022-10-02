@@ -786,6 +786,10 @@ class GaussianStats(object):
     def principal_components(self):
         if self._pcs is None:
             (evals, evecs) = np.linalg.eigh(self._cov)
+            # numpy says eigenvalues may not be sorted so we'll sort them.
+            ii = list(reversed(np.argsort(evals)))
+            evals = evals[ii]
+            evecs = evecs[:, ii]
             self._pcs = PrincipalComponents(evals, evecs, self)
         return self._pcs
 
