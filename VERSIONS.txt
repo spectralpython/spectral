@@ -1,4 +1,18 @@
 ================================================================================
+SPy 0.23.1
+================================================================================
+Release date: 2022.10.02
+
+Bug Fixes
+---------
+
+* [#143] Eigen{values,vectors} in a `GaussianStats` weren't sorted in
+  descencding order, which is inconsistent with `PrincipalComponents`.
+* [#144] `SpyFile.load` was failing on Windows because numpy versions
+  there did not support complex256.
+* [#145] `unmix` was failing, due to an invalid reference to "np.inv"
+
+================================================================================
 SPy 0.23
 ================================================================================
 Release date: 2022.09.09
