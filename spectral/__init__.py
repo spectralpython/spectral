@@ -16,6 +16,8 @@ BSQ = 0
 BIL = 1
 BIP = 2
 
+COMPLEX_SIZES = [64, 128, 256]
+
 from .utilities.errors import SpyException
 from .config import SpySettings, spy_colors
 settings = SpySettings()

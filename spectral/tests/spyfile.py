@@ -17,13 +17,14 @@ from __future__ import division, print_function, unicode_literals
 import itertools
 import numpy as np
 import os
-
+import warnings
 
 import spectral as spy
 from spectral.io.spyfile import find_file_path, FileNotFoundError, SpyFile
 from spectral.tests import testdir
 from spectral.tests.spytest import SpyTest
 
+ENVI_COMPLEX_TEST_SIZES = [64, 28]
 
 assert_almost_equal = np.testing.assert_allclose
 
@@ -326,7 +327,18 @@ def run():
             print('File "%s" not found. Skipping.' % fname)
 
     # Run tests for complex data types
-    dtypes = ['complex64', 'complex128']
+
+    # Only test complex sizes supported by numpy and ENVI.
+    dtypes = []
+    for s in [s for s in spy.COMPLEX_SIZES if s in ENVI_COMPLEX_TEST_SIZES]:
+        t = 'complex{}'.format(s)
+        if hasattr(np, t):
+            dtypes.append(t)
+        else:
+            # This is unlikely to happen because numpy currently supports
+            # more complex types than ENVI
+            warnings.warn('numpy does not support {}. Skipping test.'.format(t))
+
     tests = create_complex_test_files(dtypes)
     for (dtype, (fname, datum, value)) in zip(dtypes, tests):
         try:
