@@ -194,7 +194,7 @@ class EcostressDatabase(AsterDatabase):
                                   s['particle size'], sampleNum, s['owner'],
                                   s['origin'], phase, s['description'])
 
-            instrument = os.path.basename(f).split('.')[1]
+            instrument = os.path.basename(f).split('.')[-3]
             environment = 'lab'
             m = sig.measurement
 
