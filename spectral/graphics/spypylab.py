@@ -97,7 +97,7 @@ class MplCallback(object):
             self.registry = registry
         
     def connect(self, registry=None, event=None, callback=None):
-        '''Binds the callback to the registry and begins receiving event.
+        '''Binds the callback to the registry and begins receiving events.
         
          Arguments:
 
@@ -236,8 +236,7 @@ class ImageViewKeyboardHandler(ImageViewCallback):
         kp = KeyParser(event.key)
         key = kp.key
         if key is None and self.view.selector is not None and \
-          self.view.selector.get_active() and kp.mods_are('shift') \
-          and self.view.selector.eventpress is not None:
+          self.view.selector.get_active() and kp.mods_are('shift'):
             print('Resetting selection.')
             self.view.selector.eventpress = None
             self.view.selector.set_active(False)
@@ -766,8 +765,6 @@ class ImageView(object):
 
         # Class update event callback
         def updater(*args, **kwargs):
-            if self.classes is None:
-                self.set_classes(args[0].classes)
             self.refresh()
         callback = MplCallback(registry=self.callbacks_common,
                                event='spy_classes_modified',
@@ -785,11 +782,14 @@ class ImageView(object):
                                               button=1,
                                               useblit=True,
                                               spancoords='data',
-                                              drawtype='box',
-                                              rectprops = \
-                                                  self.selector_rectprops)
+                                              props= \
+                                                  self.selector_rectprops,
+                                              state_modifier_keys=\
+                                                  {'square': None,
+                                                   'center': None})
             self.selector.set_active(False)
         except:
+            raise
             self.selector = None
             msg = 'Failed to create RectangleSelector object. Interactive ' \
               'pixel class labeling will be unavailable.'
@@ -814,18 +814,22 @@ class ImageView(object):
         Returns the number of pixels reassigned (the number of pixels in the
         rectangle whose class has *changed* to `class_id`.
         '''
-        if self.classes is None:
-            self.classes = np.zeros(self.data_rgb.shape[:2], dtype=np.int16)
+        show_classes = self.classes is None
+        if show_classes:
+            self.set_classes(np.zeros(self.data_rgb.shape[:2], dtype=np.int16))
         r = rectangle
         n = np.sum(self.classes[r[0]:r[1], r[2]:r[3]] != class_id)
         if n > 0:
             self.classes[r[0]:r[1], r[2]:r[3]] = class_id
+            if show_classes:
+                self.show_classes()
+                self.set_display_mode('overlay')
             event = SpyMplEvent('spy_classes_modified')
             event.classes = self.classes
             event.nchanged = n
             self.callbacks_common.process('spy_classes_modified', event)
             # Make selection rectangle go away.
-            self.selector.to_draw.set_visible(False)
+            self.selector.set_visible(False)
             self.refresh()
             return n
         return 0
@@ -850,7 +854,7 @@ class ImageView(object):
         self.selection = [r1, r2 + 1, c1, c2 + 1]
         self.selector.set_active(False)
         # Make the rectangle display until at least the next event
-        self.selector.to_draw.set_visible(True)
+        self.selector.set_visible(True)
         self.selector.update()
     
     def _guess_mode(self):
