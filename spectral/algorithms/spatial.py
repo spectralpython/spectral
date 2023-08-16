@@ -615,7 +615,7 @@ def inner_outer_window_mask_creator(image_shape, inner, outer):
         outer = (outer_imin, outer_imax, outer_jmin, outer_jmax)
         if not gen_mask:
             return (inner, outer)
-        mask = np.zeros((ho, wo), dtype=np.bool)
+        mask = np.zeros((ho, wo), dtype=bool)
         mask[inner_imin - outer_imin : inner_imax - outer_imin,
              inner_jmin - outer_jmin : inner_jmax - outer_jmin] = True
         return (inner, outer, mask)

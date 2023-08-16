@@ -6,7 +6,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import math
-import numpy
 import numpy as np
 
 from warnings import warn
@@ -217,7 +216,7 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
         '''
         GaussianClassifier.train(self, trainingData)
 
-        covariance = numpy.zeros(self.classes[0].stats.cov.shape, numpy.float)
+        covariance = np.zeros(self.classes[0].stats.cov.shape, float)
         nsamples = np.sum(cl.stats.nsamples for cl in self.classes)
         for cl in self.classes:
             covariance += (cl.stats.nsamples / float(nsamples)) * cl.stats.cov
