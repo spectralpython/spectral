@@ -6,6 +6,8 @@ To run all unit tests, type the following from the system command line:
     # python -m spectral.tests.run
 '''
 
+# flake8: noqa
+
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 # If abort_on_fail is True, an AssertionError will be raised when a unit test

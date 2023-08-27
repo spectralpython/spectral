@@ -5,7 +5,6 @@ Functions for handling AVIRIS image files.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
-import glob
 import os
 
 import spectral as spy
@@ -18,6 +17,7 @@ if IS_PYTHON3:
     import builtins
 else:
     import __builtin__ as builtins
+
 
 def open(file, band_file=None):
     '''
@@ -96,4 +96,3 @@ def read_aviris_bands(cal_filename):
     bands.bandwidth_stdevs = columns[3]
     bands.band_unit = 'nm'
     return bands
-

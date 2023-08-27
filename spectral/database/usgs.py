@@ -54,8 +54,14 @@ _spectrometer_names = {
     'ASTER': ['ASTER'],
     'AVIRIS': ['AVIRIS', 'aviris'],
     'BECK': ['BECK'],
-    'CRISM JOINED MTR3': ['CRISM Bandpass(FWHM) JOINED MTR3', 'CRISM Waves JOINED MTR3', 'CRISM Bandpass JOINED MTR3', 'CRISM JOINED MTR3'],
-    'CRISM GLOBAL': ['CRISM Bandpass(FWHM) GLOBAL', 'CRISM Wavelengths GLOBAL', 'CRISM Waves GLOBAL', 'CRISM GLOBAL'],
+    'CRISM JOINED MTR3': ['CRISM Bandpass(FWHM) JOINED MTR3',
+                          'CRISM Waves JOINED MTR3',
+                          'CRISM Bandpass JOINED MTR3',
+                          'CRISM JOINED MTR3'],
+    'CRISM GLOBAL': ['CRISM Bandpass(FWHM) GLOBAL',
+                     'CRISM Wavelengths GLOBAL',
+                     'CRISM Waves GLOBAL',
+                     'CRISM GLOBAL'],
     'Hyperion': ['Hyperion'],
     'HyMap2': ['HyMap2'],
     'Landsat8': ['Landsat8'],
@@ -65,6 +71,7 @@ _spectrometer_names = {
     'VIMS': ['VIMS'],
     'WorldView3': ['WorldView3']
 }
+
 
 class SpectrometerData:
     '''
@@ -87,8 +94,11 @@ class SpectrometerData:
             Returns:
                 String representation of basic meta data.
         '''
-        return '{0} Record={1}: {2} {3} {4}'.format(self.libname, self.record,
-                                               self.measurement, self.description)
+        return '{0} Record={1}: {2} {3} {4}'.format(self.libname,
+                                                    self.record,
+                                                    self.measurement_type,
+                                                    self.unit,
+                                                    self.description)
 
     @ classmethod
     def read_from_file(cls, filename):
@@ -216,7 +226,7 @@ class SampleData:
             Returns:
                 String representation of basic meta data.
         '''
-        return '{0} Record={1}: {2} {3}{4} {5}'.format(self.libname, self.record,
+        return '{0} Record={1}: {2} {3} {4} {5}'.format(self.libname, self.record,
                                                  self.description, self.spectrometer,
                                                  self.purity, self.measurement_type)
 
@@ -441,7 +451,6 @@ class USGSDatabase(SpectralDatabase):
 
     def _import_files(self, data_dir):
         from glob import glob
-        import numpy
         import os
         logger = logging.getLogger('spectral')
 
@@ -524,7 +533,6 @@ class USGSDatabase(SpectralDatabase):
         Returns a pair of vectors containing the wavelengths and measured
         values values of a measurment.
         '''
-        import array
         query = '''SELECT ValuesArray, AssumedWLSpmeterDataID FROM Samples WHERE SampleID = ?'''
         result = self.cursor.execute(query, (sampleID,))
         rows = result.fetchall()
@@ -567,7 +575,7 @@ class USGSDatabase(SpectralDatabase):
         resampled to the same discretization specified by the bandInfo
         parameter. See :class:`spectral.BandResampler` for details on the
         resampling method used.
-        Note that expected units for bands are micrometers. 
+        Note that expected units for bands are micrometers.
         '''
         from spectral.algorithms.resampling import BandResampler
         from spectral.io.envi import SpectralLibrary

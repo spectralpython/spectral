@@ -10,6 +10,7 @@ import numpy as np
 
 from ..spectral import BandInfo
 
+
 def erf_local(x):
     # save the sign of x
     sign = 1 if x >= 0 else -1
@@ -24,9 +25,10 @@ def erf_local(x):
     p  =  0.3275911
 
     # A&S formula 7.1.26
-    t = 1.0/(1.0 + p*x)
-    y = 1.0 - (((((a5*t + a4)*t) + a3)*t + a2)*t + a1)*t*math.exp(-x*x)
-    return sign*y # erf(-x) = -erf(x)
+    t = 1.0/(1.0 + p * x)
+    y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * math.exp(-x * x)
+    return sign * y  # erf(-x) = -erf(x)
+
 
 try:
     from math import erf
@@ -36,18 +38,22 @@ except:
     except:
         erf = erf_local
 
+
 def erfc(z):
     '''Complement of the error function.'''
     return 1.0 - erf(z)
+
 
 def normal_cdf(x):
     '''CDF of the normal distribution.'''
     sqrt2 = 1.4142135623730951
     return 0.5 * erfc(-x / sqrt2)
 
+
 def normal_integral(a, b):
     '''Integral of the normal distribution from a to b.'''
     return normal_cdf(b) - normal_cdf(a)
+
 
 def ranges_overlap(R1, R2):
     '''Returns True if there is overlap between ranges of pairs R1 and R2.'''
@@ -56,13 +62,16 @@ def ranges_overlap(R1, R2):
         return False
     return True
 
+
 def overlap(R1, R2):
     '''Returns (min, max) of overlap between the ranges of pairs R1 and R2.'''
     return (max(R1[0], R2[0]), min(R1[1], R2[1]))
 
+
 def normal(mean, stdev, x):
     sqrt_2pi = 2.5066282746310002
     return math.exp(-((x - mean) / stdev)**2 / 2.0) / (sqrt_2pi * stdev)
+
 
 def build_fwhm(centers):
     '''Returns FWHM list, assuming FWHM is midway between adjacent bands.
@@ -73,6 +82,7 @@ def build_fwhm(centers):
     for i in range(1, len(centers) - 1):
         fwhm[i] = (centers[i + 1] - centers[i - 1]) / 2.0
     return fwhm
+
 
 def create_resampling_matrix(centers1, fwhm1, centers2, fwhm2):
     '''
@@ -121,7 +131,7 @@ def create_resampling_matrix(centers1, fwhm1, centers2, fwhm2):
         # the new schema.
         if len(matches) == 0:
             logger.info('No overlap for target band %d (%f / %f)',
-                         i, centers2[i], fwhm2[i])
+                        i, centers2[i], fwhm2[i])
             M[i, 0] = nan
             continue
 
@@ -134,8 +144,8 @@ def create_resampling_matrix(centers1, fwhm1, centers2, fwhm2):
         contribs = np.zeros(len(matches))
         A = 0.
         for k in range(len(matches)):
-            #endNorms = [normal(centers2[i], stdev, x) for x in overlaps[k]]
-            #dA = (overlaps[k][1] - overlaps[k][0]) * sum(endNorms) / 2.0
+            # endNorms = [normal(centers2[i], stdev, x) for x in overlaps[k]]
+            # dA = (overlaps[k][1] - overlaps[k][0]) * sum(endNorms) / 2.0
             (a, b) = [(x - centers2[i]) / stdev for x in overlaps[k]]
             dA = normal_integral(a, b)
             contribs[k] = dA
@@ -144,6 +154,7 @@ def create_resampling_matrix(centers1, fwhm1, centers2, fwhm2):
         for k in range(len(matches)):
             M[i, matches[k]] = contribs[k]
     return M
+
 
 class BandResampler:
     '''A callable object for resampling spectra between band discretizations.

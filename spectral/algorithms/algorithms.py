@@ -15,6 +15,7 @@ from ..utilities.errors import has_nan, NaNValueError
 from .spymath import matrix_sqrt
 from .transforms import LinearTransform
 
+
 class Iterator:
     '''
     Base class for iterators over pixels (spectra).
@@ -50,7 +51,6 @@ class ImageIterator(Iterator):
 
     def __iter__(self):
         (M, N) = self.image.shape[:2]
-        count = 0
         for i in range(M):
             self.row = i
             for j in range(N):
@@ -85,6 +85,7 @@ class ImageMaskIterator(Iterator):
         for (i, j) in coords:
             (self.row, self.col) = (i, j)
             yield self.image[i, j].astype(self.image.dtype).squeeze()
+
 
 def iterator(image, mask=None, index=None):
     '''
@@ -291,6 +292,7 @@ def cov_avg(image, mask, weighted=True):
                        for c in classes], axis=0, dtype=np.float64)
     else:
         return np.mean([c.cov for c in classes], axis=0, dtype=np.float64)
+
 
 def covariance(*args):
     '''
@@ -641,7 +643,6 @@ def linear_discriminant(classes, whiten=True):
         Richards, J.A. & Jia, X. Remote Sensing Digital Image Analysis: An
         Introduction. (Springer: Berlin, 1999).
     '''
-    C = len(classes)            # Number of training sets
     rank = len(classes) - 1
 
     classes.calc_stats()
@@ -677,13 +678,13 @@ def linear_discriminant(classes, whiten=True):
 
     return FisherLinearDiscriminant(vals.real, vecs.real, mean, cov_b, cov_w)
 
+
 # Alias for Linear Discriminant Analysis (LDA)
 lda = linear_discriminant
 
 
 def log_det(x):
-    return sum(np.log([eigv for eigv in np.linalg.eigvals(x)
-                          if eigv > 0]))
+    return sum(np.log([eigv for eigv in np.linalg.eigvals(x) if eigv > 0]))
 
 
 class GaussianStats(object):
@@ -933,7 +934,6 @@ class TrainingClass:
         else:
             return np.sum(np.not_equal(self.mask, 0).ravel())
 
-
     def calc_stats(self):
         '''
         Calculates statistics for the class.
@@ -1050,13 +1050,13 @@ class TrainingClassSet:
     def save(self, filename, calc_stats=False):
         for c in list(self.classes.values()):
             if c.stats is None:
-                if calc_stats == False:
+                if calc_stats is False:
                     msg = 'Class statistics are missing from at least one ' \
                       'class and are required to save the training class ' \
                       'data. Call the `save` method with keyword ' \
                       '`calc_stats=True` if you want to compute them and ' \
                       'then save the class data.'
-                    raise Exception (msg)
+                    raise Exception(msg)
                 else:
                     c.calc_stats()
         f = open(filename, 'wb')
@@ -1194,6 +1194,7 @@ def bdist(class1, class2):
     '''
     terms = bdist_terms(class1, class2)
     return terms[0] + terms[1]
+
 
 bDistance = bdist
 
@@ -1364,6 +1365,7 @@ def spectral_angles(data, members):
     dots = np.clip(dots / norms[:, :, np.newaxis], -1, 1)
     return np.arccos(dots)
 
+
 def msam(data, members):
     '''Modified SAM scores according to Oshigami, et al [1]. Endmembers are
     mean-subtracted prior to spectral angle calculation. Results are
@@ -1417,7 +1419,7 @@ def msam(data, members):
 
     for i in range(M):
         for j in range(N):
-            #Fisher z trafo type operation
+            # Fisher z trafo type operation
             v = data[i, j] - np.mean(data[i, j])
             v /= np.sqrt(v.dot(v))
             v = np.clip(v, -1, 1)
@@ -1425,8 +1427,9 @@ def msam(data, members):
                 # Calculate Mineral Index according to Oshigami et al.
                 # (Intnl. J. of Remote Sens. 2013)
                 a = np.clip(v.dot(m[k]), -1, 1)
-                angles[i,j,k]= 1.0 - np.arccos(a) / (math.pi / 2)
+                angles[i, j, k] = 1.0 - np.arccos(a) / (math.pi / 2)
     return angles
+
 
 def noise_from_diffs(X, direction='lowerright'):
     '''Estimates noise statistcs by taking differences of adjacent pixels.
@@ -1469,6 +1472,7 @@ def noise_from_diffs(X, direction='lowerright'):
     stats.cov /= 2.0
     return stats
 
+
 class MNFResult(object):
     '''Result object returned by :func:`~spectral.algorithms.algorithms.mnf`.
 
@@ -1504,7 +1508,7 @@ class MNFResult(object):
                 raise Exception('Keyword not recognized.')
         num = kwargs.get('num', None)
         snr = kwargs.get('snr', None)
-        if num == snr == None:
+        if num == snr is None:
             raise Exception('Must specify either `num` or `snr` keyword.')
         if None not in (num, snr):
             raise Exception('Can not specify both `num` and `snr` keywords.')
@@ -1563,8 +1567,8 @@ class MNFResult(object):
         V = self.napc.eigenvectors
         Vr = np.array(V)
         Vr[:, N:] = 0.
-        f = LinearTransform(self.noise.sqrt_cov.dot(Vr).dot(V.T) \
-			    .dot(self.noise.sqrt_inv_cov),
+        f = LinearTransform(self.noise.sqrt_cov.dot(Vr).dot(V.T)
+                            .dot(self.noise.sqrt_inv_cov),
                             pre=-self.signal.mean,
                             post=self.signal.mean)
         return f
@@ -1626,6 +1630,7 @@ class MNFResult(object):
         '''Returns the number of components with SNR >= `snr`.'''
         return np.sum(self.napc.eigenvalues >= (snr + 1))
 
+
 def mnf(signal, noise):
     '''Computes Minimum Noise Fraction / Noise-Adjusted Principal Components.
 
@@ -1685,6 +1690,7 @@ def mnf(signal, noise):
     wstats = GaussianStats(mean=np.zeros_like(L), cov=C)
     napc = PrincipalComponents(L, V, wstats)
     return MNFResult(signal, noise, napc)
+
 
 def ppi(X, niters, threshold=0, centered=False, start=None, display=0,
         **imshow_kwargs):
@@ -1759,7 +1765,7 @@ def ppi(X, niters, threshold=0, centered=False, start=None, display=0,
     '''
     if display is not None:
         if not isinstance(display, Integral) or isinstance(display, bool) or \
-            display < 0:
+          display < 0:
             msg = '`display` argument must be a non-negative integer.'
             raise ValueError(msg)
 
@@ -1941,7 +1947,7 @@ def smacc(spectra, min_endmembers=None, max_residual_norm=float('Inf')):
         residual_norms[:] = np.sqrt(np.einsum('ij,ij->i', R, R))
         current_max_residual_norm = np.max(residual_norms)
         print('Found {0} endmembers, current max residual norm is {1:.4f}\r'
-            .format(len(q), current_max_residual_norm), end='')
+          .format(len(q), current_max_residual_norm), end='')
 
     # Correction as suggested in the SMACC paper.
     for k, s in enumerate(q):

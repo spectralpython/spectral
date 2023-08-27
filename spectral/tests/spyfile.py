@@ -28,8 +28,10 @@ ENVI_COMPLEX_TEST_SIZES = [64, 28]
 
 assert_almost_equal = np.testing.assert_allclose
 
-def assert_allclose (a, b, **kwargs):
+
+def assert_allclose(a, b, **kwargs):
     np.testing.assert_allclose(np.array(a), np.array(b), **kwargs)
+
 
 class SpyFileTest(SpyTest):
     '''Tests that SpyFile methods read data correctly from files.'''
@@ -106,7 +108,7 @@ class SpyFileTest(SpyTest):
 
     def test_read_bands_duplicates(self):
         (i, j, k) = self.datum
-        bands = (k - 5, k - 5, k, k -5)
+        bands = (k - 5, k - 5, k, k - 5)
         assert_almost_equal(self.image.read_bands(bands,
                                                   use_memmap=True)[i, j, 2],
                             self.value)
@@ -177,7 +179,7 @@ class SpyFileTest(SpyTest):
                     spyf.read_subimage([0, 2, 4], [6, 3]))
         load_assert(data.read_subimage([0, 2], [6, 3], [0, 1]),
                     spyf.read_subimage([0, 2], [6, 3], [0, 1]))
-        load_assert(data.read_datum(1,2,8), spyf.read_datum(1,2,8))
+        load_assert(data.read_datum(1, 2, 8), spyf.read_datum(1, 2, 8))
 
         ufunc_result = data + 1
         assert isinstance(ufunc_result, np.ndarray)
@@ -202,6 +204,7 @@ class SpyFileTest(SpyTest):
         (i, j, k) = self.datum
         assert_almost_equal(self.image[i-3:i+3, j-3:j+3][3, 3, k], self.value)
 
+
 def assert_same_shape_almost_equal(obj1, obj2, decimal=7, err_msg='',
                                    verbose=True):
     """
@@ -219,6 +222,7 @@ def assert_same_shape_almost_equal(obj1, obj2, decimal=7, err_msg='',
 
     assert_almost_equal(obj1, obj2, decimal=decimal, err_msg=err_msg,
                         verbose=verbose)
+
 
 class SpyFileTestSuite(object):
     '''Tests reading by byte orders, data types, and interleaves. For a
@@ -300,6 +304,7 @@ class SpyFileTestSuite(object):
                 test = SpyFileTest(testimg, self.datum, self.value)
                 test.run()
 
+
 def create_complex_test_files(dtypes):
     '''Create test files with complex data'''
     if not os.path.isdir(testdir):
@@ -315,11 +320,12 @@ def create_complex_test_files(dtypes):
         tests.append((fname, datum, X[datum]))
     return tests
 
+
 def run():
     tests = [('92AV3C.lan', (99, 99, 99), 2057.0)]
     for (fname, datum, value) in tests:
         try:
-            check = find_file_path(fname)
+            find_file_path(fname)
             suite = SpyFileTestSuite(fname, datum, value,
                                      dtypes=('i2', 'i4', 'f4', 'f8', 'c8', 'c16'))
             suite.run()
@@ -342,12 +348,13 @@ def run():
     tests = create_complex_test_files(dtypes)
     for (dtype, (fname, datum, value)) in zip(dtypes, tests):
         try:
-            check = find_file_path(fname)
+            find_file_path(fname)
             suite = SpyFileTestSuite(fname, datum, value,
                                      dtypes=(dtype,))
             suite.run()
         except FileNotFoundError:
             print('File "%s" not found. Skipping.' % fname)
+
 
 if __name__ == '__main__':
     run()

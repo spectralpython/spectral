@@ -9,6 +9,7 @@ import numpy as np
 
 from .spectral import BandInfo
 
+
 class Image(object):
     '''spectral.Image is the common base class for spectral image objects.'''
 
@@ -17,18 +18,15 @@ class Image(object):
         self.set_params(params, metadata)
 
     def set_params(self, params, metadata):
-        try:
-            self.nbands = params.nbands
-            self.nrows = params.nrows
-            self.ncols = params.ncols
-            self.dtype = params.dtype
+        self.nbands = params.nbands
+        self.nrows = params.nrows
+        self.ncols = params.ncols
+        self.dtype = params.dtype
 
-            if not metadata:
-                self.metadata = {}
-            else:
-                self.metadata = metadata
-        except:
-            raise
+        if not metadata:
+            self.metadata = {}
+        else:
+            self.metadata = metadata
 
     def params(self):
         '''Return an object containing the SpyFile parameters.'''
@@ -72,7 +70,7 @@ class ImageArray(np.ndarray, Image):
         Image.__init__(self, params, spyfile.metadata)
         self.bands = spyfile.bands
         self.filename = spyfile.filename
-        self.interleave = 2 # bip
+        self.interleave = 2  # bip
 
     def __repr__(self):
         lst = np.array2string(np.asarray(self), prefix="ImageArray(")
@@ -208,8 +206,7 @@ class ImageArray(np.ndarray, Image):
 
     def __getattribute__(self, name):
         if ((name in np.ndarray.__dict__) and
-            (name not in ImageArray.__dict__)):
+          (name not in ImageArray.__dict__)):
             return getattr(np.asarray(self), name)
 
         return super(ImageArray, self).__getattribute__(name)
-

@@ -15,6 +15,7 @@ import spectral as spy
 from spectral.algorithms.algorithms import iterator, iterator_ij
 from spectral.tests.spytest import SpyTest
 
+
 class IteratorTest(SpyTest):
     '''Tests various math functions.'''
 
@@ -78,7 +79,7 @@ class IteratorTest(SpyTest):
         pixels = data.reshape((-1, data.shape[-1]))
         sum = np.sum(pixels[classes == cls], 0)
         itsum = np.sum(np.array([x for x in iterator(self.image, self.gt, cls)]),
-                                0)
+                       0)
         assert_allclose(sum, itsum)
 
     def test_iterator_spyfile_nomemmap(self):
@@ -99,6 +100,7 @@ def run():
     print('-' * 72)
     test = IteratorTest()
     test.run()
+
 
 if __name__ == '__main__':
     from spectral.tests.run import parse_args, reset_stats, print_summary

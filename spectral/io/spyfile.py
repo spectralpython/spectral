@@ -90,15 +90,17 @@ import spectral as spy
 from .. import SpyException
 from ..image import Image, ImageArray
 from ..utilities.errors import has_nan, NaNValueWarning
-from ..utilities.python23 import typecode, tobytes, frombytes
+from ..utilities.python23 import typecode, tobytes
 
 
 class FileNotFoundError(SpyException):
     pass
 
+
 class InvalidFileError(SpyException):
     '''Raised when file contents are invalid for the exepected file type.'''
     pass
+
 
 def find_file_path(filename):
     '''
@@ -116,7 +118,7 @@ def find_file_path(filename):
     if not pathname:
         msg = 'Unable to locate file "%s". If the file exists, ' \
           'use its full path or place its directory in the ' \
-          'SPECTRAL_DATA environment variable.'  % filename
+          'SPECTRAL_DATA environment variable.' % filename
         raise FileNotFoundError(msg)
     return pathname
 
@@ -132,23 +134,19 @@ class SpyFile(Image):
     def set_params(self, params, metadata):
         Image.set_params(self, params, metadata)
 
-        try:
-            self.filename = params.filename
-            self.offset = params.offset
-            self.byte_order = params.byte_order
-            if spy.byte_order != self.byte_order:
-                self.swap = 1
-            else:
-                self.swap = 0
-            self.sample_size = np.dtype(params.dtype).itemsize
+        self.filename = params.filename
+        self.offset = params.offset
+        self.byte_order = params.byte_order
+        if spy.byte_order != self.byte_order:
+            self.swap = 1
+        else:
+            self.swap = 0
+        self.sample_size = np.dtype(params.dtype).itemsize
 
-            self.fid = open(find_file_path(self.filename), "rb")
+        self.fid = open(find_file_path(self.filename), "rb")
 
-            # So that we can use this more like a Numeric array
-            self.shape = (self.nrows, self.ncols, self.nbands)
-
-        except:
-            raise
+        # So that we can use this more like a Numeric array
+        self.shape = (self.nrows, self.ncols, self.nbands)
 
     def transform(self, xform):
         '''Returns a SpyFile image with the linear transform applied.'''
@@ -224,7 +222,7 @@ class SpyFile(Image):
         imarray = ImageArray(npArray, self)
         if has_nan(imarray):
             warnings.warn('Image data contains NaN values.', NaNValueWarning)
-        return imarray        
+        return imarray
 
     def __getitem__(self, args):
         '''Subscripting operator that provides a numpy-like interface.
@@ -310,7 +308,7 @@ class SpyFile(Image):
         elif atypes[2] == slice:
             (zstart, zstop, zstep) = (args[2].start, args[2].stop,
                                       args[2].step)
-            if zstart == zstop == zstep == None:
+            if zstart == zstop == zstep is None:
                 bands = None
             else:
                 if zstart is None:
@@ -572,6 +570,7 @@ def tile_image(im, nrows, ncols):
         tiles.append(row)
     return tiles
 
+
 def transform_image(transform, img):
     '''Applies a linear transform to an image.
 
@@ -746,6 +745,7 @@ class TransformedImage(Image):
                 data[i, j] = self.read_pixel(i, j)[bands]
         return data
 
+
 class MemmapFile(object):
     '''Interface class for SpyFile subclasses using `numpy.memmap` objects.'''
 
@@ -788,7 +788,7 @@ class MemmapFile(object):
                 If `writable` is True, modifying values in the returned memmap
                 will result in corresponding modification to the image data
                 file.
-        '''        
+        '''
         src_inter = {spy.BIL: 'bil',
                      spy.BIP: 'bip',
                      spy.BSQ: 'bsq'}[self.interleave]
@@ -825,6 +825,7 @@ class MemmapFile(object):
                 image data file.
         '''
         return self.open_memmap(writable=writable)
+
 
 def interleave_transpose(int1, int2):
     '''Returns the 3-tuple of indices to transpose between interleaves.

@@ -76,4 +76,3 @@ class SpectralDatabase:
         ret = self.query(sql, args)
         for row in ret:
             print("|".join([str(x) for x in row]))
-

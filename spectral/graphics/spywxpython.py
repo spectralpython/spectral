@@ -16,7 +16,6 @@ class SpyWxPythonThreadStarter:
     def start(self):
         '''Starts the GUI thread.'''
         import _thread
-        import time
         _thread.start_new_thread(self.run, ())
 
     def run(self):

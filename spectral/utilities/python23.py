@@ -8,6 +8,7 @@ import sys
 
 IS_PYTHON3 = sys.version_info >= (3,)
 
+
 def typecode(t):
     '''Typecode handling for array module.
 
@@ -28,17 +29,19 @@ def typecode(t):
     else:
         return chr(ord(t))
 
+
 if IS_PYTHON3:
     def is_string(s):
         return isinstance(s, (str, bytes))
 else:
     def is_string(s):
-        return isinstance(s, basestring)
+        return isinstance(s, basestring)  # noqa: F821
+
 
 # array.tostring is deprecated in python3
 if IS_PYTHON3:
-    tobytes = lambda array: array.tobytes()
-    frombytes = lambda array, src: array.frombytes(src)
+    def tobytes(array): return array.tobytes()
+    def frombytes(array, src): return array.frombytes(src)
 else:
-    tobytes = lambda array: array.tostring()
-    frombytes = lambda array, src: array.fromstring(src)
+    def tobytes(array): return array.tostring()
+    def frombytes(array, src): return array.fromstring(src)

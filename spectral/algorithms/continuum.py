@@ -24,11 +24,7 @@ References:
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import logging
 import numpy as np
-
-import spectral as spy
-from ..utilities.errors import has_nan, NaNValueError
 
 
 def _segment_concave_region(spectrum, bands, indices, ind_fill, ibegin, iend):

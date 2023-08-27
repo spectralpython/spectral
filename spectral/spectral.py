@@ -5,18 +5,10 @@ Top-level functions & classes.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import numbers
-import numpy as np
-import pickle
-import os
 from warnings import warn
 
-#from .algorithms.algorithms import TrainingClassSet
-#from . import io
-#from .io import aviris, envi, erdas, spyfile
-#from .io.spyfile import find_file_path, SpyFile
+from . import settings  # noqa: F401
 
-from . import settings
 
 def _init():
     '''Basic configuration of the spectral package.'''
@@ -36,6 +28,7 @@ def _init():
     spectral = __import__(__name__.split('.')[0])
     spectral._status = status.StatusDisplay()
 
+
 def _setup_logger():
     logger = logging.getLogger('spectral')
     logger.setLevel(logging.INFO)
@@ -43,6 +36,7 @@ def _setup_logger():
     formatter = logging.Formatter('%(name)s:%(levelname)s: %(message)s')
     ch.setFormatter(formatter)
     logger.addHandler(ch)
+
 
 class BandInfo:
     '''A BandInfo object characterizes the spectral bands associated with an
@@ -129,4 +123,3 @@ def load_training_sets(file, image=None):
     ts = TrainingClassSet()
     ts.load(file, image)
     return ts
-

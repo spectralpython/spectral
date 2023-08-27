@@ -12,9 +12,10 @@ import sys
 
 import spectral as spy
 from .spyfile import SpyFile, MemmapFile
-from spectral.utilities.python23 import typecode, tobytes, frombytes
+from spectral.utilities.python23 import typecode, tobytes
 
 byte_typecode = typecode('b')
+
 
 class BipFile(SpyFile, MemmapFile):
     '''
@@ -55,7 +56,7 @@ class BipFile(SpyFile, MemmapFile):
                 Specifies whether the file's memmap interface should be used
                 to read the data. Setting this arg to True only has an effect
                 if a memmap is being used (i.e., if `img.using_memmap` is True).
-                
+
         Returns:
 
            :class:`numpy.ndarray`
@@ -104,7 +105,7 @@ class BipFile(SpyFile, MemmapFile):
                 Specifies whether the file's memmap interface should be used
                 to read the data. Setting this arg to True only has an effect
                 if a memmap is being used (i.e., if `img.using_memmap` is True).
-                
+
         Returns:
 
            :class:`numpy.ndarray`
@@ -159,7 +160,7 @@ class BipFile(SpyFile, MemmapFile):
                 Specifies whether the file's memmap interface should be used
                 to read the data. Setting this arg to True only has an effect
                 if a memmap is being used (i.e., if `img.using_memmap` is True).
-                
+
         Returns:
 
            :class:`numpy.ndarray`
@@ -211,7 +212,7 @@ class BipFile(SpyFile, MemmapFile):
                 Specifies whether the file's memmap interface should be used
                 to read the data. Setting this arg to True only has an effect
                 if a memmap is being used (i.e., if `img.using_memmap` is True).
-                
+
         Returns:
 
            :class:`numpy.ndarray`
@@ -237,7 +238,6 @@ class BipFile(SpyFile, MemmapFile):
         d_row = self.sample_size * self.ncols * self.nbands
         colStartPos = col_bounds[0] * self.sample_size * self.nbands
         vals = array.array(byte_typecode)
-        nVals = self.nrows * self.ncols
         sample_size = self.sample_size
 
         # Increments between bands
@@ -300,7 +300,7 @@ class BipFile(SpyFile, MemmapFile):
                 Specifies whether the file's memmap interface should be used
                 to read the data. Setting this arg to True only has an effect
                 if a memmap is being used (i.e., if `img.using_memmap` is True).
-                
+
         Returns:
 
            :class:`numpy.ndarray`
@@ -319,14 +319,12 @@ class BipFile(SpyFile, MemmapFile):
             return data
 
         offset = self.offset
-        nbands = self.nbands
         nSubRows = len(rows)                        # Rows in sub-image
         nSubCols = len(cols)                        # Cols in sub-image
         d_band = self.sample_size
         d_col = d_band * self.nbands
         d_row = d_col * self.ncols
         vals = array.array(byte_typecode)
-        nVals = self.nrows * self.ncols
         sample_size = self.sample_size
 
         # Increments between bands
@@ -375,7 +373,7 @@ class BipFile(SpyFile, MemmapFile):
                 Specifies whether the file's memmap interface should be used
                 to read the data. Setting this arg to True only has an effect
                 if a memmap is being used (i.e., if `img.using_memmap` is True).
-                
+
         Using this function is not an efficient way to iterate over bands or
         pixels. For such cases, use readBands or readPixel instead.
         '''

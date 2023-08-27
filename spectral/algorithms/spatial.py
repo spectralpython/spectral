@@ -13,6 +13,7 @@ import numpy as np
 import spectral as spy
 from .algorithms import GaussianStats, iterator_ij
 
+
 def get_window_bounds(nrows, ncols, height, width, i, j):
     '''Returns boundaries of an image window centered on a specified pixel.
 
@@ -47,7 +48,7 @@ def get_window_bounds(nrows, ncols, height, width, i, j):
         A 4-tuple of ints of the form
 
             (row_start, row_stop, col_start, col_stop).
-            
+
     The dimensions of the window will always be (`height`, `width`). For
     pixels near the border of the image where there are insufficient pixels
     between the specified pixel and image border, the window will be flush
@@ -79,6 +80,7 @@ def get_window_bounds(nrows, ncols, height, width, i, j):
         cmin = ncols - width
 
     return (rmin, rmax, cmin, cmax)
+
 
 def get_window_bounds_clipped(nrows, ncols, height, width, i, j):
     '''Returns boundaries of an image window centered on a specified pixel.
@@ -114,7 +116,7 @@ def get_window_bounds_clipped(nrows, ncols, height, width, i, j):
         A 4-tuple of ints of the form
 
             (row_start, row_stop, col_start, col_stop).
-            
+
     Near the boder of the image where there are insufficient pixels between
     the specified pixel and the image border, the window will be clipped.
 
@@ -140,10 +142,11 @@ def get_window_bounds_clipped(nrows, ncols, height, width, i, j):
 
     return (rmin, rmax, cmin, cmax)
 
+
 def map_window(func, image, window, rslice=(None,), cslice=(None,),
                border='shift', dtype=None):
     '''Applies a function over a rolling spatial window.
-    
+
     Arguments:
 
         `func` (callable):
@@ -164,7 +167,7 @@ def map_window(func, image, window, rslice=(None,), cslice=(None,),
                 window. For `window` with even dimensions or for pixels near
                 the image border, this may not correspond to the center pixel
                 in the window.
-    
+   
         `image` (`SpyFile` or np.ndarray):
 
             The image on which the apply `func` with the specified window.
@@ -174,7 +177,7 @@ def map_window(func, image, window, rslice=(None,), cslice=(None,),
             The size of the window, in pixels. If this value is an integer,
             the height and width of the window will both be set to the value.
             Otherwise, `window` should be a tuple of the form (height, width).
-            
+
         `rslice` (tuple):
 
             Tuple of `slice` parameters specifying at which rows the function
@@ -247,10 +250,11 @@ def map_window(func, image, window, rslice=(None,), cslice=(None,),
     return np.array([[get_val(r, c) for c in cvals]
                      for r in rvals]).astype(dtype)
 
+
 def map_outer_window_stats(func, image, inner, outer, dim_out=1, cov=None,
                            dtype=None, rslice=(None,), cslice=(None,)):
     '''Maps a function accepting `GaussianStats` over a rolling spatial window.
-    
+
     Arguments:
 
         `func` (callable):
@@ -280,7 +284,7 @@ def map_outer_window_stats(func, image, inner, outer, dim_out=1, cov=None,
             Otherwise, `inner` should be a tuple of the form (height, width).
             All pixels within the inner window are excluded from statistics
             computed for the associated pixel.
-            
+
         `outer` (int or 2-tuple of ints):
 
             The size of the outer window, in pixels. If this value is an integer,
@@ -288,7 +292,7 @@ def map_outer_window_stats(func, image, inner, outer, dim_out=1, cov=None,
             Otherwise, `outer` should be a tuple of the form (height, width).
             All pixels in the outer window (but not in the inner window) are
             used to compute statistics for the associated pixel.
-            
+
         `rslice` (tuple):
 
             Tuple of `slice` parameters specifying at which rows the function
@@ -324,6 +328,7 @@ def map_outer_window_stats(func, image, inner, outer, dim_out=1, cov=None,
     mapper = WindowedGaussianBackgroundMapper(inner, outer, func, cov, dim_out,
                                               dtype)
     return mapper(image, rslice, cslice)
+
 
 class WindowedGaussianBackgroundMapper(object):
     '''A class for procucing window statistics with an inner exclusion window.
@@ -491,14 +496,14 @@ class WindowedGaussianBackgroundMapper(object):
                 for j in range(ncols_out):
                     jj = cvals[j] - w // 2
                     if i_interior_start <= rvals[i] < i_interior_stop and \
-                        j_interior_start <= cvals[j] < j_interior_stop:
-                        X = image[ii : ii + h, jj : jj + w, :]
+                      j_interior_start <= cvals[j] < j_interior_stop:
+                        X = image[ii: ii + h, jj: jj + w, :]
                         indices = interior_indices
                     else:
                         (inner, (i0, i1, j0, j1), mask) = \
                           create_mask(rvals[i], cvals[j], True)
                         indices = np.argwhere(mask.ravel() == 0).squeeze()
-                        X = image[i0 : i1, j0 : j1, :]
+                        X = image[i0: i1, j0: j1, :]
                     X = np.take(X.reshape((-1, B)), indices, axis=0)
                     mean = np.mean(X, axis=0)
                     cov = np.cov(X, rowvar=False)
@@ -510,6 +515,7 @@ class WindowedGaussianBackgroundMapper(object):
 
         status.end_percentage()
         return x
+
 
 def inner_outer_window_mask_creator(image_shape, inner, outer):
     '''Returns a function to give  inner/outer windows.
@@ -536,7 +542,7 @@ def inner_outer_window_mask_creator(image_shape, inner, outer):
             `i` (int):
 
                 Row index of pixel for which to generate the mask
-                
+
             `j` (int):
 
                 Row index of pixel for which to generate the mask
@@ -567,7 +573,7 @@ def inner_outer_window_mask_creator(image_shape, inner, outer):
 
     if wi > wo or hi > ho:
         raise ValueError('Inner window dimensions must be smaller than outer.')
-    
+
     (ai, bi) = (hi // 2, wi // 2)
     (ao, bo) = (ho // 2, wo // 2)
 
@@ -582,7 +588,7 @@ def inner_outer_window_mask_creator(image_shape, inner, outer):
         elif inner_imax > R:
             inner_imax = R
             inner_imin = R - hi
-        
+
         inner_jmin = j - bi
         inner_jmax = inner_jmin + wi
         if inner_jmin < 0:
@@ -591,7 +597,7 @@ def inner_outer_window_mask_creator(image_shape, inner, outer):
         elif inner_jmax > C:
             inner_jmax = C
             inner_jmin = C - wi
-        
+
         # Outer window
         outer_imin = i - ao
         outer_imax = outer_imin + ho
@@ -601,7 +607,7 @@ def inner_outer_window_mask_creator(image_shape, inner, outer):
         elif outer_imax > R:
             outer_imax = R
             outer_imin = R - ho
-        
+
         outer_jmin = j - bo
         outer_jmax = outer_jmin + wo
         if outer_jmin < 0:
@@ -610,16 +616,17 @@ def inner_outer_window_mask_creator(image_shape, inner, outer):
         elif outer_jmax > C:
             outer_jmax = C
             outer_jmin = C - wo
-        
+
         inner = (inner_imin, inner_imax, inner_jmin, inner_jmax)
         outer = (outer_imin, outer_imax, outer_jmin, outer_jmax)
         if not gen_mask:
             return (inner, outer)
         mask = np.zeros((ho, wo), dtype=bool)
-        mask[inner_imin - outer_imin : inner_imax - outer_imin,
-             inner_jmin - outer_jmin : inner_jmax - outer_jmin] = True
+        mask[inner_imin - outer_imin: inner_imax - outer_imin,
+             inner_jmin - outer_jmin: inner_jmax - outer_jmin] = True
         return (inner, outer, mask)
     return create_mask
+
 
 def map_class_ids(src_class_image, dest_class_image, unlabeled=None):
     '''Create a mapping between class labels in two classification images.
@@ -637,7 +644,7 @@ def map_class_ids(src_class_image, dest_class_image, unlabeled=None):
 
             An MxN integer array of class indices. The indices in this array
             will be mapped to indices in `dest_class_image`.
-    
+
         `dest_class_image` (ndarray):
 
             An MxN integer array of class indices.
@@ -710,6 +717,7 @@ def map_class_ids(src_class_image, dest_class_image, unlabeled=None):
         matches[:, j] = 0
     return cmap
 
+
 def map_classes(class_image, class_id_map, allow_unmapped=False):
     '''Modifies class indices according to a class index mapping.
 
@@ -753,6 +761,7 @@ def map_classes(class_image, class_id_map, allow_unmapped=False):
     for (i, j) in class_id_map.items():
         mapped[class_image == i] = j
     return mapped
+
 
 def expand_binary_mask_for_window(mask, height, width):
     '''Returns a new mask including window around each pixel in source mask.

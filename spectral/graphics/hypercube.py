@@ -44,7 +44,6 @@ except ImportError:
     raise ImportError("Required dependency wx.glcanvas not present")
 
 from .. import settings
-from ..image import Image
 from ..io.spyfile import SpyFile
 from .colorscale import create_default_color_scale
 from .graphics import make_pil_image, SpyWindow
@@ -71,6 +70,7 @@ def xyz_to_rtp(x, y, z):
         phi += 180
     theta = math.acos(z / r) * 180. / math.pi
     return [r, theta, phi]
+
 
 (DOWN, UP) = (1, 0)
 
@@ -102,7 +102,7 @@ class MouseHandler:
         '''Handles panning & zooming for mouse click+drag events.'''
         if DOWN not in (self.left, self.right):
             return
-        #print 'Mouse movement:', x, y
+        # print('Mouse movement:', x, y)
         (w, h) = self.window.size
         dx = event.X - self.position[0]
         dy = event.Y - self.position[1]
@@ -113,7 +113,6 @@ class MouseHandler:
                     self.window.camera_pos_rtp[0] *= (float(w - dx) / w)
             elif wx.GetKeyState(wx.WXK_SHIFT):
                 # Mouse movement pans target position in  plane of the window
-                camera_pos = np.array(rtp_to_xyz(*self.window.camera_pos_rtp))
                 view_vec = -np.array(rtp_to_xyz(*self.window.camera_pos_rtp))
                 zhat = np.array([0.0, 0.0, 1.0])
                 right = -np.cross(zhat, view_vec)
@@ -133,6 +132,7 @@ class MouseHandler:
         self.position = (event.X, event.Y)
         self.window.Refresh()
         event.Skip()
+
 
 class HypercubeWindow(wx.Frame, SpyWindow):
     """A simple class for using OpenGL with wxPython."""
@@ -164,7 +164,7 @@ class HypercubeWindow(wx.Frame, SpyWindow):
 
         # These members can be modified before calling the show method.
         self.clear_color = tuple(kwargs.get('background', (0., 0., 0.))) \
-                           + (1.,)
+                                 + (1.,)
         self.win_pos = (100, 100)
         self.fovy = 60.
         self.znear = 0.1
@@ -239,7 +239,6 @@ class HypercubeWindow(wx.Frame, SpyWindow):
         self.textures = gl.glGenTextures(6)
         texImages = []
         (a, b, c) = data.shape
-        texSizes = [(b, a), (b, c), (a, c), (b, c), (a, c), (b, a)]
         for i in range(len(images)):
             try:
                 # API change for Pillow
@@ -247,6 +246,7 @@ class HypercubeWindow(wx.Frame, SpyWindow):
             except:
                 # Fall back to old PIL API
                 img = images[i].tostring("raw", "RGBX", 0, -1)
+                pass
             (dim_x, dim_y) = images[i].size
             texImages.append(img)
 

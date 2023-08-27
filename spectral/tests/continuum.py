@@ -12,7 +12,6 @@ import numpy as np
 from numpy.testing import assert_allclose
 
 import spectral as spy
-from spectral.algorithms.spymath import matrix_sqrt
 from spectral.algorithms.continuum import spectral_continuum, remove_continuum, continuum_points
 from spectral.tests.spytest import SpyTest
 
@@ -152,26 +151,26 @@ class FindContinuumTest(ContinuumTest):
         cnt = spectral_continuum(part, self.bands)
         # Check some values to make sure results are sane.
         assert(cnt[0, 200] == 1422)
-        assert(cnt[1, 200] == 1421)
-        assert(cnt[2, 200] == 1469)
-        assert(cnt[3, 200] == 1491)
+        assert (cnt[1, 200] == 1421)
+        assert (cnt[2, 200] == 1469)
+        assert (cnt[3, 200] == 1491)
 
     def test_3d_array(self):
         part = self.image[20:22, 20:22]
         cnt = spectral_continuum(part, self.bands)
         # Check some values to make sure results are sane.
-        assert(cnt[0, 0, 200] == 1422)
-        assert(cnt[0, 1, 200] == 1421)
-        assert(cnt[1, 0, 200] == 1469)
-        assert(cnt[1, 1, 200] == 1491)
+        assert (cnt[0, 0, 200] == 1422)
+        assert (cnt[0, 1, 200] == 1421)
+        assert (cnt[1, 0, 200] == 1469)
+        assert (cnt[1, 1, 200] == 1491)
 
     def test_out_parameter(self):
         part = self.image[20:22, 20:22]
         out = np.empty_like(part)
         cnt = spectral_continuum(part, self.bands, out=out)
-        assert(cnt is out)
+        assert (cnt is out)
         # And just do a quick check if result is sane.
-        assert(out[1, 1, 200] == 1491)
+        assert (out[1, 1, 200] == 1491)
 
 
 class FindContinuumPointsTest(ContinuumTest):
@@ -179,8 +178,8 @@ class FindContinuumPointsTest(ContinuumTest):
 
     def test_points_of_real_spectrum(self):
         points = continuum_points(self.image[20, 20], self.bands)
-        assert(np.array_equal(points[0], self.bands[[0, 1, 2, 5, 6, 41, 219]]))
-        assert(np.array_equal(points[1], np.array(
+        assert (np.array_equal(points[0], self.bands[[0, 1, 2, 5, 6, 41, 219]]))
+        assert (np.array_equal(points[1], np.array(
             [3505, 4141, 4516, 4924, 5002, 4712, 1019], dtype=np.int16)))
 
     def test_points_of_real_spectrum_segmented(self):
@@ -199,8 +198,8 @@ class FindContinuumPointsTest(ContinuumTest):
                       1333, 1317, 1312, 1219, 1202, 1162, 1126, 1122, 1100, 1068, 1019],
                      dtype=np.int16)
         )
-        assert(np.array_equal(points[0], expected_result[0]))
-        assert(np.array_equal(points[1], expected_result[1]))
+        assert (np.array_equal(points[0], expected_result[0]))
+        assert (np.array_equal(points[1], expected_result[1]))
 
 
 class RemoveContinuumTest(ContinuumTest):
@@ -232,8 +231,8 @@ class RemoveContinuumTest(ContinuumTest):
         part = self.image[20:22, 20:22].astype(np.float64)
         res = remove_continuum(part, self.bands, out=part)
         # Make sure results are sane.
-        assert(res[1, 1, 200] == 0.8372113957762342)
-        assert(res is part)
+        assert (res[1, 1, 200] == 0.8372113957762342)
+        assert (res is part)
 
 
 def run():

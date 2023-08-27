@@ -12,6 +12,7 @@ from optparse import OptionParser
 
 import spectral.tests
 
+
 def parse_args():
     parser = OptionParser()
     parser.add_option('-c', '--continue', dest='continue_tests',
@@ -21,19 +22,22 @@ def parse_args():
     (options, args) = parser.parse_args()
     spectral.tests.abort_on_fail = not options.continue_tests
 
+
 def reset_stats():
     spectral.tests._num_tests_run = 0
     spectral.tests._num_tests_failed = 0
 
+
 def print_summary():
     if spectral.tests._num_tests_failed > 0:
-        msg =  '%d of %d tests FAILED.' % (spectral.tests._num_tests_failed,
-                                           spectral.tests._num_tests_run)
+        msg = '%d of %d tests FAILED.' % (spectral.tests._num_tests_failed,
+                                          spectral.tests._num_tests_run)
     else:
-        msg =  'All %d tests PASSED!' % spectral.tests._num_tests_run
+        msg = 'All %d tests PASSED!' % spectral.tests._num_tests_run
     print('\n' + '-' * 72)
     print(msg)
     print('-' * 72)
+
 
 if __name__ == '__main__':
     logging.getLogger('spectral').setLevel(logging.ERROR)

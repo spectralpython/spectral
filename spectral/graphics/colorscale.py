@@ -6,6 +6,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import numpy as np
 
+
 class ColorScale:
     '''
     A color scale class to map scalar values to rgb colors.  The class allows
@@ -130,5 +131,6 @@ def create_default_color_scale(ntics=0):
     levels = np.array([0., 10., 20., 30., 40., 50.])
     scale = ColorScale(levels, mycolors, ntics)
     return scale
+
 
 default_color_scale = create_default_color_scale()

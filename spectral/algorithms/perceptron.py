@@ -4,11 +4,11 @@ Classes and functions for classification with neural networks.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import itertools
 import math
 import numpy as np
 import os
 import sys
+
 
 class PerceptronLayer:
     '''A multilayer perceptron layer with sigmoid activation function.'''
@@ -128,7 +128,6 @@ class Perceptron:
         # If True, previous iteration weights are preserved after interrupting
         # training (with CTRL-C)
         self.cache_weights = True
-
 
     def input(self, x, clip=0.0):
         '''Sets Perceptron input, activates neurons and sets & returns output.
@@ -341,13 +340,13 @@ class Perceptron:
         except KeyboardInterrupt:
             if self.cache_weights:
                 stdout.write('Interrupt during weight adjustment. Restoring ' \
-                            'previous weights.\n')
+                             'previous weights.\n')
                 for i in range(len(weights)):
                     self.layers[i].weights = weights[i]
             else:
                 stdout.write('Interrupt during weight adjustment. Weight ' \
-                            'cacheing was disabled so current weights may' \
-                            'be corrupt.\n')
+                             'cacheing was disabled so current weights may' \
+                             'be corrupt.\n')
             raise
         finally:
             self._reset_corrections()
@@ -365,11 +364,11 @@ class Perceptron:
                 maxes = x
             else:
                 mins = np.min([mins, x], axis=0)
-                maxes = np.max([maxes, x], axis = 0)
+                maxes = np.max([maxes, x], axis=0)
         self._offset = mins
         r = maxes - mins
         self._scale = 1. / np.where(r < self.min_input_diff, 1, r)
-        
+
 
 # Sample data
 
@@ -394,31 +393,37 @@ and_data = [
     [[1, 1], [1]],
 ]
 
+
 def test_case(XY, shape, *args, **kwargs):
     (X, Y) = list(zip(*XY))
     p = Perceptron(shape)
     trained = p.train(X, Y, *args, **kwargs)
     return (trained, p)
-    
+
+
 def test_xor(*args, **kwargs):
     XY = xor_data
     shape = [2, 2, 1]
     return test_case(XY, shape, *args, **kwargs)
+
 
 def test_xor222(*args, **kwargs):
     XY = xor_data2
     shape = [2, 2, 2]
     return test_case(XY, shape, *args, **kwargs)
 
+
 def test_xor231(*args, **kwargs):
     XY = xor_data
     shape = [2, 3, 1]
     return test_case(XY, shape, *args, **kwargs)
 
+
 def test_and(*args, **kwargs):
     XY = and_data
     shape = [2, 1]
     return test_case(XY, shape, *args, **kwargs)
+
 
 if __name__ == '__main__':
     tests = [('AND (2x1)', test_and),
@@ -431,7 +436,7 @@ if __name__ == '__main__':
     print('Training results for 5000 iterations')
     print('------------------------------------')
     for (name, result) in nr:
-        s = [ 'FAILED', 'PASSED'][result]
+        s = ['FAILED', 'PASSED'][result]
         print('{0:<20}: {1}'.format(name, s))
     if False in results:
         print('\nNote: XOR convergence for these small network sizes is')

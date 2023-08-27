@@ -22,7 +22,7 @@ class SpyMathTest(SpyTest):
     def setup(self):
         self.data = spy.open_image('92AV3C.lan').open_memmap()
         self.C = spy.calc_stats(self.data).cov
-        self.X = np.array([[2., 1.],[1., 2.]])
+        self.X = np.array([[2., 1.], [1., 2.]])
 
     def test_matrix_sqrt(self):
         S = matrix_sqrt(self.X)
@@ -73,12 +73,12 @@ class PCATest(SpyTest):
 
     def test_evals_sorted(self):
         '''Eigenvalues should be sorted in descending order.'''
-        assert(np.alltrue(np.diff(self.pc.eigenvalues) <= 0))
+        assert (np.alltrue(np.diff(self.pc.eigenvalues) <= 0))
 
     def test_evecs_orthonormal(self):
         '''Eigenvectors should be orthonormal.'''
         evecs = self.pc.eigenvectors
-        assert(np.allclose(evecs.T.dot(evecs), np.eye(evecs.shape[0])))
+        assert (np.allclose(evecs.T.dot(evecs), np.eye(evecs.shape[0])))
 
 
 class LDATest(SpyTest):
@@ -92,7 +92,6 @@ class LDATest(SpyTest):
         '''cov_w should be whitened in the transformed space.'''
         classes = spy.create_training_classes(self.data, self.classes)
         fld = spy.linear_discriminant(classes)
-        xdata = fld.transform(self.data)
         classes.transform(fld.transform)
         fld2 = spy.linear_discriminant(classes)
         assert_allclose(np.eye(fld2.cov_w.shape[0]), fld2.cov_w, atol=1e-8)
@@ -104,6 +103,7 @@ def run():
     print('-' * 72)
     for T in [SpyMathTest, PCATest, LDATest]:
         T().run()
+
 
 if __name__ == '__main__':
     from spectral.tests.run import parse_args, reset_stats, print_summary

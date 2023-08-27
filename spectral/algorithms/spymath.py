@@ -38,7 +38,6 @@ def matrix_sqrt(X=None, symmetric=False, inverse=False, eigs=None):
         (vals, V) = eigs
     else:
         (vals, V) = np.linalg.eig(X)
-    k = len(vals)
     if inverse is False:
         SRV = np.diag(np.sqrt(vals))
     else:
@@ -88,5 +87,3 @@ def get_histogram_cdf_points(data, cdf_vals, ignore=None, mask=None):
     isort = np.argsort(data)
     N = len(data)
     return [data[isort[int(x * (N - 1))]] for x in cdf_vals]
-
-

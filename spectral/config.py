@@ -6,16 +6,17 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import numpy as np
 
+
 class SpySettings:
     '''Run-time settings for the `spectral` module.
 
     After importing `spectral`, the settings object is referenced as
     `spectral.settings`.
-    
+
     Noteworthy members:
 
         `WX_GL_DEPTH_SIZE` (integer, default 24):
-    
+
             Sets the depth (in number of bits) for the OpenGL depth buffer.
             If calls to `view_cube` or `view_nd` result in windows with blank
             canvases, try reducing this value.
@@ -27,7 +28,7 @@ class SpySettings:
             be read with original capitalization retained.
 
         `show_progress` (bool, default True):
-    
+
             Indicates whether long-running algorithms should display progress
             to sys.stdout. It can be useful to set this value to False when
             SPy is embedded in another application (e.g., IPython Notebook).
@@ -36,7 +37,7 @@ class SpySettings:
 
             Width and height (in inches) of windows opened with `imshow`. If
             this value is `None`, matplotlib's default size is used.
-    
+
         `imshow_background_color` (3-tuple of integers, default (0,0,0)):
 
             Default color to use for masked pixels in `imshow` displays.
@@ -54,13 +55,13 @@ class SpySettings:
         `imshow_stretch_all`:
 
             If True, each color channel limits are determined independently.
-    
+
         `imshow_zoom_figure_width` (int, default `None`):
-    
+
             Width of zoom windows opened from an imshow window. Since zoom
             windows are always square, this is also the window height. If this
             value is `None`, matplotlib's default window size is used.
-    
+
         `imshow_zoom_pixel_width` (int, default 50):
 
             Number of source image pixel rows and columns to display in a
@@ -117,7 +118,8 @@ class SpySettings:
     imshow_class_alpha = 0.5
     imshow_enable_rectangle_selector = True
     imshow_disable_mpl_callbacks = True
-        
+
+
 # Default color table
 spy_colors = np.array([[0, 0, 0],
                        [255, 0, 0],

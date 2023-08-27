@@ -11,7 +11,7 @@ import os
 import sys
 
 import spectral as spy
-from ..utilities.python23 import typecode, tobytes, frombytes
+from ..utilities.python23 import typecode, tobytes
 from .spyfile import SpyFile, MemmapFile
 
 byte_typecode = typecode('b')
@@ -58,7 +58,7 @@ class BilFile(SpyFile, MemmapFile):
                 Specifies whether the file's memmap interface should be used
                 to read the data. Setting this arg to True only has an effect
                 if a memmap is being used (i.e., if `img.using_memmap` is True).
-                
+
         Returns:
 
            :class:`numpy.ndarray`
@@ -103,7 +103,7 @@ class BilFile(SpyFile, MemmapFile):
                 Specifies whether the file's memmap interface should be used
                 to read the data. Setting this arg to True only has an effect
                 if a memmap is being used (i.e., if `img.using_memmap` is True).
-                
+
         Returns:
 
            :class:`numpy.ndarray`
@@ -154,7 +154,7 @@ class BilFile(SpyFile, MemmapFile):
                 Specifies whether the file's memmap interface should be used
                 to read the data. Setting this arg to True only has an effect
                 if a memmap is being used (i.e., if `img.using_memmap` is True).
-                
+
         Returns:
 
            :class:`numpy.ndarray`
@@ -168,7 +168,6 @@ class BilFile(SpyFile, MemmapFile):
             return data
 
         vals = array.array(byte_typecode)
-        delta = self.sample_size * (self.nbands - 1)
         offset = self.offset + row * self.nbands * self.ncols \
             * self.sample_size + col * self.sample_size
         f = self.fid
@@ -211,7 +210,7 @@ class BilFile(SpyFile, MemmapFile):
                 Specifies whether the file's memmap interface should be used
                 to read the data. Setting this arg to True only has an effect
                 if a memmap is being used (i.e., if `img.using_memmap` is True).
-                
+
         Returns:
 
            :class:`numpy.ndarray`
@@ -291,7 +290,7 @@ class BilFile(SpyFile, MemmapFile):
                 Specifies whether the file's memmap interface should be used
                 to read the data. Setting this arg to True only has an effect
                 if a memmap is being used (i.e., if `img.using_memmap` is True).
-                
+
         Returns:
 
            :class:`numpy.ndarray`
@@ -324,8 +323,6 @@ class BilFile(SpyFile, MemmapFile):
             # Read all bands.
             bands = list(range(self.nbands))
         nSubBands = len(bands)
-
-        arr = np.empty((nSubRows, nSubCols, nSubBands), self.dtype)
 
         offset = self.offset
         vals = array.array(byte_typecode)
@@ -361,7 +358,7 @@ class BilFile(SpyFile, MemmapFile):
                 Specifies whether the file's memmap interface should be used
                 to read the data. Setting this arg to True only has an effect
                 if a memmap is being used (i.e., if `img.using_memmap` is True).
-                
+
         Using this function is not an efficient way to iterate over bands or
         pixels. For such cases, use readBands or readPixel instead.
         '''

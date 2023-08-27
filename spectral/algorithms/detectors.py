@@ -12,7 +12,6 @@ import numpy as np
 from .algorithms import calc_stats
 from .transforms import LinearTransform
 from .spatial import map_outer_window_stats
-from .spymath import matrix_sqrt
 
 
 class MatchedFilter(LinearTransform):
@@ -77,6 +76,7 @@ class MatchedFilter(LinearTransform):
             self._whitening_transform = LinearTransform(A, pre=-self.u_b)
         return self._whitening_transform(X)
 
+
 def matched_filter(X, target, background=None, window=None, cov=None):
     r'''Computes a linear matched filter target detector score.
 
@@ -85,7 +85,7 @@ def matched_filter(X, target, background=None, window=None, cov=None):
         y = matched_filter(X, target, background)
 
         y = matched_filter(X, target, window=<win> [, cov=<cov>])
-        
+
     Given target/background means and a common covariance matrix, the matched
     filter response is given by:
 
@@ -144,7 +144,7 @@ def matched_filter(X, target, background=None, window=None, cov=None):
             window will cover `image[:21, :21]`. For the pixel at (50, 1), the
             inner window will cover `image[48:53, :4]` and the outer window
             will cover `image[40:51, :21]`.
-            
+
         `cov` (ndarray):
 
             An optional covariance to use. If this parameter is given, `cov`
@@ -192,7 +192,7 @@ class RX():
     pattern with unknown spectral distribution," IEEE Trans. Acoust.,
     Speech, Signal Processing, vol. 38, pp. 1760-1770, Oct. 1990.
     '''
-    dim_out=1
+    dim_out = 1
 
     def __init__(self, background=None):
         '''Creates the detector, given optional background/target stats.
@@ -272,6 +272,7 @@ class RX():
 #            raise Exception('Unexpected number of dimensions.')
 #
 
+
 def rx(X, background=None, window=None, cov=None):
     r'''Computes RX anomaly detector scores.
 
@@ -281,7 +282,7 @@ def rx(X, background=None, window=None, cov=None):
 
         y = rx(X, window=(inner, outer) [, cov=C])
 
-    The RX anomaly detector produces a detection statistic equal to the 
+    The RX anomaly detector produces a detection statistic equal to the
     squared Mahalanobis distance of a spectrum from a background distribution
     according to
 
@@ -337,7 +338,7 @@ def rx(X, background=None, window=None, cov=None):
             window will cover `image[:21, :21]`. For the pixel at (50, 1), the
             inner window will cover `image[48:53, :4]` and the outer window
             will cover `image[40:51, :21]`.
-            
+
         `cov` (ndarray):
 
             An optional covariance to use. If this parameter is given, `cov`
@@ -350,7 +351,7 @@ def rx(X, background=None, window=None, cov=None):
         The return value will be the RX detector score (squared Mahalanobis
         distance) for each pixel given.  If `X` has shape (R, C, B), the
         returned ndarray will have shape (R, C)..
-    
+
     References:
 
     Reed, I.S. and Yu, X., "Adaptive multiple-band CFAR detection of an optical
@@ -362,13 +363,16 @@ def rx(X, background=None, window=None, cov=None):
                          'exclusive.')
     if window is not None:
         rx = RX()
+
         def rx_wrapper(bg, x):
             rx.set_background(bg)
             return rx(x)
+
         return map_outer_window_stats(rx_wrapper, X, window[0], window[1],
                                       dim_out=1, cov=cov)
     else:
         return RX(background)(X)
+
 
 class ACE():
     r'''Adaptive Coherence/Cosine Estimator (ACE).
@@ -412,7 +416,7 @@ class ACE():
         self.vectorize = kwargs.get('vectorize', True)
         self._target = None
         self._background = None
-        
+
         self.set_target(target)
         if background is not None:
             self.set_background(background)
@@ -446,7 +450,7 @@ class ACE():
         '''Sets background statistics to be used when applying the detector.
 
         Arguments:
-        
+
             `stats` (`GaussianStats`):
 
                 The Gaussian statistics for the background (e.g., the result
@@ -469,7 +473,7 @@ class ACE():
         else:
             self._C = None
             self._P = None
-        
+
     def __call__(self, X):
         '''Compute ACE detector scores for X.
 
@@ -489,7 +493,7 @@ class ACE():
             of floats with one less dimension than the input.
         '''
         if not isinstance(X, np.ndarray):
-           raise TypeError('Expected a numpy.ndarray.')
+            raise TypeError('Expected a numpy.ndarray.')
 
         shape = X.shape
 
@@ -505,7 +509,7 @@ class ACE():
 
         if self.vectorize:
             # Compute all scores at once
-            
+
             if self._background.mean is not None:
                 X = X - self._background.mean
 
@@ -532,7 +536,7 @@ def ace(X, target, background=None, window=None, cov=None, **kwargs):
         y = ace(X, target, background)
 
         y = ace(X, target, window=<win> [, cov=<cov>])
-        
+
     Arguments:
 
         `X` (numpy.ndarray):
@@ -558,14 +562,14 @@ def ace(X, target, background=None, window=None, cov=None, **kwargs):
                 An ndarray with shape (D, B). In this case, `target` contains
                 `D` length-B targets that define a subspace for the detector.
                 The return value will be an ndarray with shape (R, C).
-    
+
                 A length-D sequence (e.g., list or tuple) of length-B ndarrays.
                 In this case, the detector will be applied seperately to each of
                 the `D` targets. This is equivalent to calling the function
                 sequentially for each target and stacking the results but is
                 much faster. The return value will be an ndarray with shape
                 (R, C, D).
-    
+
         `background` (`GaussianStats`):
 
             The Gaussian statistics for the background (e.g., the result
@@ -596,7 +600,7 @@ def ace(X, target, background=None, window=None, cov=None, **kwargs):
             window will cover `image[:21, :21]`. For the pixel at (50, 1), the
             inner window will cover `image[48:53, :4]` and the outer window
             will cover `image[40:51, :21]`.
-            
+
         `cov` (ndarray):
 
             An optional covariance to use. If this parameter is given, `cov`
@@ -640,9 +644,11 @@ def ace(X, target, background=None, window=None, cov=None, **kwargs):
             # Separate score arrays for each target in target list
             if background is None:
                 detector.set_background(calc_stats(X))
+
             def apply_to_target(t):
                 detector.set_target(t)
                 return detector(X)
+
             result = np.array([apply_to_target(t) for t in target])
             if result.ndim == 3:
                 result = result.transpose(1, 2, 0)
@@ -657,12 +663,15 @@ def ace(X, target, background=None, window=None, cov=None, **kwargs):
                                             dim_out=1, cov=cov)
         else:
             # Separate score arrays for each target in target list
+
             def apply_to_target(t, x):
                 detector.set_target(t)
                 return detector(x)
+
             def ace_wrapper(bg, x):
                 detector.set_background(bg)
                 return [apply_to_target(t, x) for t in target]
+
             result = map_outer_window_stats(ace_wrapper, X, window[0], window[1],
                                             dim_out=len(target), cov=cov)
             if result.ndim == 3:
@@ -674,4 +683,3 @@ def ace(X, target, background=None, window=None, cov=None, **kwargs):
         return np.clip(result, 0, 1, out=result)
     else:
         return np.clip(result, 0, 1)
-

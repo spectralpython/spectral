@@ -10,6 +10,7 @@ except:
     from collections import Callable
 import sys
 
+
 class SpyTest(object):
     '''Base class for test cases.
 
@@ -32,14 +33,17 @@ class SpyTest(object):
         is called.
         '''
         import spectral.tests as tests
-        from spectral.tests import abort_on_fail
 
         self.setup()
+
         class NullStdOut(object):
+
             def write(*args, **kwargs):
                 pass
+
             def flush(self):
                 pass
+
         null = NullStdOut()
         methods = [getattr(self, s) for s in sorted(dir(self)) if s.startswith('test_')]
         methods = [m for m in methods if isinstance(m, Callable)]
@@ -61,7 +65,9 @@ class SpyTest(object):
                 sys.stdout = stdout
         self.finish()
 
+
 # The following test method is now deprecated and should no longer be used.
+
 
 def test_method(method):
     '''Decorator function for unit tests.'''

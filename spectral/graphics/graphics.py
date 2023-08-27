@@ -4,17 +4,16 @@ Common functions for extracting and manipulating data for graphical display.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import io
 from numbers import Number
 import numpy as np
 import sys
-import time
 import warnings
 
 from ..algorithms.spymath import get_histogram_cdf_points
 from ..config import spy_colors
 from ..image import Image
 from ..spectral import settings
+
 
 class WindowProxy(object):
     '''Base class for proxy objects to access data from display windows.'''
@@ -276,6 +275,7 @@ def view_indexed(*args, **kwargs):
 
     return view(*args, **kwargs)
 
+
 def imshow(data, bands=None, **kwargs):
     '''A wrapper around matplotlib's imshow for multi-band images.
 
@@ -323,7 +323,7 @@ def imshow(data, bands=None, **kwargs):
     for k in ['stretch', 'stretch_all', 'bounds']:
         if k in kwargs:
             rgb_kwargs[k] = kwargs.pop(k)
-    
+
     imshow_kwargs = {'cmap': 'gray'}
     imshow_kwargs.update(kwargs)
 
@@ -334,11 +334,12 @@ def imshow(data, bands=None, **kwargs):
         rgb = rgb[:, :, 0]
 
     ax = plt.imshow(rgb, **imshow_kwargs)
-    if show_xaxis == False:
+    if show_xaxis is False:
         plt.gca().xaxis.set_visible(False)
-    if show_yaxis == False:
+    if show_yaxis is False:
         plt.gca().yaxis.set_visible(False)
     return ax
+
 
 def make_pil_image(*args, **kwargs):
     '''Creates a PIL Image object.
@@ -349,10 +350,9 @@ def make_pil_image(*args, **kwargs):
     See `get_rgb` for description of arguments.
     '''
     try:
-        from PIL import Image, ImageDraw
+        from PIL import Image
     except ImportError:
         import Image
-        import ImageDraw
 
     rgb = get_rgb(*args, **kwargs)
     rgb = (rgb * 255).astype(np.ubyte)
@@ -474,7 +474,7 @@ def get_rgb(source, bands=None, **kwargs):
             If neither `stretch` nor `bounds` are specified, then the default
             value of `stretch` defined by `spectral.settings.imshow_stretch`
             will be used.
-    
+
         `bounds` (tuple):
 
             This keyword functions similarly to the `stretch` keyword, except
@@ -482,7 +482,7 @@ def get_rgb(source, bands=None, **kwargs):
             histogram values. The form of this keyword is the same as the first
             two forms for the `stretch` keyword (i.e., either a 2-tuple of
             numbers or a 3-tuple of 2-tuples of numbers).
-    
+
         `stretch_all` (bool):
 
             If this keyword is True, each color channel will be scaled
@@ -520,11 +520,13 @@ def get_rgb(source, bands=None, **kwargs):
     '''
     return get_rgb_meta(source, bands, **kwargs)[0]
 
+
 def _fill_mask(arr, mask, fill_value):
     if mask is None:
         return arr
     arr[mask == 0] = np.array(fill_value) / 255.
     return arr
+
 
 def get_rgb_meta(source, bands=None, **kwargs):
     '''Same as get_rgb but also returns some metadata.
@@ -560,6 +562,7 @@ def get_rgb_meta(source, bands=None, **kwargs):
                     msg = 'Unable to interpret "default bands" in image ' \
                       'metadata. Defaulting to first, middle, & last band.'
                     warnings.warn(msg)
+                    pass
             elif source.shape[-1] == 1:
                 bands = [0]
         if len(bands) == 0:
@@ -603,7 +606,7 @@ def get_rgb_meta(source, bands=None, **kwargs):
             meta['mode'] = 'indexed'
             rgb = rgb.astype(int)
             pal = kwargs["colors"]
-            rgb = pal[rgb[:,:,0]] / 255.
+            rgb = pal[rgb[:, :, 0]] / 255.
             return (_fill_mask(rgb, mask, bg), meta)
         elif color_scale is not None:
             # Colors should be generated from the supplied color scale
@@ -629,7 +632,7 @@ def get_rgb_meta(source, bands=None, **kwargs):
     stretch_all = kwargs.get('stretch_all', settings.imshow_stretch_all)
     bounds = kwargs.get('bounds', None)
 
-    if  bounds is not None:
+    if bounds is not None:
         # Data limits for the color stretch are set explicitly
         bounds = np.array(bounds)
         if bounds.shape not in ((2,), (3, 2)):
@@ -668,21 +671,21 @@ def get_rgb_meta(source, bands=None, **kwargs):
             else:
                 # Use a common lower/upper limit for each band by taking
                 # the lowest lower limit and greatest upper limit.
-                lims = np.array([get_histogram_cdf_points(rgb[:,:,i], stretch,
-                                                          ignore=nondata) \
-                        for i in range(3)])
-                minmax = np.array([lims[:,0].min(), lims[:,1].max()])
+                lims = np.array([get_histogram_cdf_points(rgb[:, :, i], stretch,
+                                                          ignore=nondata)
+                                 for i in range(3)])
+                minmax = np.array([lims[:, 0].min(), lims[:, 1].max()])
                 rgb_lims = minmax[np.newaxis, :].repeat(3, axis=0)
         else:
             if monochrome:
                 # Not sure why anyone would want separate RGB stretches for
                 # a gray-scale image but we'll let them.
-                rgb_lims = [get_histogram_cdf_points(rgb[:,:,0], stretch[i],
-                                                     ignore=nondata) \
+                rgb_lims = [get_histogram_cdf_points(rgb[:, :, 0], stretch[i],
+                                                     ignore=nondata)
                             for i in range(3)]
             elif stretch_all:
-                rgb_lims = [get_histogram_cdf_points(rgb[:,:,i], stretch[i],
-                                                     ignore=nondata) \
+                rgb_lims = [get_histogram_cdf_points(rgb[:, :, i], stretch[i],
+                                                     ignore=nondata)
                             for i in range(3)]
             else:
                 msg = 'Can not use common stretch if different stretch ' \
@@ -701,9 +704,11 @@ def get_rgb_meta(source, bands=None, **kwargs):
             rgb[:, :, i] = np.clip((rgb[:, :, i] - lower) / span, 0, 1)
     return (_fill_mask(rgb, mask, bg), meta)
 
+
 # For checking if valid keywords were supplied
 _get_rgb_kwargs = ('stretch', 'stretch_all', 'bounds', 'colors', 'color_scale',
                    'auto_scale', 'ignore', 'mask', 'bg')
+
 
 def running_ipython():
     '''Returns True if ipython is running.'''
@@ -753,8 +758,7 @@ def check_wx_app():
     '''
     import spectral
     import wx
-    if wx.GetApp() is None and spectral.settings.START_WX_APP == True:
+    if wx.GetApp() is None and spectral.settings.START_WX_APP is True:
         warnings.warn('\nThere is no current wx.App object - creating one now.',
                       UserWarning)
         spectral.app = wx.App()
-

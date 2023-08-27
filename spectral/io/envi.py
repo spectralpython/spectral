@@ -32,7 +32,6 @@ from .spyfile import (FileNotFoundError, find_file_path, interleave_transpose,
                       InvalidFileError, SpyFile)
 
 
-
 if IS_PYTHON3:
     import builtins
 else:
@@ -58,9 +57,11 @@ dtype_map = [('1', np.uint8),                   # unsigned byte
 envi_to_dtype = dict((k, np.dtype(v).char) for (k, v) in dtype_map)
 dtype_to_envi = dict(tuple(reversed(item)) for item in list(envi_to_dtype.items()))
 
+
 class EnviException(SpyException):
     '''Base class for ENVI file-related exceptions.'''
     pass
+
 
 class EnviDataTypeError(EnviException, TypeError):
     '''Raised when saving invalid image data type to ENVI format.
@@ -71,14 +72,17 @@ class EnviDataTypeError(EnviException, TypeError):
           'data type names.'.format(np.dtype(dtype).name)
         super(EnviDataTypeError, self).__init__(msg)
 
+
 class EnviFeatureNotSupported(EnviException, NotImplementedError):
     '''A specified ENVI capability is not supported by the spectral module.'''
     pass
+
 
 class FileNotAnEnviHeader(EnviException, InvalidFileError):
     '''Raised when "ENVI" does not appear on the first line of the file.'''
     def __init__(self, msg):
         super(FileNotAnEnviHeader, self).__init__(msg)
+
 
 class MissingEnviHeaderParameter(EnviException):
     '''Raised when a mandatory header parameter is missing.'''
@@ -86,15 +90,18 @@ class MissingEnviHeaderParameter(EnviException):
         msg = 'Mandatory parameter "%s" missing from header file.' % param
         super(MissingEnviHeaderParameter, self).__init__(msg)
 
+
 class EnviHeaderParsingError(EnviException, InvalidFileError):
     '''Raised upon failure to parse parameter/value pairs from a file.'''
     def __init__(self):
         msg = 'Failed to parse ENVI header file.'
         super(EnviHeaderParsingError, self).__init__(msg)
 
+
 class EnviDataFileNotFoundError(EnviException, FileNotFoundError):
     '''Raised when data file associated with a header is not found.'''
     pass
+
 
 def _validate_dtype(dtype):
     '''Raises EnviDataTypeError if dtype can not be written to ENVI file.'''
@@ -102,9 +109,11 @@ def _validate_dtype(dtype):
     if typename not in [np.dtype(t).name for t in list(dtype_to_envi.keys())]:
         raise EnviDataTypeError(dtype)
 
+
 def get_supported_dtypes():
     '''Returns list of names of image data types supported by ENVI format.'''
     return [np.dtype(t).name for t in list(dtype_to_envi.keys())]
+
 
 def read_envi_header(file):
     '''
@@ -139,8 +148,10 @@ def read_envi_header(file):
     try:
         while lines:
             line = lines.pop(0)
-            if line.find('=') == -1: continue
-            if line[0] == ';': continue
+            if line.find('=') == -1:
+                continue
+            if line[0] == ';':
+                continue
 
             (key, sep, val) = line.partition('=')
             key = key.strip()
@@ -153,7 +164,8 @@ def read_envi_header(file):
                 str = val.strip()
                 while str[-1] != '}':
                     line = lines.pop(0)
-                    if line[0] == ';': continue
+                    if line[0] == ';':
+                        continue
 
                     str += '\n' + line.strip()
                 if key == 'description':
@@ -209,6 +221,7 @@ def gen_params(envi_header):
     p.filename = None
     return p
 
+
 def _has_frame_offset(params):
     '''
     Returns True if header params indicate non-zero frame offsets.
@@ -237,6 +250,7 @@ def _has_frame_offset(params):
                 return True
     return False
 
+
 def check_compatibility(header):
     '''
     Verifies that all features of an ENVI header are supported.
@@ -253,6 +267,7 @@ def check_compatibility(header):
     if _has_frame_offset(header):
         raise EnviFeatureNotSupported(
             'ENVI image frame offsets are not supported.')
+
 
 def open(file, image=None):
     '''
@@ -341,12 +356,12 @@ def open(file, image=None):
         try:
             img.bands.centers = [float(b) for b in h['wavelength']]
         except:
-            pass
+            logger.warning('Unable to parse "wavelength" field from header')
     if 'fwhm' in h:
         try:
             img.bands.bandwidths = [float(f) for f in h['fwhm']]
         except:
-            pass
+            logger.warning('Unable to parse "fwhm" field from header')
     img.bands.band_unit = h.get('wavelength units', None)
 
     if 'bbl' in h:
@@ -512,13 +527,13 @@ def save_classification(hdr_file, image, **kwargs):
 
             For classification results, specifies the names to assign each
             integer in the class map being written.  If not given, default
-            class names are created. 
+            class names are created.
 
         `class_colors` (array of RGB-tuples):
 
             For classification results, specifies colors to assign each
             integer in the class map being written.  If not given, default
-            colors are automatically generated.  
+            colors are automatically generated.
 
     If the source image being saved was already in ENVI format, then the
     SpyFile object for that image will contain a `metadata` dict that can be
@@ -536,14 +551,14 @@ def save_classification(hdr_file, image, **kwargs):
         # guess the number of classes and create default class names
         n_classes = int(np.max(data) + 1)
         metadata['classes'] = str(n_classes)
-        metadata['class names'] = (['Unclassified'] + 
+        metadata['class names'] = (['Unclassified'] +
                                    ['Class ' + str(i) for i in range(1, n_classes)])
         # if keyword is given, override whatever is in the metadata dict
     else:
         n_classes = int(max(np.max(data) + 1, len(class_names)))
         metadata['class names'] = class_names
         metadata['classes'] = str(n_classes)
-        
+
     # the resulting value for 'class lookup' needs to be a flattened array.
     colors = []
     if class_colors is not None:
@@ -562,10 +577,9 @@ def save_classification(hdr_file, image, **kwargs):
 
     _write_image(hdr_file, data, metadata, **kwargs)
 
+
 def _prepared_data_and_metadata(hdr_file, image, **kwargs):
-    '''
-    Return data array and metadata dict representing `image`.
-    '''
+    '''Return data array and metadata dict representing `image`.'''
     endian_out = str(kwargs.get('byteorder', sys.byteorder)).lower()
     if endian_out in ('0', 'little'):
         endian_out = 'little'
@@ -579,23 +593,19 @@ def _prepared_data_and_metadata(hdr_file, image, **kwargs):
         src_interleave = 'bip'
         if len(data.shape) == 2:
             data = data[:, :, np.newaxis]
-        swap = False
-        metadata = {}    
+        metadata = {}
     elif isinstance(image, SpyFile):
         if image.using_memmap is True:
             data = image._memmap
             src_interleave = {spy.BSQ: 'bsq', spy.BIL: 'bil',
                               spy.BIP: 'bip'}[image.interleave]
-            swap = image.swap
         else:
             data = image.load(dtype=image.dtype, scale=False)
             src_interleave = 'bip'
-            swap = False
         metadata = image.metadata.copy()
     else:
         data = image.load()
         src_interleave = 'bip'
-        swap = False
         if hasattr(image, 'metadata'):
             metadata = image.metadata.copy()
         else:
@@ -665,7 +675,7 @@ def add_band_info_to_metadata(bands, metadata, overwrite=False):
     if bands.band_unit is not None and (overwrite is True or
                                         'wavelength units' not in metadata):
         metadata['wavelength units'] = bands.band_unit
-        
+
 
 def _write_image(hdr_file, data, header, **kwargs):
     '''
@@ -674,7 +684,7 @@ def _write_image(hdr_file, data, header, **kwargs):
     check_compatibility(header)
     force = kwargs.get('force', False)
     img_ext = kwargs.get('ext', '.img')
-    
+
     (hdr_file, img_file) = check_new_filename(hdr_file, img_ext, force)
     write_envi_header(hdr_file, header, is_library=False)
     logger.debug('Saving', img_file)
@@ -784,7 +794,7 @@ def create_image(hdr_file, metadata=None, **kwargs):
     (hdr_file, img_file) = check_new_filename(hdr_file, img_ext, force)
 
     default_metadata = {'header offset': 0, 'interleave': 'bip'}
-    
+
     if metadata is None:
         metadata = default_metadata
     else:
@@ -825,7 +835,7 @@ def create_image(hdr_file, metadata=None, **kwargs):
     dt = np.dtype(params.dtype).char
     _validate_dtype(dt)
     params.filename = img_file
-        
+
     is_library = False
     if metadata.get('file type') == 'ENVI Spectral Library':
         is_library = True
@@ -968,6 +978,7 @@ class SpectralLibrary:
         self.spectra.astype('f').tofile(fout)
         fout.close()
 
+
 def _write_header_param(fout, paramName, paramVal):
     if paramName.lower() == 'description':
         valStr = '{\n%s}' % '\n'.join(['  ' + line for line
@@ -1000,4 +1011,3 @@ def write_envi_header(fileName, header_dict, is_library=False):
         if k not in std_params:
             _write_header_param(fout, k, d[k])
     fout.close()
-

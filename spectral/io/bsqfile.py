@@ -11,7 +11,7 @@ import os
 import sys
 
 import spectral as spy
-from ..utilities.python23 import typecode, tobytes, frombytes
+from ..utilities.python23 import typecode, tobytes
 from .spyfile import SpyFile, MemmapFile
 
 byte_typecode = typecode('b')
@@ -43,7 +43,6 @@ class BsqFile(SpyFile, MemmapFile):
         else:
             return None
 
-
     def read_band(self, band, use_memmap=True):
         '''Reads a single band from the image.
 
@@ -58,7 +57,7 @@ class BsqFile(SpyFile, MemmapFile):
                 Specifies whether the file's memmap interface should be used
                 to read the data. Setting this arg to True only has an effect
                 if a memmap is being used (i.e., if `img.using_memmap` is True).
-                
+
         Returns:
 
            :class:`numpy.ndarray`
@@ -102,7 +101,7 @@ class BsqFile(SpyFile, MemmapFile):
                 Specifies whether the file's memmap interface should be used
                 to read the data. Setting this arg to True only has an effect
                 if a memmap is being used (i.e., if `img.using_memmap` is True).
-                
+
         Returns:
 
            :class:`numpy.ndarray`
@@ -152,7 +151,7 @@ class BsqFile(SpyFile, MemmapFile):
                 Specifies whether the file's memmap interface should be used
                 to read the data. Setting this arg to True only has an effect
                 if a memmap is being used (i.e., if `img.using_memmap` is True).
-                
+
         Returns:
 
            :class:`numpy.ndarray`
@@ -166,14 +165,10 @@ class BsqFile(SpyFile, MemmapFile):
             return data
 
         vals = array.array(byte_typecode)
-        delta = self.sample_size * (self.nbands - 1)
-        offset = self.offset + row * self.nbands * self.ncols \
-            * self.sample_size + col * self.sample_size
 
         f = self.fid
         nPixels = self.nrows * self.ncols
 
-        ncols = self.ncols
         sampleSize = self.sample_size
         bandSize = sampleSize * nPixels
         rowSize = sampleSize * self.ncols
@@ -216,7 +211,7 @@ class BsqFile(SpyFile, MemmapFile):
                 Specifies whether the file's memmap interface should be used
                 to read the data. Setting this arg to True only has an effect
                 if a memmap is being used (i.e., if `img.using_memmap` is True).
-                
+
         Returns:
 
            :class:`numpy.ndarray`
@@ -255,8 +250,6 @@ class BsqFile(SpyFile, MemmapFile):
         bandSize = nrows * ncols * sampleSize
         colStartOffset = col_bounds[0] * sampleSize
         rowSize = ncols * sampleSize
-        rowStartOffset = row_bounds[0] * rowSize
-        nSubBands = len(bands)
 
         # Pixel format is BSQ
         for i in bands:
@@ -301,7 +294,7 @@ class BsqFile(SpyFile, MemmapFile):
                 Specifies whether the file's memmap interface should be used
                 to read the data. Setting this arg to True only has an effect
                 if a memmap is being used (i.e., if `img.using_memmap` is True).
-                
+
         Returns:
 
            :class:`numpy.ndarray`
@@ -322,9 +315,6 @@ class BsqFile(SpyFile, MemmapFile):
 
         nSubRows = len(rows)                        # Rows in sub-image
         nSubCols = len(cols)                        # Cols in sub-image
-        d_col = self.sample_size
-        d_band = d_col * self.ncols
-        d_row = d_band * self.nbands
 
         f = self.fid
         f.seek(self.offset, 0)
@@ -379,7 +369,7 @@ class BsqFile(SpyFile, MemmapFile):
                 Specifies whether the file's memmap interface should be used
                 to read the data. Setting this arg to True only has an effect
                 if a memmap is being used (i.e., if `img.using_memmap` is True).
-                
+
         Using this function is not an efficient way to iterate over bands or
         pixels. For such cases, use readBands or readPixel instead.
         '''

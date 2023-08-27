@@ -12,6 +12,7 @@ from ..utilities.python23 import tobytes
 
 logger = logging.getLogger('spectral')
 
+
 class RasterWindow(wx.Frame, SpyWindow):
     '''
     RasterWindow is the primary wxWindows object for displaying SPy

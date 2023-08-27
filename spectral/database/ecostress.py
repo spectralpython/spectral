@@ -6,16 +6,19 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import itertools
 import logging
+import os
+
+from glob import glob
 
 from spectral.utilities.python23 import IS_PYTHON3
 from .aster import AsterDatabase, Signature
 
 if IS_PYTHON3:
-    readline = lambda fin: fin.readline()
-    open_file = lambda filename: open(filename, encoding='iso-8859-1')
+    def readline(fin): return fin.readline()
+    def open_file(filename): return open(filename, encoding='iso-8859-1')
 else:
-    readline = lambda fin: fin.readline().decode('iso-8859-1')
-    open_file = lambda filename: open(filename)
+    def readline(fin): return fin.readline().decode('iso-8859-1')
+    def open_file(filename): return open(filename)
 
 
 def read_ecostress_file(filename):
@@ -26,7 +29,7 @@ def read_ecostress_file(filename):
     if not IS_PYTHON3:
         lines = [line.decode('iso-8859-1') for line in lines]
 
-    metaline_to_pair = lambda line: [x.strip() for x in line.split(':', 1)]
+    def metaline_to_pair(line): return [x.strip() for x in line.split(':', 1)]
 
     s = Signature()
 
@@ -60,7 +63,7 @@ def read_ecostress_file(filename):
         # Try to handle invalid values on signature lines
         if nItems == 1:
             logger.info('Skipping single item (%s) on signature line for %s',
-                  pair[0], filename)
+                        pair[0], filename)
             continue
         elif nItems > 2:
             logger.info('Skipping more than 2 values on signature line for %s',
@@ -93,6 +96,7 @@ def read_ecostress_file(filename):
     s.measurement['number of x values'] = len(x)
 
     return s
+
 
 class EcostressDatabase(AsterDatabase):
     '''A relational database to manage ECOSTRESS spectral library data.'''
@@ -146,10 +150,6 @@ class EcostressDatabase(AsterDatabase):
 
     def _import_files(self, data_dir, ignore=None):
         '''Import each file from the ECOSTRESS library into the database.'''
-        from glob import glob
-        import numpy
-        import os
-
         logger = logging.getLogger('spectral')
         if not os.path.isdir(data_dir):
             raise Exception('Error: Invalid directory name specified.')
@@ -160,8 +160,6 @@ class EcostressDatabase(AsterDatabase):
 
         numFiles = 0
         numIgnored = 0
-
-        sigID = 1
 
         class Sig:
             pass

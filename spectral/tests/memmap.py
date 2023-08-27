@@ -13,13 +13,12 @@ To run the unit tests, type the following from the system command line:
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import numpy as np
 from numpy.testing import assert_almost_equal
 
 import spectral as spy
-from spectral.io.spyfile import find_file_path, FileNotFoundError
 from spectral.tests import testdir
 from spectral.tests.spytest import SpyTest
+
 
 class SpyFileMemmapTest(SpyTest):
     '''Tests that SpyFile memmap interfaces read and write properly.'''
@@ -58,18 +57,17 @@ class SpyFileMemmapTest(SpyTest):
 
     def create_test_image_file(self):
         import os
-        import spectral
         img = spy.open_image(self.file)
         fname = os.path.join(testdir, 'memmap_test_%s.hdr' % self.src_inter)
         spy.envi.save_image(fname,
                             img,
-                            dtype = img.dtype,
-                            interleave = self.src_inter,
+                            dtype=img.dtype,
+                            interleave=self.src_inter,
                             force=True)
         self.image = spy.open_image(fname)
-        
+
     def test_spyfile_has_memmap(self):
-        assert(self.image.using_memmap == True)
+        assert (self.image.using_memmap is True)
 
     def test_bip_memmap_read(self):
         self.create_test_image_file()
@@ -90,7 +88,6 @@ class SpyFileMemmapTest(SpyTest):
         assert_almost_equal(mm[k, i, j], self.value)
 
     def test_bip_memmap_write(self):
-        from spectral import open_image
         self.create_test_image_file()
         (i, j, k) = self.datum
         mm = self.image.open_memmap(interleave='bip', writable=True)
@@ -99,7 +96,6 @@ class SpyFileMemmapTest(SpyTest):
         assert_almost_equal(self.image.open_memmap()[i, j, k], 2 * self.value)
 
     def test_bil_memmap_write(self):
-        from spectral import open_image
         self.create_test_image_file()
         (i, j, k) = self.datum
         mm = self.image.open_memmap(interleave='bil', writable=True)
@@ -108,7 +104,6 @@ class SpyFileMemmapTest(SpyTest):
         assert_almost_equal(self.image.open_memmap()[i, j, k], 3 * self.value)
 
     def test_bsq_memmap_write(self):
-        from spectral import open_image
         self.create_test_image_file()
         (i, j, k) = self.datum
         mm = self.image.open_memmap(interleave='bsq', writable=True)
@@ -144,8 +139,6 @@ class SpyFileMemmapTestSuite(object):
 
     def run(self):
         import os
-        import itertools
-        import spectral
         print('\n' + '-' * 72)
         print('Running memmap tests.')
         print('-' * 72)
@@ -162,6 +155,7 @@ class SpyFileMemmapTestSuite(object):
 def run():
     suite = SpyFileMemmapTestSuite('92AV3C.lan', (30, 40, 50), 5420.0)
     suite.run()
+
 
 if __name__ == '__main__':
     from spectral.tests.run import parse_args, reset_stats, print_summary

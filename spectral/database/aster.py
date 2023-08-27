@@ -4,16 +4,18 @@ Code for reading and managing ASTER spectral library data.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import numpy as np
+
 from spectral.utilities.python23 import IS_PYTHON3, tobytes, frombytes
 
 from .spectral_database import SpectralDatabase
 
 if IS_PYTHON3:
-    readline = lambda fin: fin.readline()
-    open_file = lambda filename: open(filename, encoding='iso-8859-1')
+    def readline(fin): return fin.readline()
+    def open_file(filename): return open(filename, encoding='iso-8859-1')
 else:
-    readline = lambda fin: fin.readline().decode('iso-8859-1')
-    open_file = lambda filename: open(filename)
+    def readline(fin): return fin.readline().decode('iso-8859-1')
+    def open_file(filename): return open(filename)
 
 table_schemas = [
     'CREATE TABLE Samples (SampleID INTEGER PRIMARY KEY, Name TEXT, Type TEXT, Class TEXT, SubClass TEXT, '
@@ -65,7 +67,6 @@ def read_aster_file(filename):
         line = readline(fin).strip()
         if line.find('Collected by:') >= 0:
             haveCollectedBy = True
-            collectedByLineNum = i
         if line.startswith('Description:'):
             descriptionLineNum = i
         if line.startswith('Measurement:'):
@@ -99,8 +100,8 @@ def read_aster_file(filename):
 
         # Try to handle invalid values on signature lines
         if nItems == 1:
-#           print 'single item (%s) on signature line, %s' \
-#                 %  (pair[0], filename)
+            # print('single item (%s) on signature line, %s' \
+            #       %  (pair[0], filename))
             continue
         elif nItems > 2:
             print('more than 2 values on signature line,', filename)
@@ -110,7 +111,7 @@ def read_aster_file(filename):
         except:
             print('corrupt signature line,', filename)
         if x == 0:
-#           print 'Zero wavelength value', filename
+            # print('Zero wavelength value', filename)
             continue
         elif x < 0:
             print('Negative wavelength value,', filename)
@@ -241,7 +242,6 @@ class AsterDatabase(SpectralDatabase):
     def _import_files(self, data_dir, ignore=bad_files):
         '''Read each file in the ASTER library and convert to AVIRIS bands.'''
         from glob import glob
-        import numpy
         import os
 
         if not os.path.isdir(data_dir):
@@ -253,8 +253,6 @@ class AsterDatabase(SpectralDatabase):
 
         numFiles = 0
         numIgnored = 0
-
-        sigID = 1
 
         class Sig:
             pass
@@ -298,8 +296,7 @@ class AsterDatabase(SpectralDatabase):
                                 m['x units'], yUnit, m['first x value'],
                                 m['last x value'], sig.x, sig.y)
         if numFiles == 0:
-            print('No data files were found in directory "%s".' \
-                  % data_dir)
+            print('No data files were found in directory "%s".' % data_dir)
         else:
             print('Processed %d files.' % numFiles)
         if numIgnored > 0:
@@ -429,9 +426,8 @@ class AsterDatabase(SpectralDatabase):
         '''
         from spectral.algorithms.resampling import BandResampler
         from spectral.io.envi import SpectralLibrary
-        import numpy
         import unicodedata
-        spectra = numpy.empty((len(spectrumIDs), len(bandInfo.centers)))
+        spectra = np.empty((len(spectrumIDs), len(bandInfo.centers)))
         names = []
         for i in range(len(spectrumIDs)):
             sig = self.get_signature(spectrumIDs[i])
