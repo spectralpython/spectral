@@ -187,8 +187,8 @@ class KernelMatchedFilter(NonLinearTransform):
     where:
 
     .. math::
-        $\hat{k}t = k_t - \frac{1}{N}\sum{i=1}^N k(x_i, t)1$
-        $\hat{k}x = k_x - \frac{1}{N}\sum{i=1}^N k(x_i, x)1$
+        \hat{k}_{t}^T=k_{t}^T-\frac{1}{N} \sum_{i=1}^N k\left(x_i, t\right) \overrightarrow{1}
+        \hat{k}_{x}^T=k_{x}^T-\frac{1}{N} \sum_{i=1}^N k\left(x_i, x\right) \overrightarrow{1}
 
     :math:`\hat{K}` is the centered kernel matrix,
     :math:`\hat{k}` is a kernel, such as linear kernel, polynomial kernel and Gaussian Radial Bases Function kernel (RBF).
@@ -301,8 +301,8 @@ def kernel_matched_filter(X, target, kernel, eigval_min=1e-5, background=None, w
     where:
 
     .. math::
-        $\hat{k}t = k_t - \frac{1}{N}\sum{i=1}^N k(x_i, t)1$
-        $\hat{k}x = k_x - \frac{1}{N}\sum{i=1}^N k(x_i, x)1$
+        \hat{k}_{t}^T=k_{t}^T-\frac{1}{N} \sum_{i=1}^N k\left(x_i, t\right) \overrightarrow{1}
+        \hat{k}_{x}^T=k_{x}^T-\frac{1}{N} \sum_{i=1}^N k\left(x_i, x\right) \overrightarrow{1}
 
     :math:`\hat{K}` is the centered kernel matrix,
     :math:`\hat{k}` is a kernel, such as linear kernel, polynomial kernel and Gaussian Radial Bases Function kernel (RBF).
