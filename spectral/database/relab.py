@@ -120,11 +120,11 @@ def read_relab_file(filename):
                 s.measurement['volt'] = volt
             # Extract Material Name
             elif (i == count + 2):
-                s.sample("name") = ml
-                s.measurement("name") = ml
+                s.sample["name"] = ml
+                s.measurement["name"] = ml
             # All other cases
             else:
-                s.sample("others") = ml
+                s.sample["others"] = ml
     return s
 
 
