@@ -63,14 +63,22 @@ def read_relab_file(filename):
     relab_id = int(lines[0])
     s.sample["relab_id"] = relab_id
     s.measurement["relab_id"] = relab_id
+    count = count + 1
     # Extract central wavelengths and reflectances
-    while (lines[count] != ""):
-        out = lines[count].split("  ")
-        #print(out[1].strip(), out[-1].strip())
-        pair.append([out[1].strip(), out[-1].strip()])
-        pairs.append(pair)
-        count = count + 1
+    for c in range(count, len(lines)):
+        if (lines[c] != ""):
+            out = lines[c].strip().split("  ")
+            # Remove empty slots
+            out1 = list(filter(None, out))
+            #print(out1[0].strip(), out1[1].strip())
+            pair = [float(out1[0].strip()), float(out1[1].strip())]
+            pairs.append(pair)
+        else:
+            break
 
+    # Update line count
+    count = count + c
+    
     [x, y] = [list(v) for v in zip(*pairs)]
 
     # Make sure wavelengths are ascending
@@ -93,38 +101,68 @@ def read_relab_file(filename):
         #s.measurement[pair[0].lower()] = pair[1]
 
     m = []
-    for i in range(count,len(lines)):
-        if(lines[i] != ""):
-            # Remove heading and trailing spaces
-            ml = lines[i].strip()
-            # Filename cleaning
-            if '.ASC' in ml:
-                fname = ml.replace(' ','')
-                m.append(fname)
-                s.sample["relab_filename"] = fname
-                s.measurement["relab_filename"] = fname
-            # Extract seprately date and time
-            elif 'Date' in ml:
-                date = ml.split('Time:')[0]
-                time = ml.split('Time:')[-1]
-                s.sample["date"] = date.replace('Date:',"").replace("  "," ").strip()
-                s.sample["time"] = time
-            # Extract Source and Detection Angles & Voltage
-            elif 'Volt' in ml:
-                volt = ml.split('Volt:')[-1]
-                dang = ml.split('Volt:')[-2]
-                dang1 = dang.split('Detect Ang:')[-1]
-                sang = dang.split('Detect Ang:')[-2]
-                s.measurement['source_angle'] = sang.replace("Source Ang:","").strip()
-                s.measurement['detect_angle'] = dang1.strip()
-                s.measurement['volt'] = volt
-            # Extract Material Name
-            elif (i == count + 2):
-                s.sample["name"] = ml
-                s.measurement["name"] = ml
-            # All other cases
-            else:
-                s.sample["others"] = ml
+    description = ""
+    stage = None
+    
+    while (lines[count].strip() == ""):
+        count = count + 1
+
+    # Filename extraction
+    if(stage == None and lines[count].strip() != ""):
+        # Remove heading and trailing spaces
+        ml = lines[count].strip()
+        if '.ASC' in ml:
+            fname = ml.replace(' ','')
+            m.append(fname)
+            s.sample["name"] = str(fname)
+            #print("File NAME %s" % (fname))
+            stage = "ASC"
+    
+    count = count + 1
+    ml = lines[count].strip()
+
+    while (lines[count].strip() == ""):
+        count = count + 1
+
+    # Extract Material Name after Filename extraction
+    if(stage == "ASC" and lines[count].strip() != ""):
+        ml = lines[count].strip()
+        #print("Material NAME %s" % (ml))
+        s.measurement['name'] = str(ml)
+        stage = "name"
+    
+    count = count + 1
+    ml = lines[count].strip()
+
+    while (lines[count].strip() == ""):
+        count = count + 1
+
+    if(lines[count].strip() != ""):
+        ml = lines[count].strip()
+        # Extract seprately date and time
+        if 'Date' in ml:
+            date = ml.split('Time:')[0]
+            time = ml.split('Time:')[-1]
+            s.sample["date"] = date.replace('Date:',"").replace("  "," ").strip()
+            s.sample["time"] = time
+        # Extract Source and Detection Angles & Voltage
+        elif 'Volt' in ml:
+            volt = ml.split('Volt:')[-1]
+            dang = ml.split('Volt:')[-2]
+            dang1 = dang.split('Detect Ang:')[-1]
+            sang = dang.split('Detect Ang:')[-2]
+            s.measurement['source_angle'] = sang.replace("Source Ang:","").strip()
+            s.measurement['detect_angle'] = dang1.strip()
+            s.measurement['volt'] = volt
+        # All other cases
+        else:
+            description += ml + " " 
+            s.sample['description'] = description + " " + s.measurement['name']
+    else:
+        while (lines[count].strip() == ""):
+            count = count + 1
+        ml = lines[count].strip()
+
     return s
 
 
@@ -185,7 +223,7 @@ class relabDatabase(SpectralDatabase):
 
         Example::
 
-            >>> relabDatabase.create("aster_lib.db", "/CDROM/ASTER2.0/data")
+            >>> relabDatabase.create("relab_lib.db", "/STORAGE/RELab/data")
 
         This is a class method (it does not require instantiating an
         relabDatabase object) that creates a new database by parsing all of the
@@ -194,8 +232,8 @@ class relabDatabase(SpectralDatabase):
         can be created by instantiating a new relabDatabase object with the
         path the database file as its argument.  For example::
 
-            >>> from spectral.database.relab import AsterDatabase
-            >>> db = relabDatabase("aster_lib.db")
+            >>> from spectral.database.relab import relabDatabase
+            >>> db = relabDatabase("relab_lib.db")
         '''
         import os
         if os.path.isfile(filename):
@@ -253,47 +291,51 @@ class relabDatabase(SpectralDatabase):
         class Sig:
             pass
         sigs = []
+        
+        # Get all .asc files in subsubdirs 
+        files = glob(data_dir+'/**/*/*.asc', recursive=True)
+        print(len(files))
 
-        for f in glob(data_dir + '/*spectrum.txt'):
-            if f in filesToIgnore:
-                numIgnored += 1
-                continue
-            print('Importing %s.' % f)
-            numFiles += 1
-            sig = self.read_file(f)
-            s = sig.sample
-            if s['particle size'].lower == 'liquid':
-                phase = 'liquid'
-            else:
-                phase = 'solid'
-            if 'sample no.' in s:
-                sampleNum = s['sample no.']
-            else:
-                sampleNum = ''
-            id = self._add_sample(
-                s['name'], s['type'], s['class'], s[
-                    'subclass'], s['particle size'],
-                sampleNum, s['owner'], s['origin'], phase, s['description'])
+        for f in range(len(files)):
+            print('Importing %s.' % files[f])
+            try:
+                sig = self.read_file(files[f])
+                s = sig.sample
+                sampleNum = s['relab_id']
+            except:
+                raise Exception ('Error creating SIG' % (files[f]))
 
-            instrument = os.path.basename(f).split('.')[1]
+            phase = 'solid'
+            s['type'] = "manmade_natural"
+            s['class'] = " "
+            s['subclass'] = " "
+            s['particle size'] = " "
+            s['owner'] = " "
+            s['origin'] = "RELab"
+            try:
+                idd = self._add_sample(s['name'], s['type'], s['class'], s['subclass'], s['particle size'],
+                        sampleNum, s['owner'], s['origin'], phase, s['description'])
+            except:
+                raise Exception ('Error creating IDD')
+
+            instrument = os.path.basename(files[f]).split('.')[0]
             environment = 'lab'
             m = sig.measurement
 
             # Correct numerous mispellings of "reflectance" and "transmittance"
+            m['y units'] = 'reflectance (percent)'
             yUnit = m['y units']
-            if yUnit.find('reflectence') > -1:
-                yUnit = 'reflectance (percent)'
-            elif yUnit.find('trans') == 0:
-                yUnit = 'transmittance (percent)'
-            measurement = m['measurement']
-            if measurement[0] == 't':
-                measurement = 'transmittance'
-            self._add_signature(id, -1, instrument, environment, measurement,
+            measurement = 'reflectance'
+            m['x units'] = 'wavelength (nm)'
+            try:
+                self._add_signature(idd, -1, instrument, environment, measurement,
                                 m['x units'], yUnit, m['first x value'],
                                 m['last x value'], sig.x, sig.y)
+            except:
+                raise Exception ('Error creating Signature')
+
         if numFiles == 0:
-            print('No data files were found in directory "%s".' \
-                  % data_dir)
+            print('No data files were found in directory "%s".' % data_dir)
         else:
             print('Processed %d files.' % numFiles)
         if numIgnored > 0:
