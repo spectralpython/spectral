@@ -533,11 +533,11 @@ class SubImage(SpyFile):
 
                 An `MxNxL` array.
         '''
-        return self.parent.read_subimage(list(np.array(row_bounds) \
-                                              + self.row_offset),
-                                         list(np.array(col_bounds) \
-                                              + self.col_offset),
-                                         bands)
+        return self.parent.read_subregion(list(np.array(row_bounds) \
+                                               + self.row_offset),
+                                          list(np.array(col_bounds) \
+                                               + self.col_offset),
+                                          bands)
 
 
 def tile_image(im, nrows, ncols):
