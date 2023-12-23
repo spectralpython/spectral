@@ -3,14 +3,15 @@ Spectral target detection algorithms.
 '''
 
 from __future__ import absolute_import, division, print_function, unicode_literals
+from sklearn.decomposition import KernelPCA
 
-__all__ = ['MatchedFilter', 'matched_filter', 'RX', 'rx', 'ace']
+__all__ = ['MatchedFilter', 'matched_filter', 'KernelMatchedFilter', 'kernel_matched_filter', 'RX', 'rx', 'ace']
 
 import math
 import numpy as np
 
 from .algorithms import calc_stats
-from .transforms import LinearTransform
+from .transforms import LinearTransform, NonLinearTransform, kernel_func, center_matrix
 from .spatial import map_outer_window_stats
 
 
@@ -172,6 +173,234 @@ def matched_filter(X, target, background=None, window=None, cov=None):
         if background is None:
             background = calc_stats(X)
         return MatchedFilter(background, target)(X)
+
+
+class KernelMatchedFilter(NonLinearTransform):
+    r'''A callable kernel matched filter.
+
+    Given kernel function and target/background matrix, the kernel matched
+    filter response is given by:
+
+    .. math::
+        y(\hat{k}_r) = \frac{\hat{k}_t^T \hat{K}^{-2} \hat{k}_x}{\hat{k}_t^T \hat{K}^{-2} \hat{k}_t}
+
+    where:
+
+    .. math::
+        \hat{k}_{t}^T=k_{t}^T-\frac{1}{N} \sum_{i=1}^N k\left(x_i, t\right) \overrightarrow{1}
+        \hat{k}_{x}^T=k_{x}^T-\frac{1}{N} \sum_{i=1}^N k\left(x_i, x\right) \overrightarrow{1}
+
+    :math:`\hat{K}` is the centered kernel matrix,
+    :math:`\hat{k}` is a kernel, such as linear kernel, polynomial kernel and Gaussian Radial Bases Function kernel (RBF).
+
+    The inverse :math:`\hat{K}^{-2}` may not be numerically stable if the background spectral samples are not independent.
+    Therefore, the pseudo-inverse of K is used, which is based on eigenvalue decomposition
+        where eigenvectors with eigenvalues larger than `eigval_min` are used.
+    '''
+
+    def __init__(self, background, target, kernel, X, eigval_min, **kwargs):
+        '''Creates the filter, given background/target means and covariance.
+
+        Arguments:
+
+            `background` (`GaussianStats`):
+
+                The Gaussian statistics for the background (e.g., the result
+                of calling :func:`calc_stats`).
+
+            `target` (ndarray):
+
+                Length-K target mean
+
+            `X` (numpy.ndarray):
+
+                `X` can be an image with shape (R, C, B) or an ndarray of shape (R * C, B)
+
+            `kernel` (str):
+
+                The kernel function: 'linear', 'poly', or 'rbf'.
+
+            `eigval_min` (str):
+
+                The minimum of eigenvalues when calculating :math:`\hat{K}^{-2}`.
+        '''
+        self.target = target
+        self.background = background
+        self._whitening_transform = None
+
+        if len(X.shape) == 3:
+            X = X.reshape((-1, X.shape[-1]))
+
+        # compute the empirical kernel map
+        k_t = kernel_func(X, target.reshape(1, -1), kernel=kernel, **kwargs)
+
+        # Compute centralized kernel matrix
+        self.k_t = center_matrix(k_t)
+
+        # Compute kernal matrix K and K^-2
+        K = kernel_func(X, kernel=kernel, **kwargs)
+
+        # Centering the symmetric NxN kernel matrix.
+        K = center_matrix(K)
+
+        # compute kernel PCA matrix
+        kpca = KernelPCA(kernel=kernel, n_components=None, **kwargs)
+        kpca.fit(X)
+        eigvals, eigvecs = kpca.eigenvalues_, kpca.eigenvectors_
+
+        # compute the inverse matrix for large eigvals
+        eigvecs = eigvecs[:, eigvals > eigval_min]
+        eigvals = eigvals[eigvals > eigval_min]
+
+        # Reconstruct pseudo-inverse
+        K_pseudo_inv = eigvecs @ np.diag(1/eigvals) @ eigvecs.T
+
+        self.K_2 = K_pseudo_inv @ K_pseudo_inv
+
+        # Compute normalizing coefficient
+        coef = (self.k_t.T).dot(self.K_2).dot(self.k_t)
+
+        # Construct nonlinear transform
+        A = (1/coef) * (self.k_t.T).dot(self.K_2)
+        NonLinearTransform.__init__(self, A, kernel=kernel, **kwargs)
+
+
+    def whiten(self, X):
+        '''Transforms data to the whitened space of the background.
+
+        Arguments:
+
+            `X` (ndarray):
+
+                Size (M,N,K) or (M*N,K) array of length K vectors to transform.
+
+        Returns an array of same size as `X` but linearly transformed to the
+        whitened space of the filter.
+        '''
+        if self._whitening_transform is None:
+            A = math.sqrt(self.coef) * self.background.sqrt_inv_cov
+            self._whitening_transform = LinearTransform(A, pre=-self.u_b)
+        return self._whitening_transform(X)
+
+
+def kernel_matched_filter(X, target, kernel, eigval_min=1e-5, background=None, window=None, cov=None, **kwargs):
+    r'''Computes a non-linear matched filter target detector score.
+
+    Usage:
+
+        y = kernel_matched_filter(X, target, background)
+
+        y = kernel_matched_filter(X, target, window=<win> [, cov=<cov>])
+
+    Given kernel function and target/background matrix, the kernel matched
+    filter response is given by:
+
+    .. math::
+        y(\hat{k}_r) = \frac{\hat{k}_t^T \hat{K}^{-2} \hat{k}_x}{\hat{k}_t^T \hat{K}^{-2} \hat{k}_t}
+
+    where:
+
+    .. math::
+        \hat{k}_{t}^T=k_{t}^T-\frac{1}{N} \sum_{i=1}^N k\left(x_i, t\right) \overrightarrow{1}
+        \hat{k}_{x}^T=k_{x}^T-\frac{1}{N} \sum_{i=1}^N k\left(x_i, x\right) \overrightarrow{1}
+
+    :math:`\hat{K}` is the centered kernel matrix,
+    :math:`\hat{k}` is a kernel, such as linear kernel, polynomial kernel and Gaussian Radial Bases Function kernel (RBF).
+
+    The inverse :math:`\hat{K}^{-2}` may not be numerically stable if the background spectral samples are not independent.
+    Therefore, the pseudo-inverse of K is used, which is based on eigenvalue decomposition
+        where eigenvectors with eigenvalues larger than `eigval_min` are used.
+
+    Arguments:
+
+        `X` (numpy.ndarray):
+
+            For the first calling method shown, `X` can be an image with
+            shape (R, C, B) or an ndarray of shape (R * C, B). If the
+            `background` keyword is given, it will be used for the image
+            background statistics; otherwise, background statistics will be
+            computed from `X`.
+
+            If the `window` keyword is given, `X` must be a 3-dimensional
+            array and background statistics will be computed for each point
+            in the image using a local window defined by the keyword.
+
+        `target` (ndarray):
+
+            Length-K vector specifying the target to be detected.
+
+        `kernel` (str):
+
+            The kernel function: 'linear', 'poly', or 'rbf'.
+
+        `eigval_min` (str):
+
+            The minimum of eigenvalues when calculating :math:`\hat{K}^{-2}`.
+
+        `background` (`GaussianStats`):
+
+            The Gaussian statistics for the background (e.g., the result
+            of calling :func:`calc_stats` for an image). This argument is not
+            required if `window` is given.
+
+        `window` (2-tuple of odd integers):
+
+            Must have the form (`inner`, `outer`), where the two values
+            specify the widths (in pixels) of inner and outer windows centered
+            about the pixel being evaulated. Both values must be odd integers.
+            The background mean and covariance will be estimated from pixels
+            in the outer window, excluding pixels within the inner window. For
+            example, if (`inner`, `outer`) = (5, 21), then the number of
+            pixels used to estimate background statistics will be
+            :math:`21^2 - 5^2 = 416`. If this argument is given, `background`
+            is not required (and will be ignored, if given).
+
+            The window is modified near image borders, where full, centered
+            windows cannot be created. The outer window will be shifted, as
+            needed, to ensure that the outer window still has height and width
+            `outer` (in this situation, the pixel being evaluated will not be
+            at the center of the outer window). The inner window will be
+            clipped, as needed, near image borders. For example, assume an
+            image with 145 rows and columns. If the window used is
+            (5, 21), then for the image pixel at (0, 0) (upper left corner),
+            the the inner window will cover `image[:3, :3]` and the outer
+            window will cover `image[:21, :21]`. For the pixel at (50, 1), the
+            inner window will cover `image[48:53, :4]` and the outer window
+            will cover `image[40:51, :21]`.
+
+        `cov` (ndarray):
+
+            An optional covariance to use. If this parameter is given, `cov`
+            will be used for all matched filter calculations (background
+            covariance will not be recomputed in each window) and only the
+            background mean will be recomputed in each window. If the
+            `window` argument is specified, providing `cov` will allow the
+            result to be computed *much* faster.
+
+    Returns numpy.ndarray:
+
+        The return value will be the matched filter scores distance) for each
+        pixel given.  If `X` has shape (R, C, K), the returned ndarray will
+        have shape (R, C).
+
+    References:
+
+        Kwon, H. and Nasrabadi, N.M., 2007. Kernel spectral matched filter for hyperspectral imagery.
+            International Journal of Computer Vision, 71, pp.127-141.
+    '''
+    if background is not None and window is not None:
+        raise ValueError('`background` and `window` are mutually ' \
+                         'exclusive arguments.')
+
+    if window is not None:
+        def mf_wrapper(bg, x):
+            return KernelMatchedFilter(bg, target, kernel, x, eigval_min, **kwargs)(x)
+        return map_outer_window_stats(mf_wrapper, X, window[0], window[1],
+                                      dim_out=1, cov=cov)
+    else:
+        if background is None:
+            background = calc_stats(X)
+        return KernelMatchedFilter(background, target, kernel, X, eigval_min, **kwargs)(X)
 
 
 class RX():
