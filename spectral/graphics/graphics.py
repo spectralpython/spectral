@@ -121,7 +121,7 @@ def view_cube(data, *args, **kwargs):
 
         `top` (:class:`numpy.ndarray` or :class:`PIL.Image`):
 
-            Data to display on top of the cube. This will supercede the
+            Data to display on top of the cube. This will supersede the
             `bands` keyword.
 
         `scale` (:class:`spectral.ColorScale`)
@@ -197,11 +197,11 @@ def view_nd(data, *args, **kwargs):
                associated with the 3 semi-axes for that octant.
 
             #. A length-8 list of length-3 lists of integers. In this case,
-               each length-3 list specfies the features to be displayed in a
+               each length-3 list specifies the features to be displayed in a
                single octants (the same semi-axis can be associated with
                different features in different octants).  Octants are ordered
-               starting with the postive x,y,z octant and procede
-               counterclockwise around the z-axis, then procede similarly
+               starting with the positive x,y,z octant and proceed
+               counterclockwise around the z-axis, then proceed similarly
                around the negative half of the z-axis.  An octant triplet can
                be specified as None instead of a list, in which case nothing
                will be rendered in that octant.
@@ -379,7 +379,7 @@ def save_rgb(filename, data, bands=None, **kwargs):
             Source image data to display.  `data` can be and instance of a
             :class:`spectral.Image` (e.g., :class:`spectral.SpyFile` or
             :class:`spectral.ImageArray`) or a :class:`numpy.ndarray`. `data`
-            must have shape `MxN` or `MxNxB`.  If thes shape is `MxN`, the
+            must have shape `MxN` or `MxNxB`.  If the shape is `MxN`, the
             image will be saved as greyscale (unless keyword `colors` is
             specified). If the shape is `MxNx3`, it will be interpreted as
             three `MxN` images defining the R, G, and B channels respectively.
@@ -642,7 +642,7 @@ def get_rgb_meta(source, bands=None, **kwargs):
         # Determine data limits for color stretch from given cumulative
         # histogram values.
         if stretch in (True, False):
-            msg = 'Boolean values for `stretch` keyword are deprected. See ' \
+            msg = 'Boolean values for `stretch` keyword are deprecated. See ' \
               'docstring for `get_rgb`'
             warnings.warn(msg)
             stretch = settings.imshow_stretch
@@ -718,7 +718,7 @@ def warn_no_ipython():
     '''Warns that user is calling a GUI function outside of ipython.'''
     msg = '''
 #############################################################################
-SPy graphics functions are inteded to be run from IPython with the
+SPy graphics functions are intended to be run from IPython with the
 `pylab` mode set for wxWindows.  For example,
 
     # ipython --pylab=WX

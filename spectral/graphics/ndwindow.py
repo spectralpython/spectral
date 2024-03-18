@@ -183,10 +183,10 @@ octant_coeffs = np.array([
 
 def create_mirrored_octants(feature_indices):
     '''Takes a list of 6 integers and returns 8 lists of feature index
-    triplets. The 6 indices passed each specify a feature to be associatd with
+    triplets. The 6 indices passed each specify a feature to be associated with
     a semi-axis in the 3D display.  Each of the 8 returned triplets specifies
     the 3 features associated with  particular octant, starting with the
-    positive x,y,z octant, proceding counterclockwise around the z-axis then
+    positive x,y,z octant, proceeding counterclockwise around the z-axis then
     similarly for the negative half of the z-axis.
     '''
     f = feature_indices
@@ -259,11 +259,11 @@ class NDWindowProxy(WindowProxy):
 
             #. If `mode` is set to "independent", then `features` must be a
                length-8 list of length-3 lists of integers. In this case, each
-               length-3 list specfies the features to be displayed in a single
+               length-3 list specifies the features to be displayed in a single
                octants (the same semi-axis can be associated with different
                features in different octants).  Octants are ordered starting
-               with the postive x,y,z octant and procede counterclockwise
-               around the z-axis, then procede similarly around the negative
+               with the positive x,y,z octant and proceed counterclockwise
+               around the z-axis, then proceed similarly around the negative
                half of the z-axis.  An octant triplet can be specified as None
                instead of a list, in which case nothing will be rendered in
                that octant.
@@ -387,7 +387,7 @@ class NDWindow(wx.Frame):
             classes (numpy.ndarray):
                 An RxC array of integer class labels (zeros means unassigned).
             features (list):
-                Indices of feautures to display in the octant (see
+                Indices of features to display in the octant (see
                 NDWindow.set_octant_display_features for description).
         '''
         import OpenGL.GL as gl
@@ -454,11 +454,11 @@ class NDWindow(wx.Frame):
             (in that order).  Each octant will display data points using the
             features associated with the 3 semi-axes for that octant.
         A length-8 list of length-3 lists of integers:
-            In this case, each length-3 list specfies the features to be
+            In this case, each length-3 list specifies the features to be
             displayed in a single octants (the same semi-axis can be associated
             with different features in different octants).  Octants are ordered
-            starting with the postive x,y,z octant and procede counterclockwise
-            around the z-axis, then procede similarly around the negative half
+            starting with the positive x,y,z octant and proceed counterclockwise
+            around the z-axis, then proceed similarly around the negative half
             of the z-axis.  An octant triplet can be specified as None instead
             of a list, in which case nothing will be rendered in that octant.
         '''
@@ -673,7 +673,7 @@ class NDWindow(wx.Frame):
         color, then reassigning them. Since pixels can block others in the
         z-buffer, this method iteratively reassigns pixels by removing any
         reassigned pixels from the display list, then reassigning again,
-        repeating until there are no more pixels in the selction box.
+        repeating until there are no more pixels in the selection box.
         '''
         nreassigned_tot = 0
         i = 1

@@ -4,7 +4,7 @@ Continuum and continuum removal.
 Continuum is defined as convex hull of spectrum.
 Continuum is removed from spectra by dividing spectra by its continuum.
 That results in values between 0 and 1, where absorption bands are expressed as
-drops below 1. It is usefull for comparing and classification based on
+drops below 1. It is useful for comparing and classification based on
 absorption bands and indifferent to scale.
 
 References:
@@ -243,13 +243,13 @@ def continuum_points(spectrum, bands, mode='convex'):
             1d :class:`numpy.ndarray`, holding band values of spectra.
             Length of `bands` should be the same as `spectrum`.
             Note that bands should be sorted in ascending order (which is often
-            not the case with AVIRIS), otherwise unexpected results could occure.
+            not the case with AVIRIS), otherwise unexpected results could occur.
 
         `mode` (string, default 'convex'):
 
             Default mode is 'convex' which returns convex upper hull of the
             spectrum. Another supported mode is 'segmented' which builds
-            segmented upper hull. This is usefull to identify more detailed
+            segmented upper hull. This is useful to identify more detailed
             contour of the spectrum, but without strong absorption bands.
 
     Returns:
@@ -290,13 +290,13 @@ def spectral_continuum(spectra, bands, mode='convex', out=None):
             1d :class:`numpy.ndarray`, holding band values of spectra.
             Length of `bands` should be the same as last dimension of `spectra`.
             Note that bands should be sorted in ascending order (which is often
-            not the case with AVIRIS), otherwise unexpected results could occure.
+            not the case with AVIRIS), otherwise unexpected results could occur.
 
         `mode` (string, default 'convex'):
 
             Default mode is 'convex' which returns convex upper hull of the
             spectrum. Another supported mode is 'segmented' which builds
-            segmented upper hull. This is usefull to identify more detailed
+            segmented upper hull. This is useful to identify more detailed
             contour of the spectrum, but without strong absorption bands.
 
         `out` (:class:`numpy.ndarray`, default None):
@@ -317,7 +317,7 @@ def spectral_continuum(spectra, bands, mode='convex', out=None):
 def remove_continuum(spectra, bands, mode='convex', out=None):
     '''Returns spectra with continuum removed.
     Continuum is defined as convex hull of spectra. Continuum is removed from
-    spectra by deviding spectra by its continuum.
+    spectra by dividing spectra by its continuum.
 
     Arguments:
 
@@ -331,13 +331,13 @@ def remove_continuum(spectra, bands, mode='convex', out=None):
             1d :class:`numpy.ndarray`, holding band values of spectra.
             Length of `bands` should be the same as last dimension of `spectra`.
             Note that bands should be sorted in ascending order (which is often
-            not the case with AVIRIS), otherwise unexpected results could occure.
+            not the case with AVIRIS), otherwise unexpected results could occur.
 
         `mode` (string, default 'convex'):
 
             Default mode is 'convex' which removes convex upper hull of the
             spectrum. Another supported mode is 'segmented' which removes
-            segmented upper hull. This is usefull to identify two or more small
+            segmented upper hull. This is useful to identify two or more small
             features instead of one large feature.
 
         `out` (:class:`numpy.ndarray`, default None):

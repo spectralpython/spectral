@@ -204,7 +204,7 @@ class BsqFile(SpyFile, MemmapFile):
 
             `col_bounds` (2-tuple of ints):
 
-                (a, b) -> Columnss a through b-1 will be read.
+                (a, b) -> Columns a through b-1 will be read.
 
             `bands` (list of ints):
 

@@ -286,7 +286,7 @@ class PerceptronClassifier(Perceptron, SupervisedClassifier):
     '''A multi-layer perceptron classifier with backpropagation learning.
 
     Multi-layer perceptrons often require many (i.e., thousands) of iterations
-    through the traning data to converge on a solution. Therefore, it is not
+    through the training data to converge on a solution. Therefore, it is not
     recommended to attempt training a network on full-dimensional hyperspectral
     data or even on a full set of image pixels. It is likely preferable to
     first train the network on a subset of the data, then retrain the network

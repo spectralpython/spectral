@@ -217,7 +217,7 @@ def _has_frame_offset(params):
 
         `params` (dict):
 
-            Dictionary of header parameters assocaited with hdr file.
+            Dictionary of header parameters associated with hdr file.
 
     Returns:
 
@@ -727,7 +727,7 @@ def create_image(hdr_file, metadata=None, **kwargs):
 
         `interleave` (str):
 
-            Must be one of "bil", "bip", or "bsq". This keyword supercedes the
+            Must be one of "bil", "bip", or "bsq". This keyword supersedes the
             value of "interleave" in the metadata argument, if given. If no
             interleave is specified (via keyword or `metadata`), "bip" is
             assumed.
@@ -738,14 +738,14 @@ def create_image(hdr_file, metadata=None, **kwargs):
             This keyword should be either of the form (R, C, B) or (R, C),
             where R, C, and B specify the number or rows, columns, and bands,
             respectively. If B is omitted, the number of bands is assumed to
-            be one. If this keyword is given, its values supercede the values
+            be one. If this keyword is given, its values supersede the values
             of "bands", "lines", and "samples" if they are present in the
             `metadata` argument.
 
         `offset` (integer, default 0):
 
             The offset (in bytes) of image data from the beginning of the file.
-            This value supercedes the value of "header offset" in the metadata
+            This value supersedes the value of "header offset" in the metadata
             argument (if given).
 
     Returns:
@@ -791,7 +791,7 @@ def create_image(hdr_file, metadata=None, **kwargs):
         default_metadata.update(metadata)
         metadata = default_metadata
 
-    # Keyword args supercede metadata dict
+    # Keyword args supersede metadata dict
     if 'shape' in kwargs:
         shape = kwargs['shape']
         metadata['lines'] = shape[0]

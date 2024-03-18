@@ -39,7 +39,7 @@ class ENVIWriteTest(SpyTest):
             os.makedirs(testdir)
         
     def test_save_image_ndarray(self):
-        '''Test saving an ENVI formated image from a numpy.ndarray.'''
+        '''Test saving an ENVI formatted image from a numpy.ndarray.'''
         (R, B, C) = (10, 20, 30)
         (r, b, c) = (3, 8, 23)
         datum = 33
@@ -51,7 +51,7 @@ class ENVIWriteTest(SpyTest):
         assert_almost_equal(img[r, b, c], datum)
 
     def test_save_image_ndarray_no_ext(self):
-        '''Test saving an ENVI formated image with no image file extension.'''
+        '''Test saving an ENVI formatted image with no image file extension.'''
         data = np.arange(1000, dtype=np.int16).reshape(10, 10, 10)
         base = os.path.join(testdir, 'test_save_image_ndarray_noext')
         hdr_file = base + '.hdr'
@@ -60,7 +60,7 @@ class ENVIWriteTest(SpyTest):
         assert(np.all(data==rdata))
 
     def test_save_image_ndarray_alt_ext(self):
-        '''Test saving an ENVI formated image with alternate extension.'''
+        '''Test saving an ENVI formatted image with alternate extension.'''
         data = np.arange(1000, dtype=np.int16).reshape(10, 10, 10)
         base = os.path.join(testdir, 'test_save_image_ndarray_alt_ext')
         hdr_file = base + '.hdr'

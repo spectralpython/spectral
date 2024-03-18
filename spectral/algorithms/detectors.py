@@ -124,7 +124,7 @@ def matched_filter(X, target, background=None, window=None, cov=None):
 
             Must have the form (`inner`, `outer`), where the two values
             specify the widths (in pixels) of inner and outer windows centered
-            about the pixel being evaulated. Both values must be odd integers.
+            about the pixel being evaluated. Both values must be odd integers.
             The background mean and covariance will be estimated from pixels
             in the outer window, excluding pixels within the inner window. For
             example, if (`inner`, `outer`) = (5, 21), then the number of
@@ -318,7 +318,7 @@ def rx(X, background=None, window=None, cov=None):
 
             Must have the form (`inner`, `outer`), where the two values
             specify the widths (in pixels) of inner and outer windows centered
-            about the pixel being evaulated. Both values must be odd integers.
+            about the pixel being evaluated. Both values must be odd integers.
             The background mean and covariance will be estimated from pixels
             in the outer window, excluding pixels within the inner window. For
             example, if (`inner`, `outer`) = (5, 21), then the number of
@@ -403,7 +403,7 @@ class ACE():
             `vectorize` (bool, default True):
 
                 Specifies whether the __call__ method should attempt to vectorize
-                operations. This typicall results in faster computation but will
+                operations. This typically results in faster computation but will
                 consume more memory.
         '''
         for k in kwargs:
@@ -560,7 +560,7 @@ def ace(X, target, background=None, window=None, cov=None, **kwargs):
                 The return value will be an ndarray with shape (R, C).
     
                 A length-D sequence (e.g., list or tuple) of length-B ndarrays.
-                In this case, the detector will be applied seperately to each of
+                In this case, the detector will be applied separately to each of
                 the `D` targets. This is equivalent to calling the function
                 sequentially for each target and stacking the results but is
                 much faster. The return value will be an ndarray with shape
@@ -576,7 +576,7 @@ def ace(X, target, background=None, window=None, cov=None, **kwargs):
 
             Must have the form (`inner`, `outer`), where the two values
             specify the widths (in pixels) of inner and outer windows centered
-            about the pixel being evaulated. Both values must be odd integers.
+            about the pixel being evaluated. Both values must be odd integers.
             The background mean and covariance will be estimated from pixels
             in the outer window, excluding pixels within the inner window. For
             example, if (`inner`, `outer`) = (5, 21), then the number of
@@ -611,7 +611,7 @@ def ace(X, target, background=None, window=None, cov=None, **kwargs):
         `vectorize` (bool, default True):
 
             Specifies whether the function should attempt to vectorize
-            operations. This typicall results in faster computation but will
+            operations. This typically results in faster computation but will
             consume more memory.
 
     Returns numpy.ndarray:

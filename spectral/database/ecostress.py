@@ -41,7 +41,7 @@ def read_ecostress_file(filename):
             logger.error('Failed to parse line: {}: {}'.format(i, lines[i]))
             raise
 
-    # Read measurment metadata
+    # Read measurement metadata
     for j in itertools.count(i):
         if len(lines[j].strip()) == 0:
             break
@@ -198,7 +198,7 @@ class EcostressDatabase(AsterDatabase):
             environment = 'lab'
             m = sig.measurement
 
-            # Correct numerous mispellings of "reflectance" and "transmittance"
+            # Correct numerous misspellings of "reflectance" and "transmittance"
             yUnit = m['y units']
             if yUnit.find('reflectence') > -1:
                 yUnit = 'reflectance (percent)'

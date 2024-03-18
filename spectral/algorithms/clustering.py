@@ -72,7 +72,7 @@ def kmeans(image, nclusters=10, max_iterations=20, **kwargs):
 
         `class_map` (:class:`numpy.ndarray`):
 
-            An `MxN` array whos values are the indices of the cluster for the
+            An `MxN` array who's values are the indices of the cluster for the
             corresponding element of `image`.
 
         `centers` (:class:`numpy.ndarray`):
@@ -250,7 +250,7 @@ def kmeans_ndarray(image, nclusters=10, max_iterations=20, **kwargs):
 
         `class_map` (:class:`numpy.ndarray`):
 
-            An `MxN` array whos values are the indices of the cluster for the
+            An `MxN` array who's values are the indices of the cluster for the
             corresponding element of `image`.
 
         `centers` (:class:`numpy.ndarray`):

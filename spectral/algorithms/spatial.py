@@ -189,7 +189,7 @@ def map_window(func, image, window, rslice=(None,), cslice=(None,),
         `border` (string, default "shift"):
 
             Indicates how to handles windows near the edge of the window. If
-            the value is "shift", the window dimensions will alway be
+            the value is "shift", the window dimensions will always be
             `(width, height)` but near the image border the pixel being
             iterated will be offset from the center of the window. If set to
             "clip", window regions falling outside the image border will be
@@ -326,7 +326,7 @@ def map_outer_window_stats(func, image, inner, outer, dim_out=1, cov=None,
     return mapper(image, rslice, cslice)
 
 class WindowedGaussianBackgroundMapper(object):
-    '''A class for procucing window statistics with an inner exclusion window.
+    '''A class for producing window statistics with an inner exclusion window.
     '''
     def __init__(self, inner, outer, function=None, cov=None, dim_out=None,
                  dtype=None):
@@ -336,11 +336,11 @@ class WindowedGaussianBackgroundMapper(object):
 
             `inner` (integer or 2-tuple of integers):
 
-                Width and heigth of inner window, in pixels.
+                Width and height of inner window, in pixels.
 
             `outer` (integer or 2-tuple of integers):
 
-                Width and heigth of outer window, in pixels. Dimensions must
+                Width and height of outer window, in pixels. Dimensions must
                 be greater than inner window
 
             `function` (callable object):

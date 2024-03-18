@@ -57,7 +57,7 @@ def read_aster_file(filename):
     # Number of lines per metadata attribute value
     lpv = [1] * 8 + [2] + [6]
 
-    # A few files have an additional "Colleted by" sample metadata field, which
+    # A few files have an additional "Collected by" sample metadata field, which
     # sometimes affects the number of header lines
 
     haveCollectedBy = False
@@ -285,7 +285,7 @@ class AsterDatabase(SpectralDatabase):
             environment = 'lab'
             m = sig.measurement
 
-            # Correct numerous mispellings of "reflectance" and "transmittance"
+            # Correct numerous misspellings of "reflectance" and "transmittance"
             yUnit = m['y units']
             if yUnit.find('reflectence') > -1:
                 yUnit = 'reflectance (percent)'
@@ -334,7 +334,7 @@ class AsterDatabase(SpectralDatabase):
                 Spectrum data values for each band.
 
         Returns a pair of vectors containing the wavelengths and measured
-        values values of a measurment.  For additional metadata, call
+        values values of a measurement.  For additional metadata, call
         "get_signature" instead.
         '''
         import array

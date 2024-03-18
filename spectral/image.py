@@ -125,11 +125,11 @@ class ImageArray(np.ndarray, Image):
         return np.asarray(self[:, :, band].squeeze())
 
     def read_bands(self, bands):
-        '''For SpyFile compatibility. Equivlalent to arr.take(bands, 2)'''
+        '''For SpyFile compatibility. Equivalent to arr.take(bands, 2)'''
         return np.asarray(self.take(bands, 2))
 
     def read_pixel(self, row, col):
-        '''For SpyFile compatibility. Equivlalent to arr[row, col]'''
+        '''For SpyFile compatibility. Equivalent to arr[row, col]'''
         return np.asarray(self[row, col])
 
     def read_subregion(self, row_bounds, col_bounds, bands=None):
@@ -160,7 +160,7 @@ class ImageArray(np.ndarray, Image):
             return np.asarray(self[rows][:, cols])
 
     def read_datum(self, i, j, k):
-        '''For SpyFile compatibility. Equivlalent to arr[i, j, k]'''
+        '''For SpyFile compatibility. Equivalent to arr[i, j, k]'''
         return self[i, j, k]
 
     def load(self):

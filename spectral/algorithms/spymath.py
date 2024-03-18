@@ -68,7 +68,7 @@ def get_histogram_cdf_points(data, cdf_vals, ignore=None, mask=None):
         `ignore` (numeric, default `None`):
 
             A scalar value that should be ignored when computing histogram
-            points (e.g., a value that indicates bad data). If this valus is
+            points (e.g., a value that indicates bad data). If this value is
             not specified, all data are used.
 
     Return value:

@@ -643,7 +643,7 @@ class ImageView(object):
             `colors`: (array or 3-tuples):
 
                 Color triplets (with values in the range [0, 255]) that
-                define the colors to be associatd with the integer indices
+                define the colors to be associated with the integer indices
                 in `classes`.
 
         Keyword Arguments:

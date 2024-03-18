@@ -1,7 +1,7 @@
 '''
 wxWindows code which executes in a separate thread from the main thread
 
-This module handles disply of images and related events.
+This module handles display of images and related events.
 '''
 
 from __future__ import absolute_import, division, print_function, unicode_literals

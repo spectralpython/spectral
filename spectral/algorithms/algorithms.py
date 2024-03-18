@@ -146,7 +146,7 @@ def iterator_ij(mask, index=None):
 
     If `index` is not defined, iteration is performed over all non-zero
     elements.  If `index` is defined, iteration is performed over all
-    coordinates for whch `mask[i,j] == index`.
+    coordinates for which `mask[i,j] == index`.
     '''
 
     if mask.ndim != 2:
@@ -270,7 +270,7 @@ def cov_avg(image, mask, weighted=True):
         `mask` (integer-valued ndarray):
 
             Elements specify the classes associated with pixels in `image`.
-            All pixels associeted with non-zero elements of `mask` will be
+            All pixels associated with non-zero elements of `mask` will be
             used in the covariance calculation.
 
         `weighted` (bool, default True):
@@ -1174,7 +1174,7 @@ def ndvi(data, red, nir):
 
 def bdist(class1, class2):
     '''
-    Calulates the Bhattacharyya distance between two classes.
+    Calculates the Bhattacharyya distance between two classes.
 
     USAGE:  bd = bdist(class1, class2)
 
@@ -1200,7 +1200,7 @@ bDistance = bdist
 
 def bdist_terms(a, b):
     '''
-    Calulate the linear and quadratic terms of the Bhattacharyya distance
+    Calculate the linear and quadratic terms of the Bhattacharyya distance
     between two classes.
 
     USAGE:  (linTerm, quadTerm) = bDistanceTerms(a, b)
@@ -1435,7 +1435,7 @@ def noise_from_diffs(X, direction='lowerright'):
 
         `X` (np.ndarray):
 
-            The data from which to estimage noise statistics. `X` should have
+            The data from which to estimate noise statistics. `X` should have
             shape `(nrows, ncols, nbands`).
 
         `direction` (str, default "lowerright"):
@@ -1491,7 +1491,7 @@ class MNFResult(object):
 
             `napc` (:class:`~spectral.PrincipalComponents`):
 
-                Noise-Adjusted Pricipal Components
+                Noise-Adjusted Principal Components
         '''
         self.signal = signal
         self.noise = noise
@@ -1588,7 +1588,7 @@ class MNFResult(object):
 
                 Threshold signal-to-noise ratio (SNR) to retain.
 
-        Returns a verions of `X` with reduced dimensionality.
+        Returns a versions of `X` with reduced dimensionality.
 
         Note that calling this method is equivalent to calling the
         `get_reduction_transform` method with same keyword and applying the
@@ -1719,13 +1719,13 @@ def ppi(X, niters, threshold=0, centered=False, start=None, display=0,
 
             An optional array of initial purity indices. This can be used to
             continue computing PPI values after a previous call to `ppi` (i.e.,
-            set `start` equal to the return value from a previou call to `ppi`.
+            set `start` equal to the return value from a previous call to `ppi`.
             This should be an integer-valued array whose dimensions are equal
             to the first two dimensions of `X`.
 
         `display` (integer):
 
-            If set to a postive integer, a :class:`~spectral.graphics.spypylab.ImageView`
+            If set to a positive integer, a :class:`~spectral.graphics.spypylab.ImageView`
             window will be opened and dynamically display PPI values as the
             function iterates. The value specifies the number of PPI iterations
             between display updates. It is recommended to use a value around
@@ -1745,7 +1745,7 @@ def ppi(X, niters, threshold=0, centered=False, start=None, display=0,
         These keywords will be passed to the image display and only have an
         effect if the `display` argument is nonzero.
 
-    This function can be interruped with a KeyboardInterrupt (ctrl-C), in which
+    This function can be interrupted with a KeyboardInterrupt (ctrl-C), in which
     case, the most recent value of the PPI array will be returned. This can be
     used in conjunction with the `display` argument to view the progression of
     the PPI values until they appear stable, then terminate iteration using
@@ -1914,7 +1914,7 @@ def smacc(spectra, min_endmembers=None, max_residual_norm=float('Inf')):
         for k in range(len(Fs)):
             t = On * Fs[k][q[n]]
             # This is not so important for the algorithm itself.
-            # These values correpond to values where On == 0.0, and these
+            # These values correspond to values where On == 0.0, and these
             # will be zeroed out below. But to avoid divide-by-zero warning
             # we set small values instead of zero.
             t[t == 0.0] = 1e-10
