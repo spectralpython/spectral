@@ -98,7 +98,7 @@ class FileNotFoundError(SpyException):
 
 
 class InvalidFileError(SpyException):
-    '''Raised when file contents are invalid for the exepected file type.'''
+    '''Raised when file contents are invalid for the expected file type.'''
     pass
 
 
@@ -520,7 +520,7 @@ class SubImage(SpyFile):
 
             `col_bounds` (2-tuple of ints):
 
-                (a, b) -> Columnss a through b-1 will be read.
+                (a, b) -> Columns a through b-1 will be read.
 
             `bands` (list of ints):
 
@@ -548,7 +548,7 @@ def tile_image(im, nrows, ncols):
 
     ARGUMENTS:
         im              The SpyFile to tile.
-        nrows           Number of tiles in the veritical direction.
+        nrows           Number of tiles in the vertical direction.
         ncols           Number of tiles in the horizontal direction.
 
     RETURN VALUE:

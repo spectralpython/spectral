@@ -47,7 +47,7 @@ class PerceptronLayer:
     def randomize_weights(self):
         '''Randomizes the layer weight matrix.
         The bias weight will be in the range [0, 1). The remaining weights will
-        correspond to a vector with unit length and uniform random orienation.
+        correspond to a vector with unit length and uniform random orientation.
         '''
         self.weights = 1. - 2. * np.random.rand(*self.shape)
         for row in self.weights:
