@@ -126,7 +126,7 @@ Release date: 2019.10.06
 New Features
 ------------
 
-* Support for ECOSTRESS spectral library (supercedes ASTER library).
+* Support for ECOSTRESS spectral library (supersedes ASTER library).
 
 * Accept "mask" and "bg" keywords in `imshow` and `get_rgb` (affects color
   scaling).
@@ -189,7 +189,7 @@ Bug Fixes
 * Fixed a bug that potentially produced incorrect results in `map_class_ids`
   (issue #53).
 
-* Removed unecessary import that cause python3 compatibility error in
+* Removed unnecessary import that cause python3 compatibility error in
   `aviris.open` (issue #54).
 
 * Removed `has_key` call breaking python3 compatibility (issue #56).
@@ -439,7 +439,7 @@ Performance Improvements
 ------------------------
 
 * PerceptronClassifier is roughly an order of magnitude faster due to better
-  use of numpy. Inputs are now scaled and weights are initialized withing the
+  use of numpy. Inputs are now scaled and weights are initialized within the
   data limits, which usually results in fewer iterations for convergence.
 
 ================================================================================
@@ -490,7 +490,7 @@ New Features
 Performance Improvements
 ------------------------
 
-* Significant speedup for sevaral algorithms using ndarray inputs:
+* Significant speedup for several algorithms using ndarray inputs:
 
   * 14x speedup for GMCL
 
@@ -528,7 +528,7 @@ Changes
 Bug Fixes
 ---------
 
-* Exception occured when *bands* argument was not provided to `imshow`.
+* Exception occurred when *bands* argument was not provided to `imshow`.
 
 * *stretch_all* parameter for `get_rgb` was sometimes being used when set to
   False or 0 (because it was not None).
@@ -572,7 +572,7 @@ Changes
 * If present, image band info is saved when `envi.save_image` is called.
 
 * Allow calling :func:`~spectral.oi.envi.create_image` using keyword args
-  instead of ENVI-specific header paramter names.
+  instead of ENVI-specific header parameter names.
 
 * `save_rgb` automatically determines the output file type, based on the
   filename extension.
@@ -748,7 +748,7 @@ Release date: 2012.07.15
 
 - Bug Fixes
 
-  - Fixed a bug in several deprecation warnings that caused infinte recursion.
+  - Fixed a bug in several deprecation warnings that caused infinite recursion.
 
   - Fixed mismatch in parameter names in kmeans_ndarray.
 
@@ -796,7 +796,7 @@ Release date: 2011.01.17
   - :meth:`spectral.kmeans` will accept a :exc:`KeyboardInterrupt` exception
     (i.e., CTRL-C) and return the results as of the previous iteration.
 
-  - Documention is now online via Sphinx.
+  - Documentation is now online via Sphinx.
 
 - Changes
 

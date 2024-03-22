@@ -39,7 +39,7 @@ class LinearTransform:
 
                 An (J,K) array to be applied to length-K targets.
 
-        Keyword Argments:
+        Keyword Arguments:
 
             `pre` (scalar or length-K sequence):
 
@@ -58,7 +58,7 @@ class LinearTransform:
         self._post = kwargs.get('post', None)
         A = np.array(A, copy=True)
         if A.ndim == 0:
-            # Do not know input/ouput dimensions
+            # Do not know input/output dimensions
             self._A = A
             (self.dim_out, self.dim_in) = (None, None)
         else:
