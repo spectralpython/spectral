@@ -42,7 +42,7 @@ def read_pair(fin, num_lines=1):
 
 
 class Signature:
-    '''Object to store sample/measurement metadata, as well as wavelength-signatrure vectors.'''
+    '''Object to store sample/measurement metadata, as well as wavelength-signature vectors.'''
     def __init__(self):
         self.sample = {}
         self.measurement = {}
@@ -204,7 +204,7 @@ class relabDatabase(SpectralDatabase):
 
     @classmethod
     def create(cls, filename, relab_data_dir=None):
-        '''Creates an relab relational database by parsing ASTER data files.
+        '''Creates an relab relational database by parsing RELAB data files.
 
         Arguments:
 
@@ -223,7 +223,7 @@ class relabDatabase(SpectralDatabase):
 
         Example::
 
-            >>> relabDatabase.create("relab_lib.db", "/STORAGE/RELab/data")
+            >>> relabDatabase.create("relab_lib.db", "/STORAGE/ReLab/data")
 
         This is a class method (it does not require instantiating an
         relabDatabase object) that creates a new database by parsing all of the
