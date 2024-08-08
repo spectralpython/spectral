@@ -166,7 +166,7 @@ def read_relab_file(filename):
     return s
 
 
-class relabDatabase(SpectralDatabase):
+class RelabDatabase(SpectralDatabase):
     '''A relational database to manage relab spectral library data.'''
     schemas = table_schemas
 
@@ -219,21 +219,21 @@ class relabDatabase(SpectralDatabase):
 
         Returns:
 
-            An :class:`~spectral.database.relabDatabase` object.
+            An :class:`~spectral.database.RelabDatabase` object.
 
         Example::
 
-            >>> relabDatabase.create("relab_lib.db", "/STORAGE/ReLab/data")
+            >>> RelabDatabase.create("relab_lib.db", "/STORAGE/ReLab/data")
 
         This is a class method (it does not require instantiating an
-        relabDatabase object) that creates a new database by parsing all of the
+        RelabDatabase object) that creates a new database by parsing all of the
         files in the relab library data directory.  Normally, this should only
         need to be called once.  Subsequently, a corresponding database object
-        can be created by instantiating a new relabDatabase object with the
+        can be created by instantiating a new RelabDatabase object with the
         path the database file as its argument.  For example::
 
-            >>> from spectral.database.relab import relabDatabase
-            >>> db = relabDatabase("relab_lib.db")
+            >>> from spectral.database.relab import RelabDatabase
+            >>> db = RelabDatabase("relab_lib.db")
         '''
         import os
         if os.path.isfile(filename):
@@ -258,7 +258,7 @@ class relabDatabase(SpectralDatabase):
 
         Returns:
 
-            An :class:`~spectral.relabDatabase` connected to the database.
+            An :class:`~spectral.RelabDatabase` connected to the database.
         '''
         from spectral.io.spyfile import find_file_path
         if sqlite_filename:

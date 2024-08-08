@@ -88,7 +88,7 @@ class RELABDatabaseCreationTest(SpyTest):
 
     def test_create_database(self):
         '''Test creating new database from RELAB data files.'''
-        db = spy.relabDatabase.create(RELAB_DB, RELAB_DATA_DIR)
+        db = spy.RelabDatabase.create(RELAB_DB, RELAB_DATA_DIR)
         assert(list(db.query('SELECT COUNT() FROM Spectra'))[0][0] == 1)
 
 class RELABDatabaseTest(SpyTest):
@@ -98,7 +98,7 @@ class RELABDatabaseTest(SpyTest):
         pass
 
     def setup(self):
-        self.db = spy.relabDatabase(RELAB_DB)
+        self.db = spy.RelabDatabase(RELAB_DB)
 
     def test_read_signatures(self):
         '''Can get spectra from the opened database.'''
