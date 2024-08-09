@@ -22,6 +22,9 @@ from spectral.tests.spytest import SpyTest
 ECOSTRESS_DATA_DIR = os.path.join(os.path.split(__file__)[0],
                                   'data/ecostress')
 ECOSTRESS_DB = os.path.join(testdir, 'ecostress.db')
+RELAB_DATA_DIR = os.path.join(os.path.split(__file__)[0],
+                                  'data/relab/data/')
+RELAB_DB = os.path.join(testdir, 'relab.db')
 USGS_DATA_DIR = os.path.join(os.path.split(__file__)[0],
                              'data/usgs/ASCIIdata')
 USGS_DB = os.path.join(testdir, 'usgs.db')
@@ -70,6 +73,35 @@ class ECOSTRESSDatabaseTest(SpyTest):
         slib = self.db.create_envi_spectral_library(ids, bands)
         assert (slib.spectra.shape == (3, 220))
 
+class RELABDatabaseCreationTest(SpyTest):
+    '''Tests RELAB database creation from text files.'''
+
+    def __init__(self):
+        pass
+
+    def setup(self):
+        if not os.path.isdir(testdir):
+            os.makedirs(testdir)
+        if os.path.exists(RELAB_DB):
+            os.remove(RELAB_DB)
+
+    def test_create_database(self):
+        '''Test creating new database from RELAB data files.'''
+        db = spy.RelabDatabase.create(RELAB_DB, RELAB_DATA_DIR)
+        assert(list(db.query('SELECT COUNT() FROM Spectra'))[0][0] == 1)
+
+class RELABDatabaseTest(SpyTest):
+    '''Tests that RELAB database works properly'''
+
+    def __init__(self):
+        pass
+
+    def setup(self):
+        self.db = spy.RelabDatabase(RELAB_DB)
+
+    def test_read_signatures(self):
+        '''Can get spectra from the opened database.'''
+        assert(list(self.db.query('SELECT COUNT() FROM Spectra'))[0][0] == 1)
 
 class USGSDatabaseCreationTest(SpyTest):
     '''Tests USGS database creation from text files.'''
@@ -163,7 +195,9 @@ def run():
     print('\n' + '-' * 72)
     print('Running database tests.')
     print('-' * 72)
-    for T in [ECOSTRESSDatabaseCreationTest, ECOSTRESSDatabaseTest, USGSDatabaseCreationTest, USGSDatabaseTest]:
+    for T in [ECOSTRESSDatabaseCreationTest, ECOSTRESSDatabaseTest, \
+            RELABDatabaseCreationTest, RELABDatabaseTest, \
+            USGSDatabaseCreationTest, USGSDatabaseTest]:
         T().run()
 
 
