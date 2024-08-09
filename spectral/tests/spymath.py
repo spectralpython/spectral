@@ -73,7 +73,7 @@ class PCATest(SpyTest):
 
     def test_evals_sorted(self):
         '''Eigenvalues should be sorted in descending order.'''
-        assert (np.alltrue(np.diff(self.pc.eigenvalues) <= 0))
+        assert (np.all(np.diff(self.pc.eigenvalues) <= 0))
 
     def test_evecs_orthonormal(self):
         '''Eigenvectors should be orthonormal.'''

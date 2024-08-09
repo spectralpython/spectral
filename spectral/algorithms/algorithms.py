@@ -567,7 +567,7 @@ def principal_components(image):
     (L, V) = np.linalg.eig(stats.cov)
 
     # numpy says eigenvalues may not be sorted so we'll sort them, if needed.
-    if not np.alltrue(np.diff(L) <= 0):
+    if not np.all(np.diff(L) <= 0):
         ii = list(reversed(np.argsort(L)))
         L = L[ii]
         V = V[:, ii]
@@ -1683,7 +1683,7 @@ def mnf(signal, noise):
     C = noise.sqrt_inv_cov.dot(signal.cov).dot(noise.sqrt_inv_cov)
     (L, V) = np.linalg.eig(C)
     # numpy says eigenvalues may not be sorted so we'll sort them, if needed.
-    if not np.alltrue(np.diff(L) <= 0):
+    if not np.all(np.diff(L) <= 0):
         ii = list(reversed(np.argsort(L)))
         L = L[ii]
         V = V[:, ii]

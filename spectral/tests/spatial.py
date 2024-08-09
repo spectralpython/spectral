@@ -158,7 +158,7 @@ class MapClassesTest(SpyTest):
         gt2 = gt + 1
         d = map_class_ids(gt2, gt)
         result = map_classes(gt2, d)
-        assert (np.alltrue(result == gt))
+        assert (np.all(result == gt))
 
     def test_map_fails_allow_unmapped_false(self):
         '''map_classes should raise ValueError if image has unmapped value.'''
@@ -180,7 +180,7 @@ class MapClassesTest(SpyTest):
         d = map_class_ids(gt2, gt)
         d.pop(1)
         result = map_classes(gt2, d, allow_unmapped=True)
-        assert (np.alltrue(result[gt2 == 1] == 1))
+        assert (np.all(result[gt2 == 1] == 1))
 
 
 def run():
