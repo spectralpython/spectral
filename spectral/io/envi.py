@@ -41,7 +41,7 @@ logger = logging.getLogger('spectral')
 
 # Known ENVI data file extensions. Upper and lower case versions will be
 # recognized, as well as interleaves ('bil', 'bip', 'bsq'), and no extension.
-KNOWN_EXTS = ['img', 'dat', 'sli', 'hyspex', 'raw']
+KNOWN_EXTS = ['img', 'dat', 'sli', 'hyspex', 'raw', 'bin']
 
 dtype_map = [('1', np.uint8),                   # unsigned byte
              ('2', np.int16),                   # 16-bit int
