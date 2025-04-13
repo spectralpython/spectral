@@ -40,7 +40,7 @@ jobs:
       run: |
         SPECTRAL_DATA=~/spectral_data python -m spectral.tests.run
 
-  build:
+  build-old:
 
     runs-on: ubuntu-20.04
     strategy:
