@@ -1,4 +1,27 @@
 ================================================================================
+SPy 0.24
+================================================================================
+Release date: 25.04.13
+
+New Features
+------------
+
+* [#158] Support for RELAB spectral library
+
+Bug Fixes
+---------
+
+* [#146] Incorrect instrument name being extracted from spectrum filename
+* [#154] ROI selection updated to fix deprecated matplotlib RectangleSelector
+* [#162] `read_subregion` was potentially returning incorrect results
+* Deprecated np.alltrue replaced with np.all
+
+Changes
+-------
+* codespell run to fix typos
+
+
+================================================================================
 SPy 0.23.1
 ================================================================================
 Release date: 2022.10.02
