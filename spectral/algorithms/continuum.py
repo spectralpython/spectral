@@ -352,3 +352,44 @@ def remove_continuum(spectra, bands, mode='convex', out=None):
         raise ValueError('Expected out to have dtype float64. '
                          'Results of continuum removal are floating point numbers.')
     return _process_continuum(spectra, bands, True, mode == 'segmented', out)
+
+
+
+class SQM:
+   """
+Application of the SQM method for determining wavelenghth position of the minima of the spectral absorbtion feature. Transcribed from:
+   Rodger, Andrew & Laukamp, Carsten & Haest, Maarten & Cudahy, Thomas. (2012). 
+   A simple quadratic method of absorption feature wavelength estimation in continuum removed spectra. 
+   Remote Sensing of Environment. 118. 273–283. 10.1016/j.rse.2011.11.025. 
+input data must be continuum removed and recommend that bands are sliced to wavelengths of interest
+"""
+    def __init__(self, wavelengths, depths):
+        self.wavelengths = wavelengths
+        self.depths = depths
+       
+
+def get_SQM(data, bands):
+   '''Data must be a continuum removed ndarray M x N x B, with B clipped to a single absorbtion feature of interest. 
+   Bands must be a 1D numpy array of shape B containing the band centers.
+   Function returns an SQM object where the self.wavelengths attribute is the true wavelength position of the absorbtion feature
+   as opposed to the wavelength band centre. Wavelength depth is calculated as a by product, but is stored in the SQM object'''
+        m, n = data.shape[:2]
+        tru_arr = np.zeros((m,n))
+        dep_arr = np.zeros((m,n))
+        for i in range(m):
+            for j in range(n):
+                b = np.argmin(data[i, j])                
+                D0 = data[i, j, b]
+                D1 = data[i, j, (b+1)]
+                Dx1 = data[i, j, (b-1)]
+                W0 = bands[b]
+                W1 = bands[b+1]
+                Wx1 = bands[b-1]
+                An = ((D0 - Dx1)  * (Wx1- W1)) + ((D1 - Dx1) * (W0 - Wx1))
+                Ad = ((Wx1 - W1) * ((W0**2) - (Wx1**2))) + ((W0 - Wx1) * ((W1**2) - (Wx1**2)))
+                A = An / Ad
+                B = ((D0-Dx1) - (A *(W0**2 - Wx1**2))) / (W0 - Wx1)
+                tru_arr[i, j] = (-1 * B) / (2 * A)
+                C = Dx1 - (A * (Wx1**2)) - B
+                dep_arr[i, j] = 1 - ((A * tru_arr[i, j]**2) + (B * (tru_arr[i, j])) + C)        
+        return SQM(tru_arr, dep_arr)
