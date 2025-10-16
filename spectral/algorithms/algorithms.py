@@ -745,9 +745,9 @@ class GaussianStats(object):
 
     @property
     def inv_cov(self):
-        '''Property method returning the inverse of the covariance matrix.'''
+        '''Property method returning the pseudo-inverse of the covariance matrix.'''
         if self._inv_cov is None:
-            self._inv_cov = np.linalg.inv(self._cov)
+            self._inv_cov = np.linalg.pinv(self._cov)
         return self._inv_cov
 
     def reset_derived_stats(self):
