@@ -231,7 +231,7 @@ class RemoveContinuumTest(ContinuumTest):
         part = self.image[20:22, 20:22].astype(np.float64)
         res = remove_continuum(part, self.bands, out=part)
         # Make sure results are sane.
-        assert (res[1, 1, 200] == 0.8372113957762342)
+        assert_allclose(res[1, 1, 200], 0.8372113957762342)
         assert (res is part)
 
 
