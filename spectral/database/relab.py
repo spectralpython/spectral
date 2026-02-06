@@ -137,31 +137,32 @@ def read_relab_file(filename):
     while (lines[count].strip() == ""):
         count = count + 1
 
-    if(lines[count].strip() != ""):
-        ml = lines[count].strip()
-        # Extract seprately date and time
-        if 'Date' in ml:
-            date = ml.split('Time:')[0]
-            time = ml.split('Time:')[-1]
-            s.sample["date"] = date.replace('Date:',"").replace("  "," ").strip()
-            s.sample["time"] = time
-        # Extract Source and Detection Angles & Voltage
-        elif 'Volt' in ml:
-            volt = ml.split('Volt:')[-1]
-            dang = ml.split('Volt:')[-2]
-            dang1 = dang.split('Detect Ang:')[-1]
-            sang = dang.split('Detect Ang:')[-2]
-            s.measurement['source_angle'] = sang.replace("Source Ang:","").strip()
-            s.measurement['detect_angle'] = dang1.strip()
-            s.measurement['volt'] = volt
-        # All other cases
-        else:
-            description += ml + " " 
-            s.sample['description'] = description + " " + s.measurement['name']
-    else:
-        while (lines[count].strip() == ""):
-            count = count + 1
-        ml = lines[count].strip()
+    # Go until the last line
+    while count < len(lines) :
+        if lines[count].strip() != "":
+            ml = lines[count].strip()
+            # Extract seprately date and time
+            if 'Date' in ml:
+                date = ml.split('Time:')[0]
+                time = ml.split('Time:')[-1]
+                s.sample["date"] = date.replace('Date:',"").replace("  "," ").strip()
+                s.sample["time"] = time
+            # Extract Source and Detection Angles & Voltage
+            elif 'Volt' in ml:
+                volt = ml.split('Volt:')[-1]
+                dang = ml.split('Volt:')[-2]
+                dang1 = dang.split('Detect Ang:')[-1]
+                sang = dang.split('Detect Ang:')[-2]
+                s.measurement['source_angle'] = sang.replace("Source Ang:","").strip()
+                s.measurement['detect_angle'] = dang1.strip()
+                s.measurement['volt'] = volt
+            # All other cases as description
+            else:
+                description += ml + " "
+
+        count = count + 1
+
+    s.sample['description'] = description + " " + s.measurement['name']
 
     return s
 
