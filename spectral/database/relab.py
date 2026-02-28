@@ -49,120 +49,101 @@ class Signature:
 
 
 def read_relab_file(filename):
-    '''Reads a relab spectrum file.'''
+    '''Reads a relab spectrum file.
+    .asc files are structured as:
+      Number of data lines
+      Data lines (Wavelength in nm, Reflectance, and SD if any)
+      Three blank lines
+      File name
+      A blank line
+      Sample ID
+      Comment lines
+
+    Note: Not considering any Standard Deviation (SD) data.
+    '''
     with open_file(filename) as fin:
         lines = [line.rstrip('\n') for line in fin]
 
-    s = Signature()
+    number_of_data = int(lines[0])
 
-    # Read signature spectrum
-    pairs = []
-    # Start line counter
-    count = 0
-    # Extract ReLab ID and store it
-    relab_id = int(lines[0])
-    s.sample["relab_id"] = relab_id
-    s.measurement["relab_id"] = relab_id
-    count = count + 1
-    # Extract central wavelengths and reflectances
-    for c in range(count, len(lines)):
-        if (lines[c] != ""):
-            out = lines[c].strip().split("  ")
-            # Remove empty slots
-            out1 = list(filter(None, out))
-            #print(out1[0].strip(), out1[1].strip())
-            pair = [float(out1[0].strip()), float(out1[1].strip())]
-            pairs.append(pair)
-        else:
-            break
-
-    # Update line count
-    count = count + c
-    
-    [x, y] = [list(v) for v in zip(*pairs)]
+    x = []
+    y = []
+    for i in range(1, 1+number_of_data):
+        current_line = lines[i]
+        parse1 = current_line.strip().split()
+        x_val = float(parse1[0])
+        y_val = float(parse1[1])
+        x.append(x_val)
+        y.append(y_val)
 
     # Make sure wavelengths are ascending
     if float(x[0]) > float(x[-1]):
         x.reverse()
         y.reverse()
-    s.x = [float(val) for val in x]
-    s.y = [float(val) for val in y]
+
+    s = Signature()
+
+    s.x = x
+    s.y = y
     s.measurement['first x value'] = x[0]
     s.measurement['last x value'] = x[-1]
-    s.measurement['number of x values'] = len(x)
+    s.measurement['number of x values'] = number_of_data
 
-    # Extract Metadata
-    # Read sample metadata
-        #pair = read_pair(fin, lpv[i])
-        #s.sample[pair[0].lower()] = pair[1]
+    if number_of_data >= len(lines):
+        s.sample['relab_id'] = ''
+        s.sample['name'] = ''
+        s.measurement['relab_id'] = ''
+        s.sample['description'] = ''
+        return s
 
-    # Read measurement metadata
-        #pair = read_pair(fin, lpv[i])
-        #s.measurement[pair[0].lower()] = pair[1]
+    # Extract ReLab ID and store it
+    relab_id = lines[number_of_data+6].strip()  # a string
+    s.sample["relab_id"] = relab_id
+    s.measurement["relab_id"] = relab_id
 
-    m = []
-    description = ""
-    stage = None
-    
-    while (lines[count].strip() == ""):
-        count = count + 1
+    # ideally can be taken from argument to this function as well
+    # converting to lower because actual names are in lowercase but stored as
+    # uppercase in files
+    filename_from_content = lines[number_of_data+4
+                                  ].strip().replace(' ', '').lower()
 
-    # Filename extraction
-    if(stage == None and lines[count].strip() != ""):
-        # Remove heading and trailing spaces
-        ml = lines[count].strip()
-        if '.ASC' in ml:
-            fname = ml.replace(' ','')
-            m.append(fname)
-            s.sample["name"] = str(fname)
-            #print("File NAME %s" % (fname))
-            stage = "ASC"
-    
-    count = count + 1
-    ml = lines[count].strip()
+    s.sample['name'] = filename_from_content
 
-    while (lines[count].strip() == ""):
-        count = count + 1
+    # The parsing of comment lines
+    comment_lines = lines[number_of_data+7:]
 
-    # Extract Material Name after Filename extraction
-    if(stage == "ASC" and lines[count].strip() != ""):
-        ml = lines[count].strip()
-        #print("Material NAME %s" % (ml))
-        s.measurement['name'] = str(ml)
-        stage = "name"
-    
-    count = count + 1
-    ml = lines[count].strip()
+    if len(comment_lines) >= 2:  # what if there are no commont lines
+        last_line = comment_lines[-1]
+        last_but_one_line = comment_lines[-2]
+    else:
+        last_line = ''
+        last_but_one_line = ''
 
-    while (lines[count].strip() == ""):
-        count = count + 1
+    if last_line.strip() and last_but_one_line.strip():  # both non black lines
+        if last_line.strip().split()[0] == 'Date:' and  \
+                last_but_one_line.strip().split()[0] == 'Source':
+            # all these modifications are to get rid of edge cases
+            modified_line = last_but_one_line.strip().replace(':', ' ')
+            modified_line = modified_line.replace(',', ' ')
+            split = modified_line.split()
+            if len(split) == 8:
+                s.measurement['source_angle'] = float(split[2])
+                s.measurement['detect_angle'] = float(split[5])
+                s.measurement['volt'] = float(split[7])
+            modified_line = last_line.strip().replace(',', ' ')
+            split = modified_line.split()
+            if len(split) == 4:
+                s.sample['date'] = split[1]
+                s.sample['time'] = split[3]
 
-    # Go until the last line
-    while count < len(lines) :
-        if lines[count].strip() != "":
-            ml = lines[count].strip()
-            # Extract seprately date and time
-            if 'Date' in ml:
-                date = ml.split('Time:')[0]
-                time = ml.split('Time:')[-1]
-                s.sample["date"] = date.replace('Date:',"").replace("  "," ").strip()
-                s.sample["time"] = time
-            # Extract Source and Detection Angles & Voltage
-            elif 'Volt' in ml:
-                volt = ml.split('Volt:')[-1]
-                dang = ml.split('Volt:')[-2]
-                dang1 = dang.split('Detect Ang:')[-1]
-                sang = dang.split('Detect Ang:')[-2]
-                s.measurement['source_angle'] = sang.replace("Source Ang:","").strip()
-                s.measurement['detect_angle'] = dang1.strip()
-                s.measurement['volt'] = volt
-            # All other cases as description
-            else:
-                description += ml + " "
+            # delete the last two lines now
+            comment_lines = comment_lines[:-2]
 
-        count = count + 1
+    description = relab_id
+    for i in comment_lines:
+        description += ' ' + i.strip() if i.strip() else ''
 
-    s.sample['description'] = description + " " + s.measurement['name']
+    s.sample['description'] = description
 
     return s
 
