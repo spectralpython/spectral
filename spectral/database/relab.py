@@ -89,13 +89,6 @@ def read_relab_file(filename):
     s.measurement['last x value'] = x[-1]
     s.measurement['number of x values'] = number_of_data
 
-    if number_of_data >= len(lines):
-        s.sample['relab_id'] = ''
-        s.sample['name'] = ''
-        s.measurement['relab_id'] = ''
-        s.sample['description'] = ''
-        return s
-
     # Extract ReLab ID and store it
     relab_id = lines[number_of_data+6].strip()  # a string
     s.sample["relab_id"] = relab_id
