@@ -13,7 +13,6 @@ import numpy as np
 import spectral as spy
 from spectral.tests.spytest import SpyTest
 
-
 class MatchedFilterTest(SpyTest):
     def setup(self):
         from spectral.algorithms.detectors import MatchedFilter
@@ -27,7 +26,7 @@ class MatchedFilterTest(SpyTest):
     def test_mf_bg_eq_zero(self):
         '''Matched Filter response of background should be zero.'''
         (i, j) = self.target_ij
-        np.testing.assert_approx_equal(self.mf(self.background.mean), 0)
+        np.testing.assert_approx_equal(self.mf(self.background.mean).item(), 0)
 
     def test_mf_target_eq_one(self):
         '''Matched Filter response of target should be one.'''

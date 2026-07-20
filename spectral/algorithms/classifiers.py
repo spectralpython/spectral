@@ -172,9 +172,9 @@ class GaussianClassifier(SupervisedClassifier):
         shape = image.shape
         image = image.reshape(-1, shape[-1])
         scores = np.empty((image.shape[0], len(self.classes)), np.float64)
-        delta = np.empty_like(image, dtype=np.float64)
+        delta = np.empty_like(image, dtype=self.classes[0].stats.mean.dtype)
 
-        # For some strange reason, creating Y with np.emtpy_like will sometimes
+        # For some strange reason, creating Y with np.empty_like will sometimes
         # result in the following error when attempting an in-place np.dot:
         #     ValueError: output array is not acceptable (must have the right
         #     type, nr dimensions, and be a C-Array)
@@ -215,8 +215,8 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
         '''
         GaussianClassifier.train(self, trainingData)
 
-        covariance = np.zeros(self.classes[0].stats.cov.shape, float)
-        nsamples = np.sum(cl.stats.nsamples for cl in self.classes)
+        covariance = np.zeros(self.classes[0].stats.cov.shape, self.classes[0].stats.mean.dtype)
+        nsamples = np.sum([cl.stats.nsamples for cl in self.classes])
         for cl in self.classes:
             covariance += (cl.stats.nsamples / float(nsamples)) * cl.stats.cov
         self.background = GaussianStats(cov=covariance)

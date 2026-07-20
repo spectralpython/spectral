@@ -484,7 +484,7 @@ class WindowedGaussianBackgroundMapper(object):
                            mean_in * (float(N_in) / (N_tot - N_in))
                     background.mean = mean
                     x[i, j] = self.callable(background,
-                                            image[rvals[i], cvals[j]])
+                                            image[rvals[i], cvals[j]]).item()
                 if i % (nrows_out // 10) == 0:
                     status.update_percentage(100. * i // nrows_out)
         else:
