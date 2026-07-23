@@ -226,14 +226,14 @@ class ENVIWriteTest(SpyTest):
 
     def test_param_name_converted_to_lower_case(self):
         '''By default, parameter names are converted to lower case.'''
-        header = 'mixed_case_header.hdr'
+        header = os.path.join(testdir, 'mixed_case_header1.hdr')
         open(header, 'w').write(MIXED_CASE_HEADER)
         h = spy.envi.read_envi_header(header)
         assert ('some param' in h)
 
     def test_support_nonlowercase_params(self):
         '''By default, parameter names are converted to lower case.'''
-        header = 'mixed_case_header.hdr'
+        header = os.path.join(testdir, 'mixed_case_header2.hdr')
         open(header, 'w').write(MIXED_CASE_HEADER)
         orig = spy.settings.envi_support_nonlowercase_params
         try:
