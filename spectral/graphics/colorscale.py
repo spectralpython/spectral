@@ -81,7 +81,7 @@ class ColorScale:
         elif val >= self.max:
             return self.colorTics[-1]
         else:
-            return self.colorTics[int((float(val) - self.min)
+            return self.colorTics[int((float(np.asarray(val).item()) - self.min)
                                   / self.span * self.size)]
 
     def set_background_color(self, color):
