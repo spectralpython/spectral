@@ -227,7 +227,6 @@ def view_nd(data, *args, **kwargs):
     from .ndwindow import NDWindow, validate_args
     if not running_ipython():
         warn_no_ipython()
-    check_wx_app()
 
     validate_args(data, *args, **kwargs)
     window = NDWindow(data, None, -1, *args, **kwargs)
@@ -723,28 +722,12 @@ def warn_no_ipython():
     msg = '''
 #############################################################################
 SPy graphics functions are intended to be run from IPython with the
-`pylab` mode set for wxWindows.  For example,
+`pylab` mode set to an appropriate backend.  For example,
 
-    # ipython --pylab=WX
+    # ipython --pylab=qt6
 
 GUI functions will likely not function properly if you aren't running IPython
-or haven't started it configured for pylab and wx.
-#############################################################################
-'''
-
-    if sys.platform == 'darwin':
-        msg += '''
-NOTE: If you are running on Mac OS X and receive an error message
-stating the following:
-
-    "PyNoAppError: The wx.App object must be created first!",
-
-You can avoid this error by running the following commandes immediately after
-starting your ipython session:
-
-    In [1]: import wx
-
-    In [2]: app = wx.App()
+or haven't configured its backend.
 #############################################################################
 '''
     warnings.warn(msg, UserWarning)

@@ -10,13 +10,16 @@ from pprint import pprint
 import random
 
 try:
-    import wx
-    from wx import glcanvas
+    from PySide6.QtCore import Qt
+    from PySide6.QtGui import QSurfaceFormat
+    from PySide6.QtWidgets import QMenu
+    from PySide6.QtOpenGLWidgets import QOpenGLWidget
 except ImportError:
-    raise ImportError("Required dependency wx.glcanvas not present")
+    raise ImportError("Required dependency PySide6 not present")
 
 from .. import settings
 from ..config import spy_colors
+from .hypercube import ensure_qt_event_loop
 from .spypylab import ImageView, SpyMplEvent
 from .graphics import WindowProxy
 
@@ -59,54 +62,55 @@ class MouseHandler:
         self.mode = 'DEFAULT'
 
     def left_down(self, event):
-        self.position = (event.X, event.Y)
+        pos = event.position()
+        self.position = (int(pos.x()), int(pos.y()))
         self.left = DOWN
+        modifiers = event.modifiers()
         if self.mode == 'DEFAULT':
-            if wx.GetKeyState(wx.WXK_CONTROL) and wx.GetKeyState(wx.WXK_SHIFT):
+            if modifiers & Qt.ControlModifier and modifiers & Qt.ShiftModifier:
                 # Display the row/col and class of the selected pixel.
                 (x, y) = self.position
                 def cmd():
-                    return self.window.get_pixel_info(x, self.window.size[1] - y)
+                    return self.window.get_pixel_info(x, self.window.win_size[1] - y)
                 self.window.add_display_command(cmd)
-                self.window.canvas.SetCurrent(self.window.canvas.context)
-                self.window.canvas.Refresh()
-            elif wx.GetKeyState(wx.WXK_SHIFT):
+                self.window.update()
+            elif modifiers & Qt.ShiftModifier:
                 # Switch to box selection mode.
                 print('IN BOX SELECTION MODE.')
                 self.mode = 'BOX_SELECT'
-            elif wx.GetKeyState(wx.WXK_CONTROL):
+            elif modifiers & Qt.ControlModifier:
                 # Switch to zoom mode.
                 self.mode = 'ZOOMING'
-        self.event_position = (event.X, event.Y)
-        event.Skip()
+        self.event_position = self.position
 
     def left_up(self, event):
-        self.position = (event.X, event.Y)
+        pos = event.position()
+        self.position = (int(pos.x()), int(pos.y()))
         self.left = UP
         if self.mode == 'BOX_SELECT':
             self.update_box_coordinates()
             # Box selection ends when the button is released.
-            if wx.GetKeyState(wx.WXK_SHIFT):
+            if event.modifiers() & Qt.ShiftModifier:
                 print('BOX HAS BEEN SELECTED.')
                 self.mode = 'DEFAULT'
             else:
                 # Shift key was released before box selection completed.
                 print('BOX SELECTION CANCELLED.')
                 self.window._selection_box = None
-            self.window.canvas.SetCurrent(self.window.canvas.context)
-            self.window.canvas.Refresh()
+            self.window.update()
         elif self.mode == 'ZOOMING':
             self.mode = 'DEFAULT'
-        self.event_position = (event.X, event.Y)
-        event.Skip()
+        self.event_position = self.position
 
     def motion(self, event):
         '''Handles panning & zooming for mouse click+drag events.'''
         if DOWN not in (self.left, self.right):
             return
-        (w, h) = self.window.size
-        dx = event.X - self.position[0]
-        dy = event.Y - self.position[1]
+        (w, h) = self.window.win_size
+        pos = event.position()
+        x, y = int(pos.x()), int(pos.y())
+        dx = x - self.position[0]
+        dy = y - self.position[1]
         if self.mode == 'DEFAULT':
             if self.left == DOWN and not self.window.mouse_panning:
                 # Mouse movement creates a rotation about the target position
@@ -132,40 +136,28 @@ class MouseHandler:
                 self.window.camera_pos_rtp[0] *= (float(w - dx) / w)
         elif self.mode == 'BOX_SELECT':
             self.update_box_coordinates()
-        self.position = (event.X, event.Y)
-        self.window.Refresh()
-        event.Skip()
+        self.position = (x, y)
+        self.window.update()
 
     def update_box_coordinates(self):
         xmin = min(self.event_position[0], self.position[0])
         xmax = max(self.event_position[0], self.position[0])
         ymin = min(self.event_position[1], self.position[1])
         ymax = max(self.event_position[1], self.position[1])
-        R = self.window.size[1]
+        R = self.window.win_size[1]
         self.window._selection_box = (xmin, R - ymax, xmax, R - ymin)
 
 
-class MouseMenu(wx.Menu):
+class MouseMenu(QMenu):
     '''Right-click menu for reassigning points to different classes.'''
-    ids = []
 
     def __init__(self, window):
-        super(MouseMenu, self).__init__(title='Assign to class')
+        super().__init__('Assign to class')
         self.window = window
-        self.id_classes = {}
-        while len(self.ids) < self.window.max_menu_class + 1:
-            self.ids.append(wx.NewId())
         for i in range(self.window.max_menu_class + 1):
-            id = self.ids[i]
-            self.id_classes[id] = i
-            print('(id, i) =', (id, i))
-            mi = wx.MenuItem(self, id, str(i))
-            self.AppendItem(mi)
-            self.Bind(wx.EVT_MENU, self.reassign_points, mi)
-
-    def reassign_points(self, event):
-        i = self.id_classes[event.GetId()]
-        self.window.post_reassign_selection(i)
+            action = self.addAction(str(i))
+            action.triggered.connect(
+                lambda checked=False, i=i: self.window.post_reassign_selection(i))
 
 
 # Multipliers for projecting data into each 3D octant
@@ -273,7 +265,7 @@ class NDWindowProxy(WindowProxy):
             "mirrored", or "independent".
         '''
 
-        if not isinstance(self._window, wx.Frame):
+        if not isinstance(self._window, NDWindow):
             raise Exception('The window no longer exists.')
         self._window.set_features(*args, **kwargs)
 
@@ -287,37 +279,34 @@ class NDWindowProxy(WindowProxy):
         return self._window.view_class_image(*args, **kwargs)
 
 
-class NDWindow(wx.Frame):
+class NDWindow(QOpenGLWidget):
     '''A widow class for displaying N-dimensional data points.'''
 
     def __init__(self, data, parent, id, *args, **kwargs):
         global DEFAULT_WIN_SIZE
+
+        self._app = ensure_qt_event_loop()
+
         self.kwargs = kwargs
-        self.size = kwargs.get('size', DEFAULT_WIN_SIZE)
+        self.win_size = kwargs.get('size', DEFAULT_WIN_SIZE)
         self.title = kwargs.get('title', 'ND Window')
 
-        #
-        # Forcing a specific style on the window.
-        #   Should this include styles passed?
-        style = wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE
-        super(NDWindow, self).__init__(parent, id, self.title,
-                                       wx.DefaultPosition,
-                                       wx.Size(*self.size),
-                                       style,
-                                       self.title)
+        super().__init__(parent)
 
-        self.gl_initialized = False
-        attribs = (glcanvas.WX_GL_RGBA,
-                   glcanvas.WX_GL_DOUBLEBUFFER,
-                   glcanvas.WX_GL_DEPTH_SIZE, settings.WX_GL_DEPTH_SIZE)
-        self.canvas = glcanvas.GLCanvas(self, attribList=attribs)
-        self.canvas.context = wx.glcanvas.GLContext(self.canvas)
+        self.setWindowTitle(self.title)
+        self.resize(*self.win_size)
+
+        fmt = QSurfaceFormat()
+        fmt.setDepthBufferSize(settings.WX_GL_DEPTH_SIZE)
+        fmt.setProfile(QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
+        self.setFormat(fmt)
 
         self._have_glut = False
         self.clear_color = (0, 0, 0, 0)
         self.show_axes_tf = True
         self.point_size = 1.0
         self._show_unassigned = True
+        self._show_assigned = True
         self._refresh_display_lists = False
         self._click_tolerance = 1
         self._display_commands = []
@@ -335,16 +324,7 @@ class NDWindow(wx.Frame):
         self.quadrant_mode = None
         self.mouse_handler = MouseHandler(self)
 
-        # Set the event handlers.
-        self.canvas.Bind(wx.EVT_ERASE_BACKGROUND, self.on_erase_background)
-        self.Bind(wx.EVT_SIZE, self.on_resize)
-        self.canvas.Bind(wx.EVT_PAINT, self.on_paint)
-        self.canvas.Bind(wx.EVT_LEFT_DOWN, self.mouse_handler.left_down)
-        self.canvas.Bind(wx.EVT_LEFT_UP, self.mouse_handler.left_up)
-        self.canvas.Bind(wx.EVT_MOTION, self.mouse_handler.motion)
-        self.canvas.Bind(wx.EVT_CHAR, self.on_char)
-        self.canvas.Bind(wx.EVT_RIGHT_DOWN, self.right_click)
-        self.canvas.Bind(wx.EVT_CLOSE, self.on_event_close)
+        self.setFocusPolicy(Qt.StrongFocus)
 
         self.data = data
         self.classes = kwargs.get('classes',
@@ -356,12 +336,29 @@ class NDWindow(wx.Frame):
         from matplotlib.cbook import CallbackRegistry
         self.callbacks = CallbackRegistry()
 
+    def Show(self, show=True):
+        """Show (or hide) the window."""
+        if show:
+            self.show()
+            self.setFocus()
+        else:
+            self.hide()
+
+    def Raise(self):
+        """Raise the window to the top of the window stack."""
+        self.raise_()
+        self.activateWindow()
+
+    def closeEvent(self, event):
+        self.on_event_close()
+        super().closeEvent(event)
+
     def on_event_close(self, event=None):
         pass
 
     def right_click(self, event):
-        self.canvas.SetCurrent(self.canvas.context)
-        self.canvas.PopupMenu(MouseMenu(self), event.GetPosition())
+        menu = MouseMenu(self)
+        menu.exec(event.globalPosition().toPoint())
 
     def add_display_command(self, cmd):
         '''Adds a command to be called next time `display` is run.'''
@@ -505,8 +502,14 @@ class NDWindow(wx.Frame):
         indices = kwargs.get('indices', None)
         if indices is None:
             indices = np.arange(R * C)
-            if not self._show_unassigned:
-                indices = indices[self.classes.ravel() != 0]
+            if not self._show_unassigned or not self._show_assigned:
+                classes_flat = self.classes.ravel()
+                mask = np.zeros(R * C, bool)
+                if self._show_unassigned:
+                    mask |= (classes_flat == 0)
+                if self._show_assigned:
+                    mask |= (classes_flat != 0)
+                indices = indices[mask]
             self._display_indices = indices
 
         # RGB pixel indices for selecting pixels with the mouse
@@ -580,7 +583,7 @@ class NDWindow(wx.Frame):
         print('New feature IDs:')
         pprint(np.array(features))
         self.set_octant_display_features(features)
-        self.Refresh()
+        self.update()
 
     def draw_box(self, x0, y0, x1, y1):
         '''Draws a selection box in the 3-D window.
@@ -589,8 +592,8 @@ class NDWindow(wx.Frame):
         import OpenGL.GL as gl
         gl.glMatrixMode(gl.GL_PROJECTION)
         gl.glLoadIdentity()
-        gl.glOrtho(0.0, self.size[0],
-                   0.0, self.size[1],
+        gl.glOrtho(0.0, self.win_size[0],
+                   0.0, self.win_size[1],
                    -0.01, 10.0)
 
         gl.glLineStipple(1, 0xF00F)
@@ -606,19 +609,12 @@ class NDWindow(wx.Frame):
         gl.glDisable(gl.GL_LINE_STIPPLE)
         gl.glFlush()
 
-        self.resize(*self.size)
+        self.update_viewport(*self.win_size)
 
-    def on_paint(self, event):
+    def paintGL(self):
         '''Renders the entire scene.'''
         import OpenGL.GL as gl
         import OpenGL.GLU as glu
-
-        self.canvas.SetCurrent(self.canvas.context)
-        if not self.gl_initialized:
-            self.initgl()
-            self.gl_initialized = True
-            self.print_help()
-            self.resize(*self.size)
 
         gl.glMatrixMode(gl.GL_MODELVIEW)
         gl.glLoadIdentity()
@@ -649,9 +645,6 @@ class NDWindow(wx.Frame):
         if self._selection_box is not None:
             self.draw_box(*self._selection_box)
 
-        self.SwapBuffers()
-        event.Skip()
-
     def post_reassign_selection(self, new_class):
         '''Reassigns pixels in selection box during the next rendering loop.
         ARGUMENT:
@@ -664,7 +657,7 @@ class NDWindow(wx.Frame):
             print(msg)
             return 0
         self.add_display_command(lambda: self.reassign_selection(new_class))
-        self.canvas.Refresh()
+        self.update()
         return 0
 
     def reassign_selection(self, new_class):
@@ -793,6 +786,7 @@ class NDWindow(wx.Frame):
 
     def index_to_image_row_col(self, index):
         '''Converts the unraveled pixel ID to row/col of the N-D image.'''
+        index = int(index)
         rowcol = (index // self.data.shape[1], index % self.data.shape[1])
         return rowcol
 
@@ -858,20 +852,8 @@ class NDWindow(wx.Frame):
                 pass
         gl.glEndList()
 
-    def GetGLExtents(self):
-        """Get the extents of the OpenGL canvas."""
-        return
-
-    def SwapBuffers(self):
-        """Swap the OpenGL buffers."""
-        self.canvas.SwapBuffers()
-
-    def on_erase_background(self, event):
-        """Process the erase background event."""
-        pass  # Do nothing, to avoid flashing on MSWin
-
-    def initgl(self):
-        '''App-specific initialization for after GLUT has been initialized.'''
+    def initializeGL(self):
+        '''App-specific initialization for after GL context is available.'''
         import OpenGL.GL as gl
         self.gllist_id = gl.glGenLists(9)
         gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
@@ -891,38 +873,43 @@ class NDWindow(wx.Frame):
         except:
             pass
 
-    def on_resize(self, event):
-        '''Process the resize event.'''
+        self.print_help()
 
-        # For wx versions 2.9.x, GLCanvas.GetContext() always returns None,
-        # whereas 2.8.x will return the context so test for both versions.
+    def resizeGL(self, width, height):
+        """Reshape the OpenGL viewport based on dimensions of the window."""
+        self.update_viewport(width, height)
 
-        if wx.VERSION >= (2, 9) or self.canvas.GetContext():
-            self.canvas.SetCurrent(self.canvas.context)
-            # Make sure the frame is shown before calling SetCurrent.
-            self.Show()
-            size = event.GetSize()
-            self.resize(size.width, size.height)
-            self.canvas.Refresh(False)
-        event.Skip()
-
-    def resize(self, width, height):
+    def update_viewport(self, width, height):
         """Reshape the OpenGL viewport based on dimensions of the window."""
         import OpenGL.GL as gl
         import OpenGL.GLU as glu
-        self.size = (width, height)
+        self.win_size = (width, height)
         gl.glViewport(0, 0, width, height)
         gl.glMatrixMode(gl.GL_PROJECTION)
         gl.glLoadIdentity()
-        glu.gluPerspective(self.fovy, float(width) / height,
+        glu.gluPerspective(self.fovy, float(width) / max(height, 1),
                            self.znear, self.zfar)
 
         gl.glMatrixMode(gl.GL_MODELVIEW)
         gl.glLoadIdentity()
 
-    def on_char(self, event):
+    def mousePressEvent(self, event):
+        self.setFocus()
+        if event.button() == Qt.LeftButton:
+            self.mouse_handler.left_down(event)
+        elif event.button() == Qt.RightButton:
+            self.right_click(event)
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.mouse_handler.left_up(event)
+
+    def mouseMoveEvent(self, event):
+        self.mouse_handler.motion(event)
+
+    def keyPressEvent(self, event):
         '''Callback function for when a keyboard button is pressed.'''
-        key = chr(event.GetKeyCode())
+        key = event.text()
 
         # See `print_help` method for explanation of keybinds.
         if key == 'a':
@@ -956,15 +943,20 @@ class NDWindow(wx.Frame):
             self._refresh_display_lists = True
         elif key == 'q':
             self.on_event_close()
-            self.Close(True)
+            self.close()
+            return
         elif key == 'r':
             self.reset_view_geometry()
         elif key == 'u':
             self._show_unassigned = not self._show_unassigned
             print('SHOW UNASSIGNED =', self._show_unassigned)
             self._refresh_display_lists = True
+        elif key == 'U':
+            self._show_assigned = not self._show_assigned
+            print('SHOW ASSIGNED =', self._show_assigned)
+            self._refresh_display_lists = True
 
-        self.canvas.Refresh()
+        self.update()
 
     def update_window_title(self):
         '''Prints current file name and current point color to window title.'''
@@ -996,7 +988,7 @@ Left-click & drag       -->     Rotate viewing geometry (or pan)
 CTRL+Left-click & drag  -->     Zoom viewing geometry
 CTRL+SHIFT+Left-click   -->     Print image row/col and class of selected pixel
 SHIFT+Left-click & drag -->     Define selection box in the window
-Right-click             -->     Open GLUT menu for pixel reassignment
+Right-click             -->     Open menu for pixel reassignment
 
 Keyboard functions:
 -------------------
@@ -1012,6 +1004,7 @@ p/P     -->     Increase/Decrease the size of displayed points
 q       -->     Exit the application
 r       -->     Reset viewing geometry
 u       -->     Toggle display of unassigned points (points with class == 0)
+U       -->     Toggle display of assigned points (points with class != 0)
 ''')
 
 
