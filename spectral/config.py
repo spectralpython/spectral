@@ -15,7 +15,7 @@ class SpySettings:
 
     Noteworthy members:
 
-        `WX_GL_DEPTH_SIZE` (integer, default 24):
+        `GL_DEPTH_SIZE` (integer, default 24):
 
             Sets the depth (in number of bits) for the OpenGL depth buffer.
             If calls to `view_cube` or `view_nd` result in windows with blank
@@ -93,13 +93,9 @@ class SpySettings:
     viewer = None
     plotter = None
 
-    # If START_WX_APP is True and there is no current wx.App object when a
-    # GUI function is called, then an app object will be created.
-    START_WX_APP = True
-
     # Parameter used by GLCanvas objects in view_cube and view_nd. If the
     # canvas does not render, try reducing this value (e.g., 16).
-    WX_GL_DEPTH_SIZE = 24
+    GL_DEPTH_SIZE = 24
 
     envi_support_nonlowercase_params = False
 

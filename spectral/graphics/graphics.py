@@ -26,79 +26,6 @@ class SpyWindow():
         return WindowProxy(self)
 
 
-def view(*args, **kwargs):
-    '''
-    Opens a window and displays a raster greyscale or color image.
-
-    Usage::
-
-        view(source, bands=None, **kwargs)
-
-    Arguments:
-
-        `source` (:class:`spectral.Image` or :class:`numpy.ndarray`):
-
-            Source image data to display.  `source` can be and instance of a
-            :class:`spectral.Image` (e.g., :class:`spectral.SpyFile` or
-            :class:`spectral.ImageArray`) or a :class:`numpy.ndarray`. `source`
-            must have shape `MxN` or `MxNxB`.
-
-        `bands` (3-tuple of ints):
-
-            Optional list of indices for bands to display in the red, green,
-            and blue channels, respectively.
-
-    Keyword Arguments:
-
-        `stretch` (bool):
-
-            If `stretch` evaluates True, the highest value in the data source
-            will be scaled to maximum color channel intensity.
-
-        `stretch_all` (bool):
-
-            If `stretch_all` evaluates True, the highest value of the data
-            source in each color channel will be set to maximum intensity.
-
-        `bounds` (2-tuple of ints):
-
-            Clips the input data at (lower, upper) values.
-
-        `title` (str):
-
-            Text to display in the new window frame.
-
-    `source` is the data source and can be either a :class:`spectral.Image`
-    object or a numpy array. If `source` has shape `MxN`, the image will be
-    displayed in greyscale. If its shape is `MxNx3`, the three layers/bands
-    will be displayed as the red, green, and blue components of the displayed
-    image, respectively. If its shape is `MxNxB`, where `B > 3`, the first,
-    middle, and last bands will be displayed in the RGB channels, unless
-    `bands` is specified.
-    '''
-    from .rasterwindow import RasterWindow
-    if not running_ipython():
-        warn_no_ipython()
-    check_wx_app()
-
-    rgb = get_rgb(*args, **kwargs)
-
-    # To plot pixel spectrum on double-click, create a reference
-    # back to the original SpyFile object.
-    if isinstance(args[0], Image):
-        kwargs["data source"] = args[0]
-
-    if "colors" not in kwargs:
-        rgb = (rgb * 255).astype(np.uint8)
-    else:
-        rgb = rgb.astype(np.uint8)
-
-    frame = RasterWindow(None, -1, rgb, **kwargs)
-    frame.Raise()
-    frame.Show()
-    return frame.get_proxy()
-
-
 def view_cube(data, *args, **kwargs):
     '''Renders an interactive 3D hypercube in a new window.
 
@@ -233,45 +160,6 @@ def view_nd(data, *args, **kwargs):
     window.Show()
     window.Raise()
     return window.get_proxy()
-
-
-def view_indexed(*args, **kwargs):
-    '''
-    Opens a window and displays a raster image for the provided color map data.
-
-    Usage::
-
-        view_indexed(data, **kwargs)
-
-    Arguments:
-
-        `data` (:class:`numpy.ndarray`):
-
-            An `MxN` array of integer values that correspond to colors in a
-            color palette.
-
-    Keyword Arguments:
-
-        `colors` (list of 3-tuples of ints):
-
-            This parameter provides an alternate color map to use for display.
-            The parameter is a list of 3-tuples defining RGB values, where R,
-            G, and B are in the range [0-255].
-
-        `title` (str):
-
-            Text to display in the new window frame.
-
-    The default color palette used is defined by :obj:`spectral.spy_colors`.
-    '''
-    if not running_ipython():
-        warn_no_ipython()
-    check_wx_app()
-
-    if 'colors' not in kwargs:
-        kwargs['colors'] = spy_colors
-
-    return view(*args, **kwargs)
 
 
 def imshow(data, bands=None, **kwargs):
@@ -731,16 +619,3 @@ or haven't configured its backend.
 #############################################################################
 '''
     warnings.warn(msg, UserWarning)
-
-
-def check_wx_app():
-    '''Generates a warning if there is not a running wx.App.
-    If spectral.START_WX_APP is True and there is no current app, then on will
-    be started.
-    '''
-    import spectral
-    import wx
-    if wx.GetApp() is None and spectral.settings.START_WX_APP is True:
-        warnings.warn('\nThere is no current wx.App object - creating one now.',
-                      UserWarning)
-        spectral.app = wx.App()

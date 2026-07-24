@@ -2,35 +2,6 @@
 Code for rendering and manipulating hypercubes.
 Most users will only need to call the function "hypercube".
 '''
-# The OpenGL code in this file was adapted from a number of OpenGL demo
-# scripts that were created, ported, and adapted by various authors
-# including Richard Campbell, John Ferguson, Tony Colston, Tarn Weisner,
-# Yan Wong, Greg Landrum, and possibly others.
-#
-# Source file comments from some of the original files are as follows:
-#
-#
-#------------------------------------------------------------------------
-# Ported to PyOpenGL 2.0 by Tarn Weisner Burton 10May2001
-#
-# This code was created by Richard Campbell '99 (ported to Python/PyOpenGL by
-#
-# John Ferguson 2000) The port was based on the lesson5 tutorial module by Tony
-#
-# Colston (tonetheman@hotmail.com). If you've found this code useful, please
-#
-# let me know (email John Ferguson at hakuin@voicenet.com).
-#
-# See original source and C based tutorial at http:#nehe.gamedev.net
-#------------------------------------------------------------------------
-# This file found at:
-#   http://lists.wxwidgets.org/archive/wxPython-users/msg11078.html
-#
-# This includes the two classes wxGLWindow and wxAdvancedGLWindow
-# from OpenGL.TK in the PyOpenGL distribution
-# ported to wxPython by greg Landrum
-# modified by Y. Wong
-#------------------------------------------------------------------------
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -179,7 +150,7 @@ class HypercubeWindow(QOpenGLWidget, SpyWindow):
         self.resize(*self.win_size)
 
         fmt = QSurfaceFormat()
-        fmt.setDepthBufferSize(settings.WX_GL_DEPTH_SIZE)
+        fmt.setDepthBufferSize(settings.GL_DEPTH_SIZE)
         fmt.setProfile(QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
         self.setFormat(fmt)
 

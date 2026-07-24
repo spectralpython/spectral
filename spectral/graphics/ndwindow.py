@@ -297,7 +297,7 @@ class NDWindow(QOpenGLWidget):
         self.resize(*self.win_size)
 
         fmt = QSurfaceFormat()
-        fmt.setDepthBufferSize(settings.WX_GL_DEPTH_SIZE)
+        fmt.setDepthBufferSize(settings.GL_DEPTH_SIZE)
         fmt.setProfile(QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
         self.setFormat(fmt)
 
