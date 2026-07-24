@@ -151,7 +151,6 @@ def view_cube(data, *args, **kwargs):
 
     if not running_ipython():
         warn_no_ipython()
-    check_wx_app()
 
     window = HypercubeWindow(data, None, -1, *args, **kwargs)
     window.Show()

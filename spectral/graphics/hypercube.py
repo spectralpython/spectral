@@ -38,10 +38,12 @@ import math
 import numpy as np
 
 try:
-    import wx
-    from wx import glcanvas
+    from PySide6.QtCore import Qt
+    from PySide6.QtGui import QSurfaceFormat
+    from PySide6.QtWidgets import QApplication
+    from PySide6.QtOpenGLWidgets import QOpenGLWidget
 except ImportError:
-    raise ImportError("Required dependency wx.glcanvas not present")
+    raise ImportError("Required dependency PySide6 not present")
 
 from .. import settings
 from ..io.spyfile import SpyFile
@@ -72,6 +74,30 @@ def xyz_to_rtp(x, y, z):
     return [r, theta, phi]
 
 
+def ensure_qt_event_loop():
+    '''Ensures a QApplication exists and that its event loop is being
+    pumped.
+
+    When running under IPython, this enables IPython's Qt GUI integration
+    (equivalent to `%gui qt`) so that Qt events (repaints, mouse clicks, key
+    presses, ...) are processed between input prompts instead of only being
+    flushed when the interpreter exits.
+    '''
+    if QApplication.instance() is None:
+        QApplication([])
+
+    try:
+        from IPython import get_ipython
+        ip = get_ipython()
+    except ImportError:
+        ip = None
+
+    if ip is not None:
+        ip.enable_gui('qt')
+
+    return QApplication.instance()
+
+
 (DOWN, UP) = (1, 0)
 
 
@@ -88,30 +114,32 @@ class MouseHandler:
         self.middle = UP
 
     def left_down(self, event):
-        self.event_position = (event.X, event.Y)
-        self.position = (event.X, event.Y)
+        pos = event.position()
+        self.event_position = (pos.x(), pos.y())
+        self.position = (pos.x(), pos.y())
         self.left = DOWN
-        event.Skip()
 
     def left_up(self, event):
-        self.position = (event.X, event.Y)
+        pos = event.position()
+        self.position = (pos.x(), pos.y())
         self.left = UP
-        event.Skip()
 
     def motion(self, event):
         '''Handles panning & zooming for mouse click+drag events.'''
         if DOWN not in (self.left, self.right):
             return
-        # print('Mouse movement:', x, y)
-        (w, h) = self.window.size
-        dx = event.X - self.position[0]
-        dy = event.Y - self.position[1]
+        (w, h) = self.window.win_size
+        pos = event.position()
+        x, y = pos.x(), pos.y()
+        dx = x - self.position[0]
+        dy = y - self.position[1]
+        modifiers = event.modifiers()
         if self.left == DOWN:
-            if wx.GetKeyState(wx.WXK_CONTROL):
+            if modifiers & Qt.ControlModifier:
                 # Mouse movement zooms in/out relative to target position
                 if dx != 0.0:
                     self.window.camera_pos_rtp[0] *= (float(w - dx) / w)
-            elif wx.GetKeyState(wx.WXK_SHIFT):
+            elif modifiers & Qt.ShiftModifier:
                 # Mouse movement pans target position in  plane of the window
                 view_vec = -np.array(rtp_to_xyz(*self.window.camera_pos_rtp))
                 zhat = np.array([0.0, 0.0, 1.0])
@@ -129,38 +157,31 @@ class MouseHandler:
                 rtp = self.window.camera_pos_rtp
                 rtp[1] = min(max(rtp[1] - yangle, 0.05), 179.95)
                 self.window.camera_pos_rtp[2] -= xangle
-        self.position = (event.X, event.Y)
-        self.window.Refresh()
-        event.Skip()
+        self.position = (x, y)
+        self.window.update()
 
 
-class HypercubeWindow(wx.Frame, SpyWindow):
-    """A simple class for using OpenGL with wxPython."""
+class HypercubeWindow(QOpenGLWidget, SpyWindow):
+    """A simple class for using OpenGL with PySide6."""
 
     def __init__(self, data, parent, id, *args, **kwargs):
         global DEFAULT_WIN_SIZE
 
+        self._app = ensure_qt_event_loop()
+
         self.kwargs = kwargs
-        self.size = kwargs.get('size', DEFAULT_WIN_SIZE)
+        self.win_size = kwargs.get('size', DEFAULT_WIN_SIZE)
         self.title = kwargs.get('title', 'Hypercube')
 
-        #
-        # Forcing a specific style on the window.
-        #   Should this include styles passed?
-        style = wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE
-        wx.Frame.__init__(self, parent, id, self.title,
-                          wx.DefaultPosition,
-                          wx.Size(*self.size),
-                          style,
-                          kwargs.get('name', 'Hypercube'))
+        super().__init__(parent)
 
-        self.gl_initialized = False
-        attribs = (glcanvas.WX_GL_RGBA,  # RGBA
-                   glcanvas.WX_GL_DOUBLEBUFFER,  # Double Buffered
-                   glcanvas.WX_GL_DEPTH_SIZE, settings.WX_GL_DEPTH_SIZE)
-        self.canvas = glcanvas.GLCanvas(
-            self, attribList=attribs, size=self.size)
-        self.canvas.context = wx.glcanvas.GLContext(self.canvas)
+        self.setWindowTitle(self.title)
+        self.resize(*self.win_size)
+
+        fmt = QSurfaceFormat()
+        fmt.setDepthBufferSize(settings.WX_GL_DEPTH_SIZE)
+        fmt.setProfile(QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
+        self.setFormat(fmt)
 
         # These members can be modified before calling the show method.
         self.clear_color = tuple(kwargs.get('background', (0., 0., 0.))) \
@@ -182,14 +203,20 @@ class HypercubeWindow(wx.Frame, SpyWindow):
         self.texturesLoaded = False
         self.mouse_handler = MouseHandler(self)
 
-        # Set the event handlers.
-        self.canvas.Bind(wx.EVT_ERASE_BACKGROUND, self.on_erase_background)
-        self.canvas.Bind(wx.EVT_SIZE, self.on_resize)
-        self.canvas.Bind(wx.EVT_PAINT, self.on_paint)
-        self.canvas.Bind(wx.EVT_LEFT_DOWN, self.mouse_handler.left_down)
-        self.canvas.Bind(wx.EVT_LEFT_UP, self.mouse_handler.left_up)
-        self.canvas.Bind(wx.EVT_MOTION, self.mouse_handler.motion)
-        self.canvas.Bind(wx.EVT_CHAR, self.on_char)
+        self.setFocusPolicy(Qt.StrongFocus)
+
+    def Show(self, show=True):
+        """Show (or hide) the window."""
+        if show:
+            self.show()
+            self.setFocus()
+        else:
+            self.hide()
+
+    def Raise(self):
+        """Raise the window to the top of the window stack."""
+        self.raise_()
+        self.activateWindow()
 
     def load_textures(self):
         import OpenGL.GL as gl
@@ -265,19 +292,7 @@ class HypercubeWindow(wx.Frame, SpyWindow):
             gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, 3, dim_x, dim_y,
                             0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, texImages[i])
 
-    def GetGLExtents(self):
-        """Get the extents of the OpenGL canvas."""
-        return
-
-    def SwapBuffers(self):
-        """Swap the OpenGL buffers."""
-        self.canvas.SwapBuffers()
-
-    def on_erase_background(self, event):
-        """Process the erase background event."""
-        pass  # Do nothing, to avoid flashing on MSWin
-
-    def initgl(self):
+    def initializeGL(self):
         """Initialize OpenGL for use in the window."""
         import OpenGL.GL as gl
         import OpenGL.GLU as glu
@@ -293,7 +308,8 @@ class HypercubeWindow(wx.Frame, SpyWindow):
         # Reset The projection matrix
         gl.glLoadIdentity()
         # Calculate aspect ratio of the window
-        (width, height) = self.canvas.GetClientSize()
+        width = max(self.width(), 1)
+        height = max(self.height(), 1)
         glu.gluPerspective(45.0, float(width) / float(height), 0.1, 100.0)
 
         gl.glMatrixMode(gl.GL_MODELVIEW)
@@ -302,16 +318,12 @@ class HypercubeWindow(wx.Frame, SpyWindow):
         gl.glLightfv(gl.GL_LIGHT0, gl.GL_POSITION, (0.0, 0.0, 2.0, 1.0))
         gl.glEnable(gl.GL_LIGHT0)
 
-    def on_paint(self, event):
+        self.print_help()
+
+    def paintGL(self):
         """Process the drawing event."""
         import OpenGL.GL as gl
         import OpenGL.GLU as glu
-        self.canvas.SetCurrent(self.canvas.context)
-
-        if not self.gl_initialized:
-            self.initgl()
-            self.gl_initialized = True
-            self.print_help()
 
         if self.light:
             gl.glEnable(gl.GL_LIGHTING)
@@ -328,8 +340,6 @@ class HypercubeWindow(wx.Frame, SpyWindow):
 
         gl.glPopMatrix()
         gl.glFlush()
-        self.SwapBuffers()
-        event.Skip()
 
     def draw_cube(self, *args, **kwargs):
         import OpenGL.GL as gl
@@ -438,45 +448,45 @@ class HypercubeWindow(wx.Frame, SpyWindow):
             -hw, -hh, -hz)  # Top Left Of The Texture and Quad
         gl.glEnd()
 
-    def on_resize(self, event):
-        """Process the resize event."""
-
-        if wx.VERSION >= (2, 9) or self.canvas.GetContext():
-            self.canvas.SetCurrent(self.canvas.context)
-            self.Show()
-            size = self.canvas.GetClientSize()
-            self.resize(size.width, size.height)
-            self.canvas.Refresh(False)
-        event.Skip()
-
-    def resize(self, width, height):
+    def resizeGL(self, width, height):
         """Reshape the OpenGL viewport based on dimensions of the window."""
         import OpenGL.GL as gl
         import OpenGL.GLU as glu
-        self.size = (width, height)
+        self.win_size = (width, height)
         gl.glViewport(0, 0, width, height)
         gl.glMatrixMode(gl.GL_PROJECTION)
         gl.glLoadIdentity()
-        glu.gluPerspective(self.fovy, float(width) / height,
+        glu.gluPerspective(self.fovy, float(width) / max(height, 1),
                            self.znear, self.zfar)
         gl.glMatrixMode(gl.GL_MODELVIEW)
         gl.glLoadIdentity()
 
-    def on_char(self, event):
-        key = event.GetKeyCode()
-        if key == ord('t'):
-            self.cubeHeight += 0.1
-        elif key == ord('g'):
-            self.cubeHeight -= 0.1
-        elif key == ord('l'):
-            self.light = not self.light
-        elif key == ord('h'):
-            self.print_help()
-#        self.on_draw()
-        self.on_paint(event)
+    def mousePressEvent(self, event):
+        self.setFocus()
+        if event.button() == Qt.LeftButton:
+            self.mouse_handler.left_down(event)
 
-        if key == ord('q'):
-            self.Destroy()
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.mouse_handler.left_up(event)
+
+    def mouseMoveEvent(self, event):
+        self.mouse_handler.motion(event)
+
+    def keyPressEvent(self, event):
+        key = event.text()
+        if key == 't':
+            self.cubeHeight += 0.1
+        elif key == 'g':
+            self.cubeHeight -= 0.1
+        elif key == 'l':
+            self.light = not self.light
+        elif key == 'h':
+            self.print_help()
+        elif key == 'q':
+            self.close()
+            return
+        self.update()
 
     def print_help(self):
         print()
