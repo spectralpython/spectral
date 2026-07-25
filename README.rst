@@ -20,9 +20,6 @@ Spectral Python (SPy)
 .. image:: https://anaconda.org/conda-forge/spectral/badges/downloads.svg
    :target: https://anaconda.org/conda-forge/spectral
 
-.. image:: https://anaconda.org/conda-forge/spectral/badges/installer/conda.svg
-   :target: https://conda.anaconda.org/conda-forge
-
 Spectral Python (SPy) is a pure Python module for processing hyperspectral image
 data (imaging spectroscopy data). It has functions for reading, displaying,
 manipulating, and classifying hyperspectral imagery. Full details about the
