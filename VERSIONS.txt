@@ -1,4 +1,34 @@
 ================================================================================
+SPy 0.25
+================================================================================
+Release date: 2026.07.25
+
+New Features
+------------
+
+* [#174] Added 'bin' to KNOWN_EXTS, to support ENVI files saved with a '.bin'
+  extension (e.g., Silios Toucan camera)
+
+Changes
+-------
+
+* [#14] 3D visualizations (`view_cube` and `view_nd`) migrated from
+  wxPython/OpenGL to PySide6
+* Removed legacy code related to wx and gnuplot
+* [#180] Use pseudo-inverse instead of standard inverse for improved numerical
+  stability
+* [#164] codespell run to fix typos
+* [#184] Updated website link in README to HTTPS
+
+Bug Fixes
+---------
+
+* [#182] Relab library failed to read data files that did not have a
+  description field
+* Fixes for compatibility with recent versions of numpy
+* [#178] Fixed flaky float equality test
+
+================================================================================
 SPy 0.24
 ================================================================================
 Release date: 25.04.13
