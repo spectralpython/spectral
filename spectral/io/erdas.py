@@ -147,8 +147,8 @@ def read_erdas_lan_header(fileName, byte_order=0):
 
     h = {}
     h["format"] = "lan"
-    h["fileName"] = fileName
-    h["sizeOfHeader"] = 128
+    h["filename"] = fileName
+    h["sizeofheader"] = 128
 
     h["type"] = f.read(6)
     if h["type"] not in (b'HEAD74', b'HEADER'):
