@@ -54,9 +54,10 @@ and environment management system can be found at official `conda-forge document
 Unit Tests
 ==========
 
-To run the suite of unit tests, you must have `numpy` and `pytest` installed,
-along with the sample data files bundled under `spectral/tests/data/`. To run
-the unit tests, type
+To run the suite of unit tests, you must have `numpy` and `pytest` installed
+and you must have the `sample data files <http://spectralpython.net/user_guide_intro.html>`_
+downloaded to the current directory (or one specified by the `SPECTRAL_DATA`
+environment variable). To run the unit tests, type
 
 .. code::
 
