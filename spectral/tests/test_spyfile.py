@@ -284,13 +284,11 @@ class TestSpyFile(_SpyFileReadTests):
     '''
 
     @pytest.fixture(scope='class', params=DTYPES)
-    @classmethod
-    def dtype(cls, request):
+    def dtype(self, request):
         return request.param
 
     @pytest.fixture(scope='class')
-    @classmethod
-    def _variant_file(cls, testdir, interleave, dtype, byteorder):
+    def _variant_file(self, testdir, interleave, dtype, byteorder):
         '''Writes "92AV3C.lan" using the given interleave/dtype/byteorder
         and returns the new header file path. Written once per combination
         (class scope) and reused for both the memmap and direct-read
@@ -333,13 +331,11 @@ class TestSpyFileComplex(_SpyFileReadTests):
     '''
 
     @pytest.fixture(scope='class', params=COMPLEX_DTYPES)
-    @classmethod
-    def dtype(cls, request):
+    def dtype(self, request):
         return request.param
 
     @pytest.fixture(scope='class')
-    @classmethod
-    def _variant_file(cls, testdir, interleave, dtype, byteorder):
+    def _variant_file(self, testdir, interleave, dtype, byteorder):
         '''Writes a random complex-valued array using the given
         interleave/dtype/byteorder and returns `(fname, datum, value)`.
         Written once per combination (class scope) and reused for both

@@ -32,6 +32,19 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 AV3C_SPC = os.path.join(DATA_DIR, '92AV3C.spc')
 
 
+def pytest_configure(config):
+    # Several class-scoped fixtures (test_database.py, test_spyfile.py) are
+    # defined as plain instance methods rather than `@classmethod`, because
+    # `@pytest.fixture` on a `@classmethod` isn't supported by the older
+    # pytest (8.x) that Python 3.8/3.9 CI resolves to. Revisit this filter
+    # if a future pytest actually removes support for the instance-method
+    # form (currently just a deprecation warning, still fully functional).
+    config.addinivalue_line(
+        'filterwarnings',
+        'ignore:Class-scoped fixture defined as instance method is deprecated:DeprecationWarning',
+    )
+
+
 @pytest.fixture(autouse=True, scope='session')
 def _quiet_spectral_logger():
     logging.getLogger('spectral').setLevel(logging.ERROR)

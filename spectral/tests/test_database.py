@@ -31,8 +31,7 @@ class TestECOSTRESSDatabase:
     '''Tests ECOSTRESS database creation and querying.'''
 
     @pytest.fixture(scope='class')
-    @classmethod
-    def db(cls, testdir):
+    def db(self, testdir):
         db_file = os.path.join(testdir, 'ecostress.db')
         spy.EcostressDatabase.create(db_file, ECOSTRESS_DATA_DIR)
         return spy.EcostressDatabase(db_file)
@@ -60,8 +59,7 @@ class TestRELABDatabase:
     '''Tests RELAB database creation and querying.'''
 
     @pytest.fixture(scope='class')
-    @classmethod
-    def db(cls, testdir):
+    def db(self, testdir):
         db_file = os.path.join(testdir, 'relab.db')
         spy.RelabDatabase.create(db_file, RELAB_DATA_DIR)
         return spy.RelabDatabase(db_file)
@@ -79,8 +77,7 @@ class TestUSGSDatabase:
     '''Tests USGS database creation and querying.'''
 
     @pytest.fixture(scope='class')
-    @classmethod
-    def db(cls, testdir):
+    def db(self, testdir):
         db_file = os.path.join(testdir, 'usgs.db')
         spy.USGSDatabase.create(db_file, USGS_DATA_DIR)
         return spy.USGSDatabase(db_file)
