@@ -1,26 +1,24 @@
-'''
-Runs unit tests for various SPy math functions.
+'''Tests various SPy math functions.
 
 To run the unit tests, type the following from the system command line:
 
-    # python -m spectral.tests.spymath
+    # pytest spectral/tests/test_spymath.py
 '''
-
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
 from numpy.testing import assert_allclose
+import pytest
 
 import spectral as spy
 from spectral.algorithms.spymath import matrix_sqrt
-from spectral.tests.spytest import SpyTest
 
 
-class SpyMathTest(SpyTest):
+class TestSpyMath:
     '''Tests various math functions.'''
 
-    def setup(self):
-        self.data = spy.open_image('92AV3C.lan').open_memmap()
+    @pytest.fixture(autouse=True)
+    def setup(self, av3c_image):
+        self.data = av3c_image.open_memmap()
         self.C = spy.calc_stats(self.data).cov
         self.X = np.array([[2., 1.], [1., 2.]])
 
@@ -64,11 +62,12 @@ class SpyMathTest(SpyTest):
         assert_allclose(wstats.cov, np.eye(wstats.cov.shape[0]), atol=1e-8)
 
 
-class PCATest(SpyTest):
+class TestPCA:
     '''Tests Principal Components transformation.'''
 
-    def setup(self):
-        self.data = spy.open_image('92AV3C.lan').open_memmap()
+    @pytest.fixture(autouse=True)
+    def setup(self, av3c_image):
+        self.data = av3c_image.open_memmap()
         self.pc = spy.principal_components(self.data)
 
     def test_evals_sorted(self):
@@ -81,12 +80,13 @@ class PCATest(SpyTest):
         assert (np.allclose(evecs.T.dot(evecs), np.eye(evecs.shape[0])))
 
 
-class LDATest(SpyTest):
+class TestLDA:
     '''Tests various math functions.'''
 
-    def setup(self):
-        self.data = spy.open_image('92AV3C.lan').open_memmap()
-        self.classes = spy.open_image('92AV3GT.GIS').read_band(0)
+    @pytest.fixture(autouse=True)
+    def setup(self, av3c_image, gt):
+        self.data = av3c_image.open_memmap()
+        self.classes = gt
 
     def test_lda_covw_whitened(self):
         '''cov_w should be whitened in the transformed space.'''
@@ -95,19 +95,3 @@ class LDATest(SpyTest):
         classes.transform(fld.transform)
         fld2 = spy.linear_discriminant(classes)
         assert_allclose(np.eye(fld2.cov_w.shape[0]), fld2.cov_w, atol=1e-8)
-
-
-def run():
-    print('\n' + '-' * 72)
-    print('Running math tests.')
-    print('-' * 72)
-    for T in [SpyMathTest, PCATest, LDATest]:
-        T().run()
-
-
-if __name__ == '__main__':
-    from spectral.tests.run import parse_args, reset_stats, print_summary
-    parse_args()
-    reset_stats()
-    run()
-    print_summary()

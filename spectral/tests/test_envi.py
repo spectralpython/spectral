@@ -1,21 +1,18 @@
-'''
-Runs unit tests of functions associated with the ENVI file format.
+'''Tests of functions associated with the ENVI file format.
 
 To run the unit tests, type the following from the system command line:
 
-    # python -m spectral.tests.envi
+    # pytest spectral/tests/test_envi.py
 '''
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+import os
 
 import numpy as np
 from numpy.testing import assert_almost_equal
-import os
+import pytest
 
 import spectral as spy
 from spectral.io.envi import SpectralLibrary
-from spectral.tests import testdir
-from spectral.tests.spytest import SpyTest
 
 MIXED_CASE_HEADER = '''ENVI
 samples = 145
@@ -30,16 +27,10 @@ some Param = 0
 '''
 
 
-class ENVIWriteTest(SpyTest):
+class TestENVIWrite:
     '''Tests that SpyFile memmap interfaces read and write properly.'''
-    def __init__(self):
-        pass
 
-    def setup(self):
-        if not os.path.isdir(testdir):
-            os.makedirs(testdir)
-
-    def test_save_image_ndarray(self):
+    def test_save_image_ndarray(self, testdir):
         '''Test saving an ENVI formatted image from a numpy.ndarray.'''
         (R, B, C) = (10, 20, 30)
         (r, b, c) = (3, 8, 23)
@@ -51,7 +42,7 @@ class ENVIWriteTest(SpyTest):
         img = spy.open_image(fname)
         assert_almost_equal(img[r, b, c], datum)
 
-    def test_save_image_ndarray_no_ext(self):
+    def test_save_image_ndarray_no_ext(self, testdir):
         '''Test saving an ENVI formatted image with no image file extension.'''
         data = np.arange(1000, dtype=np.int16).reshape(10, 10, 10)
         base = os.path.join(testdir, 'test_save_image_ndarray_noext')
@@ -60,7 +51,7 @@ class ENVIWriteTest(SpyTest):
         rdata = spy.open_image(hdr_file).load()
         assert (np.all(data == rdata))
 
-    def test_save_image_ndarray_alt_ext(self):
+    def test_save_image_ndarray_alt_ext(self, testdir):
         '''Test saving an ENVI formatted image with alternate extension.'''
         data = np.arange(1000, dtype=np.int16).reshape(10, 10, 10)
         base = os.path.join(testdir, 'test_save_image_ndarray_alt_ext')
@@ -71,16 +62,15 @@ class ENVIWriteTest(SpyTest):
         rdata = spy.envi.open(hdr_file, img_file).load()
         assert (np.all(data == rdata))
 
-    def test_save_image_spyfile(self):
+    def test_save_image_spyfile(self, testdir, av3c_image):
         '''Test saving an ENVI formatted image from a SpyFile object.'''
         (r, b, c) = (3, 8, 23)
         fname = os.path.join(testdir, 'test_save_image_spyfile.hdr')
-        src = spy.open_image('92AV3C.lan')
-        spy.envi.save_image(fname, src)
+        spy.envi.save_image(fname, av3c_image)
         img = spy.open_image(fname)
-        assert_almost_equal(src[r, b, c], img[r, b, c])
+        assert_almost_equal(av3c_image[r, b, c], img[r, b, c])
 
-    def test_create_image_metadata(self):
+    def test_create_image_metadata(self, testdir):
         '''Test calling `envi.create_image` using a metadata dict.'''
         (R, B, C) = (10, 20, 30)
         (r, b, c) = (3, 8, 23)
@@ -107,7 +97,7 @@ class ENVIWriteTest(SpyTest):
             assert key.lower() in img.metadata
             assert str(md[key]) == img.metadata[key.lower()]
 
-    def test_create_image_keywords(self):
+    def test_create_image_keywords(self, testdir):
         '''Test calling `envi.create_image` using keyword args.'''
         (R, B, C) = (10, 20, 30)
         (r, b, c) = (3, 8, 23)
@@ -127,111 +117,81 @@ class ENVIWriteTest(SpyTest):
         assert_almost_equal(img[r, b, c], datum)
         assert (img.offset == offset)
 
-    def test_save_invalid_dtype_fails(self):
+    def test_save_invalid_dtype_fails(self, testdir):
         '''Should not be able to write unsupported data type to file.'''
         from spectral.io.envi import EnviDataTypeError
         a = np.random.randint(0, 200, 900).reshape((30, 30)).astype(np.int8)
-        try:
-            spy.envi.save_image('invalid.hdr', a)
-        except EnviDataTypeError:
-            pass
-        else:
-            raise Exception('Expected EnviDataTypeError to be raised.')
+        fname = os.path.join(testdir, 'invalid.hdr')
+        with pytest.raises(EnviDataTypeError):
+            spy.envi.save_image(fname, a)
 
-    def test_save_load_classes(self):
+    def test_save_load_classes(self, testdir, gt):
         '''Verify that `envi.save_classification` saves data correctly.'''
         fname = os.path.join(testdir, 'test_save_load_classes.hdr')
-        gt = spy.open_image('92AV3GT.GIS').read_band(0)
         spy.envi.save_classification(fname, gt, dtype=np.uint8)
         gt2 = spy.open_image(fname).read_band(0)
         assert (np.all(gt == gt2))
 
-    def test_open_nonzero_frame_offset_fails(self):
+    def test_open_nonzero_frame_offset_fails(self, testdir, av3c_image):
         '''Opening files with nonzero frame offsets should fail.'''
-        img = spy.open_image('92AV3C.lan')
         fname = os.path.join(testdir, 'test_open_nonzero_frame_offset_fails.hdr')
-        spy.envi.save_image(fname, img)
-        fout = open(fname, 'a')
-        fout.write('major frame offsets = 128\n')
-        fout.close()
-        try:
+        spy.envi.save_image(fname, av3c_image)
+        with open(fname, 'a') as fout:
+            fout.write('major frame offsets = 128\n')
+        with pytest.raises(spy.envi.EnviFeatureNotSupported):
             spy.envi.open(fname)
-        except spy.envi.EnviFeatureNotSupported:
-            pass
-        else:
-            raise Exception('File erroneously opened.')
 
-    def test_open_zero_frame_offset_passes(self):
+    def test_open_zero_frame_offset_passes(self, testdir, av3c_image):
         '''Files with frame offsets set to zero should open.'''
-        img = spy.open_image('92AV3C.lan')
         fname = os.path.join(testdir, 'test_open_zero_frame_offset_passes.hdr')
-        spy.envi.save_image(fname, img)
-        fout = open(fname, 'a')
-        fout.write('major frame offsets = 0\n')
-        fout.write('minor frame offsets = {0, 0}\n')
-        fout.close()
+        spy.envi.save_image(fname, av3c_image)
+        with open(fname, 'a') as fout:
+            fout.write('major frame offsets = 0\n')
+            fout.write('minor frame offsets = {0, 0}\n')
         spy.envi.open(fname)
 
-    def test_save_nonzero_frame_offset_fails(self):
+    def test_save_nonzero_frame_offset_fails(self, testdir, av3c_image):
         '''Opening files with nonzero frame offsets should fail.'''
-        img = spy.open_image('92AV3C.lan')
         fname = os.path.join(testdir, 'test_save_nonzero_frame_offset_fails.hdr')
         meta = {'major frame offsets': [128, 0]}
-        try:
-            spy.envi.save_image(fname, img, metadata=meta)
-        except spy.envi.EnviFeatureNotSupported:
-            pass
-        else:
-            raise Exception('File erroneously saved.')
+        with pytest.raises(spy.envi.EnviFeatureNotSupported):
+            spy.envi.save_image(fname, av3c_image, metadata=meta)
 
-    def test_save_zero_frame_offset_passes(self):
+    def test_save_zero_frame_offset_passes(self, testdir, av3c_image):
         '''Opening files with nonzero frame offsets should fail.'''
-        img = spy.open_image('92AV3C.lan')
         fname = os.path.join(testdir, 'test_save_zero_frame_offset_passes.hdr')
         meta = {'major frame offsets': 0}
-        spy.envi.save_image(fname, img, metadata=meta)
+        spy.envi.save_image(fname, av3c_image, metadata=meta)
 
-    def test_catch_parse_error(self):
+    def test_catch_parse_error(self, testdir, av3c_image):
         '''Failure to parse parameters should raise EnviHeaderParsingError.'''
-        img = spy.open_image('92AV3C.lan')
         fname = os.path.join(testdir, 'test_catch_parse_error.hdr')
-        spy.envi.save_image(fname, img)
-        fout = open(fname, 'a')
-        fout.write('foo = {{\n')
-        fout.close()
-        try:
+        spy.envi.save_image(fname, av3c_image)
+        with open(fname, 'a') as fout:
+            fout.write('foo = {{\n')
+        with pytest.raises(spy.envi.EnviHeaderParsingError):
             spy.envi.open(fname)
-        except spy.envi.EnviHeaderParsingError:
-            pass
-        else:
-            raise Exception('Failed to raise EnviHeaderParsingError')
 
-    def test_header_missing_mandatory_parameter_fails(self):
+    def test_header_missing_mandatory_parameter_fails(self, testdir, av3c_image):
         '''Missing mandatory parameter should raise EnviMissingHeaderParameter.'''
-        img = spy.open_image('92AV3C.lan')
         fname = os.path.join(testdir, 'test_missing_param_fails.hdr')
-        spy.envi.save_image(fname, img)
+        spy.envi.save_image(fname, av3c_image)
         lines = [line for line in open(fname).readlines()
                  if 'bands' not in line]
-        fout = open(fname, 'w')
-        for line in lines:
-            fout.write(line)
-        fout.close()
-        try:
+        with open(fname, 'w') as fout:
+            for line in lines:
+                fout.write(line)
+        with pytest.raises(spy.envi.MissingEnviHeaderParameter):
             spy.envi.open(fname)
-        except spy.envi.MissingEnviHeaderParameter:
-            pass
-        else:
-            raise Exception('Failed to raise EnviMissingHeaderParameter')
 
-    def test_param_name_converted_to_lower_case(self):
+    def test_param_name_converted_to_lower_case(self, testdir):
         '''By default, parameter names are converted to lower case.'''
         header = os.path.join(testdir, 'mixed_case_header1.hdr')
         open(header, 'w').write(MIXED_CASE_HEADER)
         h = spy.envi.read_envi_header(header)
         assert ('some param' in h)
 
-    def test_support_nonlowercase_params(self):
+    def test_support_nonlowercase_params(self, testdir):
         '''By default, parameter names are converted to lower case.'''
         header = os.path.join(testdir, 'mixed_case_header2.hdr')
         open(header, 'w').write(MIXED_CASE_HEADER)
@@ -243,69 +203,40 @@ class ENVIWriteTest(SpyTest):
             spy.settings.envi_support_nonlowercase_params = orig
         assert ('some Param' in h)
 
-    def test_missing_ENVI_in_header_fails(self):
+    def test_missing_ENVI_in_header_fails(self, testdir, av3c_image):
         '''FileNotAnEnviHeader should be raised if "ENVI" not on first line.'''
-        img = spy.open_image('92AV3C.lan')
         fname = os.path.join(testdir, 'test_header_missing_ENVI_fails.hdr')
-        spy.envi.save_image(fname, img)
+        spy.envi.save_image(fname, av3c_image)
         lines = open(fname).readlines()
-        fout = open(fname, 'w')
-        for line in lines[1:]:
-            fout.write(line)
-        fout.close()
-        try:
+        with open(fname, 'w') as fout:
+            for line in lines[1:]:
+                fout.write(line)
+        with pytest.raises(spy.envi.FileNotAnEnviHeader):
             spy.envi.open(fname)
-        except spy.envi.FileNotAnEnviHeader:
-            pass
-        else:
-            raise Exception('Failed to raise EnviMissingHeaderParameter')
 
-    def test_open_missing_data_raises_envidatafilenotfounderror(self):
+    def test_open_missing_data_raises_envidatafilenotfounderror(self, testdir, av3c_image):
         '''EnviDataFileNotFound should be raise if data file is not found.'''
-        img = spy.open_image('92AV3C.lan')
         fname = os.path.join(testdir, 'header_without_data.hdr')
-        spy.envi.save_image(fname, img, ext='.img')
+        spy.envi.save_image(fname, av3c_image, ext='.img')
         os.unlink(os.path.splitext(fname)[0] + '.img')
-        try:
+        with pytest.raises(spy.envi.EnviDataFileNotFoundError):
             spy.envi.open(fname)
-        except spy.envi.EnviDataFileNotFoundError:
-            pass
-        else:
-            raise Exception('Expected EnviDataFileNotFoundError')
 
-    def test_create_spectral_lib_with_header(self):
+    def test_create_spectral_lib_with_header(self, testdir, av3c_image):
         '''Can create ENVI spectral library from numpy array with bands.'''
-        img = spy.open_image('92AV3C.lan')
-        (nrows, ncols, nbands) = img.shape
+        (nrows, ncols, nbands) = av3c_image.shape
         header = {'wavelength': np.arange(nbands).astype(np.float32)}
-        slib = SpectralLibrary(img[0, :20, :].squeeze(), header)
-        basename = os.path.join(testdir, 'slib')
+        slib = SpectralLibrary(av3c_image[0, :20, :].squeeze(), header)
+        basename = os.path.join(testdir, 'slib_with_header')
         slib.save(basename)
         slib = spy.envi.open(basename + '.hdr')
         assert (slib.spectra.shape == (20, nbands))
 
-    def test_create_spectral_lib_without_header(self):
+    def test_create_spectral_lib_without_header(self, testdir, av3c_image):
         '''Can create ENVI spectral library from numpy array without bands.'''
-        img = spy.open_image('92AV3C.lan')
-        (nrows, ncols, nbands) = img.shape
-        slib = SpectralLibrary(img[0, :20, :].squeeze())
-        basename = os.path.join(testdir, 'slib')
+        (nrows, ncols, nbands) = av3c_image.shape
+        slib = SpectralLibrary(av3c_image[0, :20, :].squeeze())
+        basename = os.path.join(testdir, 'slib_without_header')
         slib.save(basename)
         slib = spy.envi.open(basename + '.hdr')
         assert (slib.spectra.shape == (20, nbands))
-
-
-def run():
-    print('\n' + '-' * 72)
-    print('Running ENVI tests.')
-    print('-' * 72)
-    write_test = ENVIWriteTest()
-    write_test.run()
-
-
-if __name__ == '__main__':
-    from spectral.tests.run import parse_args, reset_stats, print_summary
-    parse_args()
-    reset_stats()
-    run()
-    print_summary()

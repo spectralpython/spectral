@@ -10,9 +10,9 @@ matrix:
       dist: trusty
 
 install:
-  - pip install numpy
+  - pip install numpy pytest
   - python setup.py install
 
 before_script:
   - git clone https://github.com/spectralpython/sample-data.git ~/spectral_data
-script: SPECTRAL_DATA=~/spectral_data python -m spectral.tests.run
+script: SPECTRAL_DATA=~/spectral_data pytest spectral/tests

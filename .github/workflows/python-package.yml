@@ -38,7 +38,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Run unit tests
       run: |
-        SPECTRAL_DATA=~/spectral_data python -m spectral.tests.run
+        SPECTRAL_DATA=~/spectral_data pytest spectral/tests
 
   build-old:
 
@@ -68,4 +68,4 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Run unit tests
       run: |
-        SPECTRAL_DATA=~/spectral_data python -m spectral.tests.run
+        SPECTRAL_DATA=~/spectral_data pytest spectral/tests

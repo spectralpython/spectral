@@ -1,47 +1,47 @@
 '''
-Runs unit tests for dimensionality reduction algorithms.
+Tests for dimensionality reduction algorithms.
 
 To run the unit tests, type the following from the system command line:
 
-    # python -m spectral.tests.dimensionality
+    # pytest spectral/tests/test_dimensionality.py
 '''
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import numpy as np
+import pytest
 
 import spectral as spy
-from spectral.tests.spytest import SpyTest
 
 
-class DimensionalityTest(SpyTest):
+@pytest.fixture
+def av3c_data(av3c_image):
+    return av3c_image.load()
+
+
+class TestDimensionality:
     '''Tests various math functions.'''
 
-    def setup(self):
-        self.data = spy.open_image('92AV3C.lan').load()
-
-    def test_mnf_all_equals_data(self):
+    def test_mnf_all_equals_data(self, av3c_data):
         '''Test that MNF transform with all components equals original data.'''
-        data = self.data
+        data = av3c_data
         signal = spy.calc_stats(data)
         noise = spy.noise_from_diffs(data[117: 137, 85: 122, :])
         mnfr = spy.mnf(signal, noise)
         denoised = mnfr.denoise(data, num=data.shape[-1])
         assert (np.allclose(denoised, data))
 
-    def test_ppi(self):
+    def test_ppi(self, av3c_data):
         '''Tests that ppi function runs'''
-        data = self.data
+        data = av3c_data
         spy.ppi(data, 4)
 
-    def test_ppi_threshold(self):
+    def test_ppi_threshold(self, av3c_data):
         '''Tests that ppi function runs with threshold arg'''
-        data = self.data
+        data = av3c_data
         spy.ppi(data, 4, 10)
 
-    def test_ppi_continues(self):
+    def test_ppi_continues(self, av3c_data):
         '''Tests that running ppi with initial indices works as expected.'''
-        data = self.data
+        data = av3c_data
         s = np.random.get_state()
         p = spy.ppi(data, 4)
         np.random.set_state(s)
@@ -49,9 +49,9 @@ class DimensionalityTest(SpyTest):
         p2 = spy.ppi(data, 2, start=p2)
         assert (np.all(p == p2))
 
-    def test_ppi_centered(self):
+    def test_ppi_centered(self, av3c_data):
         '''Tests that ppi with mean-subtracted data works as expected.'''
-        data = self.data
+        data = av3c_data
         s = np.random.get_state()
         p = spy.ppi(data, 4)
 
@@ -80,10 +80,10 @@ class DimensionalityTest(SpyTest):
         ])
         assert (np.array_equal(S, expected_S))
 
-    def test_smacc_runs(self):
+    def test_smacc_runs(self, av3c_data):
         '''Tests that smacc runs without additional arguments.'''
         # Without scaling numeric errors accumulate.
-        scaled_data = self.data / 10000
+        scaled_data = av3c_data / 10000
         S, F, R = spy.smacc(scaled_data)
         data_shape = scaled_data.shape
         H = scaled_data.reshape(data_shape[0] * data_shape[1], data_shape[2])
@@ -91,10 +91,10 @@ class DimensionalityTest(SpyTest):
         assert (np.min(F) == 0.0)
         assert (len(S.shape) == 2 and S.shape[0] == 9 and S.shape[1] == 220)
 
-    def test_smacc_min_endmembers(self):
+    def test_smacc_min_endmembers(self, av3c_data):
         '''Tests that smacc runs with min_endmember argument.'''
         # Without scaling numeric errors accumulate.
-        scaled_data = self.data / 10000
+        scaled_data = av3c_data / 10000
         S, F, R = spy.smacc(scaled_data, 10)
         data_shape = scaled_data.shape
         H = scaled_data.reshape(data_shape[0] * data_shape[1], data_shape[2])
@@ -102,10 +102,10 @@ class DimensionalityTest(SpyTest):
         assert (np.min(F) == 0.0)
         assert (len(S.shape) == 2 and S.shape[0] == 10 and S.shape[1] == 220)
 
-    def test_smacc_max_residual_norm(self):
+    def test_smacc_max_residual_norm(self, av3c_data):
         '''Tests that smacc runs with max_residual_norm argument.'''
         # Without scaling numeric errors accumulate.
-        scaled_data = self.data / 10000
+        scaled_data = av3c_data / 10000
         S, F, R = spy.smacc(scaled_data, 9, 0.8)
         data_shape = scaled_data.shape
         H = scaled_data.reshape(data_shape[0] * data_shape[1], data_shape[2])
@@ -114,14 +114,14 @@ class DimensionalityTest(SpyTest):
         residual_norms = np.einsum('ij,ij->i', R, R)
         assert (np.max(residual_norms) <= 0.8)
 
-    def test_pca_runs(self):
+    def test_pca_runs(self, av3c_data):
         '''Should be able to compute PCs and transform data.'''
-        data = self.data
+        data = av3c_data
         spy.principal_components(data).transform(data)
 
-    def test_pca_runs_from_stats(self):
+    def test_pca_runs_from_stats(self, av3c_data):
         '''Should be able to pass image stats to PCA function.'''
-        data = self.data
+        data = av3c_data
         stats = spy.calc_stats(data)
         spy.principal_components(stats).transform(data)
 
@@ -153,19 +153,3 @@ class DimensionalityTest(SpyTest):
         Y = spy.orthogonalize(X, start=1)
         assert (np.allclose(Y.dot(Y.T), np.array([[1, 0], [0, 1]])))
         assert (np.allclose(X.dot(Y.T), np.array([[1, 0], [0, 75]])))
-
-
-def run():
-    print('\n' + '-' * 72)
-    print('Running dimensionality tests.')
-    print('-' * 72)
-    test = DimensionalityTest()
-    test.run()
-
-
-if __name__ == '__main__':
-    from spectral.tests.run import parse_args, reset_stats, print_summary
-    parse_args()
-    reset_stats()
-    run()
-    print_summary()

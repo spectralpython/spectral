@@ -1,30 +1,27 @@
-'''
-Runs unit tests for classification routines.
+'''Tests various classification functions.
 
 To run the unit tests, type the following from the system command line:
 
-    # python -m spectral.tests.classifiers
+    # pytest spectral/tests/test_classifiers.py
 '''
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import os
+
 import numpy as np
-import spectral as spy
 from numpy.testing import assert_allclose
-from .spytest import SpyTest
-from spectral.tests import testdir
+import pytest
+
+import spectral as spy
 
 
-class ClassifierTest(SpyTest):
+class TestClassifier:
     '''Tests various classfication functions.'''
 
-    def setup(self):
-        if not os.path.isdir(testdir):
-            os.mkdir(testdir)
-        self.image = spy.open_image('92AV3C.lan')
+    @pytest.fixture(autouse=True)
+    def setup(self, av3c_image, testdir, gt):
+        self.image = av3c_image
         self.data = self.image.load()
-        self.gt = spy.open_image('92AV3GT.GIS').read_band(0)
+        self.gt = gt
         self.ts = spy.create_training_classes(self.data, self.gt,
                                               calc_stats=True)
         self.class_filename = os.path.join(testdir, '92AV3C.classes')
@@ -119,7 +116,7 @@ class ClassifierTest(SpyTest):
         from spectral.algorithms.perceptron import test_and
         (success, p) = test_and(stdout=None)
         assert (success)
-        
+
     def test_perceptron_learns_xor(self):
         '''Test that 2x2x1 network can learn the logical XOR function.'''
         from spectral.algorithms.perceptron import test_xor231
@@ -161,19 +158,3 @@ class ClassifierTest(SpyTest):
         data = self.data[20: 30, 30: 40, :]
         assert (mdc.classify_spectrum(data[2, 2]) ==
                 mdc.classify_image(data)[2, 2])
-
-
-def run():
-    print('\n' + '-' * 72)
-    print('Running classifier tests.')
-    print('-' * 72)
-    test = ClassifierTest()
-    test.run()
-
-
-if __name__ == '__main__':
-    from spectral.tests.run import parse_args, reset_stats, print_summary
-    parse_args()
-    reset_stats()
-    run()
-    print_summary()

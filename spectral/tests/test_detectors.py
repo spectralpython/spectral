@@ -1,22 +1,21 @@
-'''
-Runs unit tests for various target detectors.
+'''Tests various target detectors.
 
 To run the unit tests, type the following from the system command line:
 
-    # python -m spectral.tests.detectors
+    # pytest spectral/tests/test_detectors.py
 '''
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import numpy as np
+import pytest
 
 import spectral as spy
-from spectral.tests.spytest import SpyTest
 
-class MatchedFilterTest(SpyTest):
-    def setup(self):
+
+class TestMatchedFilter:
+    @pytest.fixture(autouse=True)
+    def setup(self, av3c_image):
         from spectral.algorithms.detectors import MatchedFilter
-        self.data = spy.open_image('92AV3C.lan').load()
+        self.data = av3c_image.load()
         self.background = spy.calc_stats(self.data)
         self.target_ij = [33, 87]
 #        self.target = self.data[33, 87]
@@ -57,9 +56,10 @@ class MatchedFilterTest(SpyTest):
         np.allclose(1, y[ij])
 
 
-class RXTest(SpyTest):
-    def setup(self):
-        self.data = spy.open_image('92AV3C.lan').load()
+class TestRX:
+    @pytest.fixture(autouse=True)
+    def setup(self, av3c_image):
+        self.data = av3c_image.load()
         self.background = spy.calc_stats(self.data)
 
     def test_rx_bg_eq_zero(self):
@@ -68,9 +68,10 @@ class RXTest(SpyTest):
         np.testing.assert_approx_equal(rx(stats.mean, background=stats), 0)
 
 
-class ACETest(SpyTest):
-    def setup(self):
-        self.data = spy.open_image('92AV3C.lan').load()
+class TestACE:
+    @pytest.fixture(autouse=True)
+    def setup(self, av3c_image):
+        self.data = av3c_image.load()
         self.bg = spy.calc_stats(self.data)
         self.X = self.data[:20, :20, :]
 
@@ -156,19 +157,3 @@ class ACETest(SpyTest):
         ij = (10, 10)
         y = spy.ace(self.X, self.X[ij], window=(3, 7), cov=self.bg.cov)
         assert (np.allclose(1, y[ij]))
-
-
-def run():
-    print('\n' + '-' * 72)
-    print('Running target detector tests.')
-    print('-' * 72)
-    for T in [MatchedFilterTest, RXTest, ACETest]:
-        T().run()
-
-
-if __name__ == '__main__':
-    from spectral.tests.run import parse_args, reset_stats, print_summary
-    parse_args()
-    reset_stats()
-    run()
-    print_summary()
