@@ -121,8 +121,8 @@ class GaussianClassifier(SupervisedClassifier):
             if cl.size() >= self.min_samples:
                 self.classes.append(cl)
             else:
-                logger.warn('Omitting class %3d : only %d samples present',
-                            cl.index, cl.size())
+                logger.warning('Omitting class %3d : only %d samples present',
+                               cl.index, cl.size())
         for cl in self.classes:
             if not hasattr(cl, 'stats') or not cl.stats_valid():
                 cl.calc_stats()
