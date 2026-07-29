@@ -208,13 +208,13 @@ class SpyFile(Image):
                       self.nbands * self.sample_size)
         npArray = np.frombuffer(tobytes(data), dtype=self.dtype)
         if self.interleave == spy.BIL:
-            npArray.shape = (self.nrows, self.nbands, self.ncols)
+            npArray = npArray.reshape((self.nrows, self.nbands, self.ncols))
             npArray = npArray.transpose([0, 2, 1])
         elif self.interleave == spy.BSQ:
-            npArray.shape = (self.nbands, self.nrows, self.ncols)
+            npArray = npArray.reshape((self.nbands, self.nrows, self.ncols))
             npArray = npArray.transpose([1, 2, 0])
         else:
-            npArray.shape = (self.nrows, self.ncols, self.nbands)
+            npArray = npArray.reshape((self.nrows, self.ncols, self.nbands))
         if np.dtype(dtype).name != npArray.dtype.name:
             npArray = npArray.astype(dtype)
         if self.scale_factor != 1 and kwargs.get('scale', True):

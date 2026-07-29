@@ -336,7 +336,7 @@ def open(file, image=None):
     if h.get('file type') == 'ENVI Spectral Library':
         # File is a spectral library
         data = np.fromfile(p.filename, p.dtype, p.ncols * p.nrows)
-        data.shape = (p.nrows, p.ncols)
+        data = data.reshape((p.nrows, p.ncols))
         return SpectralLibrary(data, h, p)
 
     #  Create the appropriate object type for the interleave format.

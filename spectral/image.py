@@ -21,7 +21,8 @@ class Image(object):
         self.nbands = params.nbands
         self.nrows = params.nrows
         self.ncols = params.ncols
-        self.dtype = params.dtype
+        if not isinstance(self, np.ndarray):
+            self.dtype = params.dtype
 
         if not metadata:
             self.metadata = {}
@@ -195,7 +196,7 @@ class ImageArray(np.ndarray, Image):
         s += '\tData format:  %8s' % self.dtype.name
         return s
 
-    def __array_wrap__(self, out_arr, context=None):
+    def __array_wrap__(self, out_arr, context=None, return_scalar=False):
         # The ndarray __array_wrap__ causes ufunc results to be of type
         # ImageArray.  Instead, return a plain ndarray.
         return out_arr
