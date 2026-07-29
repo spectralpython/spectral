@@ -89,7 +89,8 @@ class TestENVIWrite:
         mm.fill(0)
         mm[r, b, c] = datum
         mm.flush()
-        img = spy.open_image(fname)
+        with pytest.warns(UserWarning, match='non-lowercase'):
+            img = spy.open_image(fname)
         img._disable_memmap()
         assert_almost_equal(img[r, b, c], datum)
         assert (img.offset == offset)
@@ -188,7 +189,8 @@ class TestENVIWrite:
         '''By default, parameter names are converted to lower case.'''
         header = os.path.join(testdir, 'mixed_case_header1.hdr')
         open(header, 'w').write(MIXED_CASE_HEADER)
-        h = spy.envi.read_envi_header(header)
+        with pytest.warns(UserWarning, match='non-lowercase'):
+            h = spy.envi.read_envi_header(header)
         assert ('some param' in h)
 
     def test_support_nonlowercase_params(self, testdir):
