@@ -11,7 +11,6 @@ from numpy.testing import assert_allclose
 
 import spectral as spy
 from spectral.algorithms.algorithms import iterator, iterator_ij
-from spectral.tests.conftest import AV3C_LAN
 
 
 class TestIterator:
@@ -83,6 +82,6 @@ class TestIterator:
         classes = gt.ravel()
         pixels = data.reshape((-1, data.shape[-1]))
         sum = np.sum(pixels[classes == cls], 0)
-        image = spy.open_image(AV3C_LAN)
+        image = spy.open_image('92AV3C.lan')
         itsum = np.sum(np.array([x for x in iterator(image, gt, cls)]), 0)
         assert_allclose(sum, itsum)

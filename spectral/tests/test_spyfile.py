@@ -21,7 +21,6 @@ import numpy as np
 import pytest
 
 import spectral as spy
-from spectral.tests.conftest import AV3C_LAN
 
 ENVI_COMPLEX_TEST_SIZES = [64, 28]
 
@@ -297,7 +296,7 @@ class TestSpyFile(_SpyFileReadTests):
         (class scope) and reused for both the memmap and direct-read
         variants, and across all test methods.
         '''
-        image = spy.open_image(AV3C_LAN)
+        image = spy.open_image('92AV3C.lan')
         fname = os.path.join(
             testdir, 'av3c_%s_%s_%s.hdr' % (interleave, dtype, byteorder))
         # `force=True`: pytest's fixture-reordering optimizer can't always

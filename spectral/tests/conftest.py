@@ -10,12 +10,13 @@ Common fixtures:
         directory is removed after the module's tests finish, pass or fail.
 
     `av3c_image`
-        Opens the sample image "92AV3C.lan" (bundled under `tests/data/`)
-        used by most of the suite.
+        Opens the sample image "92AV3C.lan". Found via the current
+        directory or the `SPECTRAL_DATA` environment variable (see
+        `spectral.io.spyfile.find_file_path`); not bundled with the repo.
 
     `gt`
         Opens the ground-truth classification image "92AV3GT.GIS" that
-        accompanies "92AV3C.lan", as a plain ndarray.
+        accompanies "92AV3C.lan", as a plain ndarray. Found the same way.
 '''
 
 import logging
@@ -28,8 +29,6 @@ import pytest
 import spectral as spy
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
-AV3C_LAN = os.path.join(DATA_DIR, '92AV3C.lan')
-AV3GT_GIS = os.path.join(DATA_DIR, '92AV3GT.GIS')
 AV3C_SPC = os.path.join(DATA_DIR, '92AV3C.spc')
 
 
@@ -48,9 +47,9 @@ def testdir(tmp_path_factory, request):
 
 @pytest.fixture
 def av3c_image():
-    return spy.open_image(AV3C_LAN)
+    return spy.open_image('92AV3C.lan')
 
 
 @pytest.fixture
 def gt():
-    return np.array(spy.open_image(AV3GT_GIS).read_band(0))
+    return np.array(spy.open_image('92AV3GT.GIS').read_band(0))
