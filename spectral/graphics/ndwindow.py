@@ -97,6 +97,7 @@ class MouseHandler:
                 # Shift key was released before box selection completed.
                 print('BOX SELECTION CANCELLED.')
                 self.window._selection_box = None
+                self.mode = 'DEFAULT'
             self.window.update()
         elif self.mode == 'ZOOMING':
             self.mode = 'DEFAULT'

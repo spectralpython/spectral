@@ -342,10 +342,7 @@ class TestMouseHandler:
         handler.left_up(make_mouse_event((20, 20),
                                          event_type=QEvent.Type.MouseButtonRelease))
         assert window._selection_box is None
-        # NOTE: actual (arguably surprising) behavior -- the handler's mode
-        # is not reset to 'DEFAULT' on a cancelled box selection, unlike the
-        # confirmed-selection and zoom-release paths above.
-        assert handler.mode == 'BOX_SELECT'
+        assert handler.mode == 'DEFAULT'
 
     def test_ctrl_shift_click_queues_pixel_info_command(self, window):
         handler = window.mouse_handler
