@@ -362,7 +362,11 @@ class SpyFile(Image):
         return p
 
     def __del__(self):
-        self.fid.close()
+        # `fid` may not have been set if `__init__` raised before reaching
+        # `set_params` (e.g., a subclass validates its arguments first).
+        fid = getattr(self, 'fid', None)
+        if fid is not None:
+            fid.close()
 
 
 class SubImage(SpyFile):
@@ -430,10 +434,10 @@ class SubImage(SpyFile):
                 An `MxN` array of values for the specified band.
         '''
         return self.parent.read_subregion([self.row_offset,
-                                           self.row_offset + self.nrows - 1],
+                                           self.row_offset + self.nrows],
                                           [self.col_offset,
-                                           self.col_offset + self.ncols - 1],
-                                          [band])
+                                           self.col_offset + self.ncols],
+                                          [band])[:, :, 0]
 
     def read_bands(self, bands):
         '''Reads multiple bands from the image.
@@ -453,9 +457,9 @@ class SubImage(SpyFile):
                 len(`bands`).
         '''
         return self.parent.read_subregion([self.row_offset,
-                                           self.row_offset + self.nrows - 1],
+                                           self.row_offset + self.nrows],
                                           [self.col_offset,
-                                           self.col_offset + self.ncols - 1],
+                                           self.col_offset + self.ncols],
                                           bands)
 
     def read_pixel(self, row, col):
@@ -476,7 +480,19 @@ class SubImage(SpyFile):
         return self.parent.read_pixel(row + self.row_offset,
                                       col + self.col_offset)
 
-    def read_subimage(self, rows, cols, bands=[]):
+    def read_datum(self, row, col, band):
+        '''Reads the band `band` value for pixel at row `row`, column `col`.
+
+        Arguments:
+
+            `row`, `col`, `band` (int):
+
+                Row, column, and band index, respectively.
+        '''
+        return self.parent.read_datum(row + self.row_offset,
+                                      col + self.col_offset, band)
+
+    def read_subimage(self, rows, cols, bands=None):
         '''
         Reads arbitrary rows, columns, and bands from the image.
 
@@ -502,9 +518,9 @@ class SubImage(SpyFile):
                 An `MxNxL` array, where `M` = len(`rows`), `N` = len(`cols`),
                 and `L` = len(bands) (or # of image bands if `bands` == None).
         '''
-        return self.parent.read_subimage(list(array.array(rows) \
+        return self.parent.read_subimage(list(np.array(rows) \
                                               + self.row_offset),
-                                         list(array.array(cols) \
+                                         list(np.array(cols) \
                                               + self.col_offset),
                                          bands)
 
@@ -538,6 +554,46 @@ class SubImage(SpyFile):
                                           list(np.array(col_bounds) \
                                                + self.col_offset),
                                           bands)
+
+    def load(self, **kwargs):
+        '''Loads the sub-image into memory as a
+        :class:`spectral.image.ImageArray`.
+
+        Keyword Arguments:
+
+            `dtype` (numpy.dtype):
+
+                An optional dtype to which the loaded array should be cast.
+
+        Note that unlike :meth:`SpyFile.load`, `scale=False` (to request
+        unscaled data) is not supported here, since a `SubImage` always
+        reads data through its parent image's own (already scale-adjusted)
+        read methods.
+        '''
+        for k in list(kwargs.keys()):
+            if k not in ('dtype', 'scale'):
+                raise ValueError('Invalid keyword %s.' % str(k))
+        if kwargs.get('scale', True) is False:
+            raise NotImplementedError(
+                '`scale=False` is not supported by SubImage.load().')
+
+        cnames = ['complex{}'.format(s) for s in spy.COMPLEX_SIZES]
+        ctypes = [np.dtype(n).name for n in cnames if hasattr(np, n)]
+        if 'dtype' in kwargs:
+            dtype = kwargs['dtype']
+        elif np.dtype(self.dtype).name in ctypes:
+            dtype = self.dtype
+        else:
+            dtype = ImageArray.format
+
+        data = self.read_subregion([0, self.nrows], [0, self.ncols])
+        if np.dtype(dtype).name != data.dtype.name:
+            data = data.astype(dtype)
+
+        imarray = ImageArray(data, self)
+        if has_nan(imarray):
+            warnings.warn('Image data contains NaN values.', NaNValueWarning)
+        return imarray
 
 
 def tile_image(im, nrows, ncols):
@@ -630,9 +686,11 @@ class TransformedImage(Image):
         params = img.params()
         self.set_params(params, params.metadata)
 
-        # If img is also a TransformedImage, then just modify the transform
+        # If img is also a TransformedImage, then just modify the transform.
+        # img's transform is applied first, so it's chained ahead of the
+        # new transform being applied here.
         if isinstance(img, TransformedImage):
-            self.transform = self.transform.chain(img.transform)
+            self.transform = img.transform.chain(self.transform)
             self.image = img.image
         else:
             self.image = img
