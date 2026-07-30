@@ -69,19 +69,32 @@ AV3C_SPC = os.path.join(DATA_DIR, '92AV3C.spc')
 _required_optional_deps = set()
 
 
+SKIPPABLE_OPTIONAL_DEPS = {
+    'matplotlib': 'test_spypylab.py (2D matplotlib-based display)',
+    'PIL': 'test_graphics.py (save_rgb/make_pil_image)',
+    'PySide6': ("test_hypercube.py, test_ndwindow.py (construction/"
+                "interaction); also governs whether those files' "
+                "TestRendering classes skip or fail when no real OpenGL "
+                "rendering surface is available"),
+    'OpenGL': 'test_hypercube.py, test_ndwindow.py (construction/interaction)',
+}
+
+
 def pytest_addoption(parser):
     group = parser.getgroup('spectral')
     group.addoption(
         '--require-optional-deps',
         action='store',
         default=None,
-        metavar='DEPS',
+        metavar='{%s,all}' % ','.join(SKIPPABLE_OPTIONAL_DEPS),
         help=(
-            "Comma-separated optional dependency module names (e.g. "
-            "'matplotlib,PIL'), or 'all', for which spectral's graphics "
-            "tests should fail instead of skip if the dependency isn't "
-            "installed. Defaults to the SPECTRAL_REQUIRE_OPTIONAL_DEPS "
-            "environment variable if not given."
+            "Comma-separated names, or 'all', of optional dependencies for "
+            "which spectral's tests should fail instead of skip if the "
+            "dependency isn't installed (or, for 'PySide6', if no working "
+            "OpenGL rendering surface is available). Skippable names: " +
+            '; '.join('%s -- %s' % kv for kv in SKIPPABLE_OPTIONAL_DEPS.items()) +
+            ". Defaults to the SPECTRAL_REQUIRE_OPTIONAL_DEPS environment "
+            "variable if not given."
         ),
     )
 
