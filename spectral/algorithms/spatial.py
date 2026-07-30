@@ -483,8 +483,8 @@ class WindowedGaussianBackgroundMapper(object):
                     mean = mean_out * (float(N_tot) / (N_tot - N_in)) - \
                            mean_in * (float(N_in) / (N_tot - N_in))
                     background.mean = mean
-                    x[i, j] = self.callable(background,
-                                            image[rvals[i], cvals[j]]).item()
+                    x[i, j] = np.asarray(self.callable(
+                        background, image[rvals[i], cvals[j]])).squeeze()
                 if i % (nrows_out // 10) == 0:
                     status.update_percentage(100. * i // nrows_out)
         else:
@@ -508,8 +508,8 @@ class WindowedGaussianBackgroundMapper(object):
                     mean = np.mean(X, axis=0)
                     cov = np.cov(X, rowvar=False)
                     background = GaussianStats(mean, cov)
-                    x[i, j] = self.callable(background,
-                                            image[rvals[i], cvals[j]])
+                    x[i, j] = np.asarray(self.callable(
+                        background, image[rvals[i], cvals[j]])).squeeze()
                 if i % (nrows_out // 10) == 0:
                     status.update_percentage(100. * i / nrows_out)
 
