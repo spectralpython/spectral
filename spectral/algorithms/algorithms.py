@@ -506,7 +506,7 @@ class PrincipalComponents:
         Returns a callable :class:`~spectral.algorithms.transforms.LinearTransform`
         object for denoising image data.
         '''
-        V = self.reduce(self, **kwargs).eigenvectors
+        V = self.reduce(**kwargs).eigenvectors
         f = LinearTransform(V.dot(V.T), pre=-self.mean,
                             post=self.mean)
         return f
