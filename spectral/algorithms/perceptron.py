@@ -33,7 +33,7 @@ class PerceptronLayer:
         '''
         self.k = k
         self.shape = (shape[1], shape[0] + 1)
-        if weights:
+        if weights is not None:
             if weights.shape != self.shape:
                 raise Exception('Shape of weight matrix does not ' \
                                 'match Perceptron layer shape.')
