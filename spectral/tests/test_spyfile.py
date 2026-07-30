@@ -21,6 +21,11 @@ import numpy as np
 import pytest
 
 import spectral as spy
+from spectral.algorithms.transforms import LinearTransform
+from spectral.io.spyfile import (FileNotFoundError as SpyFileNotFoundError,
+                                 SubImage, TransformedImage, find_file_path,
+                                 interleave_transpose, tile_image,
+                                 transform_image)
 
 ENVI_COMPLEX_TEST_SIZES = [64, 28]
 
@@ -360,3 +365,349 @@ class TestSpyFileComplex(_SpyFileReadTests):
         else:
             image._disable_memmap()
         return (image, datum, value)
+
+
+class TestInterleaveTranspose:
+    '''Verifies `interleave_transpose` against ground truth built directly
+    via `numpy.transpose`, independent of the function under test. `R`,
+    `C`, and `B` are chosen distinct so an incorrect axis mapping would
+    show up as a shape or data mismatch rather than accidentally passing.
+    '''
+    R, C, B = 5, 3, 7
+
+    @pytest.fixture(scope='class')
+    def forms(self):
+        canonical = np.arange(self.R * self.C * self.B).reshape(
+            self.R, self.C, self.B)  # bip-shaped: (R, C, B)
+        return {
+            'bip': canonical,
+            'bil': np.transpose(canonical, (0, 2, 1)),  # (R, B, C)
+            'bsq': np.transpose(canonical, (2, 0, 1)),  # (B, R, C)
+        }
+
+    @pytest.mark.parametrize('src', INTERLEAVES)
+    @pytest.mark.parametrize('dst', INTERLEAVES)
+    def test_transpose_matches_ground_truth(self, forms, src, dst):
+        result = np.transpose(forms[src], interleave_transpose(src, dst))
+        assert_allclose(result, forms[dst])
+
+    def test_invalid_first_interleave_raises(self):
+        with pytest.raises(ValueError):
+            interleave_transpose('bad', 'bip')
+
+    def test_invalid_second_interleave_raises(self):
+        with pytest.raises(ValueError):
+            interleave_transpose('bip', 'bad')
+
+
+class TestFindFilePath:
+
+    def test_raises_for_missing_file(self):
+        with pytest.raises(SpyFileNotFoundError):
+            find_file_path('this_file_does_not_exist_xyz.hdr')
+
+    def test_finds_file_via_spectral_data_env_var(self, testdir, monkeypatch):
+        fname = 'findable_test_file.txt'
+        with open(os.path.join(testdir, fname), 'w') as f:
+            f.write('data')
+        monkeypatch.setenv('SPECTRAL_DATA', testdir)
+        path = find_file_path(fname)
+        assert os.path.samefile(path, os.path.join(testdir, fname))
+
+
+SUB_ROW_RANGE = (90, 120)
+SUB_COL_RANGE = (85, 130)
+
+
+@pytest.fixture
+def sub_image_case(av3c_image):
+    sub = SubImage(av3c_image, list(SUB_ROW_RANGE), list(SUB_COL_RANGE))
+    return (av3c_image, sub)
+
+
+class TestSubImage:
+    '''Tests SubImage, a SpyFile-like view onto a rectangular region of a
+    parent image. Every read method is checked against the equivalent read
+    on the parent image, with row/col offsets added manually.
+    '''
+
+    def test_shape(self, sub_image_case):
+        (full, sub) = sub_image_case
+        assert sub.shape == (SUB_ROW_RANGE[1] - SUB_ROW_RANGE[0],
+                             SUB_COL_RANGE[1] - SUB_COL_RANGE[0],
+                             full.nbands)
+
+    @pytest.mark.parametrize('row_range,col_range', [
+        ((-1, 10), (0, 10)),
+        ((0, 100000), (0, 10)),
+        ((0, 10), (-1, 10)),
+        ((0, 10), (0, 100000)),
+    ])
+    def test_construction_out_of_range_raises(self, av3c_image, row_range,
+                                              col_range):
+        with pytest.raises(IndexError):
+            SubImage(av3c_image, list(row_range), list(col_range))
+
+    def test_del_after_failed_construction_does_not_raise(self, av3c_image):
+        '''A SubImage that fails its row/col range validation never reaches
+        `SpyFile.set_params` and so never gets a `fid` attribute; garbage
+        collecting it should not raise/warn out of `SpyFile.__del__`.'''
+        import gc
+        try:
+            SubImage(av3c_image, [-1, 10], [0, 10])
+        except IndexError:
+            pass
+        gc.collect()
+
+    def test_read_pixel(self, sub_image_case):
+        (full, sub) = sub_image_case
+        assert_allclose(
+            sub.read_pixel(5, 7),
+            full.read_pixel(SUB_ROW_RANGE[0] + 5, SUB_COL_RANGE[0] + 7))
+
+    def test_read_band(self, sub_image_case):
+        (full, sub) = sub_image_case
+        band = 50
+        expected = full.read_subregion(list(SUB_ROW_RANGE),
+                                       list(SUB_COL_RANGE), [band])[:, :, 0]
+        assert_allclose(sub.read_band(band), expected)
+
+    def test_read_bands(self, sub_image_case):
+        (full, sub) = sub_image_case
+        bands = [10, 50, 100]
+        expected = full.read_subregion(list(SUB_ROW_RANGE),
+                                       list(SUB_COL_RANGE), bands)
+        assert_allclose(sub.read_bands(bands), expected)
+
+    def test_read_subregion(self, sub_image_case):
+        (full, sub) = sub_image_case
+        region = sub.read_subregion([2, 8], [3, 9])
+        expected = full.read_subregion(
+            [SUB_ROW_RANGE[0] + 2, SUB_ROW_RANGE[0] + 8],
+            [SUB_COL_RANGE[0] + 3, SUB_COL_RANGE[0] + 9])
+        assert_allclose(region, expected)
+
+    def test_read_subregion_with_bands(self, sub_image_case):
+        (full, sub) = sub_image_case
+        bands = [4, 8]
+        region = sub.read_subregion([2, 8], [3, 9], bands)
+        expected = full.read_subregion(
+            [SUB_ROW_RANGE[0] + 2, SUB_ROW_RANGE[0] + 8],
+            [SUB_COL_RANGE[0] + 3, SUB_COL_RANGE[0] + 9], bands)
+        assert_allclose(region, expected)
+
+    def test_read_subimage(self, sub_image_case):
+        (full, sub) = sub_image_case
+        rows = [1, 3, 5]
+        cols = [2, 4]
+        result = sub.read_subimage(rows, cols)
+        expected = full.read_subimage(
+            [SUB_ROW_RANGE[0] + r for r in rows],
+            [SUB_COL_RANGE[0] + c for c in cols])
+        assert_allclose(result, expected)
+
+    def test_read_subimage_with_bands(self, sub_image_case):
+        (full, sub) = sub_image_case
+        rows = [1, 3]
+        cols = [2, 4]
+        bands = [5, 9, 12]
+        result = sub.read_subimage(rows, cols, bands)
+        expected = full.read_subimage(
+            [SUB_ROW_RANGE[0] + r for r in rows],
+            [SUB_COL_RANGE[0] + c for c in cols], bands)
+        assert_allclose(result, expected)
+
+    def test_getitem_pixel(self, sub_image_case):
+        (full, sub) = sub_image_case
+        assert_allclose(sub[5, 7],
+                        full[SUB_ROW_RANGE[0] + 5, SUB_COL_RANGE[0] + 7])
+
+    def test_getitem_datum(self, sub_image_case):
+        (full, sub) = sub_image_case
+        assert_allclose(
+            sub[5, 7, 50],
+            full[SUB_ROW_RANGE[0] + 5, SUB_COL_RANGE[0] + 7, 50])
+
+    def test_getitem_region_slice(self, sub_image_case):
+        (full, sub) = sub_image_case
+        result = sub[2:8, 3:9]
+        expected = full[SUB_ROW_RANGE[0] + 2:SUB_ROW_RANGE[0] + 8,
+                       SUB_COL_RANGE[0] + 3:SUB_COL_RANGE[0] + 9]
+        assert_allclose(result, expected)
+
+    def test_load(self, sub_image_case):
+        (full, sub) = sub_image_case
+        loaded = sub.load()
+        expected = full.read_subregion(list(SUB_ROW_RANGE),
+                                       list(SUB_COL_RANGE))
+        assert_allclose(loaded, expected)
+
+    def test_load_dtype_kwarg(self, sub_image_case):
+        (full, sub) = sub_image_case
+        loaded = sub.load(dtype='f8')
+        assert loaded.dtype == np.dtype('f8')
+
+    def test_load_scale_false_raises(self, sub_image_case):
+        (full, sub) = sub_image_case
+        with pytest.raises(NotImplementedError):
+            sub.load(scale=False)
+
+    def test_load_invalid_kwarg_raises(self, sub_image_case):
+        (full, sub) = sub_image_case
+        with pytest.raises(ValueError):
+            sub.load(bogus=True)
+
+
+class TestTileImage:
+
+    def test_tiles_reconstruct_original_image(self, av3c_image):
+        tiles = tile_image(av3c_image, 3, 4)
+        assert len(tiles) == 3
+        assert all(len(row) == 4 for row in tiles)
+        reconstructed = np.zeros(av3c_image.shape)
+        for row_of_tiles in tiles:
+            for tile in row_of_tiles:
+                r0 = tile.row_offset
+                r1 = r0 + tile.nrows
+                c0 = tile.col_offset
+                c1 = c0 + tile.ncols
+                reconstructed[r0:r1, c0:c1, :] = tile.load()
+        assert_allclose(reconstructed, av3c_image.load())
+
+
+class TestTransformedImage:
+    '''Tests TransformedImage, a lazily-transformed view of a SpyFile that
+    applies a LinearTransform to each pixel as data is read.
+    '''
+
+    @pytest.fixture
+    def xform(self, av3c_image):
+        matrix = np.random.RandomState(0).rand(3, av3c_image.nbands)
+        return LinearTransform(matrix)
+
+    @pytest.fixture
+    def timg(self, av3c_image, xform):
+        return TransformedImage(xform, av3c_image)
+
+    @pytest.fixture
+    def small_timg(self, av3c_image, xform):
+        '''A TransformedImage wrapping just a 5x5 corner of the image, for
+        tests that would otherwise iterate pixel-by-pixel over the full
+        145x145 image.'''
+        sub = SubImage(av3c_image, [0, 5], [0, 5])
+        return TransformedImage(xform, sub)
+
+    def test_rejects_non_image_argument(self, xform):
+        with pytest.raises(Exception):
+            TransformedImage(xform, np.zeros((5, 5, 220)))
+
+    def test_dim_mismatch_raises(self, av3c_image):
+        bad_transform = LinearTransform(
+            np.zeros((3, av3c_image.nbands + 1)))
+        with pytest.raises(Exception):
+            TransformedImage(bad_transform, av3c_image)
+
+    def test_shape(self, timg, av3c_image):
+        assert timg.shape == (av3c_image.nrows, av3c_image.ncols, 3)
+
+    def test_bands_property_delegates_to_wrapped_image(self, timg,
+                                                        av3c_image):
+        assert timg.bands is av3c_image.bands
+
+    def test_read_pixel(self, timg, xform, av3c_image):
+        (i, j, k) = REAL_FILE_DATUM
+        expected = xform(av3c_image.read_pixel(i, j))
+        assert_allclose(timg.read_pixel(i, j), expected)
+
+    def test_read_datum(self, timg, xform, av3c_image):
+        (i, j, k) = REAL_FILE_DATUM
+        expected = xform(av3c_image.read_pixel(i, j))[0]
+        assert_allclose(timg.read_datum(i, j, 0), expected)
+
+    def test_load(self, timg, xform, av3c_image):
+        expected = xform(av3c_image.load())
+        assert_allclose(timg.load(), expected)
+
+    def test_read_subregion(self, timg, xform, av3c_image):
+        region = timg.read_subregion((10, 20), (30, 40))
+        expected = xform(av3c_image.read_subregion((10, 20), (30, 40)))
+        assert_allclose(region, expected)
+
+    def test_read_subregion_with_bands(self, timg, xform, av3c_image):
+        region = timg.read_subregion((10, 20), (30, 40), [0, 2])
+        expected = xform(av3c_image.read_subregion((10, 20), (30, 40)))
+        assert_allclose(region, expected[:, :, [0, 2]])
+
+    def test_read_subimage(self, timg, xform, av3c_image):
+        (rows, cols) = ([10, 15, 20], [30, 35])
+        result = timg.read_subimage(rows, cols)
+        expected = xform(av3c_image.read_subimage(rows, cols))
+        assert_allclose(result, expected)
+
+    def test_read_subimage_with_bands(self, timg, xform, av3c_image):
+        (rows, cols) = ([10, 15], [30, 35])
+        result = timg.read_subimage(rows, cols, [0, 2])
+        expected = xform(av3c_image.read_subimage(rows, cols))
+        assert_allclose(result, expected[:, :, [0, 2]])
+
+    def test_read_bands(self, small_timg, xform):
+        bands = [0, 2]
+        result = small_timg.read_bands(bands)
+        expected = np.zeros((5, 5, len(bands)))
+        for i in range(5):
+            for j in range(5):
+                expected[i, j] = small_timg.read_pixel(i, j)[bands]
+        assert_allclose(result, expected)
+
+    def test_str(self, timg):
+        s = str(timg)
+        assert 'TransformedImage' in s
+        assert '# Bands' in s
+
+    def test_double_wrap_chains_transforms(self, av3c_image):
+        '''Wrapping a TransformedImage in another TransformedImage should
+        collapse to directly wrapping the original image with a single
+        chained transform (see TransformedImage.__init__), rather than
+        nesting. This also exercises LinearTransform.chain() end-to-end.
+        '''
+        t1 = LinearTransform(np.random.RandomState(1).rand(5, av3c_image.nbands))
+        t2 = LinearTransform(np.random.RandomState(2).rand(3, 5))
+        inner = TransformedImage(t1, av3c_image)
+        outer = TransformedImage(t2, inner)
+
+        assert outer.image is av3c_image
+
+        (i, j, k) = REAL_FILE_DATUM
+        expected = t2(t1(av3c_image.read_pixel(i, j)))
+        assert_allclose(outer.read_pixel(i, j), expected)
+
+
+class TestTransformImageFunction:
+    '''Tests the module-level `transform_image` function, which
+    `SpyFile.transform` delegates to.'''
+
+    def test_ndarray_with_linear_transform(self, av3c_image):
+        data = av3c_image.read_subregion([0, 5], [0, 5])
+        xform = LinearTransform(np.eye(av3c_image.nbands) * 2)
+        result = transform_image(xform, data)
+        assert_allclose(result, data * 2)
+
+    def test_ndarray_with_plain_matrix(self, av3c_image):
+        data = av3c_image.read_subregion([0, 3], [0, 3])
+        matrix = np.eye(av3c_image.nbands) * 3
+        result = transform_image(matrix, data)
+        assert_allclose(result, data * 3)
+
+    def test_spyfile_returns_transformed_image(self, av3c_image):
+        xform = LinearTransform(np.eye(av3c_image.nbands))
+        result = transform_image(xform, av3c_image)
+        assert isinstance(result, TransformedImage)
+
+    def test_spyfile_transform_method(self, av3c_image):
+        '''SpyFile.transform() is a thin wrapper around transform_image().'''
+        xform = LinearTransform(np.eye(av3c_image.nbands) * 2)
+        result = av3c_image.transform(xform)
+        assert isinstance(result, TransformedImage)
+        (i, j, k) = REAL_FILE_DATUM
+        assert_allclose(result.read_pixel(i, j),
+                        2 * av3c_image.read_pixel(i, j))

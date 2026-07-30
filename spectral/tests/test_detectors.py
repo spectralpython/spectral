@@ -55,6 +55,33 @@ class TestMatchedFilter:
         y = spy.matched_filter(X, X[ij], window=(3, 7), cov=self.background.cov)
         np.allclose(1, y[ij])
 
+    def test_mf_windowed_target_eq_one_no_cov(self):
+        '''Windowed Matched Filter without a supplied `cov` (background
+        covariance recomputed for every window) should also score the
+        target pixel as one. A bigger window is needed here than in
+        `test_mf_windowed_target_eq_one` since, without a precomputed
+        `cov`, the outer window must contain at least as many pixels as
+        there are bands (220) to estimate a full-rank covariance.'''
+        X = self.data[:25, :25, :]
+        ij = (12, 12)
+        y = spy.matched_filter(X, X[ij], window=(3, 21))
+        assert np.allclose(1, y[ij])
+
+    def test_mf_whiten(self):
+        '''`whiten` should match its documented closed-form definition.'''
+        X = self.data[:5, :5, :].reshape(-1, self.data.shape[-1])
+        whitened = self.mf.whiten(X)
+        expected = (np.sqrt(self.mf.coef) * self.background.sqrt_inv_cov).dot(
+            (X - self.background.mean).T).T
+        assert np.allclose(whitened, expected)
+
+    def test_matched_filter_mutually_exclusive_raises(self):
+        from spectral.algorithms.detectors import matched_filter
+        (i, j) = self.target_ij
+        with pytest.raises(ValueError):
+            matched_filter(self.data, self.data[i, j],
+                           background=self.background, window=(3, 7))
+
 
 class TestRX:
     @pytest.fixture(autouse=True)
@@ -66,6 +93,49 @@ class TestRX:
         from spectral.algorithms.detectors import rx
         stats = spy.calc_stats(self.data)
         np.testing.assert_approx_equal(rx(stats.mean, background=stats), 0)
+
+    def test_rx_call_without_background_computes_stats(self):
+        from spectral.algorithms.detectors import RX
+        detector = RX()
+        assert detector.background is None
+        scores = detector(self.data[:5, :5, :])
+        assert detector.background is not None
+        assert scores.shape == (5, 5)
+
+    def test_rx_call_rejects_non_ndarray(self):
+        from spectral.algorithms.detectors import RX
+        with pytest.raises(TypeError):
+            RX()([1, 2, 3])
+
+    def test_rx_mutually_exclusive_raises(self):
+        from spectral.algorithms.detectors import rx
+        with pytest.raises(ValueError):
+            rx(self.data, background=self.background, window=(3, 7))
+
+    def test_rx_windowed_flags_outlier(self):
+        '''A pixel that's a clear spectral outlier relative to its
+        surrounding window should score much higher than typical
+        (non-outlier) pixels.'''
+        from spectral.algorithms.detectors import rx
+        img = np.random.RandomState(0).normal(
+            size=(20, 20, 5)).astype(float)
+        outlier_ij = (10, 10)
+        img[outlier_ij] += 20.0
+        scores = rx(img, window=(3, 9))
+        assert scores[outlier_ij] > 10 * np.median(scores)
+
+    def test_rx_windowed_with_cov_flags_outlier(self):
+        '''Same as `test_rx_windowed_flags_outlier`, but supplying a
+        precomputed `cov` (only the background mean is recomputed per
+        window).'''
+        from spectral.algorithms.detectors import rx
+        img = np.random.RandomState(0).normal(
+            size=(20, 20, 5)).astype(float)
+        outlier_ij = (10, 10)
+        img[outlier_ij] += 20.0
+        cov = spy.calc_stats(img).cov
+        scores = rx(img, window=(3, 9), cov=cov)
+        assert scores[outlier_ij] > 10 * np.median(scores)
 
 
 class TestACE:
@@ -157,3 +227,76 @@ class TestACE:
         ij = (10, 10)
         y = spy.ace(self.X, self.X[ij], window=(3, 7), cov=self.bg.cov)
         assert (np.allclose(1, y[ij]))
+
+    def test_ace_windowed_target_eq_one_no_cov(self):
+        '''Same as `test_ace_windowed_target_eq_one`, but without a
+        precomputed `cov` (background mean and covariance are both
+        recomputed for every window). A bigger outer window is needed
+        here since, without a precomputed `cov`, it must contain at least
+        as many pixels as there are bands (220) to estimate a full-rank
+        covariance.'''
+        ij = (10, 10)
+        y = spy.ace(self.X, self.X[ij], window=(3, 19))
+        assert (np.allclose(1, y[ij]))
+
+    def test_ace_windowed_multi_targets_eq_one(self):
+        '''Windowed ACE score of each target, for a list of multiple
+        targets, should be one at that target's own pixel.'''
+        ij1 = (5, 5)
+        ij2 = (12, 14)
+        y = spy.ace(self.X, [self.X[ij1], self.X[ij2]], window=(3, 19))
+        assert y.shape == self.X.shape[:2] + (2,)
+        assert np.allclose(1, y[ij1][0])
+        assert np.allclose(1, y[ij2][1])
+
+    def test_ace_windowed_multi_targets_eq_one_with_cov(self):
+        '''Same as `test_ace_windowed_multi_targets_eq_one`, but with a
+        precomputed `cov`.'''
+        ij1 = (5, 5)
+        ij2 = (12, 14)
+        y = spy.ace(self.X, [self.X[ij1], self.X[ij2]], window=(3, 7),
+                    cov=self.bg.cov)
+        assert y.shape == self.X.shape[:2] + (2,)
+        assert np.allclose(1, y[ij1][0])
+        assert np.allclose(1, y[ij2][1])
+
+    def test_ace_set_target_none(self):
+        from spectral.algorithms.detectors import ACE
+        ij = (10, 10)
+        detector = ACE(self.X[ij], background=self.bg)
+        assert detector._P is not None
+        detector.set_target(None)
+        assert detector._target is None
+        assert detector._P is None
+
+    def test_ace_call_rejects_non_ndarray(self):
+        from spectral.algorithms.detectors import ACE
+        ij = (10, 10)
+        detector = ACE(self.X[ij], background=self.bg)
+        with pytest.raises(TypeError):
+            detector([1, 2, 3])
+
+    def test_ace_auto_background(self):
+        '''Constructing an ACE detector without `background` and calling
+        it directly should compute background stats from the given data.'''
+        from spectral.algorithms.detectors import ACE
+        ij = (10, 10)
+        detector = ACE(self.X[ij])
+        assert detector._background is None
+        scores = detector(self.X)
+        assert detector._background is not None
+        assert np.allclose(1, scores[ij])
+
+    def test_ace_function_auto_background_multi_target(self):
+        '''`spy.ace` with a list of targets and no `background`/`window`
+        should compute background stats once from the given data.'''
+        ij1 = (5, 5)
+        ij2 = (12, 14)
+        y = spy.ace(self.X, [self.X[ij1], self.X[ij2]])
+        assert np.allclose(1, y[ij1][0])
+        assert np.allclose(1, y[ij2][1])
+
+    def test_ace_function_mutually_exclusive_raises(self):
+        ij = (10, 10)
+        with pytest.raises(ValueError):
+            spy.ace(self.X, self.X[ij], background=self.bg, window=(3, 7))
