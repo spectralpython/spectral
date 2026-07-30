@@ -411,7 +411,7 @@ class ACE():
                 consume more memory.
         '''
         for k in kwargs:
-            if k not in ('vectorize'):
+            if k not in ('vectorize',):
                 raise ValueError('Invalid keyword: {0}'.format(k))
         self.vectorize = kwargs.get('vectorize', True)
         self._target = None
@@ -674,8 +674,6 @@ def ace(X, target, background=None, window=None, cov=None, **kwargs):
 
             result = map_outer_window_stats(ace_wrapper, X, window[0], window[1],
                                             dim_out=len(target), cov=cov)
-            if result.ndim == 3:
-                result = result.transpose(1, 2, 0)
 
     # Convert NaN values to zero
     result = np.nan_to_num(result)
