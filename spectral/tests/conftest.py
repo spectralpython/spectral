@@ -28,6 +28,16 @@ variable, if the option isn't given) turns a missing import for the named
 module(s) into a hard test failure instead of a skip -- useful for a CI job
 that's supposed to guarantee those tests actually ran. Run `pytest --help`
 and look under the "spectral" group for the option's description.
+
+The Qt/OpenGL 3D window tests (`test_hypercube.py`, `test_ndwindow.py`, the
+"gui3d" marker) additionally need a Qt platform plugin that can actually
+render a QOpenGLWidget -- Qt's "offscreen" plugin can construct a
+QApplication with no display at all, but cannot host QOpenGLWidget, so a
+real or virtual (Xvfb) display is needed for those specific tests. Use the
+`require_gui3d` fixture to gate a test on that capability; it skips (or
+fails, if 'PySide6' is in --require-optional-deps) when unavailable. Most
+GUI3D interaction logic (construction, keyboard/mouse handling) doesn't
+actually need real rendering and works fine under "offscreen".
 '''
 
 import importlib
@@ -105,6 +115,10 @@ def pytest_configure(config):
         'filterwarnings',
         'ignore:Class-scoped fixture defined as instance method is deprecated:DeprecationWarning',
     )
+    config.addinivalue_line(
+        'markers',
+        'gui3d: Qt/OpenGL 3D window tests (hypercube.py, ndwindow.py).',
+    )
 
 
 @pytest.fixture(autouse=True, scope='session')
@@ -140,3 +154,62 @@ def av3c_image():
 @pytest.fixture
 def gt():
     return np.array(spy.open_image('92AV3GT.GIS').read_band(0))
+
+
+@pytest.fixture(scope='session')
+def qapp():
+    '''Session-scoped QApplication for the Qt/OpenGL 3D window tests.
+
+    Constructing this only needs PySide6 to be importable and a Qt platform
+    plugin to be available -- it works under Qt's "offscreen" platform with
+    no real or virtual display. Actually rendering a QOpenGLWidget is a
+    stronger requirement; see `gui3d_capable`/`require_gui3d`.
+    '''
+    import_or_require('PySide6')
+    from PySide6.QtWidgets import QApplication
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication([])
+    return app
+
+
+@pytest.fixture(scope='session')
+def gui3d_capable(qapp):
+    '''Whether this environment can actually render an OpenGL-backed Qt
+    widget. A QApplication alone isn't sufficient -- e.g. Qt's "offscreen"
+    platform plugin cannot host QOpenGLWidget -- so this probes for a real
+    working GL surface by rendering a trivial widget and checking whether
+    Qt actually invoked initializeGL on it.
+    '''
+    from PySide6.QtOpenGLWidgets import QOpenGLWidget
+
+    class _Probe(QOpenGLWidget):
+        rendered = False
+
+        def initializeGL(self):
+            self.rendered = True
+
+    widget = _Probe()
+    widget.resize(64, 64)
+    widget.show()
+    for _ in range(10):
+        qapp.processEvents()
+    ok = widget.rendered
+    widget.close()
+    return ok
+
+
+@pytest.fixture
+def require_gui3d(gui3d_capable):
+    '''Skips (or fails, under `--require-optional-deps=PySide6`) a test
+    that needs a real OpenGL-backed Qt widget to render.
+    '''
+    if gui3d_capable:
+        return
+    reason = ('No working OpenGL-backed Qt surface in this environment (no '
+              'display/Xvfb, or the active Qt platform plugin does not '
+              'support QOpenGLWidget). Run under a real display, or via '
+              '`xvfb-run -a pytest ...`, to enable these tests.')
+    if 'all' in _required_optional_deps or 'PySide6' in _required_optional_deps:
+        pytest.fail(reason)
+    pytest.skip(reason)

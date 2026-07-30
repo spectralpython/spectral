@@ -152,8 +152,15 @@ class TestMplCallback:
         cb = MplCallback(registry=registry, event='ev', callback=bad_callback)
         cb.raise_event_exceptions = True
         cb.connect()
+        # Call the callback directly rather than via registry.process():
+        # CallbackRegistry.process() has its own exception handler
+        # (matplotlib.cbook._exception_printer) that only lets exceptions
+        # propagate when no interactive GUI framework is detected as
+        # running -- which depends on ambient process state (e.g. whether
+        # a QApplication exists) unrelated to what's being tested here,
+        # namely MplCallback's own re-raise behavior.
         with pytest.raises(RuntimeError):
-            registry.process('ev', 'payload')
+            cb('payload')
 
 
 class TestImageViewShow:
