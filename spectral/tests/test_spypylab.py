@@ -95,12 +95,11 @@ class TestKeyParser:
         with pytest.raises(ValueError):
             KeyParser('foo+a')
 
-    def test_mods_are_is_a_subset_check(self):
-        # Despite the docstring, `mods_are` only checks that the given
-        # modifiers are present, not that they are the *only* ones present.
+    def test_mods_are_matches_exact_modifier_set(self):
         kp = KeyParser('ctrl+shift+a')
-        assert kp.mods_are('ctrl')
         assert kp.mods_are('ctrl', 'shift')
+        assert kp.mods_are('shift', 'ctrl')  # Order shouldn't matter.
+        assert not kp.mods_are('ctrl')  # Missing 'shift'.
         assert not kp.mods_are('alt')
 
 
@@ -188,6 +187,21 @@ class TestImageViewShow:
         view = ImageView(classes=classes)
         view.show()
         assert view.display_mode == 'classes'
+
+    def test_rectangle_selector_failure_degrades_gracefully(self, monkeypatch):
+        import matplotlib.widgets
+
+        class BadSelector:
+            def __init__(self, *a, **k):
+                raise RuntimeError('boom')
+
+        monkeypatch.setattr(matplotlib.widgets, 'RectangleSelector', BadSelector)
+        data = np.random.rand(4, 4, 3)
+        view = ImageView(data=data)
+        with pytest.warns(UserWarning):
+            view.show()
+        assert view.is_shown
+        assert view.selector is None
 
     def test_show_with_no_data_raises(self):
         view = ImageView()
@@ -412,9 +426,12 @@ class TestPlotFunction:
     def test_plots_each_row_of_2d_data_as_a_series(self):
         import matplotlib.pyplot as plt
         data = np.array([[1., 2., 3.], [4., 5., 6.]])
-        plot(data)
+        result = plot(data)
         lines = plt.gca().get_lines()
         assert len(lines) == 2
+        # The return value should include every plotted line, not just the
+        # last one.
+        assert list(result) == lines
 
     def test_uses_band_centers_and_labels_axis(self):
         import matplotlib.pyplot as plt

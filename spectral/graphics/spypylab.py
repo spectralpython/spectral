@@ -398,10 +398,7 @@ class KeyParser(object):
 
     def mods_are(self, *args):
         '''Return True if modifiers are exactly the ones specified.'''
-        for a in args:
-            if a not in self.modifiers:
-                return False
-        return True
+        return self.modifiers == set(args)
 
     def get_token_modifiers(self, token):
         mods = set()
@@ -796,13 +793,11 @@ class ImageView(object):
                                                   {'square': None,
                                                    'center': None})
             self.selector.set_active(False)
-        except:
-            raise
+        except Exception:
             self.selector = None
             msg = 'Failed to create RectangleSelector object. Interactive ' \
               'pixel class labeling will be unavailable.'
             warnings.warn(msg)
-            pass
 
     def label_region(self, rectangle, class_id):
         '''Assigns all pixels in the rectangle to the specified class.
@@ -1270,8 +1265,9 @@ def plot(data, source=None):
         # Do not plot bad bands
         data = np.array(data)
         data[:, np.array(source.metadata['bbl']) == 0] = None
+    p = []
     for x in data:
-        p = plt.plot(xvals, x)
+        p += plt.plot(xvals, x)
     spectral._xyplot = p
     plt.grid(1)
     if source is not None and hasattr(source, 'bands'):
