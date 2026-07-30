@@ -1,0 +1,32 @@
+Name: Test Mineral One
+Type: mineral
+Class: silicate
+Subclass: tectosilicate
+Particle Size: Solid
+Sample No.: TST001
+Owner: Test Owner
+Wavelength Range: All
+Origin: Test origin facility
+ continued origin text
+Description: Line one of description.
+Line two.
+Line three.
+Line four.
+Line five.
+Line six.
+Measurement: Reflectance
+First Column: X
+Second Column: Y
+X Units: Wavelength (micrometers)
+Y Units: Reflectance (percent)
+First X Value: 0.4000
+Last X Value: 2.0000
+Number of X Values: 5
+Additional Information: none
+ more info continuation
+
+ 0.4000	10.0000
+ 0.8000	20.0000
+ 1.2000	30.0000
+ 1.6000	40.0000
+ 2.0000	50.0000

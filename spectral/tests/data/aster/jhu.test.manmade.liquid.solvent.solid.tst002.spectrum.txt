@@ -1,0 +1,31 @@
+Name: Test Liquid Sample
+Type: manmade
+Class: liquid
+Subclass: solvent
+Particle Size: Liquid
+Sample No.: TST002
+Owner: Test Owner Two
+Wavelength Range: VNIR
+Origin: Test liquid origin
+ more origin text
+Description: First line about the liquid.
+Second line.
+Third line.
+Fourth line.
+Fifth line.
+Sixth line.
+Measurement: Transmittance
+First Column: X
+Second Column: Y
+X Units: Wavelength (micrometers)
+Y Units: Transmittance (percent)
+First X Value: 0.5000
+Last X Value: 1.5000
+Number of X Values: 4
+Additional Information: none
+ more info
+
+ 0.5000	5.0000
+ 0.8000	15.0000
+ 1.1000	25.0000
+ 1.5000	35.0000
