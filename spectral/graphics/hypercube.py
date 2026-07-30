@@ -238,13 +238,7 @@ class HypercubeWindow(QOpenGLWidget, SpyWindow):
         texImages = []
         (a, b, c) = data.shape
         for i in range(len(images)):
-            try:
-                # API change for Pillow
-                img = images[i].tobytes("raw", "RGBX", 0, -1)
-            except:
-                # Fall back to old PIL API
-                img = images[i].tostring("raw", "RGBX", 0, -1)
-                pass
+            img = images[i].tobytes("raw", "RGBX", 0, -1)
             (dim_x, dim_y) = images[i].size
             texImages.append(img)
 
