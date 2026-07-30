@@ -409,7 +409,7 @@ class NDWindow(QOpenGLWidget):
         denom = (maxes - mins).astype(float)
         denom = np.where(denom > 0, denom, 1.0)
         self.data = (data2d - mins) / denom
-        self.data.shape = data.shape
+        self.data = self.data.reshape(data.shape)
 
         self.palette = spy_colors.astype(float) / 255.
         self.palette[0] = np.array([1.0, 1.0, 1.0])
