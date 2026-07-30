@@ -850,7 +850,7 @@ def interleave_transpose(int1, int2):
     int2 = int2.lower()
     if int1 == 'bil':
         if int2 == 'bil':
-            return (1, 1, 1)
+            return (0, 1, 2)
         elif int2 == 'bip':
             return (0, 2, 1)
         else:
@@ -859,7 +859,7 @@ def interleave_transpose(int1, int2):
         if int2 == 'bil':
             return (0, 2, 1)
         elif int2 == 'bip':
-            return (1, 1, 1)
+            return (0, 1, 2)
         else:
             return (2, 0, 1)
     else:  # bsq
@@ -868,4 +868,4 @@ def interleave_transpose(int1, int2):
         elif int2 == 'bip':
             return (1, 2, 0)
         else:
-            return (1, 1, 1)
+            return (0, 1, 2)
