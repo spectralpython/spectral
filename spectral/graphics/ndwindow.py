@@ -21,7 +21,7 @@ from .. import settings
 from ..config import spy_colors
 from .hypercube import ensure_qt_event_loop
 from .spypylab import ImageView, SpyMplEvent
-from .graphics import WindowProxy
+from .graphics import WindowProxy, suppress_render_exceptions
 
 DEFAULT_WIN_SIZE = (500, 500)           # Default dimensions of image frame
 
@@ -612,6 +612,7 @@ class NDWindow(QOpenGLWidget):
 
         self.update_viewport(*self.win_size)
 
+    @suppress_render_exceptions
     def paintGL(self):
         '''Renders the entire scene.'''
         import OpenGL.GL as gl
@@ -853,6 +854,7 @@ class NDWindow(QOpenGLWidget):
                 pass
         gl.glEndList()
 
+    @suppress_render_exceptions
     def initializeGL(self):
         '''App-specific initialization for after GL context is available.'''
         import OpenGL.GL as gl
@@ -876,6 +878,7 @@ class NDWindow(QOpenGLWidget):
 
         self.print_help()
 
+    @suppress_render_exceptions
     def resizeGL(self, width, height):
         """Reshape the OpenGL viewport based on dimensions of the window."""
         self.update_viewport(width, height)

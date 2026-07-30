@@ -4,6 +4,8 @@ Common functions for extracting and manipulating data for graphical display.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import functools
+import traceback
 from numbers import Number
 import numpy as np
 import sys
@@ -24,6 +26,25 @@ class WindowProxy(object):
 class SpyWindow():
     def get_proxy(self):
         return WindowProxy(self)
+
+
+def suppress_render_exceptions(func):
+    '''Decorator for Qt-invoked OpenGL callbacks (initializeGL, paintGL,
+    resizeGL).
+
+    An exception raised from inside one of these methods doesn't propagate
+    back as a normal Python exception -- it has to cross back into Qt's C++
+    event dispatch first, and has been observed to crash the interpreter
+    (segfault) rather than raise cleanly. This logs the exception and
+    returns instead of letting it escape.
+    '''
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        try:
+            return func(self, *args, **kwargs)
+        except Exception:
+            traceback.print_exc()
+    return wrapper
 
 
 def view_cube(data, *args, **kwargs):

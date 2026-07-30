@@ -19,7 +19,7 @@ except ImportError:
 from .. import settings
 from ..io.spyfile import SpyFile
 from .colorscale import create_default_color_scale
-from .graphics import make_pil_image, SpyWindow
+from .graphics import make_pil_image, SpyWindow, suppress_render_exceptions
 
 DEFAULT_WIN_SIZE = (500, 500)           # Default dimensions of image frame
 DEFAULT_TEXTURE_SIZE = (
@@ -257,6 +257,7 @@ class HypercubeWindow(QOpenGLWidget, SpyWindow):
             gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, 3, dim_x, dim_y,
                             0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, texImages[i])
 
+    @suppress_render_exceptions
     def initializeGL(self):
         """Initialize OpenGL for use in the window."""
         import OpenGL.GL as gl
@@ -285,6 +286,7 @@ class HypercubeWindow(QOpenGLWidget, SpyWindow):
 
         self.print_help()
 
+    @suppress_render_exceptions
     def paintGL(self):
         """Process the drawing event."""
         import OpenGL.GL as gl
@@ -413,6 +415,7 @@ class HypercubeWindow(QOpenGLWidget, SpyWindow):
             -hw, -hh, -hz)  # Top Left Of The Texture and Quad
         gl.glEnd()
 
+    @suppress_render_exceptions
     def resizeGL(self, width, height):
         """Reshape the OpenGL viewport based on dimensions of the window."""
         import OpenGL.GL as gl
