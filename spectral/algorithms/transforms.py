@@ -134,32 +134,36 @@ class LinearTransform:
 
         if isinstance(transform, np.ndarray):
             transform = LinearTransform(transform)
-        if self.dim_in is not None and transform.dim_out is not None \
-                and self.dim_in != transform.dim_out:
+        if self.dim_out is not None and transform.dim_in is not None \
+                and self.dim_out != transform.dim_in:
             raise Exception('Input/Output dimensions of chained transforms'
                             'do not match.')
 
         # Internally, the new transform is computed as:
-        # Y = f2._A.dot(f1._A).(X + f1._pre) + f2._A.(f1._post + f2._pre) + f2._post
+        # Y = f2._A.dot(f1._A).dot(X + f1._pre) + f2._A.dot(f1._post + f2._pre) + f2._post
         # However, any of the _pre/_post members could be `None` so that needs
         # to be checked.
 
-        if transform._pre is not None:
-            pre = np.array(transform._pre)
+        if self._pre is not None:
+            pre = np.array(self._pre)
         else:
             pre = None
+
+        if self._post is not None:
+            offset = np.array(self._post)
+            if transform._pre is not None:
+                offset = offset + transform._pre
+        elif transform._pre is not None:
+            offset = np.array(transform._pre)
+        else:
+            offset = None
         post = None
+        if offset is not None:
+            post = transform._A.dot(offset)
         if transform._post is not None:
-            post = np.array(transform._post)
-            if self._pre is not None:
-                post += self._pre
-        elif self._pre is not None:
-            post = np.array(self._pre)
-        if post is not None:
-            post = self._A.dot(post)
-        if self._post:
-            post += self._post
-        if post is not None:
-            post = np.array(post)
-        A = np.dot(self._A, transform._A)
+            if post is not None:
+                post = post + transform._post
+            else:
+                post = np.array(transform._post)
+        A = np.dot(transform._A, self._A)
         return LinearTransform(A, pre=pre, post=post)
