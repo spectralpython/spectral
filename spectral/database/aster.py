@@ -266,7 +266,7 @@ class AsterDatabase(SpectralDatabase):
             numFiles += 1
             sig = self.read_file(f)
             s = sig.sample
-            if s['particle size'].lower == 'liquid':
+            if s['particle size'].lower() == 'liquid':
                 phase = 'liquid'
             else:
                 phase = 'solid'
@@ -339,7 +339,7 @@ class AsterDatabase(SpectralDatabase):
         result = self.cursor.execute(query, (spectrumID,))
         rows = result.fetchall()
         if len(rows) < 1:
-            raise 'Measurement record not found'
+            raise Exception('Measurement record not found')
         x = array.array(arraytypecode)
         frombytes(x, rows[0][0])
         y = array.array(arraytypecode)
@@ -385,7 +385,7 @@ class AsterDatabase(SpectralDatabase):
         result = self.cursor.execute(query, (spectrumID,))
         results = result.fetchall()
         if len(results) < 1:
-            raise "Measurement record not found"
+            raise Exception('Measurement record not found')
 
         sig = Signature()
         sig.measurement_id = spectrumID

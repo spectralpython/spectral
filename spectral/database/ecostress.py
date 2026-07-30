@@ -174,7 +174,7 @@ class EcostressDatabase(AsterDatabase):
             sig = self.read_file(f)
             s = sig.sample
             if 'particle size' in s:
-                if s['particle size'].lower == 'liquid':
+                if s['particle size'].lower() == 'liquid':
                     phase = 'liquid'
                 else:
                     phase = 'solid'
