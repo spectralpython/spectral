@@ -1164,10 +1164,10 @@ def ndvi(data, red, nir):
 
     r = data[:, :, red].astype(float)
     if len(r.shape) == 3 and r.shape[2] > 1:
-        r = sum(r, 2) / r.shape[2]
+        r = np.mean(r, axis=2)
     n = data[:, :, nir].astype(float)
     if len(n.shape) == 3 and n.shape[2] > 1:
-        n = sum(n, 2) / n.shape[2]
+        n = np.mean(n, axis=2)
 
     return (n - r) / (n + r)
 
@@ -1257,7 +1257,7 @@ def transform_image(matrix, image):
                 ximage[i, j] = np.dot(matrix, image[i, j].astype(float))
         return ximage
     else:
-        raise 'Unrecognized image type passed to transform_image.'
+        raise TypeError('Unrecognized image type passed to transform_image.')
 
 
 def orthogonalize(vecs, start=0):

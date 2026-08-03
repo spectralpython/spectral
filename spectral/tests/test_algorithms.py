@@ -5,6 +5,8 @@ To run the unit tests, type the following from the system command line:
     # pytest spectral/tests/test_algorithms.py
 '''
 
+from types import SimpleNamespace
+
 import numpy as np
 from numpy.testing import assert_allclose
 import pytest
@@ -12,8 +14,13 @@ import pytest
 import spectral as spy
 from spectral.algorithms.algorithms import (mean_cov, calc_stats, iterator,
                                             iterator_ij, ImageIterator,
-                                            ImageMaskIterator)
+                                            ImageMaskIterator, GaussianStats,
+                                            ndvi, bdist, bdist_terms,
+                                            cov_avg, covariance, log_det,
+                                            transform_image, unmix,
+                                            spectral_angles, msam)
 from spectral.algorithms.transforms import LinearTransform
+from spectral.io.spyfile import TransformedImage
 from spectral.utilities.errors import NaNValueError
 
 
@@ -267,3 +274,206 @@ class TestMNFResult:
     def test_num_from_kwargs_rejects_unknown_kwarg(self, mnfr):
         with pytest.raises(Exception):
             mnfr._num_from_kwargs(bogus=1)
+
+
+class TestNdvi:
+
+    @pytest.fixture
+    def wide_data(self):
+        '''A synthetic image with more bands than the shared `data`
+        fixture, wide enough for multi-band red/nir ranges.'''
+        return np.random.RandomState(0).rand(6, 5, 10)
+
+    def test_single_band(self, wide_data):
+        red = 2
+        nir = 6
+        result = ndvi(wide_data, red, nir)
+        r = wide_data[:, :, red].astype(float)
+        n = wide_data[:, :, nir].astype(float)
+        assert_allclose(result, (n - r) / (n + r))
+
+    def test_multi_band_range_is_unbiased_mean(self, wide_data):
+        '''Regression test: `ndvi` used to sum (rather than average) a
+        multi-band red/nir range using Python's builtin `sum()`, which
+        doesn't operate along the band axis at all -- it silently
+        produced a wrong-shaped, wrong-valued result. Using unevenly
+        sized red/nir ranges here would also catch a reintroduced version
+        of that bug that summed instead of averaged (which would bias the
+        result toward whichever range has more bands).'''
+        red = slice(2, 4)      # 2 bands
+        nir = slice(5, 8)      # 3 bands
+        result = ndvi(wide_data, red, nir)
+        assert result.shape == wide_data.shape[:2]
+        r = np.mean(wide_data[:, :, red].astype(float), axis=2)
+        n = np.mean(wide_data[:, :, nir].astype(float), axis=2)
+        assert_allclose(result, (n - r) / (n + r))
+
+
+class TestBdist:
+
+    @pytest.fixture
+    def two_classes(self):
+        rng = np.random.RandomState(0)
+        d1 = rng.rand(50, 3)
+        d2 = rng.rand(50, 3) + 2.0
+
+        def make_class(d):
+            stats = GaussianStats(mean=d.mean(0),
+                                  cov=np.cov(d, rowvar=False),
+                                  nsamples=d.shape[0])
+            return SimpleNamespace(stats=stats)
+
+        return (make_class(d1), make_class(d2))
+
+    def test_bdist_is_sum_of_terms(self, two_classes):
+        (c1, c2) = two_classes
+        terms = bdist_terms(c1, c2)
+        assert_allclose(bdist(c1, c2), terms[0] + terms[1])
+
+    def test_bdist_terms_lin_term_zero_for_identical_classes(self,
+                                                             two_classes):
+        (c1, _) = two_classes
+        (lin_term, quad_term) = bdist_terms(c1, c1)
+        assert_allclose(lin_term, 0.0, atol=1e-10)
+        assert_allclose(quad_term, 0.0, atol=1e-10)
+
+    def test_bdist_positive_for_different_classes(self, two_classes):
+        (c1, c2) = two_classes
+        assert bdist(c1, c2) > 0
+
+
+class TestCovAvg:
+
+    @pytest.fixture
+    def masked_image(self):
+        rng = np.random.RandomState(0)
+        img = rng.rand(10, 10, 4)
+        mask = np.zeros((10, 10), int)
+        mask[:5, :] = 1
+        mask[5:, :] = 2
+        return (img, mask)
+
+    def test_weighted_matches_manual_calc(self, masked_image):
+        (img, mask) = masked_image
+        result = cov_avg(img, mask, weighted=True)
+        s1 = calc_stats(img, mask, 1)
+        s2 = calc_stats(img, mask, 2)
+        N = s1.nsamples + s2.nsamples
+        expected = (((s1.nsamples - 1) / float(N - 1)) * s1.cov +
+                   ((s2.nsamples - 1) / float(N - 1)) * s2.cov)
+        assert_allclose(result, expected)
+
+    def test_unweighted_matches_manual_calc(self, masked_image):
+        (img, mask) = masked_image
+        result = cov_avg(img, mask, weighted=False)
+        s1 = calc_stats(img, mask, 1)
+        s2 = calc_stats(img, mask, 2)
+        assert_allclose(result, (s1.cov + s2.cov) / 2)
+
+
+class TestCovariance:
+
+    def test_matches_mean_cov(self, data):
+        assert_allclose(covariance(data), mean_cov(data)[1])
+
+
+class TestLogDet:
+
+    def test_matches_numpy_for_positive_definite(self):
+        A = np.array([[4.0, 1.0], [1.0, 3.0]])
+        assert_allclose(log_det(A), np.log(np.linalg.det(A)))
+
+
+class TestTransformImageAlgorithms:
+    '''Tests `spectral.algorithms.algorithms.transform_image`, a distinct
+    function from (but similar in purpose to) `spyfile.transform_image`.
+    '''
+
+    def test_ndarray_input(self, data):
+        matrix = np.eye(data.shape[-1]) * 2
+        result = transform_image(matrix, data)
+        assert_allclose(result, data * 2)
+
+    def test_spyfile_input_returns_transformed_image(self, av3c_image):
+        matrix = np.eye(av3c_image.nbands)
+        result = transform_image(matrix, av3c_image)
+        assert isinstance(result, TransformedImage)
+
+    def test_unrecognized_type_raises(self, data):
+        matrix = np.eye(data.shape[-1])
+        with pytest.raises(TypeError):
+            transform_image(matrix, 'not an image')
+
+
+class TestUnmix:
+
+    def test_recovers_pure_and_mixed_pixels(self):
+        endmembers = np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])
+        data = np.zeros((1, 3, 3))
+        data[0, 0] = endmembers[0]
+        data[0, 1] = endmembers[1]
+        data[0, 2] = 0.5 * endmembers[0] + 0.5 * endmembers[1]
+        result = unmix(data, endmembers)
+        assert_allclose(result[0, 0], [1.0, 0.0], atol=1e-10)
+        assert_allclose(result[0, 1], [0.0, 1.0], atol=1e-10)
+        assert_allclose(result[0, 2], [0.5, 0.5], atol=1e-10)
+
+    def test_dimension_mismatch_raises(self):
+        endmembers = np.zeros((2, 3))
+        data = np.zeros((1, 1, 5))
+        with pytest.raises(AssertionError):
+            unmix(data, endmembers)
+
+
+class TestSpectralAngles:
+
+    def test_same_direction_is_zero(self):
+        data = np.zeros((1, 2, 3))
+        data[0, 0] = [2.0, 0.0, 0.0]    # same direction as member, scaled
+        data[0, 1] = [0.0, 0.0, 3.0]    # orthogonal to member
+        members = np.array([[1.0, 0.0, 0.0]])
+        angles = spectral_angles(data, members)
+        assert_allclose(angles[0, 0, 0], 0.0, atol=1e-10)
+        assert_allclose(angles[0, 1, 0], np.pi / 2)
+
+    def test_dimension_mismatch_raises(self):
+        members = np.zeros((2, 3))
+        data = np.zeros((1, 1, 5))
+        with pytest.raises(AssertionError):
+            spectral_angles(data, members)
+
+
+class TestMsam:
+
+    def test_self_similarity_is_one(self):
+        data = np.zeros((1, 1, 4))
+        data[0, 0] = [1.0, 5.0, 2.0, 8.0]
+        member = np.array([[1.0, 5.0, 2.0, 8.0]])
+        result = msam(data, member)
+        assert_allclose(result[0, 0, 0], 1.0)
+
+    def test_matches_manual_formula(self):
+        '''`msam` mean-centers and normalizes both the pixel and member
+        spectra (a "Fisher z"-like transform) before computing the angle,
+        so it isn't literally the same as the raw spectral angle -- this
+        replicates its documented formula directly.'''
+        rng = np.random.RandomState(0)
+        pixel = rng.rand(5)
+        member = rng.rand(5)
+        data = pixel.reshape(1, 1, 5)
+        members = member.reshape(1, 5)
+
+        v = pixel - np.mean(pixel)
+        v = v / np.sqrt(v.dot(v))
+        m = member - np.mean(member)
+        m = m / np.sqrt(m.dot(m))
+        expected = 1.0 - np.arccos(np.clip(v.dot(m), -1, 1)) / (np.pi / 2)
+
+        result = msam(data, members)
+        assert_allclose(result[0, 0, 0], expected)
+
+    def test_dimension_mismatch_raises(self):
+        members = np.zeros((2, 3))
+        data = np.zeros((1, 1, 5))
+        with pytest.raises(AssertionError):
+            msam(data, members)
