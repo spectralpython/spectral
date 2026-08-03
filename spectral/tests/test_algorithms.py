@@ -5,6 +5,7 @@ To run the unit tests, type the following from the system command line:
     # pytest spectral/tests/test_algorithms.py
 '''
 
+import os
 from types import SimpleNamespace
 
 import numpy as np
@@ -18,7 +19,10 @@ from spectral.algorithms.algorithms import (mean_cov, calc_stats, iterator,
                                             ndvi, bdist, bdist_terms,
                                             cov_avg, covariance, log_det,
                                             transform_image, unmix,
-                                            spectral_angles, msam)
+                                            spectral_angles, msam,
+                                            TrainingClass, TrainingClassSet,
+                                            SampleIterator,
+                                            create_training_classes, ppi)
 from spectral.algorithms.transforms import LinearTransform
 from spectral.io.spyfile import TransformedImage
 from spectral.utilities.errors import NaNValueError
@@ -477,3 +481,226 @@ class TestMsam:
         data = np.zeros((1, 1, 5))
         with pytest.raises(AssertionError):
             msam(data, members)
+
+
+@pytest.fixture
+def masked_classes_image():
+    '''A synthetic 6x6x4 image with two labeled classes in `mask`.'''
+    img = np.random.RandomState(0).rand(6, 6, 4)
+    mask = np.zeros((6, 6), int)
+    mask[0:2, 0:2] = 1   # 4 pixels
+    mask[3:5, 3:5] = 2   # 4 pixels
+    return (img, mask)
+
+
+class TestTrainingClass:
+
+    def test_nbands_set_from_image_at_construction(self, masked_classes_image):
+        '''Regression test: `nbands` used to always be reset to `None`
+        right after construction (an unconditional assignment overwrote
+        it), even when `image` was given.'''
+        (img, mask) = masked_classes_image
+        cl = TrainingClass(img, mask, index=1)
+        assert cl.nbands == img.shape[2]
+
+    def test_nbands_none_without_image(self, masked_classes_image):
+        (_, mask) = masked_classes_image
+        cl = TrainingClass(None, mask, index=1)
+        assert cl.nbands is None
+
+    def test_size_before_and_after_stats(self, masked_classes_image):
+        (img, mask) = masked_classes_image
+        cl = TrainingClass(img, mask, index=1)
+        assert cl.size() == 4
+        assert cl.stats_valid() is False
+        cl.calc_stats()
+        assert cl.stats_valid() is True
+        assert cl.size() == 4
+
+    def test_size_without_index_counts_all_nonzero(self, masked_classes_image):
+        (img, mask) = masked_classes_image
+        cl = TrainingClass(img, mask)  # index defaults to 0
+        assert cl.size() == 8  # both labeled classes combined
+
+    def test_iter_yields_all_class_pixels(self, masked_classes_image):
+        (img, mask) = masked_classes_image
+        cl = TrainingClass(img, mask, index=1)
+        samples = list(cl)
+        assert len(samples) == 4
+        for s in samples:
+            assert len(s) == img.shape[2]
+
+    def test_transform(self, masked_classes_image):
+        (img, mask) = masked_classes_image
+        cl = TrainingClass(img, mask, index=1)
+        cl.calc_stats()
+        mean_before = cl.stats.mean.copy()
+        cov_before = cl.stats.cov.copy()
+        xform = np.eye(img.shape[2]) * 2
+        cl.transform(xform)
+        assert_allclose(cl.stats.mean, mean_before * 2)
+        assert_allclose(cl.stats.cov, cov_before * 4)
+        assert cl.nbands == img.shape[2]
+
+
+class TestSampleIteratorAndAllSamples:
+
+    def test_all_samples_returns_sample_iterator(self, masked_classes_image):
+        (img, mask) = masked_classes_image
+        classes = TrainingClassSet()
+        classes.add_class(TrainingClass(img, mask, index=1))
+        classes.add_class(TrainingClass(img, mask, index=2))
+        it = classes.all_samples()
+        assert isinstance(it, SampleIterator)
+        samples = list(it)
+        assert len(samples) == 8
+
+
+class TestTrainingClassSet:
+
+    @pytest.fixture
+    def classes(self, masked_classes_image):
+        (img, mask) = masked_classes_image
+        classes = TrainingClassSet()
+        classes.add_class(TrainingClass(img, mask, index=1))
+        classes.add_class(TrainingClass(img, mask, index=2))
+        return classes
+
+    def test_getitem_and_len(self, classes):
+        assert len(classes) == 2
+        assert classes[1].index == 1
+        assert classes[2].index == 2
+
+    def test_add_class_duplicate_index_raises(self, classes,
+                                              masked_classes_image):
+        (img, mask) = masked_classes_image
+        with pytest.raises(Exception):
+            classes.add_class(TrainingClass(img, mask, index=1))
+
+    def test_iter_yields_all_classes(self, classes):
+        assert sorted(cl.index for cl in classes) == [1, 2]
+
+    def test_calc_stats_computes_for_all_classes(self, classes):
+        assert all(not cl.stats_valid() for cl in classes)
+        classes.calc_stats()
+        assert all(cl.stats_valid() for cl in classes)
+        assert classes.nbands == 4
+
+    def test_transform(self, classes):
+        classes.calc_stats()
+        xform = np.eye(4) * 2
+        classes.transform(xform)
+        assert classes.nbands == 4
+        for cl in classes:
+            assert cl.nbands == 4
+
+    def test_save_raises_without_stats(self, classes, testdir):
+        fname = os.path.join(testdir, 'no_stats.classes')
+        with pytest.raises(Exception):
+            classes.save(fname)
+
+    def test_save_with_calc_stats_true_computes_and_saves(self, classes,
+                                                          testdir):
+        fname = os.path.join(testdir, 'auto_stats.classes')
+        assert all(not cl.stats_valid() for cl in classes)
+        classes.save(fname, calc_stats=True)
+        assert all(cl.stats_valid() for cl in classes)
+        assert os.path.isfile(fname)
+
+    def test_save_and_load_round_trip(self, classes, testdir,
+                                      masked_classes_image):
+        (img, _) = masked_classes_image
+        fname = os.path.join(testdir, 'roundtrip.classes')
+        classes.calc_stats()
+        classes.save(fname)
+
+        loaded = TrainingClassSet()
+        loaded.load(fname, img)
+        assert len(loaded) == len(classes)
+        for i in (1, 2):
+            assert_allclose(loaded[i].stats.mean, classes[i].stats.mean)
+            assert_allclose(loaded[i].stats.cov, classes[i].stats.cov)
+            assert loaded[i].stats.nsamples == classes[i].stats.nsamples
+
+
+class TestCreateTrainingClassesIndices:
+
+    def test_indices_kwarg_restricts_classes(self, masked_classes_image):
+        (img, mask) = masked_classes_image
+        classes = create_training_classes(img, mask, indices=[2])
+        assert list(classes.classes.keys()) == [2]
+
+    def test_default_uses_all_nonzero_mask_values(self, masked_classes_image):
+        (img, mask) = masked_classes_image
+        classes = create_training_classes(img, mask)
+        assert sorted(classes.classes.keys()) == [1, 2]
+
+
+class TestPpi:
+
+    @pytest.fixture
+    def small_image(self):
+        return np.random.RandomState(0).rand(5, 5, 4)
+
+    @pytest.mark.parametrize('bad_display', [-1, 1.5, True])
+    def test_invalid_display_raises(self, small_image, bad_display):
+        with pytest.raises(ValueError):
+            ppi(small_image, niters=1, centered=True, display=bad_display)
+
+    def test_display_calls_imshow_and_set_data(self, small_image,
+                                               monkeypatch):
+        set_data_calls = []
+        titles = []
+
+        class FakeFig:
+            def set_data(self, data, **kwargs):
+                set_data_calls.append(data.copy())
+
+            def set_title(self, title):
+                titles.append(title)
+
+        fake_fig = FakeFig()
+        imshow_calls = []
+
+        def fake_imshow(data, **kwargs):
+            imshow_calls.append(data.copy())
+            return fake_fig
+
+        monkeypatch.setattr(spy, 'imshow', fake_imshow)
+        ppi(small_image, niters=6, centered=True, display=2)
+
+        assert len(imshow_calls) == 1
+        assert len(set_data_calls) == 2
+        assert titles == ['PPI (2 iterations)', 'PPI (4 iterations)',
+                          'PPI (6 iterations)']
+
+    def test_keyboard_interrupt_not_updating_returns_counts(self,
+                                                             small_image,
+                                                             monkeypatch):
+        '''An interrupt outside the narrow window where `counts` is being
+        incremented should return the (uncorrupted) counts so far.'''
+        def raise_interrupt(*args, **kwargs):
+            raise KeyboardInterrupt
+
+        monkeypatch.setattr(np.random, 'rand', raise_interrupt)
+        result = ppi(small_image, niters=5, centered=True)
+        assert result.shape == small_image.shape[:2]
+
+    def test_keyboard_interrupt_during_update_returns_none(self,
+                                                           small_image,
+                                                           monkeypatch):
+        '''An interrupt while `counts` is actually being incremented
+        should return None, since the array may be left in a corrupted
+        (partially-updated) state.'''
+        class RaisingCounts(np.ndarray):
+            def __setitem__(self, key, value):
+                raise KeyboardInterrupt
+
+        real_zeros = np.zeros
+
+        def fake_zeros(*args, **kwargs):
+            return real_zeros(*args, **kwargs).view(RaisingCounts)
+
+        monkeypatch.setattr(np, 'zeros', fake_zeros)
+        result = ppi(small_image, niters=5, centered=True)
+        assert result is None

@@ -890,7 +890,8 @@ class TrainingClass:
         self.image = image
         if image is not None:
             self.nbands = image.shape[2]
-        self.nbands = None
+        else:
+            self.nbands = None
         self.mask = mask
         self.index = index
         self.class_prob = class_prob
