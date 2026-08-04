@@ -32,7 +32,7 @@ from PySide6.QtGui import QKeyEvent, QMouseEvent
 
 from spectral.graphics.hypercube import HypercubeWindow, rtp_to_xyz, xyz_to_rtp
 
-pytestmark = pytest.mark.gui3d
+pytestmark = [pytest.mark.gui3d, pytest.mark.graphics]
 
 
 def make_key_event(key, text):

@@ -35,7 +35,7 @@ from spectral.graphics.ndwindow import (NDWindow, create_mirrored_octants,
                                         random_subset, rtp_to_xyz,
                                         validate_args, xyz_to_rtp)
 
-pytestmark = pytest.mark.gui3d
+pytestmark = [pytest.mark.gui3d, pytest.mark.graphics]
 
 
 def make_key_event(key, text, modifiers=Qt.KeyboardModifier.NoModifier):

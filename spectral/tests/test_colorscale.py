@@ -11,6 +11,8 @@ import pytest
 
 from spectral.graphics.colorscale import ColorScale, create_default_color_scale
 
+pytestmark = pytest.mark.graphics
+
 
 class TestColorScaleConstruction:
     '''Tests validation and setup performed by ColorScale.__init__.'''

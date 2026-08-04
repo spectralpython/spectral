@@ -18,6 +18,8 @@ from spectral.graphics.graphics import (get_rgb, get_rgb_meta, make_pil_image,
 from spectral.image import Image
 from spectral.tests.conftest import import_or_require
 
+pytestmark = pytest.mark.graphics
+
 
 class FakeImage(Image):
     '''A minimal spectral.Image stand-in, without needing a real SpyFile.'''

@@ -57,11 +57,46 @@ Unit Tests
 To run the suite of unit tests, you must have `numpy` and `pytest` installed
 and you must have the `sample data files <http://spectralpython.net/user_guide_intro.html>`_
 downloaded to the current directory (or one specified by the `SPECTRAL_DATA`
-environment variable). To run the unit tests, type
+environment variable).
+
+The suite also covers SPy's optional graphics/GUI functionality (2D display
+via `matplotlib`/`Pillow`, and 3D display via `PySide6`/`PyOpenGL`), marked
+with `graphics` (and, for the 3D window tests specifically, `gui3d`). Tests
+for a given package are skipped automatically if that package isn't
+installed; pass `--require-optional-deps` to turn a missing optional
+dependency into a hard failure instead of a skip. A few examples:
+
+Run only the basic tests (I/O and algorithms), explicitly excluding all
+graphics/GUI tests:
+
+.. code::
+
+    pytest -m "not graphics" spectral/tests
+
+Run the basic tests plus any additional graphics/GUI tests supported by
+whatever optional packages are currently installed, letting tests for
+anything still missing skip automatically:
 
 .. code::
 
     pytest spectral/tests
+
+Run the basic tests and force the 2D rendering/GUI tests (`matplotlib`,
+`Pillow`) to run, failing rather than skipping if either package is
+missing:
+
+.. code::
+
+    pytest --require-optional-deps=matplotlib,PIL spectral/tests
+
+Run every available test, including the 3D (`PySide6`/`PyOpenGL`) GUI
+tests, failing rather than skipping if any optional dependency -- or a
+working OpenGL rendering surface -- is unavailable. If no real display is
+available, run under a virtual one via `xvfb-run`:
+
+.. code::
+
+    xvfb-run -a pytest --require-optional-deps=all spectral/tests
 
 Dependencies
 ============

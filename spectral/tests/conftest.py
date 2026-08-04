@@ -38,6 +38,12 @@ real or virtual (Xvfb) display is needed for those specific tests. Use the
 fails, if 'PySide6' is in --require-optional-deps) when unavailable. Most
 GUI3D interaction logic (construction, keyboard/mouse handling) doesn't
 actually need real rendering and works fine under "offscreen".
+
+All graphics/GUI tests -- both the 2D matplotlib/PIL-based tests
+(`test_colorscale.py`, `test_graphics.py`, `test_spypylab.py`) and the 3D
+"gui3d" tests above -- carry the "graphics" marker, so `-m "not graphics"`
+excludes all of them regardless of which optional packages happen to be
+installed.
 '''
 
 import importlib
@@ -131,6 +137,11 @@ def pytest_configure(config):
     config.addinivalue_line(
         'markers',
         'gui3d: Qt/OpenGL 3D window tests (hypercube.py, ndwindow.py).',
+    )
+    config.addinivalue_line(
+        'markers',
+        'graphics: all graphics/GUI tests, 2D and 3D (implies gui3d where '
+        'applicable).',
     )
 
 

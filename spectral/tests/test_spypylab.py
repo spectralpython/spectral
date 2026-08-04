@@ -21,6 +21,8 @@ from spectral.graphics.spypylab import (ImageView, KeyParser, MplCallback,
                                         imshow, plot, rowcol_to_xy,
                                         xy_to_rowcol)
 
+pytestmark = pytest.mark.graphics
+
 
 class FakeKeyEvent:
     '''Stands in for a matplotlib KeyEvent for direct handler calls.'''
