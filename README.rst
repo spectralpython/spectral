@@ -72,3 +72,10 @@ Using SPy interactively with its visualization capabilities requires `IPython` a
 several other packages (depending on the features used). See the
 `web site <http://spectralpython.net>`_ for details.
 
+## Custom Experiments
+
+Added a preprocessing and PCA-based classification script under `scripts/`
+to demonstrate hyperspectral image normalization, dimensionality reduction,
+and classical ML-based classification using Spectral Python.
+
+
