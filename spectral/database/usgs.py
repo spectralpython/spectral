@@ -457,15 +457,36 @@ class USGSDatabase(SpectralDatabase):
         if not os.path.isdir(data_dir):
             raise Exception('Error: Invalid directory name specified.')
 
+        # Detect whether data_dir is already a sub-library directory
+        # (i.e., it contains Chapter* folders directly, as in ASCIIdata_splib07a/).
+        # This happens when the user passes the downloaded USGS folder directly,
+        # since the USGS download does not include a parent wrapper directory.
+        immediate_subdirs = [
+            d for d in os.listdir(data_dir)
+            if os.path.isdir(os.path.join(data_dir, d))
+        ]
+        is_sublibrary = any(d.startswith('Chapter') for d in immediate_subdirs)
+
+        if is_sublibrary:
+            sublib_dirs = [data_dir]
+            logger.info(
+                'data_dir "%s" appears to be a sub-library directory directly '
+                '(contains Chapter* subdirectories). Processing it as a single '
+                'sub-library.', data_dir
+            )
+        else:
+            sublib_dirs = [
+                os.path.join(data_dir, d)
+                for d in os.listdir(data_dir)
+                if os.path.isdir(os.path.join(data_dir, d))
+            ]
+
         num_sample_files = 0
         num_spectrometer_files = 0
         num_failed_sample_files = 0
         num_failed_spectromter_files = 0
 
-        for sublib in os.listdir(data_dir):
-            sublib_dir = os.path.join(data_dir, sublib)
-            if not os.path.isdir(sublib_dir):
-                continue
+        for sublib_dir in sublib_dirs:
 
             # Process instrument data one by one.
             for f in glob(sublib_dir + '/*.txt'):
@@ -495,15 +516,16 @@ class USGSDatabase(SpectralDatabase):
                         self._add_sample_data(spdata)
                         num_sample_files += 1
                     except Exception as e:
-                        logger.error(
-                            'Failed to import sample file %s', f)
+                        logger.error('Failed to import sample file %s', f)
                         logger.error(e)
                         num_failed_sample_files += 1
 
-        logger.info('Imported %d sample files and %d spectrometer files. '
-                    '%d failed sample files, and %d failed spectrometer files.',
-                    num_sample_files, num_spectrometer_files, num_failed_sample_files,
-                    num_failed_spectromter_files)
+        logger.info(
+            'Imported %d sample files and %d spectrometer files. '
+            '%d failed sample files, and %d failed spectrometer files.',
+            num_sample_files, num_spectrometer_files,
+            num_failed_sample_files, num_failed_spectromter_files
+        )
 
     def get_spectrum(self, sampleID):
         '''Returns a spectrum from the database.
