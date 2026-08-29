@@ -2,8 +2,6 @@
 Code to use matplotlib for creating raster and spectral views.
 '''
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 __all__ = ['ImageView', 'imshow']
 
 import numpy as np

@@ -13,8 +13,7 @@ the data file has an unusual file extension that SPy can not identify.
 .. [#envi-trademark] ENVI is a registered trademark of Exelis, Inc.
 '''
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
+import builtins
 import logging
 import numpy as np
 import os
@@ -23,19 +22,12 @@ import warnings
 
 import spectral as spy
 from ..spectral import BandInfo
-from ..utilities.python23 import IS_PYTHON3, is_string, tobytes
 from ..utilities.errors import SpyException
 from .bilfile import BilFile
 from .bipfile import BipFile
 from .bsqfile import BsqFile
 from .spyfile import (FileNotFoundError, find_file_path, interleave_transpose,
                       InvalidFileError, SpyFile)
-
-
-if IS_PYTHON3:
-    import builtins
-else:
-    import __builtin__ as builtins
 
 logger = logging.getLogger('spectral')
 
@@ -255,7 +247,7 @@ def check_compatibility(header):
     '''
     Verifies that all features of an ENVI header are supported.
     '''
-    if is_string(header):
+    if isinstance(header, (str, bytes)):
         header = read_envi_header(find_file_path(header))
 
     mandatory_params = ['lines', 'samples', 'bands', 'data type',
@@ -691,7 +683,7 @@ def _write_image(hdr_file, data, header, **kwargs):
     # bufsize = data.shape[0] * data.shape[1] * np.dtype(dtype).itemsize
     bufsize = data.shape[0] * data.shape[1] * data.dtype.itemsize
     fout = builtins.open(img_file, 'wb', bufsize)
-    fout.write(tobytes(data))
+    fout.write(data.tobytes())
     fout.close()
 
 
@@ -983,7 +975,7 @@ def _write_header_param(fout, paramName, paramVal):
     if paramName.lower() == 'description':
         valStr = '{\n%s}' % '\n'.join(['  ' + line for line
                                        in paramVal.split('\n')])
-    elif not is_string(paramVal) and hasattr(paramVal, '__len__'):
+    elif not isinstance(paramVal, (str, bytes)) and hasattr(paramVal, '__len__'):
         valStr = '{ %s }' % (
             ' , '.join([str(v).replace(',', '-') for v in paramVal]),)
     else:

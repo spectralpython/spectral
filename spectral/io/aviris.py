@@ -2,21 +2,15 @@
 Functions for handling AVIRIS image files.
 '''
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import numpy as np
 import os
 
+import builtins
+
 import spectral as spy
 from ..spectral import BandInfo
-from ..utilities.python23 import IS_PYTHON3
 from .bipfile import BipFile
 from .spyfile import find_file_path, InvalidFileError
-
-if IS_PYTHON3:
-    import builtins
-else:
-    import __builtin__ as builtins
 
 
 def open(file, band_file=None):

@@ -4,8 +4,6 @@ Basic package setup and global imports.
 
 # flake8: noqa
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 __version__ = '0.25'
 
 import sys

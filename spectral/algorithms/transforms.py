@@ -2,8 +2,6 @@
 Base classes for various types of transforms.
 '''
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 try:
     from collections.abc import Callable
 except:

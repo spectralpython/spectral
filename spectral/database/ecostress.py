@@ -2,23 +2,17 @@
 Code for reading and managing ECOSTRESS spectral library data.
 '''
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import itertools
 import logging
 import os
 
 from glob import glob
 
-from spectral.utilities.python23 import IS_PYTHON3
 from .aster import AsterDatabase, Signature
 
-if IS_PYTHON3:
-    def readline(fin): return fin.readline()
-    def open_file(filename): return open(filename, encoding='iso-8859-1')
-else:
-    def readline(fin): return fin.readline().decode('iso-8859-1')
-    def open_file(filename): return open(filename)
+
+def readline(fin): return fin.readline()
+def open_file(filename): return open(filename, encoding='iso-8859-1')
 
 
 def read_ecostress_file(filename):
@@ -26,8 +20,6 @@ def read_ecostress_file(filename):
 
     logger = logging.getLogger('spectral')
     lines = open_file(filename).readlines()
-    if not IS_PYTHON3:
-        lines = [line.decode('iso-8859-1') for line in lines]
 
     def metaline_to_pair(line): return [x.strip() for x in line.split(':', 1)]
 

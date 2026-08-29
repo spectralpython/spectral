@@ -57,20 +57,13 @@ Functions for reading Erdas files.
 #  +----------------------------------------------------------+
 
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import array
+import builtins
 import numpy as np
 
 import spectral as spy
-from ..utilities.python23 import IS_PYTHON3, typecode
 from .bilfile import BilFile
 from .spyfile import find_file_path, InvalidFileError
-
-if IS_PYTHON3:
-    import builtins
-else:
-    import __builtin__ as builtins
 
 
 def open(file):
@@ -155,9 +148,9 @@ def read_erdas_lan_header(fileName, byte_order=0):
         raise InvalidFileError('Does not look like an ERDAS Lan header.')
 
     # Read all header data into arrays
-    word = array.array(typecode('h'))
-    dword = array.array(typecode('i'))
-    float = array.array(typecode('f'))
+    word = array.array('h')
+    dword = array.array('i')
+    float = array.array('f')
     word.fromfile(f, 2)
     f.seek(16)
     if h["type"] == b'HEAD74':

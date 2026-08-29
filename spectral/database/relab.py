@@ -2,18 +2,10 @@
 Code for reading and managing relab spectral library data.
 '''
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
-from spectral.utilities.python23 import IS_PYTHON3, tobytes, frombytes
-
 from .spectral_database import SpectralDatabase
 
-if IS_PYTHON3:
-    readline = lambda fin: fin.readline()
-    open_file = lambda filename: open(filename, encoding='iso-8859-1')
-else:
-    readline = lambda fin: fin.readline().decode('iso-8859-1')
-    open_file = lambda filename: open(filename)
+readline = lambda fin: fin.readline()
+open_file = lambda filename: open(filename, encoding='iso-8859-1')
 
 table_schemas = [
     'CREATE TABLE Samples (SampleID INTEGER PRIMARY KEY, Name TEXT, Type TEXT, Class TEXT, SubClass TEXT, '
@@ -165,8 +157,8 @@ class RelabDatabase(SpectralDatabase):
         sql = '''INSERT INTO Spectra (SampleID, SensorCalibrationID, Instrument,
                  Environment, Measurement, XUnit, YUnit, MinWavelength, MaxWavelength,
                  NumValues, XData, YData) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
-        xBlob = sqlite3.Binary(tobytes(array.array(arraytypecode, xData)))
-        yBlob = sqlite3.Binary(tobytes(array.array(arraytypecode, yData)))
+        xBlob = sqlite3.Binary(array.array(arraytypecode, xData).tobytes())
+        yBlob = sqlite3.Binary(array.array(arraytypecode, yData).tobytes())
         numValues = len(xData)
         self.cursor.execute(
             sql, (
@@ -355,9 +347,9 @@ class RelabDatabase(SpectralDatabase):
         if len(rows) < 1:
             raise Exception('Measurement record not found')
         x = array.array(arraytypecode)
-        frombytes(x, rows[0][0])
+        x.frombytes(rows[0][0])
         y = array.array(arraytypecode)
-        frombytes(y, rows[0][1])
+        y.frombytes(rows[0][1])
         return (list(x), list(y))
 
     def get_signature(self, spectrumID):
@@ -406,10 +398,10 @@ class RelabDatabase(SpectralDatabase):
         sig.sample_name = results[0][0]
         sig.sample_id = results[0][1]
         x = array.array(arraytypecode)
-        frombytes(x, results[0][2])
+        x.frombytes(results[0][2])
         sig.x = list(x)
         y = array.array(arraytypecode)
-        frombytes(y, results[0][3])
+        y.frombytes(results[0][3])
         sig.y = list(y)
         return sig
 

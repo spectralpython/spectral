@@ -22,8 +22,6 @@ References:
     The hsdar Package. Journal of statistical software. 89. 1-23. 10.18637/jss.v089.i12.
 '''
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import numpy as np
 
 

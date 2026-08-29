@@ -3,8 +3,6 @@ Code for rendering and manipulating hypercubes.
 Most users will only need to call the function "hypercube".
 '''
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import math
 import numpy as np
 

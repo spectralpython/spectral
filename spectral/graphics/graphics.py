@@ -2,8 +2,6 @@
 Common functions for extracting and manipulating data for graphical display.
 '''
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import functools
 import traceback
 from numbers import Number

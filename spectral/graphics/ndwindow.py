@@ -2,8 +2,6 @@
 Code to display N-dimensional data sets in 3D using OpenGL.
 '''
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import math
 import numpy as np
 from pprint import pprint

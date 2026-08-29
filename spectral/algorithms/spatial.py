@@ -2,8 +2,6 @@
 Functions over spatial regions of images.
 '''
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 __all__ = ['map_window', 'map_outer_window_stats', 'map_class_ids',
            'map_classes']
 

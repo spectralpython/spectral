@@ -8,8 +8,6 @@ References:
     61 p., https://doi.org/10.3133/ds1035.
 '''
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-from spectral.utilities.python23 import IS_PYTHON3, tobytes, frombytes
 from .spectral_database import SpectralDatabase
 
 import re
@@ -17,12 +15,9 @@ import logging
 import sqlite3
 import array
 
-if IS_PYTHON3:
-    def readline(fin): return fin.readline()
-    def open_file(filename): return open(filename, encoding='iso-8859-1')
-else:
-    def readline(fin): return fin.readline().decode('iso-8859-1')
-    def open_file(filename): return open(filename)
+
+def readline(fin): return fin.readline()
+def open_file(filename): return open(filename, encoding='iso-8859-1')
 
 
 table_schemas = [
@@ -40,12 +35,12 @@ arraytypecode = chr(ord('f'))
 
 def array_from_blob(blob):
     a = array.array(arraytypecode)
-    frombytes(a, blob)
+    a.frombytes(blob)
     return a
 
 
 def array_to_blob(arr):
-    return sqlite3.Binary(tobytes(array.array(arraytypecode, arr)))
+    return sqlite3.Binary(array.array(arraytypecode, arr).tobytes())
 
 
 # Actually these are not all spectrometer names, but kind of it.

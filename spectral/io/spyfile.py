@@ -79,8 +79,6 @@ instance of a :class:`~spectral.BandInfo` object that contains optional
 information about the images spectral bands.
 '''
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import array
 import numpy as np
 import os
@@ -90,7 +88,6 @@ import spectral as spy
 from .. import SpyException
 from ..image import Image, ImageArray
 from ..utilities.errors import has_nan, NaNValueWarning
-from ..utilities.python23 import typecode, tobytes
 
 
 class FileNotFoundError(SpyException):
@@ -202,11 +199,11 @@ class SpyFile(Image):
             dtype = self.dtype
         else:
             dtype = ImageArray.format
-        data = array.array(typecode('b'))
+        data = array.array('b')
         self.fid.seek(self.offset)
         data.fromfile(self.fid, self.nrows * self.ncols *
                       self.nbands * self.sample_size)
-        npArray = np.frombuffer(tobytes(data), dtype=self.dtype)
+        npArray = np.frombuffer(data.tobytes(), dtype=self.dtype)
         if self.interleave == spy.BIL:
             npArray = npArray.reshape((self.nrows, self.nbands, self.ncols))
             npArray = npArray.transpose([0, 2, 1])

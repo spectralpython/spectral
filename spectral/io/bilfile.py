@@ -2,8 +2,6 @@
 Code for handling files that are band interleaved by line (BIL).
 '''
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import array
 import logging
 import numpy as np
@@ -11,10 +9,9 @@ import os
 import sys
 
 import spectral as spy
-from ..utilities.python23 import typecode, tobytes
 from .spyfile import SpyFile, MemmapFile
 
-byte_typecode = typecode('b')
+byte_typecode = 'b'
 
 
 class BilFile(SpyFile, MemmapFile):
@@ -82,7 +79,7 @@ class BilFile(SpyFile, MemmapFile):
                    self.ncols, 0)
             vals.fromfile(f, self.ncols * self.sample_size)
 
-        arr = np.frombuffer(tobytes(vals), dtype=self.dtype)
+        arr = np.frombuffer(vals.tobytes(), dtype=self.dtype)
         arr = arr.reshape((self.nrows, self.ncols))
 
         if self.scale_factor != 1:
@@ -132,7 +129,7 @@ class BilFile(SpyFile, MemmapFile):
                 f.seek(row_offset + bands[j] * self.sample_size * self.ncols, 0)
                 vals.fromfile(f, self.ncols * self.sample_size)
 
-            frame = np.frombuffer(tobytes(vals), dtype=self.dtype)
+            frame = np.frombuffer(vals.tobytes(), dtype=self.dtype)
             arr[i, :, :] = frame.reshape((len(bands), self.ncols)).transpose()
 
         if self.scale_factor != 1:
@@ -179,7 +176,7 @@ class BilFile(SpyFile, MemmapFile):
             f.seek(offset + i * sample_size * ncols, 0)
             vals.fromfile(f, sample_size)
 
-        pixel = np.frombuffer(tobytes(vals), dtype=self.dtype)
+        pixel = np.frombuffer(vals.tobytes(), dtype=self.dtype)
 
         if self.scale_factor != 1:
             return pixel / float(self.scale_factor)
@@ -258,7 +255,7 @@ class BilFile(SpyFile, MemmapFile):
             for j in bands:
                 f.seek(rowPos + j * ncols * sampleSize, 0)
                 vals.fromfile(f, nSubCols * sampleSize)
-            subArray = np.frombuffer(tobytes(vals), dtype=self.dtype)
+            subArray = np.frombuffer(vals.tobytes(), dtype=self.dtype)
             subArray = subArray.reshape((nSubBands, nSubCols))
             arr[i - row_bounds[0], :, :] = np.transpose(subArray)
 
@@ -337,7 +334,7 @@ class BilFile(SpyFile, MemmapFile):
                            j * d_col +
                            k * d_band, 0)
                     vals.fromfile(f, sample_size)
-        subArray = np.frombuffer(tobytes(vals), dtype=self.dtype)
+        subArray = np.frombuffer(vals.tobytes(), dtype=self.dtype)
         subArray = subArray.reshape((nSubRows, nSubCols, nSubBands))
 
         if self.scale_factor != 1:
@@ -375,5 +372,5 @@ class BilFile(SpyFile, MemmapFile):
         self.fid.seek(self.offset + i * d_row + j * d_col + k * d_band, 0)
         vals = array.array(byte_typecode)
         vals.fromfile(self.fid, self.sample_size)
-        arr = np.frombuffer(tobytes(vals), dtype=self.dtype)
+        arr = np.frombuffer(vals.tobytes(), dtype=self.dtype)
         return arr.tolist()[0] / float(self.scale_factor)
