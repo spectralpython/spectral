@@ -1,6 +1,7 @@
 '''
 A class for display completion status for long-running iterative operations.
 '''
+from __future__ import annotations
 
 import sys
 from .. import settings
@@ -11,13 +12,14 @@ class StatusDisplay:
     A class to sequentially display percentage completion of an iterative
     process on a single line.
     '''
-    def __init__(self):
+    def __init__(self) -> None:
         self._pretext = ''
         self._overwrite = False
         self._percent_fmt = '% 5.1f'
         self._text_len = 0
 
-    def display_percentage(self, text, percent=0.0, format='% 5.1f'):
+    def display_percentage(self, text: str, percent: float = 0.0,
+                            format: str = '% 5.1f') -> None:
         '''Called when initializing display of a process status.'''
         self._overwrite = True
         self._pretext = text
@@ -28,7 +30,7 @@ class StatusDisplay:
             sys.stdout.write(text)
             sys.stdout.flush()
 
-    def update_percentage(self, percent):
+    def update_percentage(self, percent: float) -> None:
         '''Called whenever an update of the displayed status is desired.'''
         if not (hasattr(sys, 'ps1') and settings.show_progress):
             return
@@ -38,7 +40,7 @@ class StatusDisplay:
         sys.stdout.write(text)
         sys.stdout.flush()
 
-    def end_percentage(self, text='done'):
+    def end_percentage(self, text: str = 'done') -> None:
         '''Prints a final status and resumes normal text display.'''
         if not (hasattr(sys, 'ps1') and settings.show_progress):
             return
@@ -50,7 +52,7 @@ class StatusDisplay:
         sys.stdout.flush()
         self._overwrite = False
 
-    def write(self, text):
+    def write(self, text: str) -> None:
         '''
         Called to display text on a new line without interrupting
         progress display.

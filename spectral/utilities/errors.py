@@ -1,3 +1,4 @@
+from __future__ import annotations
 
 import numpy as np
 
@@ -15,6 +16,6 @@ class NaNValueError(ValueError):
     pass
 
 
-def has_nan(X):
+def has_nan(X: np.ndarray) -> bool:
     '''returns True if ndarray `X` contains a NaN value.'''
     return bool(np.isnan(np.min(X)))

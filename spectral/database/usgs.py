@@ -7,6 +7,9 @@ References:
     2017, USGS Spectral Library Version 7: U.S. Geological Survey Data Series 1035,
     61 p., https://doi.org/10.3133/ds1035.
 '''
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, TextIO
 
 from .spectral_database import SpectralDatabase
 
@@ -15,9 +18,13 @@ import logging
 import sqlite3
 import array
 
+if TYPE_CHECKING:
+    from spectral.io.envi import SpectralLibrary
+    from spectral.spectral import BandInfo
 
-def readline(fin): return fin.readline()
-def open_file(filename): return open(filename, encoding='iso-8859-1')
+
+def readline(fin: TextIO) -> str: return fin.readline()
+def open_file(filename: str) -> TextIO: return open(filename, encoding='iso-8859-1')
 
 
 table_schemas = [
@@ -33,13 +40,13 @@ table_schemas = [
 arraytypecode = chr(ord('f'))
 
 
-def array_from_blob(blob):
+def array_from_blob(blob: bytes) -> array.array:
     a = array.array(arraytypecode)
     a.frombytes(blob)
     return a
 
 
-def array_to_blob(arr):
+def array_to_blob(arr: list[float]) -> memoryview:
     return sqlite3.Binary(array.array(arraytypecode, arr).tobytes())
 
 
@@ -73,8 +80,8 @@ class SpectrometerData:
         Holds data for spectrometer, from USGS spectral library.
     '''
 
-    def __init__(self, libname, record, measurement_type, unit, spectrometer_name,
-                 description, file_name, values):
+    def __init__(self, libname: str, record: int, measurement_type: str, unit: str, spectrometer_name: str,
+                 description: str, file_name: str, values: list[float]) -> None:
         self.libname = libname
         self.record = record
         self.measurement_type = measurement_type
@@ -84,7 +91,7 @@ class SpectrometerData:
         self.file_name = file_name
         self.values = values
 
-    def header(self):
+    def header(self) -> str:
         '''
             Returns:
                 String representation of basic meta data.
@@ -96,7 +103,7 @@ class SpectrometerData:
                                                     self.description)
 
     @ classmethod
-    def read_from_file(cls, filename):
+    def read_from_file(cls, filename: str) -> SpectrometerData:
         '''
             Constructs SpectrometerData from file.
 
@@ -132,7 +139,7 @@ class SpectrometerData:
             return cls(libname, record, measurement_type, unit, spectrometer_name, description, file_name, values)
 
     @staticmethod
-    def _find_spectrometer_name(header_line):
+    def _find_spectrometer_name(header_line: str) -> str:
         for sname, alt_names in _spectrometer_names.items():
             for alt_name in alt_names:
                 if alt_name in header_line:
@@ -142,7 +149,7 @@ class SpectrometerData:
             'Could not find spectrometer for header {0}'.format(header_line))
 
     @staticmethod
-    def _assume_measurement_type(header_line):
+    def _assume_measurement_type(header_line: str) -> str:
         header_line = header_line.lower()
         # The order of checking these things is important.
         if 'wavelength' in header_line or 'waves' in header_line:
@@ -159,7 +166,7 @@ class SpectrometerData:
             'Could not assume measurement type for header line {0}'.format(header_line))
 
     @ staticmethod
-    def _assume_unit(header_line, measurement_type):
+    def _assume_unit(header_line: str, measurement_type: str) -> str:
         if measurement_type == 'Wavelengths' or measurement_type == 'Bandpass' or measurement_type == 'Resolution':
             if re.search(r'\bnm\b', header_line) is not None:
                 return 'nanometer'
@@ -176,7 +183,7 @@ class SpectrometerData:
             return 'unknown'
 
     @ staticmethod
-    def _parse_header(header_line):
+    def _parse_header(header_line: str) -> tuple[str, int, str, str, str, str]:
         # It is difficult to parse this data,
         # things are separated by spaces, but inside of what should be single datum,
         # there are spaces, so only human can get it right.
@@ -204,8 +211,10 @@ class SampleData:
         Holds parsed data for single sample from USGS spectral library.
     '''
 
-    def __init__(self, libname=None, record=None, description=None, spectrometer=None,
-                 purity=None, measurement_type=None, chapter=None, file_name=None, values=None):
+    def __init__(self, libname: str | None = None, record: int | None = None, description: str | None = None,
+                 spectrometer: str | None = None, purity: str | None = None, measurement_type: str | None = None,
+                 chapter: str | None = None, file_name: str | None = None,
+                 values: list[float] | None = None) -> None:
         self.libname = libname
         self.record = record
         self.description = description
@@ -216,7 +225,7 @@ class SampleData:
         self.file_name = file_name
         self.values = values
 
-    def header(self):
+    def header(self) -> str:
         '''
             Returns:
                 String representation of basic meta data.
@@ -226,7 +235,7 @@ class SampleData:
                                                  self.purity, self.measurement_type)
 
     @staticmethod
-    def _parse_header(header_line):
+    def _parse_header(header_line: str) -> tuple[str, int, str, str, str, str]:
         elements = header_line.split()
 
         libname = elements[0]
@@ -251,7 +260,7 @@ class SampleData:
         return libname, record, description, spectrometer, purity, measurement_type
 
     @classmethod
-    def read_from_file(cls, filename, chapter=None):
+    def read_from_file(cls, filename: str, chapter: str | None = None) -> SampleData:
         '''
             Constructs SampleData from file.
 
@@ -292,7 +301,7 @@ class USGSDatabase(SpectralDatabase):
     '''A relational database to manage USGS spectral library data.'''
     schemas = table_schemas
 
-    def _assume_wavelength_spectrometer_data_id(self, sampleData):
+    def _assume_wavelength_spectrometer_data_id(self, sampleData: SampleData) -> int:
         # We can't know this for sure, but these heuristics haven't failed so far.
 
         # Prepare parameters.
@@ -340,7 +349,7 @@ class USGSDatabase(SpectralDatabase):
                            ' LibName %s and NumValues %d, from file %s', libname, num_values, sampleData.file_name)
         return rows[0][0]
 
-    def _add_sample_data(self, spdata):
+    def _add_sample_data(self, spdata: SampleData) -> int:
         sql = '''INSERT INTO Samples (LibName, Record,
                     Description, Spectrometer, Purity, MeasurementType, Chapter, FileName,
                     AssumedWLSpmeterDataID,
@@ -359,7 +368,7 @@ class USGSDatabase(SpectralDatabase):
         self.db.commit()
         return rowId
 
-    def _add_spectrometer_data(self, spdata):
+    def _add_spectrometer_data(self, spdata: SpectrometerData) -> int:
         sql = '''INSERT INTO SpectrometerData (LibName, Record, MeasurementType, Unit,
                 Name, Description, FileName, NumValues, MinValue, MaxValue, ValuesArray)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
@@ -376,7 +385,7 @@ class USGSDatabase(SpectralDatabase):
         return rowId
 
     @classmethod
-    def create(cls, filename, usgs_data_dir=None):
+    def create(cls, filename: str, usgs_data_dir: str | None = None) -> USGSDatabase:
         '''Creates an USGS relational database by parsing USGS data files.
 
         Arguments:
@@ -423,7 +432,7 @@ class USGSDatabase(SpectralDatabase):
             db._import_files(usgs_data_dir)
         return db
 
-    def __init__(self, sqlite_filename=None):
+    def __init__(self, sqlite_filename: str | None = None) -> None:
         '''Creates a database object to interface an existing database.
 
         Arguments:
@@ -444,7 +453,7 @@ class USGSDatabase(SpectralDatabase):
             self.db = None
             self.cursor = None
 
-    def _import_files(self, data_dir):
+    def _import_files(self, data_dir: str) -> None:
         from glob import glob
         import os
         logger = logging.getLogger('spectral')
@@ -500,7 +509,7 @@ class USGSDatabase(SpectralDatabase):
                     num_sample_files, num_spectrometer_files, num_failed_sample_files,
                     num_failed_spectromter_files)
 
-    def get_spectrum(self, sampleID):
+    def get_spectrum(self, sampleID: int) -> tuple[list[float], list[float]]:
         '''Returns a spectrum from the database.
 
         Usage:
@@ -546,7 +555,7 @@ class USGSDatabase(SpectralDatabase):
 
         return (list(x), list(y))
 
-    def create_envi_spectral_library(self, spectrumIDs, bandInfo):
+    def create_envi_spectral_library(self, spectrumIDs: list[int], bandInfo: BandInfo) -> SpectralLibrary:
         '''Creates an ENVI-formatted spectral library for a list of spectra.
 
         Arguments:

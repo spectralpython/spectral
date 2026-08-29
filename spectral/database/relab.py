@@ -1,11 +1,18 @@
 '''
 Code for reading and managing relab spectral library data.
 '''
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, TextIO
 
 from .spectral_database import SpectralDatabase
 
-readline = lambda fin: fin.readline()
-open_file = lambda filename: open(filename, encoding='iso-8859-1')
+if TYPE_CHECKING:
+    from spectral.io.envi import SpectralLibrary
+    from spectral.spectral import BandInfo
+
+def readline(fin: TextIO) -> str: return fin.readline()
+def open_file(filename: str) -> TextIO: return open(filename, encoding='iso-8859-1')
 
 table_schemas = [
     'CREATE TABLE Samples (SampleID INTEGER PRIMARY KEY, Name TEXT, Type TEXT, Class TEXT, SubClass TEXT, '
@@ -25,7 +32,7 @@ bad_files = [
 ]
 
 
-def read_pair(fin, num_lines=1):
+def read_pair(fin: TextIO, num_lines: int = 1) -> list[str]:
     '''Reads a colon-delimited attribute-value pair from the file stream.'''
     s = ''
     for i in range(num_lines):
@@ -35,12 +42,12 @@ def read_pair(fin, num_lines=1):
 
 class Signature:
     '''Object to store sample/measurement metadata, as well as wavelength-signature vectors.'''
-    def __init__(self):
+    def __init__(self) -> None:
         self.sample = {}
         self.measurement = {}
 
 
-def read_relab_file(filename):
+def read_relab_file(filename: str) -> Signature:
     '''Reads a relab spectrum file.
     .asc files are structured as:
       Number of data lines
@@ -137,9 +144,9 @@ class RelabDatabase(SpectralDatabase):
     '''A relational database to manage relab spectral library data.'''
     schemas = table_schemas
 
-    def _add_sample(self, name, sampleType, sampleClass, subClass,
-                    particleSize, sampleNumber, owner, origin, phase,
-                    description):
+    def _add_sample(self, name: str, sampleType: str, sampleClass: str, subClass: str,
+                    particleSize: str, sampleNumber: str, owner: str, origin: str, phase: str,
+                    description: str) -> int:
         sql = '''INSERT INTO Samples (Name, Type, Class, SubClass, ParticleSize, SampleNum, Owner, Origin, Phase, Description)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
         self.cursor.execute(sql, (name, sampleType, sampleClass, subClass,
@@ -150,8 +157,9 @@ class RelabDatabase(SpectralDatabase):
         return rowId
 
     def _add_signature(
-        self, sampleID, calibrationID, instrument, environment, measurement,
-            xUnit, yUnit, minWavelength, maxWavelength, xData, yData):
+        self, sampleID: int, calibrationID: int, instrument: str, environment: str, measurement: str,
+            xUnit: str, yUnit: str, minWavelength: float, maxWavelength: float,
+            xData: list[float], yData: list[float]) -> int:
         import sqlite3
         import array
         sql = '''INSERT INTO Spectra (SampleID, SensorCalibrationID, Instrument,
@@ -170,7 +178,7 @@ class RelabDatabase(SpectralDatabase):
         return rowId
 
     @classmethod
-    def create(cls, filename, relab_data_dir=None):
+    def create(cls, filename: str, relab_data_dir: str | None = None) -> RelabDatabase:
         '''Creates an relab relational database by parsing RELAB data files.
 
         Arguments:
@@ -213,7 +221,7 @@ class RelabDatabase(SpectralDatabase):
             db._import_files(relab_data_dir)
         return db
 
-    def __init__(self, sqlite_filename=None):
+    def __init__(self, sqlite_filename: str | None = None) -> None:
         '''Creates a database object to interface an existing database.
 
         Arguments:
@@ -234,10 +242,10 @@ class RelabDatabase(SpectralDatabase):
             self.db = None
             self.cursor = None
 
-    def read_file(self, filename):
+    def read_file(self, filename: str) -> Signature:
         return read_relab_file(filename)
 
-    def _import_files(self, data_dir, ignore=bad_files):
+    def _import_files(self, data_dir: str, ignore: list[str] | None = bad_files) -> list[Any]:
         '''Read each file in the relab library and convert to AVIRIS bands.'''
         from glob import glob
         import numpy
@@ -312,7 +320,7 @@ class RelabDatabase(SpectralDatabase):
 
         return sigs
 
-    def get_spectrum(self, spectrumID):
+    def get_spectrum(self, spectrumID: int) -> tuple[list[float], list[float]]:
         '''Returns a spectrum from the database.
 
         Usage:
@@ -352,7 +360,7 @@ class RelabDatabase(SpectralDatabase):
         y.frombytes(rows[0][1])
         return (list(x), list(y))
 
-    def get_signature(self, spectrumID):
+    def get_signature(self, spectrumID: int) -> Signature:
         '''Returns a spectrum with some additional metadata.
 
         Usage::
@@ -405,7 +413,7 @@ class RelabDatabase(SpectralDatabase):
         sig.y = list(y)
         return sig
 
-    def create_envi_spectral_library(self, spectrumIDs, bandInfo):
+    def create_envi_spectral_library(self, spectrumIDs: list[int], bandInfo: BandInfo) -> SpectralLibrary:
         '''Creates an ENVI-formatted spectral library for a list of spectra.
 
         Arguments:

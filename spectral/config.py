@@ -1,6 +1,7 @@
 '''
 Code for package-level customization.
 '''
+from __future__ import annotations
 
 import numpy as np
 

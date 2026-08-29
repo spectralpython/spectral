@@ -1,16 +1,23 @@
 '''
 Code to use matplotlib for creating raster and spectral views.
 '''
+from __future__ import annotations
 
 __all__ = ['ImageView', 'imshow']
 
+from typing import Callable, TYPE_CHECKING
 import numpy as np
 import warnings
+
+from ..image import Image
+
+if TYPE_CHECKING:
+    import matplotlib
 
 _mpl_callbacks_checked = False
 
 
-def check_disable_mpl_callbacks():
+def check_disable_mpl_callbacks() -> None:
     '''Disables matplotlib key event handlers, if appropriate.'''
     import matplotlib as mpl
     from spectral import settings
@@ -25,12 +32,12 @@ def check_disable_mpl_callbacks():
     mpl.rcParams['keymap.home'] = 'r'
 
 
-def xy_to_rowcol(x, y):
+def xy_to_rowcol(x: float, y: float) -> tuple[int, int]:
     '''Converts image (x, y) coordinate to pixel (row, col).'''
     return (int(y + 0.5), int(x + 0.5))
 
 
-def rowcol_to_xy(r, c):
+def rowcol_to_xy(r: int, c: int) -> tuple[float, float]:
     '''Converts pixel (row, col) coordinate to (x, y) of pixel center.'''
     return (float(c), float(r))
 
@@ -49,7 +56,10 @@ class MplCallback(object):
     raise_event_exceptions = False
     show_events = False
 
-    def __init__(self, registry=None, event=None, callback=None):
+    def __init__(self, registry: ImageView | matplotlib.cbook.CallbackRegistry
+                 | matplotlib.backend_bases.FigureCanvasBase | None = None,
+                 event: str | None = None,
+                 callback: Callable | None = None) -> None:
         '''
          Arguments:
 
@@ -80,7 +90,8 @@ class MplCallback(object):
         self.is_connected = False
         self.children = []
 
-    def set_registry(self, registry=None):
+    def set_registry(self, registry: ImageView | matplotlib.cbook.CallbackRegistry
+                      | matplotlib.backend_bases.FigureCanvasBase | None = None) -> None:
         '''
         Arguments:
 
@@ -98,7 +109,10 @@ class MplCallback(object):
         else:
             self.registry = registry
 
-    def connect(self, registry=None, event=None, callback=None):
+    def connect(self, registry: ImageView | matplotlib.cbook.CallbackRegistry
+                | matplotlib.backend_bases.FigureCanvasBase | None = None,
+                event: str | None = None,
+                callback: Callable | None = None) -> None:
         '''Binds the callback to the registry and begins receiving events.
 
          Arguments:
@@ -142,7 +156,7 @@ class MplCallback(object):
         for c in self.children:
             c.connect()
 
-    def disconnect(self):
+    def disconnect(self) -> None:
         '''Stops the callback from receiving events.'''
         from matplotlib.cbook import CallbackRegistry
         if isinstance(self.registry, CallbackRegistry):
@@ -155,7 +169,7 @@ class MplCallback(object):
         for c in self.children:
             c.disconnect()
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs) -> None:
         if self.callback is not None:
             try:
                 self.callback(*args, **kwargs)
@@ -174,14 +188,14 @@ class MplCallback(object):
 
 class ImageViewCallback(MplCallback):
     '''Base class for callbacks that operate on ImageView objects.'''
-    def __init__(self, view, *args, **kwargs):
+    def __init__(self, view: ImageView, *args, **kwargs) -> None:
         super(ImageViewCallback, self).__init__(*args, **kwargs)
         self.view = view
 
 
 class ParentViewPanCallback(ImageViewCallback):
     '''A callback to pan an image based on a click in another image.'''
-    def __init__(self, child, parent, *args, **kwargs):
+    def __init__(self, child: ImageView, parent: ImageView, *args, **kwargs) -> None:
         '''
         Arguments:
 
@@ -198,7 +212,7 @@ class ParentViewPanCallback(ImageViewCallback):
         super(ParentViewPanCallback, self).__init__(parent, *args, **kwargs)
         self.child = child
 
-    def handle_event(self, event):
+    def handle_event(self, event: matplotlib.backend_bases.MouseEvent) -> None:
         if self.show_events:
             print(event, 'key = %s' % event.key)
         if event.inaxes is not self.view.axes:
@@ -211,14 +225,14 @@ class ParentViewPanCallback(ImageViewCallback):
         if event.button == 1 and kp.mods_are('ctrl'):
             self.child.pan_to(event.ydata, event.xdata)
 
-    def connect(self):
+    def connect(self) -> None:
         super(ParentViewPanCallback, self).connect(registry=self.view,
                                                    event='button_press_event')
 
 
 class ImageViewKeyboardHandler(ImageViewCallback):
     '''Default handler for keyboard events in an ImageView.'''
-    def __init__(self, view, *args, **kwargs):
+    def __init__(self, view: ImageView, *args, **kwargs) -> None:
         super(ImageViewKeyboardHandler, self).__init__(view,
                                                        registry=view,
                                                        event='key_press_event',
@@ -231,7 +245,7 @@ class ImageViewKeyboardHandler(ImageViewCallback):
         self.children.append(self.cb_key_release)
         self.idstr = ''
 
-    def on_key_release(self, event):
+    def on_key_release(self, event: matplotlib.backend_bases.KeyEvent) -> None:
         if self.show_events:
             print('key = %s' % event.key)
         kp = KeyParser(event.key)
@@ -245,7 +259,7 @@ class ImageViewKeyboardHandler(ImageViewCallback):
             self.view.selector.to_draw.set_visible(False)
             self.view.refresh()
 
-    def handle_event(self, event):
+    def handle_event(self, event: matplotlib.backend_bases.KeyEvent) -> None:
         from spectral import settings
         if self.show_events:
             print('key = %s' % event.key)
@@ -329,7 +343,7 @@ class ImageViewKeyboardHandler(ImageViewCallback):
         elif key == 'z':
             self.view.open_zoom()
 
-    def print_help(self):
+    def print_help(self) -> None:
         print()
         print('Mouse Functions:')
         print('----------------')
@@ -363,16 +377,16 @@ class KeyParser(object):
                'shift': ['shift'],
                'super': ['super']}
 
-    def __init__(self, key_str=None):
+    def __init__(self, key_str: str | None = None) -> None:
         self.reset()
         if key_str is not None:
             self.parse(key_str)
 
-    def reset(self):
+    def reset(self) -> None:
         self.key = None
         self.modifiers = set()
 
-    def parse(self, key_str):
+    def parse(self, key_str: str | None) -> None:
         '''Extracts the key value and modifiers from a string.'''
         self.reset()
         if key_str is None:
@@ -390,15 +404,15 @@ class KeyParser(object):
         else:
             self.key = tokens[-1]
 
-    def has_mod(self, m):
+    def has_mod(self, m: str) -> bool:
         '''Returns True if `m` is one of the modifiers.'''
         return m in self.modifiers
 
-    def mods_are(self, *args):
+    def mods_are(self, *args) -> bool:
         '''Return True if modifiers are exactly the ones specified.'''
         return self.modifiers == set(args)
 
-    def get_token_modifiers(self, token):
+    def get_token_modifiers(self, token: str) -> set[str]:
         mods = set()
         for (modifier, aliases) in list(self.aliases.items()):
             if token in aliases:
@@ -407,13 +421,13 @@ class KeyParser(object):
 
 
 class ImageViewMouseHandler(ImageViewCallback):
-    def __init__(self, view, *args, **kwargs):
+    def __init__(self, view: ImageView, *args, **kwargs) -> None:
         super(ImageViewMouseHandler, self).__init__(view,
                                                     registry=view,
                                                     event='button_press_event',
                                                     *args, **kwargs)
 
-    def handle_event(self, event):
+    def handle_event(self, event: matplotlib.backend_bases.MouseEvent) -> None:
         '''Callback for click event in the image display.'''
         if self.show_events:
             print(event, ', key = %s' % event.key)
@@ -446,7 +460,7 @@ class ImageViewMouseHandler(ImageViewCallback):
 
 
 class SpyMplEvent(object):
-    def __init__(self, name):
+    def __init__(self, name: str) -> None:
         self.name = name
 
 
@@ -467,8 +481,11 @@ class ImageView(object):
     selector_lineprops = dict(color='black', linestyle='-',
                               linewidth=2, alpha=0.5)
 
-    def __init__(self, data=None, bands=None, classes=None, source=None,
-                 **kwargs):
+    def __init__(self, data: np.ndarray | Image | None = None,
+                 bands: tuple[int, ...] | list[int] | None = None,
+                 classes: np.ndarray | None = None,
+                 source: np.ndarray | Image | None = None,
+                 **kwargs) -> None:
         '''
         Arguments:
 
@@ -555,7 +572,8 @@ class ImageView(object):
 
         check_disable_mpl_callbacks()
 
-    def set_data(self, data, bands=None, **kwargs):
+    def set_data(self, data: np.ndarray | Image,
+                 bands: tuple[int, ...] | list[int] | None = None, **kwargs) -> None:
         '''Sets the data to be shown in the RGB channels.
 
         Arguments:
@@ -605,7 +623,7 @@ class ImageView(object):
         if self.is_shown:
             self.refresh()
 
-    def set_rgb_options(self, **kwargs):
+    def set_rgb_options(self, **kwargs) -> None:
         '''Sets parameters affecting RGB display of data.
 
         Accepts any keyword supported by :func:`~spectral.graphics.graphics.get_rgb`.
@@ -620,7 +638,7 @@ class ImageView(object):
             self._update_data_rgb()
             self.refresh()
 
-    def _update_data_rgb(self):
+    def _update_data_rgb(self) -> None:
         '''Regenerates the RGB values for display.'''
         from .graphics import get_rgb_meta
 
@@ -633,7 +651,8 @@ class ImageView(object):
            self.data_rgb.ndim == 3:
             self.data_rgb = self.data_rgb[:, :, 0]
 
-    def set_classes(self, classes, colors=None, **kwargs):
+    def set_classes(self, classes: np.ndarray | None, colors: np.ndarray | list | None = None,
+                     **kwargs) -> None:
         '''Sets the array of class values associated with the image data.
 
         Arguments:
@@ -680,7 +699,7 @@ class ImageView(object):
         if self.is_shown:
             self.refresh()
 
-    def set_source(self, source):
+    def set_source(self, source: np.ndarray | Image) -> None:
         '''Sets the image data source (used for accessing spectral data).
 
         Arguments:
@@ -691,7 +710,7 @@ class ImageView(object):
         '''
         self.source = source
 
-    def show(self, mode=None, fignum=None):
+    def show(self, mode: str | None = None, fignum: int | None = None) -> None:
         '''Renders the image data.
 
         Arguments:
@@ -746,7 +765,7 @@ class ImageView(object):
         self.init_callbacks()
         self.is_shown = True
 
-    def init_callbacks(self):
+    def init_callbacks(self) -> None:
         '''Creates the object's callback registry and default callbacks.'''
         from spectral import settings
         from matplotlib.cbook import CallbackRegistry
@@ -768,7 +787,7 @@ class ImageView(object):
         self.cb_keyboard.connect()
 
         # Class update event callback
-        def updater(*args, **kwargs):
+        def updater(*args, **kwargs) -> None:
             self.refresh()
         callback = MplCallback(registry=self.callbacks_common,
                                event='spy_classes_modified',
@@ -797,7 +816,8 @@ class ImageView(object):
               'pixel class labeling will be unavailable.'
             warnings.warn(msg)
 
-    def label_region(self, rectangle, class_id):
+    def label_region(self, rectangle: tuple[int, int, int, int] | list[int],
+                      class_id: int) -> int:
         '''Assigns all pixels in the rectangle to the specified class.
 
         Arguments:
@@ -836,7 +856,8 @@ class ImageView(object):
             return n
         return 0
 
-    def _select_rectangle(self, event1, event2):
+    def _select_rectangle(self, event1: matplotlib.backend_bases.MouseEvent,
+                           event2: matplotlib.backend_bases.MouseEvent) -> None:
         if event1.inaxes is not self.axes or event2.inaxes is not self.axes:
             self.selection = None
             return
@@ -859,7 +880,7 @@ class ImageView(object):
         self.selector.set_visible(True)
         self.selector.update()
 
-    def _guess_mode(self):
+    def _guess_mode(self) -> None:
         '''Select an appropriate display mode, based on current data.'''
         if self.data_rgb is not None:
             self.set_display_mode('data')
@@ -868,7 +889,7 @@ class ImageView(object):
         else:
             raise Exception('Unable to display image: no data set.')
 
-    def show_data(self):
+    def show_data(self) -> None:
         '''Show the image data.'''
         import matplotlib.pyplot as plt
         if self.data_axes is not None:
@@ -885,7 +906,7 @@ class ImageView(object):
         if self.axes is None:
             self.axes = self.data_axes.axes
 
-    def show_classes(self):
+    def show_classes(self) -> None:
         '''Show the class values.'''
         import matplotlib.pyplot as plt
         from matplotlib.colors import ListedColormap, NoNorm
@@ -915,7 +936,7 @@ class ImageView(object):
             self.class_axes.set_alpha(1)
         # self.class_axes.axes.set_axis_bgcolor('black')
 
-    def refresh(self):
+    def refresh(self) -> None:
         '''Updates the displayed data (if it has been shown).'''
         if self.is_shown:
             self._update_class_rgb()
@@ -931,13 +952,13 @@ class ImageView(object):
                 self.show_data()
             self.axes.figure.canvas.draw()
 
-    def _update_class_rgb(self):
+    def _update_class_rgb(self) -> None:
         if self.display_mode == 'overlay':
             self.class_rgb = np.ma.array(self.classes, mask=(self.classes == 0))
         else:
             self.class_rgb = np.array(self.classes)
 
-    def set_display_mode(self, mode):
+    def set_display_mode(self, mode: str) -> None:
         '''`mode` must be one of ("data", "classes", "overlay").'''
         if mode not in ('data', 'classes', 'overlay'):
             raise ValueError('Invalid display mode: ' + repr(mode))
@@ -960,12 +981,12 @@ class ImageView(object):
         self.refresh()
 
     @property
-    def class_alpha(self):
+    def class_alpha(self) -> float:
         '''alpha transparency for the class overlay.'''
         return self._class_alpha
 
     @class_alpha.setter
-    def class_alpha(self, alpha):
+    def class_alpha(self, alpha: float) -> None:
         if alpha < 0 or alpha > 1:
             raise ValueError('Alpha value must be in range [0, 1].')
         self._class_alpha = alpha
@@ -975,12 +996,12 @@ class ImageView(object):
             self.refresh()
 
     @property
-    def interpolation(self):
+    def interpolation(self) -> str | None:
         '''matplotlib pixel interpolation to use in the image display.'''
         return self._interpolation
 
     @interpolation.setter
-    def interpolation(self, interpolation):
+    def interpolation(self, interpolation: str | None) -> None:
         if interpolation == self._interpolation:
             return
         self._interpolation = interpolation
@@ -992,12 +1013,13 @@ class ImageView(object):
             self.class_axes.set_interpolation(interpolation)
         self.refresh()
 
-    def set_title(self, s):
+    def set_title(self, s: str) -> None:
         if self.is_shown:
             self.axes.set_title(s)
             self.refresh()
 
-    def open_zoom(self, center=None, size=None):
+    def open_zoom(self, center: tuple[int, int] | None = None,
+                  size: int | None = None) -> ImageView:
         '''Opens a separate window with a zoomed view.
         If a ctrl-lclick event occurs in the original view, the zoomed window
         will pan to the location of the click event.
@@ -1048,7 +1070,7 @@ class ImageView(object):
         view.cb_parent_pan.connect()
         return view
 
-    def pan_to(self, row, col):
+    def pan_to(self, row: float, col: float) -> None:
         '''Centers view on pixel coordinate (row, col).'''
         if self.axes is None:
             raise Exception('Cannot pan image until it is shown.')
@@ -1060,7 +1082,7 @@ class ImageView(object):
         self.axes.set_ylim(row - yrange_2, row + yrange_2)
         self.axes.figure.canvas.draw()
 
-    def zoom(self, scale):
+    def zoom(self, scale: float) -> None:
         '''Zooms view in/out (`scale` > 1 zooms in).'''
         (xmin, xmax) = self.axes.get_xlim()
         (ymin, ymax) = self.axes.get_ylim()
@@ -1073,7 +1095,7 @@ class ImageView(object):
         self.axes.set_ylim(y - dy, y + dy)
         self.refresh()
 
-    def format_coord(self, x, y):
+    def format_coord(self, x: float, y: float) -> str:
         '''Formats pixel coordinate string displayed in the window.'''
         (nrows, ncols) = self._image_shape
         if x < -0.5 or x > ncols - 0.5 or y < -0.5 or y > nrows - 0.5:
@@ -1087,7 +1109,7 @@ class ImageView(object):
                 pass
         return s
 
-    def __str__(self):
+    def __str__(self) -> str:
         meta = self.data_rgb_meta
         s = 'ImageView object:\n'
         if 'bands' in meta:
@@ -1103,12 +1125,18 @@ class ImageView(object):
                 s += '    {0}: {1}\n'.format(c, str(r))
         return s
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self)
 
 
-def imshow(data=None, bands=None, classes=None, source=None, colors=None,
-           figsize=None, fignum=None, title=None, **kwargs):
+def imshow(data: np.ndarray | Image | None = None,
+           bands: tuple[int, ...] | list[int] | None = None,
+           classes: np.ndarray | None = None,
+           source: np.ndarray | Image | None = None,
+           colors: np.ndarray | list | None = None,
+           figsize: tuple[float, float] | None = None,
+           fignum: int | None = None,
+           title: str | None = None, **kwargs) -> ImageView:
     '''A wrapper around matplotlib's imshow for multi-band images.
 
     Arguments:
@@ -1234,7 +1262,8 @@ def imshow(data=None, bands=None, classes=None, source=None, colors=None,
     return view
 
 
-def plot(data, source=None):
+def plot(data: np.ndarray,
+         source: np.ndarray | Image | None = None) -> list[matplotlib.lines.Line2D]:
     '''
     Creates an x-y plot.
 
@@ -1282,7 +1311,7 @@ def plot(data, source=None):
     return p
 
 
-def set_mpl_interactive():
+def set_mpl_interactive() -> None:
     '''Ensure matplotlib is in interactive mode.'''
     import matplotlib.pyplot as plt
 

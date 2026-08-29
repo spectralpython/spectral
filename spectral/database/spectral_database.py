@@ -1,13 +1,16 @@
+from __future__ import annotations
+
+import sqlite3
 
 
 class SpectralDatabase:
-    def _connect(self, sqlite_filename):
+    def _connect(self, sqlite_filename: str) -> None:
         '''Establishes a connection to the Specbase sqlite database.'''
         import sqlite3
         self.db = sqlite3.connect(sqlite_filename)
         self.cursor = self.db.cursor()
 
-    def query(self, sql, args=None):
+    def query(self, sql: str, args: tuple | None = None) -> sqlite3.Cursor:
         '''Returns the result of an arbitrary SQL statement.
 
         Arguments:
@@ -44,7 +47,7 @@ class SpectralDatabase:
         else:
             return self.cursor.execute(sql)
 
-    def print_query(self, sql, args=None):
+    def print_query(self, sql: str, args: tuple | None = None) -> None:
         '''Prints the text result of an arbitrary SQL statement.
 
         Arguments:

@@ -1,6 +1,7 @@
 '''
 Code for converting pixel data to RGB values.
 '''
+from __future__ import annotations
 
 import numpy as np
 
@@ -13,7 +14,8 @@ class ColorScale:
     :meth:`__call__` operator takes a scalar input and returns the
     corresponding color, interpolating between defined colors.
     '''
-    def __init__(self, levels, colors, num_tics=0):
+    def __init__(self, levels: list | tuple | np.ndarray, colors: np.ndarray,
+                 num_tics: int = 0) -> None:
         '''
         Creates the ColorScale.
 
@@ -72,7 +74,7 @@ class ColorScale:
             self.colorTics[i] = (colors[j - 1] + (self.tics[i] - levels[j - 1])
                                  / dlevel * dcolor).astype(int)
 
-    def __call__(self, val):
+    def __call__(self, val: float | np.ndarray) -> np.ndarray:
         '''Returns the scale color associated with the given value.'''
         if val < self.min:
             return self.bgColor
@@ -82,7 +84,7 @@ class ColorScale:
             return self.colorTics[int((float(np.asarray(val).item()) - self.min)
                                   / self.span * self.size)]
 
-    def set_background_color(self, color):
+    def set_background_color(self, color: list | tuple | np.ndarray) -> None:
         '''Sets RGB color used for values below the scale minimum.
 
         Arguments:
@@ -95,7 +97,7 @@ class ColorScale:
             raise 'Color value must be have exactly 3 elements.'
         self.bgColor = color
 
-    def set_range(self, min, max):
+    def set_range(self, min: float, max: float) -> None:
         '''Sets the min and max values of the color scale.
 
         The distribution of colors within the scale will stretch or shrink
@@ -106,7 +108,7 @@ class ColorScale:
         self.span = max - min
 
 
-def create_default_color_scale(ntics=0):
+def create_default_color_scale(ntics: int = 0) -> ColorScale:
     '''Returns a black-blue-green-red-yellow-white color scale.
 
     Arguments:

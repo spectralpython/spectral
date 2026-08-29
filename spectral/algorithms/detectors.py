@@ -1,13 +1,16 @@
 '''
 Spectral target detection algorithms.
 '''
+from __future__ import annotations
 
 __all__ = ['MatchedFilter', 'matched_filter', 'RX', 'rx', 'ace']
 
 import math
+from typing import Any, Sequence
+
 import numpy as np
 
-from .algorithms import calc_stats
+from .algorithms import calc_stats, GaussianStats
 from .transforms import LinearTransform
 from .spatial import map_outer_window_stats
 
@@ -26,7 +29,7 @@ class MatchedFilter(LinearTransform):
     mean, and :math:`\Sigma` is the covariance.
     '''
 
-    def __init__(self, background, target):
+    def __init__(self, background: GaussianStats, target: np.ndarray) -> None:
         '''Creates the filter, given background/target means and covariance.
 
         Arguments:
@@ -57,7 +60,7 @@ class MatchedFilter(LinearTransform):
         LinearTransform.__init__(
             self, (self.coef * d_tb).dot(C_1), pre=-self.u_b)
 
-    def whiten(self, X):
+    def whiten(self, X: np.ndarray) -> np.ndarray:
         '''Transforms data to the whitened space of the background.
 
         Arguments:
@@ -75,7 +78,10 @@ class MatchedFilter(LinearTransform):
         return self._whitening_transform(X)
 
 
-def matched_filter(X, target, background=None, window=None, cov=None):
+def matched_filter(X: np.ndarray, target: np.ndarray,
+                   background: GaussianStats | None = None,
+                   window: tuple[int, int] | None = None,
+                   cov: np.ndarray | None = None) -> np.ndarray:
     r'''Computes a linear matched filter target detector score.
 
     Usage:
@@ -162,7 +168,7 @@ def matched_filter(X, target, background=None, window=None, cov=None):
         raise ValueError('`background` and `window` are mutually ' \
                          'exclusive arguments.')
     if window is not None:
-        def mf_wrapper(bg, x):
+        def mf_wrapper(bg: GaussianStats, x: np.ndarray) -> np.ndarray:
             return MatchedFilter(bg, target)(x)
         return map_outer_window_stats(mf_wrapper, X, window[0], window[1],
                                       dim_out=1, cov=cov)
@@ -192,7 +198,7 @@ class RX():
     '''
     dim_out = 1
 
-    def __init__(self, background=None):
+    def __init__(self, background: GaussianStats | None = None) -> None:
         '''Creates the detector, given optional background/target stats.
 
         Arguments:
@@ -209,11 +215,11 @@ class RX():
         else:
             self.background = None
 
-    def set_background(self, stats):
+    def set_background(self, stats: GaussianStats) -> None:
         '''Sets background statistics to be used when applying the detector.'''
         self.background = stats
 
-    def __call__(self, X):
+    def __call__(self, X: np.ndarray) -> np.ndarray | float:
         '''Applies the RX anomaly detector to X.
 
         Arguments:
@@ -271,7 +277,9 @@ class RX():
 #
 
 
-def rx(X, background=None, window=None, cov=None):
+def rx(X: np.ndarray, background: GaussianStats | None = None,
+      window: tuple[int, int] | None = None,
+      cov: np.ndarray | None = None) -> np.ndarray:
     r'''Computes RX anomaly detector scores.
 
     Usage:
@@ -362,7 +370,7 @@ def rx(X, background=None, window=None, cov=None):
     if window is not None:
         rx = RX()
 
-        def rx_wrapper(bg, x):
+        def rx_wrapper(bg: GaussianStats, x: np.ndarray) -> np.ndarray | float:
             rx.set_background(bg)
             return rx(x)
 
@@ -376,7 +384,9 @@ class ACE():
     r'''Adaptive Coherence/Cosine Estimator (ACE).
     '''
 
-    def __init__(self, target, background=None, **kwargs):
+    def __init__(self, target: np.ndarray | Sequence[np.ndarray],
+                background: GaussianStats | None = None,
+                **kwargs: Any) -> None:
         '''Creates the callable detector for target and background.
 
         Arguments:
@@ -421,7 +431,7 @@ class ACE():
         else:
             self._background = None
 
-    def set_target(self, target):
+    def set_target(self, target: np.ndarray | Sequence[np.ndarray] | None) -> None:
         '''Specifies target or target subspace used by the detector.
 
         Arguments:
@@ -444,7 +454,7 @@ class ACE():
             self._target = np.array(target, ndmin=2)
         self._update_constants()
 
-    def set_background(self, stats):
+    def set_background(self, stats: GaussianStats) -> None:
         '''Sets background statistics to be used when applying the detector.
 
         Arguments:
@@ -459,7 +469,7 @@ class ACE():
         self._background = stats
         self._update_constants()
 
-    def _update_constants(self):
+    def _update_constants(self) -> None:
         '''Computes and caches constants used when applying the detector.'''
         if self._background is not None and self._target is not None:
             if self._background.mean is not None:
@@ -472,7 +482,7 @@ class ACE():
             self._C = None
             self._P = None
 
-    def __call__(self, X):
+    def __call__(self, X: np.ndarray) -> np.ndarray | float:
         '''Compute ACE detector scores for X.
 
         Arguments:
@@ -526,7 +536,10 @@ class ACE():
             return np.apply_along_axis(self, -1, X)
 
 
-def ace(X, target, background=None, window=None, cov=None, **kwargs):
+def ace(X: np.ndarray, target: np.ndarray | Sequence[np.ndarray],
+       background: GaussianStats | None = None,
+       window: tuple[int, int] | None = None,
+       cov: np.ndarray | None = None, **kwargs: Any) -> np.ndarray:
     r'''Returns Adaptive Coherence/Cosine Estimator (ACE) detection scores.
 
     Usage:
@@ -643,7 +656,7 @@ def ace(X, target, background=None, window=None, cov=None, **kwargs):
             if background is None:
                 detector.set_background(calc_stats(X))
 
-            def apply_to_target(t):
+            def apply_to_target(t: np.ndarray) -> np.ndarray | float:
                 detector.set_target(t)
                 return detector(X)
 
@@ -654,7 +667,7 @@ def ace(X, target, background=None, window=None, cov=None, **kwargs):
         # Compute local background statistics for each pixel
         if isinstance(target, np.ndarray):
             # Single detector score for target subspace for each pixel
-            def ace_wrapper(bg, x):
+            def ace_wrapper(bg: GaussianStats, x: np.ndarray) -> np.ndarray | float:
                 detector.set_background(bg)
                 return detector(x)
             result = map_outer_window_stats(ace_wrapper, X, window[0], window[1],
@@ -662,11 +675,11 @@ def ace(X, target, background=None, window=None, cov=None, **kwargs):
         else:
             # Separate score arrays for each target in target list
 
-            def apply_to_target(t, x):
+            def apply_to_target(t: np.ndarray, x: np.ndarray) -> np.ndarray | float:
                 detector.set_target(t)
                 return detector(x)
 
-            def ace_wrapper(bg, x):
+            def ace_wrapper(bg: GaussianStats, x: np.ndarray) -> list[Any]:
                 detector.set_background(bg)
                 return [apply_to_target(t, x) for t in target]
 

@@ -1,14 +1,21 @@
 '''
 Code for reading and managing ASTER spectral library data.
 '''
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, TextIO
 
 import numpy as np
 
 from .spectral_database import SpectralDatabase
 
+if TYPE_CHECKING:
+    from spectral.io.envi import SpectralLibrary
+    from spectral.spectral import BandInfo
 
-def readline(fin): return fin.readline()
-def open_file(filename): return open(filename, encoding='iso-8859-1')
+
+def readline(fin: TextIO) -> str: return fin.readline()
+def open_file(filename: str) -> TextIO: return open(filename, encoding='iso-8859-1')
 
 table_schemas = [
     'CREATE TABLE Samples (SampleID INTEGER PRIMARY KEY, Name TEXT, Type TEXT, Class TEXT, SubClass TEXT, '
@@ -28,7 +35,7 @@ bad_files = [
 ]
 
 
-def read_pair(fin, num_lines=1):
+def read_pair(fin: TextIO, num_lines: int = 1) -> list[str]:
     '''Reads a colon-delimited attribute-value pair from the file stream.'''
     s = ''
     for i in range(num_lines):
@@ -38,12 +45,12 @@ def read_pair(fin, num_lines=1):
 
 class Signature:
     '''Object to store sample/measurement metadata, as well as wavelength-signatrure vectors.'''
-    def __init__(self):
+    def __init__(self) -> None:
         self.sample = {}
         self.measurement = {}
 
 
-def read_aster_file(filename):
+def read_aster_file(filename: str) -> Signature:
     '''Reads an ASTER 2.x spectrum file.'''
     fin = open_file(filename)
 
@@ -132,9 +139,9 @@ class AsterDatabase(SpectralDatabase):
     '''A relational database to manage ASTER spectral library data.'''
     schemas = table_schemas
 
-    def _add_sample(self, name, sampleType, sampleClass, subClass,
-                    particleSize, sampleNumber, owner, origin, phase,
-                    description):
+    def _add_sample(self, name: str, sampleType: str, sampleClass: str, subClass: str,
+                    particleSize: str, sampleNumber: str, owner: str, origin: str, phase: str,
+                    description: str) -> int:
         sql = '''INSERT INTO Samples (Name, Type, Class, SubClass, ParticleSize, SampleNum, Owner, Origin, Phase, Description)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
         self.cursor.execute(sql, (name, sampleType, sampleClass, subClass,
@@ -145,8 +152,9 @@ class AsterDatabase(SpectralDatabase):
         return rowId
 
     def _add_signature(
-        self, sampleID, calibrationID, instrument, environment, measurement,
-            xUnit, yUnit, minWavelength, maxWavelength, xData, yData):
+        self, sampleID: int, calibrationID: int, instrument: str, environment: str, measurement: str,
+            xUnit: str, yUnit: str, minWavelength: float, maxWavelength: float,
+            xData: list[float], yData: list[float]) -> int:
         import sqlite3
         import array
         sql = '''INSERT INTO Spectra (SampleID, SensorCalibrationID, Instrument,
@@ -165,7 +173,7 @@ class AsterDatabase(SpectralDatabase):
         return rowId
 
     @classmethod
-    def create(cls, filename, aster_data_dir=None):
+    def create(cls, filename: str, aster_data_dir: str | None = None) -> AsterDatabase:
         '''Creates an ASTER relational database by parsing ASTER data files.
 
         Arguments:
@@ -208,7 +216,7 @@ class AsterDatabase(SpectralDatabase):
             db._import_files(aster_data_dir)
         return db
 
-    def __init__(self, sqlite_filename=None):
+    def __init__(self, sqlite_filename: str | None = None) -> None:
         '''Creates a database object to interface an existing database.
 
         Arguments:
@@ -229,10 +237,10 @@ class AsterDatabase(SpectralDatabase):
             self.db = None
             self.cursor = None
 
-    def read_file(self, filename):
+    def read_file(self, filename: str) -> Signature:
         return read_aster_file(filename)
 
-    def _import_files(self, data_dir, ignore=bad_files):
+    def _import_files(self, data_dir: str, ignore: list[str] | None = bad_files) -> list[Any]:
         '''Read each file in the ASTER library and convert to AVIRIS bands.'''
         from glob import glob
         import os
@@ -299,7 +307,7 @@ class AsterDatabase(SpectralDatabase):
 
         return sigs
 
-    def get_spectrum(self, spectrumID):
+    def get_spectrum(self, spectrumID: int) -> tuple[list[float], list[float]]:
         '''Returns a spectrum from the database.
 
         Usage:
@@ -339,7 +347,7 @@ class AsterDatabase(SpectralDatabase):
         y.frombytes(rows[0][1])
         return (list(x), list(y))
 
-    def get_signature(self, spectrumID):
+    def get_signature(self, spectrumID: int) -> Signature:
         '''Returns a spectrum with some additional metadata.
 
         Usage::
@@ -392,7 +400,7 @@ class AsterDatabase(SpectralDatabase):
         sig.y = list(y)
         return sig
 
-    def create_envi_spectral_library(self, spectrumIDs, bandInfo):
+    def create_envi_spectral_library(self, spectrumIDs: list[int], bandInfo: BandInfo) -> SpectralLibrary:
         '''Creates an ENVI-formatted spectral library for a list of spectra.
 
         Arguments:

@@ -79,15 +79,22 @@ instance of a :class:`~spectral.BandInfo` object that contains optional
 information about the images spectral bands.
 '''
 
+from __future__ import annotations
+
 import array
 import numpy as np
 import os
 import warnings
+from typing import TYPE_CHECKING, Any, Sequence
 
 import spectral as spy
 from .. import SpyException
 from ..image import Image, ImageArray
+from ..spectral import BandInfo
 from ..utilities.errors import has_nan, NaNValueWarning
+
+if TYPE_CHECKING:
+    from ..algorithms.transforms import LinearTransform
 
 
 class FileNotFoundError(SpyException):
@@ -99,7 +106,7 @@ class InvalidFileError(SpyException):
     pass
 
 
-def find_file_path(filename):
+def find_file_path(filename: str) -> str:
     '''
     Search cwd and SPECTRAL_DATA directories for the given file.
     '''
@@ -123,12 +130,12 @@ def find_file_path(filename):
 class SpyFile(Image):
     '''A base class for accessing spectral image files'''
 
-    def __init__(self, params, metadata=None):
+    def __init__(self, params: Any, metadata: dict[str, Any] | None = None) -> None:
         Image.__init__(self, params, metadata)
         # Number by which to divide values read from file.
         self.scale_factor = 1.0
 
-    def set_params(self, params, metadata):
+    def set_params(self, params: Any, metadata: dict[str, Any] | None) -> None:
         Image.set_params(self, params, metadata)
 
         self.filename = params.filename
@@ -145,12 +152,12 @@ class SpyFile(Image):
         # So that we can use this more like a Numeric array
         self.shape = (self.nrows, self.ncols, self.nbands)
 
-    def transform(self, xform):
+    def transform(self, xform: LinearTransform | np.ndarray) -> TransformedImage:
         '''Returns a SpyFile image with the linear transform applied.'''
         # This allows a LinearTransform object to take the SpyFile as an arg.
         return transform_image(xform, self)
 
-    def __str__(self):
+    def __str__(self) -> str:
         '''Prints basic parameters of the associated file.'''
         s = '\tData Source:   \'%s\'\n' % self.filename
         s += '\t# Rows:         %6d\n' % (self.nrows)
@@ -168,7 +175,7 @@ class SpyFile(Image):
         s += '\tData format:  %8s' % np.dtype(self.dtype).name
         return s
 
-    def load(self, **kwargs):
+    def load(self, **kwargs: Any) -> ImageArray:
         '''Loads entire image into memory in a :class:`spectral.image.ImageArray`.
 
         Keyword Arguments:
@@ -221,7 +228,7 @@ class SpyFile(Image):
             warnings.warn('Image data contains NaN values.', NaNValueWarning)
         return imarray
 
-    def __getitem__(self, args):
+    def __getitem__(self, args: tuple[Any, ...]) -> np.ndarray:
         '''Subscripting operator that provides a numpy-like interface.
         Usage::
 
@@ -336,7 +343,7 @@ class SpyFile(Image):
         bands = fix_negative_indices(bands, 2)
         return self.read_subimage(rows, cols, bands)
 
-    def _fix_negative_indices(self, indices, dim):
+    def _fix_negative_indices(self, indices: list[int] | int | None, dim: int) -> list[int] | int | None:
         if not indices:
             return indices
 
@@ -347,7 +354,7 @@ class SpyFile(Image):
         except:
             return indices if indices >= 0 else dim_len + indices
 
-    def params(self):
+    def params(self) -> Any:
         '''Return an object containing the SpyFile parameters.'''
         p = Image.params(self)
 
@@ -358,7 +365,7 @@ class SpyFile(Image):
 
         return p
 
-    def __del__(self):
+    def __del__(self) -> None:
         # `fid` may not have been set if `__init__` raised before reaching
         # `set_params` (e.g., a subclass validates its arguments first).
         fid = getattr(self, 'fid', None)
@@ -370,7 +377,7 @@ class SubImage(SpyFile):
     '''
     Represents a rectangular sub-region of a larger SpyFile object.
     '''
-    def __init__(self, image, row_range, col_range):
+    def __init__(self, image: SpyFile, row_range: Sequence[int], col_range: Sequence[int]) -> None:
         '''Creates a :class:`Spectral.SubImage` for a rectangular sub-region.
 
         Arguments:
@@ -415,7 +422,7 @@ class SubImage(SpyFile):
         self.ncols = col_range[1] - col_range[0]
         self.shape = (self.nrows, self.ncols, self.nbands)
 
-    def read_band(self, band):
+    def read_band(self, band: int) -> np.ndarray:
         '''Reads a single band from the image.
 
         Arguments:
@@ -436,7 +443,7 @@ class SubImage(SpyFile):
                                            self.col_offset + self.ncols],
                                           [band])[:, :, 0]
 
-    def read_bands(self, bands):
+    def read_bands(self, bands: list[int]) -> np.ndarray:
         '''Reads multiple bands from the image.
 
         Arguments:
@@ -459,7 +466,7 @@ class SubImage(SpyFile):
                                            self.col_offset + self.ncols],
                                           bands)
 
-    def read_pixel(self, row, col):
+    def read_pixel(self, row: int, col: int) -> np.ndarray:
         '''Reads the pixel at position (row,col) from the file.
 
         Arguments:
@@ -477,7 +484,7 @@ class SubImage(SpyFile):
         return self.parent.read_pixel(row + self.row_offset,
                                       col + self.col_offset)
 
-    def read_datum(self, row, col, band):
+    def read_datum(self, row: int, col: int, band: int) -> Any:
         '''Reads the band `band` value for pixel at row `row`, column `col`.
 
         Arguments:
@@ -489,7 +496,7 @@ class SubImage(SpyFile):
         return self.parent.read_datum(row + self.row_offset,
                                       col + self.col_offset, band)
 
-    def read_subimage(self, rows, cols, bands=None):
+    def read_subimage(self, rows: list[int], cols: list[int], bands: list[int] | None = None) -> np.ndarray:
         '''
         Reads arbitrary rows, columns, and bands from the image.
 
@@ -521,7 +528,8 @@ class SubImage(SpyFile):
                                               + self.col_offset),
                                          bands)
 
-    def read_subregion(self, row_bounds, col_bounds, bands=None):
+    def read_subregion(self, row_bounds: Sequence[int], col_bounds: Sequence[int],
+                       bands: list[int] | None = None) -> np.ndarray:
         '''
         Reads a contiguous rectangular sub-region from the image.
 
@@ -552,7 +560,7 @@ class SubImage(SpyFile):
                                                + self.col_offset),
                                           bands)
 
-    def load(self, **kwargs):
+    def load(self, **kwargs: Any) -> ImageArray:
         '''Loads the sub-image into memory as a
         :class:`spectral.image.ImageArray`.
 
@@ -593,7 +601,7 @@ class SubImage(SpyFile):
         return imarray
 
 
-def tile_image(im, nrows, ncols):
+def tile_image(im: SpyFile, nrows: int, ncols: int) -> list[list[SubImage]]:
     '''
     Break an image into nrows x ncols tiles.
 
@@ -624,7 +632,8 @@ def tile_image(im, nrows, ncols):
     return tiles
 
 
-def transform_image(transform, img):
+def transform_image(transform: LinearTransform | np.ndarray,
+                    img: np.ndarray | Image) -> np.ndarray | TransformedImage:
     '''Applies a linear transform to an image.
 
     Arguments:
@@ -665,7 +674,7 @@ class TransformedImage(Image):
     '''
     dtype = np.dtype('f4').char
 
-    def __init__(self, transform, img):
+    def __init__(self, transform: LinearTransform | np.ndarray, img: Image) -> None:
         from ..algorithms.transforms import LinearTransform
         if not isinstance(img, Image):
             raise Exception(
@@ -699,10 +708,10 @@ class TransformedImage(Image):
             self.nbands = self.image.nbands
 
     @property
-    def bands(self):
+    def bands(self) -> BandInfo:
         return self.image.bands
 
-    def __getitem__(self, args):
+    def __getitem__(self, args: tuple[Any, ...]) -> np.ndarray:
         '''
         Get data from the image and apply the transform.
         '''
@@ -744,7 +753,7 @@ class TransformedImage(Image):
 
         return transformed.squeeze()
 
-    def __str__(self):
+    def __str__(self) -> str:
         s = '\tTransformedImage object with output dimensions:\n'
         s += '\t# Rows:         %6d\n' % (self.nrows)
         s += '\t# Samples:      %6d\n' % (self.ncols)
@@ -753,15 +762,16 @@ class TransformedImage(Image):
         s += str(self.image)
         return s
 
-    def read_pixel(self, row, col):
+    def read_pixel(self, row: int, col: int) -> np.ndarray:
         return self.transform(self.image.read_pixel(row, col))
 
-    def load(self):
+    def load(self) -> np.ndarray:
         '''Loads all image data, transforms it, and returns an ndarray).'''
         data = self.image.load()
         return self.transform(data)
 
-    def read_subregion(self, row_bounds, col_bounds, bands=None):
+    def read_subregion(self, row_bounds: Sequence[int], col_bounds: Sequence[int],
+                       bands: list[int] | None = None) -> np.ndarray:
         '''
         Reads a contiguous rectangular sub-region from the image. First
         arg is a 2-tuple specifying min and max row indices.  Second arg
@@ -775,7 +785,8 @@ class TransformedImage(Image):
         else:
             return xdata
 
-    def read_subimage(self, rows, cols, bands=None):
+    def read_subimage(self, rows: list[int], cols: list[int],
+                      bands: list[int] | None = None) -> np.ndarray:
         '''
         Reads a sub-image from a rectangular region within the image.
         First arg is a 2-tuple specifying min and max row indices.
@@ -789,10 +800,10 @@ class TransformedImage(Image):
         else:
             return xdata
 
-    def read_datum(self, i, j, k):
+    def read_datum(self, i: int, j: int, k: int) -> Any:
         return self.read_pixel(i, j)[k]
 
-    def read_bands(self, bands):
+    def read_bands(self, bands: list[int]) -> np.ndarray:
         shape = (self.image.nrows, self.image.ncols, len(bands))
         data = np.zeros(shape, float)
         for i in range(shape[0]):
@@ -804,16 +815,16 @@ class TransformedImage(Image):
 class MemmapFile(object):
     '''Interface class for SpyFile subclasses using `numpy.memmap` objects.'''
 
-    def _disable_memmap(self):
+    def _disable_memmap(self) -> None:
         '''Disables memmap and reverts to direct file reads (slower).'''
         self._memmap = None
 
     @property
-    def using_memmap(self):
+    def using_memmap(self) -> bool:
         '''Returns True if object is using a `numpy.memmap` to read data.'''
         return self._memmap is not None
 
-    def open_memmap(self, **kwargs):
+    def open_memmap(self, **kwargs: Any) -> np.ndarray:
         '''Returns a new `numpy.memmap` object for image file data access.
 
         Keyword Arguments:
@@ -863,7 +874,7 @@ class MemmapFile(object):
             return np.transpose(memmap, interleave_transpose(src_inter,
                                                              dst_inter))
 
-    def asarray(self, writable=False):
+    def asarray(self, writable: bool = False) -> np.ndarray:
         '''Returns an object with a standard numpy array interface.
 
         The function returns a numpy memmap created with the
@@ -882,7 +893,7 @@ class MemmapFile(object):
         return self.open_memmap(writable=writable)
 
 
-def interleave_transpose(int1, int2):
+def interleave_transpose(int1: str, int2: str) -> tuple[int, int, int]:
     '''Returns the 3-tuple of indices to transpose between interleaves.
 
     Arguments:

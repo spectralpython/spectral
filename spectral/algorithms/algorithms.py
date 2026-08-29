@@ -1,13 +1,16 @@
 '''
 Basic algorithms and data handling code.
 '''
+from __future__ import annotations
 
 import math
 from numbers import Integral
+from typing import Any, Generator, Iterable, Sequence
 import numpy as np
 import pickle
 
 import spectral as spy
+from ..image import Image
 from ..io.spyfile import SpyFile, TransformedImage
 from ..utilities.errors import has_nan, NaNValueError
 from .spymath import matrix_sqrt
@@ -18,17 +21,17 @@ class Iterator:
     '''
     Base class for iterators over pixels (spectra).
     '''
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
-    def __iter__(self):
+    def __iter__(self) -> None:
         raise NotImplementedError('Must override __iter__ in child class.')
 
-    def get_num_elements(self):
+    def get_num_elements(self) -> None:
         raise NotImplementedError(
             'Must override get_num_elements in child class.')
 
-    def get_num_bands(self):
+    def get_num_bands(self) -> None:
         raise NotImplementedError(
             'Must override get_num_bands in child class.')
 
@@ -37,17 +40,17 @@ class ImageIterator(Iterator):
     '''
     An iterator over all pixels in an image.
     '''
-    def __init__(self, im):
+    def __init__(self, im: np.ndarray | Image) -> None:
         self.image = im
         self.numElements = im.shape[0] * im.shape[1]
 
-    def get_num_elements(self):
+    def get_num_elements(self) -> int:
         return self.numElements
 
-    def get_num_bands(self):
+    def get_num_bands(self) -> int:
         return self.image.shape[2]
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[np.ndarray, None, None]:
         (M, N) = self.image.shape[:2]
         for i in range(M):
             self.row = i
@@ -60,7 +63,8 @@ class ImageMaskIterator(Iterator):
     '''
     An iterator over all pixels in an image corresponding to a specified mask.
     '''
-    def __init__(self, image, mask, index=None):
+    def __init__(self, image: np.ndarray | Image, mask: np.ndarray,
+                 index: int | None = None) -> None:
         if mask.shape != image.shape[:len(mask.shape)]:
             raise ValueError('Mask shape does not match image.')
         self.image = image
@@ -72,20 +76,22 @@ class ImageMaskIterator(Iterator):
             self.mask = np.not_equal(mask, 0)
         self.n_elements = sum(self.mask.ravel())
 
-    def get_num_elements(self):
+    def get_num_elements(self) -> int:
         return self.n_elements
 
-    def get_num_bands(self):
+    def get_num_bands(self) -> int:
         return self.image.shape[2]
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[np.ndarray, None, None]:
         coords = np.argwhere(self.mask)
         for (i, j) in coords:
             (self.row, self.col) = (i, j)
             yield self.image[i, j].astype(self.image.dtype).squeeze()
 
 
-def iterator(image, mask=None, index=None):
+def iterator(image: np.ndarray | Image | Iterator,
+             mask: np.ndarray | None = None,
+             index: int | None = None) -> Iterator:
     '''
     Returns an iterator over pixels in the image.
 
@@ -123,7 +129,8 @@ def iterator(image, mask=None, index=None):
         return ImageIterator(image)
 
 
-def iterator_ij(mask, index=None):
+def iterator_ij(mask: np.ndarray,
+                 index: int | None = None) -> Generator[tuple[int, int], None, None]:
     '''
     Returns an iterator over image pixel coordinates for a given mask.
 
@@ -158,7 +165,9 @@ def iterator_ij(mask, index=None):
         yield tuple(rc)
 
 
-def mean_cov(image, mask=None, index=None):
+def mean_cov(image: np.ndarray | Image | Iterator,
+             mask: np.ndarray | None = None,
+             index: int | None = None) -> tuple[np.ndarray, np.ndarray, int]:
     '''
     Return the mean and covariance of the set of vectors.
 
@@ -256,7 +265,8 @@ def mean_cov(image, mask=None, index=None):
     return (mean, cov, count)
 
 
-def cov_avg(image, mask, weighted=True):
+def cov_avg(image: np.ndarray | Image | Iterator, mask: np.ndarray,
+            weighted: bool = True) -> np.ndarray:
     '''Calculates the covariance averaged over a set of classes.
 
     Arguments:
@@ -292,7 +302,7 @@ def cov_avg(image, mask, weighted=True):
         return np.mean([c.cov for c in classes], axis=0, dtype=np.float64)
 
 
-def covariance(*args):
+def covariance(*args: Any) -> np.ndarray:
     '''
     Returns the covariance of the set of vectors.
 
@@ -374,21 +384,22 @@ class PrincipalComponents:
 
             A callable function that returns a function for denoising data.
     '''
-    def __init__(self, vals, vecs, stats):
+    def __init__(self, vals: np.ndarray, vecs: np.ndarray,
+                 stats: GaussianStats) -> None:
         self.eigenvalues = vals
         self.eigenvectors = vecs
         self.stats = stats
         self.transform = LinearTransform(self.eigenvectors.T, pre=-self.mean)
 
     @property
-    def mean(self):
+    def mean(self) -> np.ndarray:
         return self.stats.mean
 
     @property
-    def cov(self):
+    def cov(self) -> np.ndarray:
         return self.stats.cov
 
-    def reduce(self, N=0, **kwargs):
+    def reduce(self, N: int = 0, **kwargs: Any) -> PrincipalComponents:
         '''Reduces the number of principal components.
 
         Keyword Arguments (one of the following must be specified):
@@ -443,7 +454,7 @@ class PrincipalComponents:
             raise Exception('Must specify one of the following keywords:'
                             '`num`, `eigs`, `fraction`.')
 
-    def denoise(self, X, **kwargs):
+    def denoise(self, X: np.ndarray, **kwargs: Any) -> np.ndarray:
         '''Returns a de-noised version of `X`.
 
         Arguments:
@@ -481,7 +492,7 @@ class PrincipalComponents:
         f = self.get_denoising_transform(**kwargs)
         return f(X)
 
-    def get_denoising_transform(self, **kwargs):
+    def get_denoising_transform(self, **kwargs: Any) -> LinearTransform:
         '''Returns a function for denoising image data.
 
         Keyword Arguments (one of the following must be specified):
@@ -510,7 +521,7 @@ class PrincipalComponents:
         return f
 
 
-def principal_components(image):
+def principal_components(image: np.ndarray | Image | GaussianStats) -> PrincipalComponents:
     '''
     Calculate Principal Component eigenvalues & eigenvectors for an image.
 
@@ -603,7 +614,8 @@ class FisherLinearDiscriminant:
             A callable function to transform data to the space of the
             linear discriminant.
     '''
-    def __init__(self, vals, vecs, mean, cov_b, cov_w):
+    def __init__(self, vals: np.ndarray, vecs: np.ndarray, mean: np.ndarray,
+                 cov_b: np.ndarray, cov_w: np.ndarray) -> None:
         self.eigenvalues = vals
         self.eigenvectors = vecs
         self.mean = mean
@@ -612,7 +624,8 @@ class FisherLinearDiscriminant:
         self.transform = LinearTransform(self.eigenvectors.T, pre=-self.mean)
 
 
-def linear_discriminant(classes, whiten=True):
+def linear_discriminant(classes: TrainingClassSet,
+                         whiten: bool = True) -> FisherLinearDiscriminant:
     '''
     Solve Fisher's linear discriminant for eigenvalues and eigenvectors.
 
@@ -681,7 +694,7 @@ def linear_discriminant(classes, whiten=True):
 lda = linear_discriminant
 
 
-def log_det(x):
+def log_det(x: np.ndarray) -> float:
     return sum(np.log([eigv for eigv in np.linalg.eigvals(x) if eigv > 0]))
 
 
@@ -726,36 +739,39 @@ class GaussianStats(object):
             The principal components of the data, based on mean and cov.
     '''
 
-    def __init__(self, mean=None, cov=None, nsamples=None, inv_cov=None):
+    def __init__(self, mean: np.ndarray | None = None,
+                 cov: np.ndarray | None = None,
+                 nsamples: int | None = None,
+                 inv_cov: np.ndarray | None = None) -> None:
         self.cov = cov
         self._inv_cov = inv_cov
         self.mean = mean
         self.nsamples = nsamples
 
     @property
-    def cov(self):
+    def cov(self) -> np.ndarray:
         '''Property method returning the covariance matrix.'''
         return self._cov
 
     @cov.setter
-    def cov(self, C):
+    def cov(self, C: np.ndarray) -> None:
         self.reset_derived_stats()
         self._cov = C
 
     @property
-    def inv_cov(self):
+    def inv_cov(self) -> np.ndarray:
         '''Property method returning the pseudo-inverse of the covariance matrix.'''
         if self._inv_cov is None:
             self._inv_cov = np.linalg.pinv(self._cov)
         return self._inv_cov
 
-    def reset_derived_stats(self):
+    def reset_derived_stats(self) -> None:
         self._cov = self._inv_cov = None
         self._sqrt_cov = self._sqrt_inv_cov = self._pcs = None
         self._log_det_cov = None
 
     @property
-    def sqrt_cov(self):
+    def sqrt_cov(self) -> np.ndarray:
         '''Property method returning the matrix square root of the covariance.
         If `C` is the covariance, then the returned value is a matrix `S`
         such that S.dot(S) == C.
@@ -768,7 +784,7 @@ class GaussianStats(object):
         return self._sqrt_cov
 
     @property
-    def sqrt_inv_cov(self):
+    def sqrt_inv_cov(self) -> np.ndarray:
         '''Property method returning matrix square root of inverse of cov.
         If `C` is the covariance, then the returned value is a matrix `S`
         such that S.dot(S) == inv(C).
@@ -782,7 +798,7 @@ class GaussianStats(object):
         return self._sqrt_inv_cov
 
     @property
-    def principal_components(self):
+    def principal_components(self) -> PrincipalComponents:
         if self._pcs is None:
             (evals, evecs) = np.linalg.eigh(self._cov)
             # numpy says eigenvalues may not be sorted so we'll sort them.
@@ -793,13 +809,13 @@ class GaussianStats(object):
         return self._pcs
 
     @property
-    def log_det_cov(self):
+    def log_det_cov(self) -> float:
         if self._log_det_cov is None:
             evals = self.principal_components.eigenvalues
             self._log_det_cov = np.sum(np.log([v for v in evals if v > 0]))
         return self._log_det_cov
 
-    def transform(self, xform):
+    def transform(self, xform: LinearTransform) -> GaussianStats:
         '''Returns a version of the stats transformed by a linear transform.'''
         if not isinstance(xform, LinearTransform):
             raise TypeError('Expected a LinearTransform object.')
@@ -807,13 +823,16 @@ class GaussianStats(object):
         C = xform._A.dot(self.cov).dot(xform._A.T)
         return GaussianStats(mean=m, cov=C, nsamples=self.nsamples)
 
-    def get_whitening_transform(self):
+    def get_whitening_transform(self) -> LinearTransform:
         '''Returns transform that centers and whitens data for these stats.'''
         C_1 = np.linalg.inv(self.cov)
         return LinearTransform(matrix_sqrt(C_1, True), pre=-self.mean)
 
 
-def calc_stats(image, mask=None, index=None, allow_nan=False):
+def calc_stats(image: np.ndarray | Image | Iterator,
+               mask: np.ndarray | None = None,
+               index: int | None = None,
+               allow_nan: bool = False) -> GaussianStats:
     '''Computes Gaussian stats for image data..
 
     Arguments:
@@ -858,7 +877,8 @@ def calc_stats(image, mask=None, index=None, allow_nan=False):
 
 
 class TrainingClass:
-    def __init__(self, image, mask, index=0, class_prob=1.0):
+    def __init__(self, image: np.ndarray | Image | None, mask: np.ndarray,
+                 index: int = 0, class_prob: float = 1.0) -> None:
         '''Creates a new training class defined by applying `mask` to `image`.
 
         Arguments:
@@ -897,13 +917,13 @@ class TrainingClass:
 
         self._stats_valid = False
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[np.ndarray, None, None]:
         '''Returns an iterator over all samples for the class.'''
         it = ImageMaskIterator(self.image, self.mask, self.index)
         for i in it:
             yield i
 
-    def stats_valid(self, tf=None):
+    def stats_valid(self, tf: bool | None = None) -> bool | None:
         '''
         Sets statistics for the TrainingClass to be valid or invalid.
 
@@ -920,7 +940,7 @@ class TrainingClass:
             return self._stats_valid
         self._stats_valid = tf
 
-    def size(self):
+    def size(self) -> int:
         '''Returns the number of pixels/samples in the training set.'''
 
         # If the stats are invalid, the number of pixels in the
@@ -933,7 +953,7 @@ class TrainingClass:
         else:
             return np.sum(np.not_equal(self.mask, 0).ravel())
 
-    def calc_stats(self):
+    def calc_stats(self) -> None:
         '''
         Calculates statistics for the class.
 
@@ -953,7 +973,7 @@ class TrainingClass:
         self.nbands = self.image.shape[-1]
         self._stats_valid = True
 
-    def transform(self, transform):
+    def transform(self, transform: np.ndarray | LinearTransform) -> None:
         '''
         Perform a linear transformation on the statistics of the training set.
 
@@ -976,10 +996,10 @@ class TrainingClass:
 
 class SampleIterator:
     '''Iterator over all classes and samples in a TrainingClassSet object.'''
-    def __init__(self, trainingData):
+    def __init__(self, trainingData: TrainingClassSet) -> None:
         self.classes = trainingData
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[np.ndarray, None, None]:
         for cl in self.classes:
             for sample in cl:
                 yield sample
@@ -987,19 +1007,19 @@ class SampleIterator:
 
 class TrainingClassSet:
     '''A class to manage a set of :class:`~spectral.TrainingClass` objects.'''
-    def __init__(self):
+    def __init__(self) -> None:
         self.classes = {}
         self.nbands = None
 
-    def __getitem__(self, i):
+    def __getitem__(self, i: int) -> TrainingClass:
         '''Returns the training class having ID i.'''
         return self.classes[i]
 
-    def __len__(self):
+    def __len__(self) -> int:
         '''Returns number of training classes in the set.'''
         return len(self.classes)
 
-    def add_class(self, cl):
+    def add_class(self, cl: TrainingClass) -> None:
         '''Adds a new class to the training set.
 
         Arguments:
@@ -1014,7 +1034,7 @@ class TrainingClassSet:
         if not self.nbands:
             self.nbands = cl.nbands
 
-    def transform(self, X):
+    def transform(self, X: np.ndarray) -> None:
         '''Applies linear transform, M, to all training classes.
 
         Arguments:
@@ -1030,23 +1050,23 @@ class TrainingClassSet:
             cl.transform(X)
         self.nbands = list(self.classes.values())[0].nbands
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[TrainingClass, None, None]:
         '''An iterator over all training classes in the set.'''
         for cl in list(self.classes.values()):
             yield cl
 
-    def all_samples(self):
+    def all_samples(self) -> SampleIterator:
         '''An iterator over all samples in all classes.'''
         return SampleIterator(self)
 
-    def calc_stats(self):
+    def calc_stats(self) -> None:
         '''Computes statistics for each class, if not already computed.'''
         for c in list(self.classes.values()):
             if not c.stats_valid():
                 c.calc_stats()
         self.nbands = list(self.classes.values())[0].nbands
 
-    def save(self, filename, calc_stats=False):
+    def save(self, filename: str, calc_stats: bool = False) -> None:
         for c in list(self.classes.values()):
             if c.stats is None:
                 if calc_stats is False:
@@ -1071,7 +1091,7 @@ class TrainingClassSet:
             pickle.dump(c.class_prob, f)
         f.close()
 
-    def load(self, filename, image):
+    def load(self, filename: str, image: np.ndarray | Image) -> None:
         f = open(filename, 'rb')
         mask = pickle.load(f)
         nclasses = pickle.load(f)
@@ -1090,7 +1110,9 @@ class TrainingClassSet:
         f.close
 
 
-def create_training_classes(image, class_mask, calc_stats=False, indices=None):
+def create_training_classes(image: np.ndarray | Image, class_mask: np.ndarray,
+                             calc_stats: bool = False,
+                             indices: Iterable[int] | None = None) -> TrainingClassSet:
     '''
     Creates a :class:spectral.algorithms.TrainingClassSet: from an indexed array.
 
@@ -1137,7 +1159,8 @@ def create_training_classes(image, class_mask, calc_stats=False, indices=None):
     return classes
 
 
-def ndvi(data, red, nir):
+def ndvi(data: np.ndarray | Image, red: int | slice | Sequence[int],
+         nir: int | slice | Sequence[int]) -> np.ndarray:
     '''Calculates Normalized Difference Vegetation Index (NDVI).
 
     Arguments:
@@ -1171,7 +1194,7 @@ def ndvi(data, red, nir):
     return (n - r) / (n + r)
 
 
-def bdist(class1, class2):
+def bdist(class1: TrainingClass, class2: TrainingClass) -> float:
     '''
     Calculates the Bhattacharyya distance between two classes.
 
@@ -1198,7 +1221,7 @@ def bdist(class1, class2):
 bDistance = bdist
 
 
-def bdist_terms(a, b):
+def bdist_terms(a: TrainingClass, b: TrainingClass) -> tuple[float, float]:
     '''
     Calculate the linear and quadratic terms of the Bhattacharyya distance
     between two classes.
@@ -1223,7 +1246,8 @@ def bdist_terms(a, b):
     return (lin_term, float(quad_term))
 
 
-def transform_image(matrix, image):
+def transform_image(matrix: np.ndarray,
+                     image: np.ndarray | SpyFile) -> np.ndarray | TransformedImage:
     '''
     Performs linear transformation on all pixels in an image.
 
@@ -1259,7 +1283,7 @@ def transform_image(matrix, image):
         raise TypeError('Unrecognized image type passed to transform_image.')
 
 
-def orthogonalize(vecs, start=0):
+def orthogonalize(vecs: np.ndarray, start: int = 0) -> np.ndarray:
     '''
     Performs Gram-Schmidt Orthogonalization on a set of vectors.
 
@@ -1294,7 +1318,7 @@ def orthogonalize(vecs, start=0):
     return np.transpose(basis)
 
 
-def unmix(data, members):
+def unmix(data: np.ndarray, members: np.ndarray) -> np.ndarray:
     '''
     Perform linear unmixing on image data.
 
@@ -1331,7 +1355,7 @@ def unmix(data, members):
     return unmixed
 
 
-def spectral_angles(data, members):
+def spectral_angles(data: np.ndarray, members: np.ndarray) -> np.ndarray:
     '''Calculates spectral angles with respect to given set of spectra.
 
     Arguments:
@@ -1365,7 +1389,7 @@ def spectral_angles(data, members):
     return np.arccos(dots)
 
 
-def msam(data, members):
+def msam(data: np.ndarray, members: np.ndarray) -> np.ndarray:
     '''Modified SAM scores according to Oshigami, et al [1]. Endmembers are
     mean-subtracted prior to spectral angle calculation. Results are
     normalized such that the maximum value of 1 corresponds to a perfect match
@@ -1430,7 +1454,7 @@ def msam(data, members):
     return angles
 
 
-def noise_from_diffs(X, direction='lowerright'):
+def noise_from_diffs(X: np.ndarray, direction: str = 'lowerright') -> GaussianStats:
     '''Estimates noise statistcs by taking differences of adjacent pixels.
 
     Arguments:
@@ -1480,7 +1504,8 @@ class MNFResult(object):
     Noise-Adjusted Principal Components (NAPC). This object can be used to
     denoise image data or to reduce its dimensionality.
     '''
-    def __init__(self, signal, noise, napc):
+    def __init__(self, signal: GaussianStats, noise: GaussianStats,
+                 napc: PrincipalComponents) -> None:
         '''
         Arguments:
 
@@ -1500,7 +1525,7 @@ class MNFResult(object):
         self.noise = noise
         self.napc = napc
 
-    def _num_from_kwargs(self, **kwargs):
+    def _num_from_kwargs(self, **kwargs: Any) -> int:
         '''Returns number of components to retain for the given kwargs.'''
         for key in kwargs:
             if key not in ('num', 'snr'):
@@ -1515,7 +1540,7 @@ class MNFResult(object):
             num = self.num_with_snr(snr)
         return num
 
-    def denoise(self, X, **kwargs):
+    def denoise(self, X: np.ndarray, **kwargs: Any) -> np.ndarray:
         '''Returns a de-noised version of `X`.
 
         Arguments:
@@ -1546,7 +1571,7 @@ class MNFResult(object):
         f = self.get_denoising_transform(**kwargs)
         return f(X)
 
-    def get_denoising_transform(self, **kwargs):
+    def get_denoising_transform(self, **kwargs: Any) -> LinearTransform:
         '''Returns a function for denoising image data.
 
         One (and only one) of the following keywords must be specified:
@@ -1572,7 +1597,7 @@ class MNFResult(object):
                             post=self.signal.mean)
         return f
 
-    def reduce(self, X, **kwargs):
+    def reduce(self, X: np.ndarray, **kwargs: Any) -> np.ndarray:
         '''Reduces dimensionality of image data.
 
         Arguments:
@@ -1603,7 +1628,7 @@ class MNFResult(object):
         f = self.get_reduction_transform(**kwargs)
         return f(X)
 
-    def get_reduction_transform(self, **kwargs):
+    def get_reduction_transform(self, **kwargs: Any) -> LinearTransform:
         '''Reduces dimensionality of image data.
 
         One (and only one) of the following keywords must be specified:
@@ -1625,12 +1650,12 @@ class MNFResult(object):
                             pre=-self.signal.mean)
         return f
 
-    def num_with_snr(self, snr):
+    def num_with_snr(self, snr: float) -> int:
         '''Returns the number of components with SNR >= `snr`.'''
         return np.sum(self.napc.eigenvalues >= (snr + 1))
 
 
-def mnf(signal, noise):
+def mnf(signal: GaussianStats, noise: GaussianStats) -> MNFResult:
     '''Computes Minimum Noise Fraction / Noise-Adjusted Principal Components.
 
     Arguments:
@@ -1691,8 +1716,9 @@ def mnf(signal, noise):
     return MNFResult(signal, noise, napc)
 
 
-def ppi(X, niters, threshold=0, centered=False, start=None, display=0,
-        **imshow_kwargs):
+def ppi(X: np.ndarray, niters: int, threshold: float = 0,
+        centered: bool = False, start: np.ndarray | None = None,
+        display: int = 0, **imshow_kwargs: Any) -> np.ndarray | None:
     '''Returns pixel purity indices for an image.
 
     Arguments:
@@ -1837,7 +1863,8 @@ def ppi(X, niters, threshold=0, centered=False, start=None, display=0,
     return counts.reshape(shape[:2])
 
 
-def smacc(spectra, min_endmembers=None, max_residual_norm=float('Inf')):
+def smacc(spectra: np.ndarray, min_endmembers: int | None = None,
+          max_residual_norm: float = float('Inf')) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     '''Returns SMACC decomposition (H = F * S + R) matrices for an image or
     array of spectra.
 

@@ -2,14 +2,15 @@
 Code for rendering and manipulating hypercubes.
 Most users will only need to call the function "hypercube".
 '''
+from __future__ import annotations
 
 import math
 import numpy as np
 
 try:
     from PySide6.QtCore import Qt
-    from PySide6.QtGui import QSurfaceFormat
-    from PySide6.QtWidgets import QApplication
+    from PySide6.QtGui import QSurfaceFormat, QMouseEvent, QKeyEvent
+    from PySide6.QtWidgets import QApplication, QWidget
     from PySide6.QtOpenGLWidgets import QOpenGLWidget
 except ImportError:
     raise ImportError("Required dependency PySide6 not present")
@@ -24,7 +25,7 @@ DEFAULT_TEXTURE_SIZE = (
     256, 256)       # Default size of textures on cube faces
 
 
-def rtp_to_xyz(r, theta, phi):
+def rtp_to_xyz(r: float, theta: float, phi: float) -> list[float]:
     '''Convert spherical polar coordinates to Cartesian'''
     theta *= math.pi / 180.0
     phi *= math.pi / 180.0
@@ -32,7 +33,7 @@ def rtp_to_xyz(r, theta, phi):
     return [s * math.cos(phi), s * math.sin(phi), r * math.cos(theta)]
 
 
-def xyz_to_rtp(x, y, z):
+def xyz_to_rtp(x: float, y: float, z: float) -> list[float]:
     '''Convert Cartesian coordinates to Spherical Polar.'''
     r = math.sqrt(x * x + y * y + z * z)
     rho = math.sqrt(x * x + y * y)
@@ -43,7 +44,7 @@ def xyz_to_rtp(x, y, z):
     return [r, theta, phi]
 
 
-def ensure_qt_event_loop():
+def ensure_qt_event_loop() -> QApplication:
     '''Ensures a QApplication exists and that its event loop is being
     pumped.
 
@@ -74,7 +75,7 @@ class MouseHandler:
     '''A class to enable rotate/zoom functions in an OpenGL window.'''
     MAX_BUTTONS = 10
 
-    def __init__(self, window):
+    def __init__(self, window: HypercubeWindow) -> None:
         self.window = window
         self.position = None
         self.event_position = None
@@ -82,18 +83,18 @@ class MouseHandler:
         self.right = UP
         self.middle = UP
 
-    def left_down(self, event):
+    def left_down(self, event: QMouseEvent) -> None:
         pos = event.position()
         self.event_position = (pos.x(), pos.y())
         self.position = (pos.x(), pos.y())
         self.left = DOWN
 
-    def left_up(self, event):
+    def left_up(self, event: QMouseEvent) -> None:
         pos = event.position()
         self.position = (pos.x(), pos.y())
         self.left = UP
 
-    def motion(self, event):
+    def motion(self, event: QMouseEvent) -> None:
         '''Handles panning & zooming for mouse click+drag events.'''
         if DOWN not in (self.left, self.right):
             return
@@ -133,7 +134,8 @@ class MouseHandler:
 class HypercubeWindow(QOpenGLWidget, SpyWindow):
     """A simple class for using OpenGL with PySide6."""
 
-    def __init__(self, data, parent, id, *args, **kwargs):
+    def __init__(self, data: np.ndarray | SpyFile, parent: QWidget | None, id: int,
+                 *args, **kwargs) -> None:
         global DEFAULT_WIN_SIZE
 
         self._app = ensure_qt_event_loop()
@@ -174,7 +176,7 @@ class HypercubeWindow(QOpenGLWidget, SpyWindow):
 
         self.setFocusPolicy(Qt.StrongFocus)
 
-    def Show(self, show=True):
+    def Show(self, show: bool = True) -> None:
         """Show (or hide) the window."""
         if show:
             self.show()
@@ -182,12 +184,12 @@ class HypercubeWindow(QOpenGLWidget, SpyWindow):
         else:
             self.hide()
 
-    def Raise(self):
+    def Raise(self) -> None:
         """Raise the window to the top of the window stack."""
         self.raise_()
         self.activateWindow()
 
-    def load_textures(self):
+    def load_textures(self) -> None:
         import OpenGL.GL as gl
 
         global DEFAULT_TEXTURE_SIZE
@@ -256,7 +258,7 @@ class HypercubeWindow(QOpenGLWidget, SpyWindow):
                             0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, texImages[i])
 
     @suppress_render_exceptions
-    def initializeGL(self):
+    def initializeGL(self) -> None:
         """Initialize OpenGL for use in the window."""
         import OpenGL.GL as gl
         import OpenGL.GLU as glu
@@ -285,7 +287,7 @@ class HypercubeWindow(QOpenGLWidget, SpyWindow):
         self.print_help()
 
     @suppress_render_exceptions
-    def paintGL(self):
+    def paintGL(self) -> None:
         """Process the drawing event."""
         import OpenGL.GL as gl
         import OpenGL.GLU as glu
@@ -306,7 +308,7 @@ class HypercubeWindow(QOpenGLWidget, SpyWindow):
         gl.glPopMatrix()
         gl.glFlush()
 
-    def draw_cube(self, *args, **kwargs):
+    def draw_cube(self, *args, **kwargs) -> None:
         import OpenGL.GL as gl
         # Determine cube proportions
         divisor = max(self.hsi.shape[:2])
@@ -414,7 +416,7 @@ class HypercubeWindow(QOpenGLWidget, SpyWindow):
         gl.glEnd()
 
     @suppress_render_exceptions
-    def resizeGL(self, width, height):
+    def resizeGL(self, width: int, height: int) -> None:
         """Reshape the OpenGL viewport based on dimensions of the window."""
         import OpenGL.GL as gl
         import OpenGL.GLU as glu
@@ -427,19 +429,19 @@ class HypercubeWindow(QOpenGLWidget, SpyWindow):
         gl.glMatrixMode(gl.GL_MODELVIEW)
         gl.glLoadIdentity()
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event: QMouseEvent) -> None:
         self.setFocus()
         if event.button() == Qt.LeftButton:
             self.mouse_handler.left_down(event)
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.LeftButton:
             self.mouse_handler.left_up(event)
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
         self.mouse_handler.motion(event)
 
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, event: QKeyEvent) -> None:
         key = event.text()
         if key == 't':
             self.cubeHeight += 0.1
@@ -454,7 +456,7 @@ class HypercubeWindow(QOpenGLWidget, SpyWindow):
             return
         self.update()
 
-    def print_help(self):
+    def print_help(self) -> None:
         print()
         print('Mouse Functions:')
         print('----------------')

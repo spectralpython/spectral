@@ -1,10 +1,12 @@
 '''
 Common functions for extracting and manipulating data for graphical display.
 '''
+from __future__ import annotations
 
 import functools
 import traceback
 from numbers import Number
+from typing import Any, Callable, TYPE_CHECKING
 import numpy as np
 import sys
 import warnings
@@ -14,19 +16,22 @@ from ..config import spy_colors
 from ..image import Image
 from ..spectral import settings
 
+if TYPE_CHECKING:
+    import matplotlib
+
 
 class WindowProxy(object):
     '''Base class for proxy objects to access data from display windows.'''
-    def __init__(self, window):
+    def __init__(self, window: SpyWindow) -> None:
         self._window = window
 
 
 class SpyWindow():
-    def get_proxy(self):
+    def get_proxy(self) -> WindowProxy:
         return WindowProxy(self)
 
 
-def suppress_render_exceptions(func):
+def suppress_render_exceptions(func: Callable) -> Callable:
     '''Decorator for Qt-invoked OpenGL callbacks (initializeGL, paintGL,
     resizeGL).
 
@@ -37,7 +42,7 @@ def suppress_render_exceptions(func):
     returns instead of letting it escape.
     '''
     @functools.wraps(func)
-    def wrapper(self, *args, **kwargs):
+    def wrapper(self, *args, **kwargs) -> Any:
         try:
             return func(self, *args, **kwargs)
         except Exception:
@@ -45,7 +50,7 @@ def suppress_render_exceptions(func):
     return wrapper
 
 
-def view_cube(data, *args, **kwargs):
+def view_cube(data: Image | np.ndarray, *args, **kwargs) -> WindowProxy:
     '''Renders an interactive 3D hypercube in a new window.
 
     Arguments:
@@ -104,7 +109,7 @@ def view_cube(data, *args, **kwargs):
     return window.get_proxy()
 
 
-def view_nd(data, *args, **kwargs):
+def view_nd(data: Image | np.ndarray, *args, **kwargs) -> WindowProxy:
     '''
     Creates a 3D window that displays ND data from an image.
 
@@ -181,7 +186,8 @@ def view_nd(data, *args, **kwargs):
     return window.get_proxy()
 
 
-def imshow(data, bands=None, **kwargs):
+def imshow(data: Image | np.ndarray, bands: list[int] | tuple[int, ...] | None = None,
+           **kwargs) -> matplotlib.image.AxesImage:
     '''A wrapper around matplotlib's imshow for multi-band images.
 
     Arguments:
@@ -246,7 +252,7 @@ def imshow(data, bands=None, **kwargs):
     return ax
 
 
-def make_pil_image(*args, **kwargs):
+def make_pil_image(*args, **kwargs) -> Any:
     '''Creates a PIL Image object.
 
     USAGE: make_pil_image(source [, bands] [stretch=True] [stretch_all=False],
@@ -265,7 +271,8 @@ def make_pil_image(*args, **kwargs):
     return img
 
 
-def save_rgb(filename, data, bands=None, **kwargs):
+def save_rgb(filename: str, data: Image | np.ndarray,
+             bands: list[int] | tuple[int, ...] | None = None, **kwargs) -> None:
     '''
     Saves a viewable image to a JPEG (or other format) file.
 
@@ -331,7 +338,8 @@ def save_rgb(filename, data, bands=None, **kwargs):
     im.save(filename, fmt, quality=100)
 
 
-def get_rgb(source, bands=None, **kwargs):
+def get_rgb(source: Image | np.ndarray, bands: list[int] | tuple[int, ...] | None = None,
+            **kwargs) -> np.ndarray:
     '''Extract RGB data for display from a SpyFile object or numpy array.
 
     USAGE: rgb = get_rgb(source [, bands] [, stretch=<arg> | , bounds=<arg>]
@@ -426,14 +434,16 @@ def get_rgb(source, bands=None, **kwargs):
     return get_rgb_meta(source, bands, **kwargs)[0]
 
 
-def _fill_mask(arr, mask, fill_value):
+def _fill_mask(arr: np.ndarray, mask: np.ndarray | None,
+                fill_value: list | tuple | np.ndarray) -> np.ndarray:
     if mask is None:
         return arr
     arr[mask == 0] = np.array(fill_value) / 255.
     return arr
 
 
-def get_rgb_meta(source, bands=None, **kwargs):
+def get_rgb_meta(source: Image | np.ndarray, bands: list[int] | tuple[int, ...] | None = None,
+                  **kwargs) -> tuple[np.ndarray, dict]:
     '''Same as get_rgb but also returns some metadata.
 
     Inputs are the same as for get_rgb but the return value is a 2-tuple whose
@@ -615,7 +625,7 @@ _get_rgb_kwargs = ('stretch', 'stretch_all', 'bounds', 'colors', 'color_scale',
                    'auto_scale', 'ignore', 'mask', 'bg')
 
 
-def running_ipython():
+def running_ipython() -> bool:
     '''Returns True if ipython is running.'''
     try:
         __IPYTHON__
@@ -624,7 +634,7 @@ def running_ipython():
         return False
 
 
-def warn_no_ipython():
+def warn_no_ipython() -> None:
     '''Warns that user is calling a GUI function outside of ipython.'''
     msg = '''
 #############################################################################

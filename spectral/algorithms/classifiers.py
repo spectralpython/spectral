@@ -1,13 +1,17 @@
 '''
 Supervised classifiers and base class for all classifiers.
 '''
+from __future__ import annotations
 
 import logging
 import math
+from typing import Any
+
 import numpy as np
 
 import spectral as spy
-from .algorithms import GaussianStats, ImageIterator
+from ..image import Image
+from .algorithms import GaussianStats, ImageIterator, TrainingClassSet
 from .detectors import RX
 from .perceptron import Perceptron
 
@@ -27,14 +31,14 @@ class Classifier(object):
     # entire image.
     cache_class_scores = True
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
-    def classify_spectrum(self, *args, **kwargs):
+    def classify_spectrum(self, *args: Any, **kwargs: Any) -> None:
         raise NotImplementedError('Classifier.classify_spectrum must be '
                                   'overridden by a child class.')
 
-    def classify_image(self, image):
+    def classify_image(self, image: np.ndarray | Image) -> np.ndarray:
         '''Classifies an entire image, returning a classification map.
 
         Arguments:
@@ -61,7 +65,7 @@ class Classifier(object):
         status.end_percentage()
         return class_map
 
-    def classify(self, X, **kwargs):
+    def classify(self, X: np.ndarray, **kwargs: Any) -> Any:
         if X.ndim == 1:
             return self.classify_spectrum(X, **kwargs)
         else:
@@ -69,16 +73,17 @@ class Classifier(object):
 
 
 class SupervisedClassifier(Classifier):
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
-    def train(self):
+    def train(self) -> None:
         pass
 
 
 class GaussianClassifier(SupervisedClassifier):
     '''A Gaussian Maximum Likelihood Classifier'''
-    def __init__(self, training_data=None, min_samples=None):
+    def __init__(self, training_data: TrainingClassSet | None = None,
+                min_samples: int | None = None) -> None:
         '''Creates the classifier and optionally trains it with training data.
 
         Arguments:
@@ -100,7 +105,7 @@ class GaussianClassifier(SupervisedClassifier):
         if training_data:
             self.train(training_data)
 
-    def train(self, training_data):
+    def train(self, training_data: TrainingClassSet) -> None:
         '''Trains the classifier on the given training data.
 
         Arguments:
@@ -125,7 +130,7 @@ class GaussianClassifier(SupervisedClassifier):
             if not hasattr(cl, 'stats') or not cl.stats_valid():
                 cl.calc_stats()
 
-    def classify_spectrum(self, x):
+    def classify_spectrum(self, x: list | np.ndarray) -> int:
         '''
         Classifies a pixel into one of the trained classes.
 
@@ -149,7 +154,7 @@ class GaussianClassifier(SupervisedClassifier):
               - 0.5 * delta.dot(cl.stats.inv_cov).dot(delta)
         return self.classes[np.argmax(scores)].index
 
-    def classify_image(self, image):
+    def classify_image(self, image: np.ndarray | Image) -> np.ndarray:
         '''Classifies an entire image, returning a classification map.
 
         Arguments:
@@ -202,7 +207,7 @@ class GaussianClassifier(SupervisedClassifier):
 
 class MahalanobisDistanceClassifier(GaussianClassifier):
     '''A Classifier using Mahalanobis distance for class discrimination'''
-    def train(self, trainingData):
+    def train(self, trainingData: TrainingClassSet) -> None:
         '''Trains the classifier on the given training data.
 
         Arguments:
@@ -219,7 +224,7 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
             covariance += (cl.stats.nsamples / float(nsamples)) * cl.stats.cov
         self.background = GaussianStats(cov=covariance)
 
-    def classify_spectrum(self, x):
+    def classify_spectrum(self, x: list | np.ndarray) -> int:
         '''
         Classifies a pixel into one of the trained classes.
 
@@ -242,7 +247,7 @@ class MahalanobisDistanceClassifier(GaussianClassifier):
             scores[i] = delta.dot(self.background.inv_cov).dot(delta)
         return self.classes[np.argmin(scores)].index
 
-    def classify_image(self, image):
+    def classify_image(self, image: np.ndarray | Image) -> np.ndarray:
         '''Classifies an entire image, returning a classification map.
 
         Arguments:
@@ -304,7 +309,8 @@ class PerceptronClassifier(Perceptron, SupervisedClassifier):
         >>>         momentum=0.3, rate=0.3)
         >>> c = p.classify(xdata)
     '''
-    def train(self, training_data, samples_per_class=0, *args, **kwargs):
+    def train(self, training_data: TrainingClassSet,
+             samples_per_class: int = 0, *args: Any, **kwargs: Any) -> bool:
         '''Trains the Perceptron on the training data.
 
         Arguments:
@@ -416,7 +422,7 @@ class PerceptronClassifier(Perceptron, SupervisedClassifier):
             stdout = None
         return Perceptron.train(self, X, Y, *args, stdout=stdout, **kwargs)
 
-    def classify_spectrum(self, x):
+    def classify_spectrum(self, x: list | np.ndarray) -> int:
         '''
         Classifies a pixel into one of the trained classes.
 
@@ -436,5 +442,5 @@ class PerceptronClassifier(Perceptron, SupervisedClassifier):
         y = self.input(x)
         return self.indices[np.argmax(y)]
 
-    def classify(self, X, **kwargs):
+    def classify(self, X: np.ndarray, **kwargs: Any) -> Any:
         return Classifier.classify(self, X, **kwargs)

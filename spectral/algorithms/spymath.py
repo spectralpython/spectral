@@ -1,11 +1,16 @@
 '''
 Miscellaneous math functions.
 '''
+from __future__ import annotations
+
+from typing import Any, Sequence
 
 import numpy as np
 
 
-def matrix_sqrt(X=None, symmetric=False, inverse=False, eigs=None):
+def matrix_sqrt(X: np.ndarray | None = None, symmetric: bool = False,
+                inverse: bool = False,
+                eigs: tuple[np.ndarray, np.ndarray] | None = None) -> np.ndarray:
     '''Returns the matrix square root of X.
 
     Arguments:
@@ -46,7 +51,9 @@ def matrix_sqrt(X=None, symmetric=False, inverse=False, eigs=None):
         return V.dot(SRV).dot(np.linalg.inv(V))
 
 
-def get_histogram_cdf_points(data, cdf_vals, ignore=None, mask=None):
+def get_histogram_cdf_points(data: np.ndarray, cdf_vals: Sequence[float],
+                             ignore: float | None = None,
+                             mask: np.ndarray | None = None) -> list[Any]:
     '''Returns input values corresponding to the data's CDF values.
 
     Arguments:

@@ -1,11 +1,14 @@
 '''
 Base classes for various types of transforms.
 '''
+from __future__ import annotations
 
 try:
     from collections.abc import Callable
 except:
     from collections import Callable
+from typing import Any
+
 import numpy as np
 
 
@@ -30,7 +33,7 @@ class LinearTransform:
 
             The numpy dtype for the output ndarray data.
     '''
-    def __init__(self, A, **kwargs):
+    def __init__(self, A: np.ndarray, **kwargs: Any) -> None:
         '''Arguments:
 
             `A` (:class:`~numpy.ndarrray`):
@@ -67,7 +70,7 @@ class LinearTransform:
             (self.dim_out, self.dim_in) = self._A.shape
         self.dtype = kwargs.get('dtype', self._A.dtype)
 
-    def __call__(self, X):
+    def __call__(self, X: Any) -> Any:
         '''Applies the linear transformation to the given data.
 
         Arguments:
@@ -108,7 +111,7 @@ class LinearTransform:
                 Y += self._post
             return Y.astype(self.dtype)
 
-    def chain(self, transform):
+    def chain(self, transform: np.ndarray | LinearTransform) -> LinearTransform:
         '''Chains together two linear transforms.
         If the transform `f1` is given by
 

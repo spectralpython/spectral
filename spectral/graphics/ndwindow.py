@@ -1,16 +1,18 @@
 '''
 Code to display N-dimensional data sets in 3D using OpenGL.
 '''
+from __future__ import annotations
 
 import math
 import numpy as np
 from pprint import pprint
 import random
+from typing import Any, Callable, Sequence
 
 try:
     from PySide6.QtCore import Qt
-    from PySide6.QtGui import QSurfaceFormat
-    from PySide6.QtWidgets import QMenu
+    from PySide6.QtGui import QSurfaceFormat, QMouseEvent, QKeyEvent, QCloseEvent
+    from PySide6.QtWidgets import QMenu, QWidget
     from PySide6.QtOpenGLWidgets import QOpenGLWidget
 except ImportError:
     raise ImportError("Required dependency PySide6 not present")
@@ -24,7 +26,7 @@ from .graphics import WindowProxy, suppress_render_exceptions
 DEFAULT_WIN_SIZE = (500, 500)           # Default dimensions of image frame
 
 
-def rtp_to_xyz(r, theta, phi):
+def rtp_to_xyz(r: float, theta: float, phi: float) -> list[float]:
     '''Convert spherical polar coordinates to Cartesian'''
     theta *= math.pi / 180.0
     phi *= math.pi / 180.0
@@ -32,7 +34,7 @@ def rtp_to_xyz(r, theta, phi):
     return [s * math.cos(phi), s * math.sin(phi), r * math.cos(theta)]
 
 
-def xyz_to_rtp(x, y, z):
+def xyz_to_rtp(x: float, y: float, z: float) -> list[float]:
     '''Convert Cartesian coordinates to Spherical Polar.'''
     r = math.sqrt(x * x + y * y + z * z)
     rho = math.sqrt(x * x + y * y)
@@ -50,7 +52,7 @@ class MouseHandler:
     '''A class to enable rotate/zoom functions in an OpenGL window.'''
     MAX_BUTTONS = 10
 
-    def __init__(self, window):
+    def __init__(self, window: NDWindow) -> None:
         self.window = window
         self.position = None
         self.event_position = None
@@ -59,7 +61,7 @@ class MouseHandler:
         self.middle = UP
         self.mode = 'DEFAULT'
 
-    def left_down(self, event):
+    def left_down(self, event: QMouseEvent) -> None:
         pos = event.position()
         self.position = (int(pos.x()), int(pos.y()))
         self.left = DOWN
@@ -68,7 +70,7 @@ class MouseHandler:
             if modifiers & Qt.ControlModifier and modifiers & Qt.ShiftModifier:
                 # Display the row/col and class of the selected pixel.
                 (x, y) = self.position
-                def cmd():
+                def cmd() -> None:
                     return self.window.get_pixel_info(x, self.window.win_size[1] - y)
                 self.window.add_display_command(cmd)
                 self.window.update()
@@ -81,7 +83,7 @@ class MouseHandler:
                 self.mode = 'ZOOMING'
         self.event_position = self.position
 
-    def left_up(self, event):
+    def left_up(self, event: QMouseEvent) -> None:
         pos = event.position()
         self.position = (int(pos.x()), int(pos.y()))
         self.left = UP
@@ -101,7 +103,7 @@ class MouseHandler:
             self.mode = 'DEFAULT'
         self.event_position = self.position
 
-    def motion(self, event):
+    def motion(self, event: QMouseEvent) -> None:
         '''Handles panning & zooming for mouse click+drag events.'''
         if DOWN not in (self.left, self.right):
             return
@@ -138,7 +140,7 @@ class MouseHandler:
         self.position = (x, y)
         self.window.update()
 
-    def update_box_coordinates(self):
+    def update_box_coordinates(self) -> None:
         xmin = min(self.event_position[0], self.position[0])
         xmax = max(self.event_position[0], self.position[0])
         ymin = min(self.event_position[1], self.position[1])
@@ -150,7 +152,7 @@ class MouseHandler:
 class MouseMenu(QMenu):
     '''Right-click menu for reassigning points to different classes.'''
 
-    def __init__(self, window):
+    def __init__(self, window: NDWindow) -> None:
         super().__init__('Assign to class')
         self.window = window
         for i in range(self.window.max_menu_class + 1):
@@ -171,7 +173,7 @@ octant_coeffs = np.array([
     [1, -1, -1]], float)
 
 
-def create_mirrored_octants(feature_indices):
+def create_mirrored_octants(feature_indices: list[int] | tuple[int, ...]) -> list[list[int]]:
     '''Takes a list of 6 integers and returns 8 lists of feature index
     triplets. The 6 indices passed each specify a feature to be associated with
     a semi-axis in the 3D display.  Each of the 8 returned triplets specifies
@@ -192,7 +194,7 @@ def create_mirrored_octants(feature_indices):
     return octants
 
 
-def random_subset(sequence, nsamples):
+def random_subset(sequence: Sequence[Any], nsamples: int) -> list[Any]:
     '''Returns a list of `nsamples` unique random elements from `sequence`.'''
     if len(sequence) < nsamples:
         raise Exception('Sequence in random_triplet must have at least ' +
@@ -215,16 +217,16 @@ class NDWindowProxy(WindowProxy):
 
             List of features and display mode (see set_features doc string.)
     '''
-    def __init__(self, window):
+    def __init__(self, window: NDWindow) -> None:
         WindowProxy.__init__(self, window)
         self._classes = window.classes
 
     @property
-    def classes(self):
+    def classes(self) -> np.ndarray:
         '''Returns the current class labels associated with data points.'''
         return self._classes
 
-    def set_features(self, *args, **kwargs):
+    def set_features(self, *args, **kwargs) -> None:
         '''Specifies which features to display in the 3D window.
 
         Arguments:
@@ -268,7 +270,7 @@ class NDWindowProxy(WindowProxy):
             raise Exception('The window no longer exists.')
         self._window.set_features(*args, **kwargs)
 
-    def view_class_image(self, *args, **kwargs):
+    def view_class_image(self, *args, **kwargs) -> ImageView:
         '''Show a dynamically updated view of image class values.
 
         The class IDs displayed are those currently associated with the ND
@@ -281,7 +283,8 @@ class NDWindowProxy(WindowProxy):
 class NDWindow(QOpenGLWidget):
     '''A widow class for displaying N-dimensional data points.'''
 
-    def __init__(self, data, parent, id, *args, **kwargs):
+    def __init__(self, data: np.ndarray, parent: QWidget | None, id: int,
+                 *args, **kwargs) -> None:
         global DEFAULT_WIN_SIZE
 
         self._app = ensure_qt_event_loop()
@@ -335,7 +338,7 @@ class NDWindow(QOpenGLWidget):
         from matplotlib.cbook import CallbackRegistry
         self.callbacks = CallbackRegistry()
 
-    def Show(self, show=True):
+    def Show(self, show: bool = True) -> None:
         """Show (or hide) the window."""
         if show:
             self.show()
@@ -343,27 +346,27 @@ class NDWindow(QOpenGLWidget):
         else:
             self.hide()
 
-    def Raise(self):
+    def Raise(self) -> None:
         """Raise the window to the top of the window stack."""
         self.raise_()
         self.activateWindow()
 
-    def closeEvent(self, event):
+    def closeEvent(self, event: QCloseEvent) -> None:
         self.on_event_close()
         super().closeEvent(event)
 
-    def on_event_close(self, event=None):
+    def on_event_close(self, event: QCloseEvent | None = None) -> None:
         pass
 
-    def right_click(self, event):
+    def right_click(self, event: QMouseEvent) -> None:
         menu = MouseMenu(self)
         menu.exec(event.globalPosition().toPoint())
 
-    def add_display_command(self, cmd):
+    def add_display_command(self, cmd: Callable) -> None:
         '''Adds a command to be called next time `display` is run.'''
         self._display_commands.append(cmd)
 
-    def reset_view_geometry(self):
+    def reset_view_geometry(self) -> None:
         '''Sets viewing geometry to the default view.'''
         # All grid points will be adjusted to the range [0,1] so this
         # is a reasonable center coordinate for the scene
@@ -373,7 +376,7 @@ class NDWindow(QOpenGLWidget):
         # to target_pos.
         self.camera_pos_rtp = [2.5, 45.0, 30.0]
 
-    def set_data(self, data, **kwargs):
+    def set_data(self, data: np.ndarray, **kwargs) -> None:
         '''Associates N-D point data with the window.
         ARGUMENTS:
             data (numpy.ndarray):
@@ -439,7 +442,7 @@ class NDWindow(QOpenGLWidget):
                             % sum(self._rgba_bits))
         self.reset_view_geometry()
 
-    def set_octant_display_features(self, features):
+    def set_octant_display_features(self, features: list | None) -> None:
         '''Specifies features to be displayed in each 3-D coordinate octant.
         `features` can be any of the following:
         A length-3 list of integer feature IDs:
@@ -478,7 +481,7 @@ class NDWindow(QOpenGLWidget):
             self.quadrant_mode = new_quadrant_mode
         self._refresh_display_lists = True
 
-    def create_display_lists(self, npass=-1, **kwargs):
+    def create_display_lists(self, npass: int = -1, **kwargs) -> None:
         '''Creates or updates the display lists for image data.
         ARGUMENTS:
             `npass` (int):
@@ -551,7 +554,7 @@ class NDWindow(QOpenGLWidget):
         self.create_axes_list()
         self._refresh_display_lists = False
 
-    def randomize_features(self):
+    def randomize_features(self) -> None:
         '''Randomizes data features displayed using current display mode.'''
         ids = list(range(self.data.shape[2]))
         if self.quadrant_mode == 'single':
@@ -564,7 +567,7 @@ class NDWindow(QOpenGLWidget):
         pprint(np.array(features))
         self.set_octant_display_features(features)
 
-    def set_features(self, features, mode='single'):
+    def set_features(self, features: list, mode: str = 'single') -> None:
         if mode == 'single':
             if len(features) != 3:
                 raise Exception(
@@ -584,7 +587,7 @@ class NDWindow(QOpenGLWidget):
         self.set_octant_display_features(features)
         self.update()
 
-    def draw_box(self, x0, y0, x1, y1):
+    def draw_box(self, x0: float, y0: float, x1: float, y1: float) -> None:
         '''Draws a selection box in the 3-D window.
         Coordinates are with respect to the lower left corner of the window.
         '''
@@ -611,7 +614,7 @@ class NDWindow(QOpenGLWidget):
         self.update_viewport(*self.win_size)
 
     @suppress_render_exceptions
-    def paintGL(self):
+    def paintGL(self) -> None:
         '''Renders the entire scene.'''
         import OpenGL.GL as gl
         import OpenGL.GLU as glu
@@ -645,7 +648,7 @@ class NDWindow(QOpenGLWidget):
         if self._selection_box is not None:
             self.draw_box(*self._selection_box)
 
-    def post_reassign_selection(self, new_class):
+    def post_reassign_selection(self, new_class: int) -> int:
         '''Reassigns pixels in selection box during the next rendering loop.
         ARGUMENT:
             `new_class` (int):
@@ -660,7 +663,7 @@ class NDWindow(QOpenGLWidget):
         self.update()
         return 0
 
-    def reassign_selection(self, new_class):
+    def reassign_selection(self, new_class: int) -> int:
         '''Reassigns pixels in the selection box to the specified class.
         This method should only be called from the `display` method. Pixels are
         reassigned by identifying each pixel in the 3D display by their unique
@@ -706,7 +709,7 @@ class NDWindow(QOpenGLWidget):
 
         return nreassigned_tot
 
-    def get_points_in_selection_box(self, **kwargs):
+    def get_points_in_selection_box(self, **kwargs) -> np.ndarray:
         '''Returns pixel IDs of all points in the current selection box.
         KEYWORD ARGS:
             `indices` (ndarray of ints):
@@ -751,7 +754,7 @@ class NDWindow(QOpenGLWidget):
 
         return points
 
-    def get_pixel_info(self, x, y, **kwargs):
+    def get_pixel_info(self, x: int, y: int, **kwargs) -> None:
         '''Prints row/col of the pixel at the given raster position.
         ARGUMENTS:
             `x`, `y`: (int):
@@ -765,7 +768,7 @@ class NDWindow(QOpenGLWidget):
                 print('Pixel %d %s has class %s.' % (id, rc, self.classes[rc]))
         return
 
-    def render_rgb_indexed_colors(self, **kwargs):
+    def render_rgb_indexed_colors(self, **kwargs) -> None:
         '''Draws scene in the background buffer to extract mouse click info'''
         import OpenGL.GL as gl
         import OpenGL.GLU as glu
@@ -784,19 +787,19 @@ class NDWindow(QOpenGLWidget):
         gl.glPopMatrix()
         gl.glFlush()
 
-    def index_to_image_row_col(self, index):
+    def index_to_image_row_col(self, index: int) -> tuple[int, int]:
         '''Converts the unraveled pixel ID to row/col of the N-D image.'''
         index = int(index)
         rowcol = (index // self.data.shape[1], index % self.data.shape[1])
         return rowcol
 
-    def draw_data_set(self):
+    def draw_data_set(self) -> None:
         '''Draws the N-D data set in the scene.'''
         import OpenGL.GL as gl
         for i in range(1, 9):
             gl.glCallList(self.gllist_id + i)
 
-    def create_axes_list(self):
+    def create_axes_list(self) -> None:
         '''Creates display lists to render unit length x,y,z axes.'''
         import OpenGL.GL as gl
         gl.glNewList(self.gllist_id, gl.GL_COMPILE)
@@ -820,12 +823,13 @@ class NDWindow(QOpenGLWidget):
         gl.glVertex3f(0.0, 0.0, -1.0)
         gl.glEnd()
 
-        def label_axis(x, y, z, label):
+        def label_axis(x: float, y: float, z: float, label: Any) -> None:
             gl.glRasterPos3f(x, y, z)
             glut.glutBitmapString(glut.GLUT_BITMAP_HELVETICA_18,
                                   str(label))
 
-        def label_axis_for_feature(x, y, z, feature_ind):
+        def label_axis_for_feature(x: float, y: float, z: float,
+                                    feature_ind: tuple[int, int]) -> None:
             feature = self.octant_features[feature_ind[0]][feature_ind[1]]
             label_axis(x, y, z, self.labels[feature])
 
@@ -853,7 +857,7 @@ class NDWindow(QOpenGLWidget):
         gl.glEndList()
 
     @suppress_render_exceptions
-    def initializeGL(self):
+    def initializeGL(self) -> None:
         '''App-specific initialization for after GL context is available.'''
         import OpenGL.GL as gl
         self.gllist_id = gl.glGenLists(9)
@@ -877,11 +881,11 @@ class NDWindow(QOpenGLWidget):
         self.print_help()
 
     @suppress_render_exceptions
-    def resizeGL(self, width, height):
+    def resizeGL(self, width: int, height: int) -> None:
         """Reshape the OpenGL viewport based on dimensions of the window."""
         self.update_viewport(width, height)
 
-    def update_viewport(self, width, height):
+    def update_viewport(self, width: int, height: int) -> None:
         """Reshape the OpenGL viewport based on dimensions of the window."""
         import OpenGL.GL as gl
         import OpenGL.GLU as glu
@@ -895,21 +899,21 @@ class NDWindow(QOpenGLWidget):
         gl.glMatrixMode(gl.GL_MODELVIEW)
         gl.glLoadIdentity()
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event: QMouseEvent) -> None:
         self.setFocus()
         if event.button() == Qt.LeftButton:
             self.mouse_handler.left_down(event)
         elif event.button() == Qt.RightButton:
             self.right_click(event)
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.LeftButton:
             self.mouse_handler.left_up(event)
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
         self.mouse_handler.motion(event)
 
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, event: QKeyEvent) -> None:
         '''Callback function for when a keyboard button is pressed.'''
         key = event.text()
 
@@ -960,17 +964,17 @@ class NDWindow(QOpenGLWidget):
 
         self.update()
 
-    def update_window_title(self):
+    def update_window_title(self) -> None:
         '''Prints current file name and current point color to window title.'''
         from OpenGL.GLUT import glutSetWindowTitle
         s = 'SPy N-D Data Set'
         glutSetWindowTitle(s)
 
-    def get_proxy(self):
+    def get_proxy(self) -> NDWindowProxy:
         '''Returns a proxy object to access data from the window.'''
         return NDWindowProxy(self)
 
-    def view_class_image(self, *args, **kwargs):
+    def view_class_image(self, *args, **kwargs) -> ImageView:
         '''Opens a dynamic raster image of class values.
 
         The class IDs displayed are those currently associated with the ND
@@ -982,7 +986,7 @@ class NDWindow(QOpenGLWidget):
         view.show()
         return view
 
-    def print_help(self):
+    def print_help(self) -> None:
         '''Prints a list of accepted keyboard/mouse inputs.'''
         print('''Mouse functions:
 ---------------
@@ -1010,7 +1014,7 @@ U       -->     Toggle display of assigned points (points with class != 0)
 ''')
 
 
-def validate_args(data, *args, **kwargs):
+def validate_args(data: np.ndarray, *args, **kwargs) -> None:
     '''Validates arguments to the `ndwindow` function.'''
     if not isinstance(data, np.ndarray):
         raise TypeError('`data` argument must be a numpy ndarray.')

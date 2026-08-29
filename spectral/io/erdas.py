@@ -57,16 +57,19 @@ Functions for reading Erdas files.
 #  +----------------------------------------------------------+
 
 
+from __future__ import annotations
+
 import array
 import builtins
 import numpy as np
+from typing import Any
 
 import spectral as spy
 from .bilfile import BilFile
 from .spyfile import find_file_path, InvalidFileError
 
 
-def open(file):
+def open(file: str) -> BilFile:
     '''
     Returns a SpyFile object for an ERDAS/Lan image file.
 
@@ -123,7 +126,7 @@ def open(file):
     return BilFile(p, lh)
 
 
-def read_erdas_lan_header(fileName, byte_order=0):
+def read_erdas_lan_header(fileName: str, byte_order: int = 0) -> dict[str, Any]:
     '''Read parameters from a lan file header.
 
     Arguments:

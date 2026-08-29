@@ -21,11 +21,14 @@ References:
     Bianca & Thies, Boris & Bendix, Jorg. (2019). Hyperspectral Data Analysis in R:
     The hsdar Package. Journal of statistical software. 89. 1-23. 10.18637/jss.v089.i12.
 '''
+from __future__ import annotations
 
 import numpy as np
 
 
-def _segment_concave_region(spectrum, bands, indices, ind_fill, ibegin, iend):
+def _segment_concave_region(spectrum: np.ndarray, bands: np.ndarray,
+                            indices: np.ndarray, ind_fill: int, ibegin: int,
+                            iend: int) -> int:
     # Here we don't search for local maxima w.r.t. line that connects ends of this region.
     # That is behavior of the hsdar. It also makes more sense in the context of
     # hyperspectral image analysis. We are already not convex, and we can't
@@ -103,7 +106,9 @@ def _segment_concave_region(spectrum, bands, indices, ind_fill, ibegin, iend):
     return ind_fill
 
 
-def _find_indices_in_range(spectrum, bands, segmented, indices, ind_fill, ibegin, iend):
+def _find_indices_in_range(spectrum: np.ndarray, bands: np.ndarray,
+                           segmented: bool, indices: np.ndarray, ind_fill: int,
+                           ibegin: int, iend: int) -> int:
     iendi = iend - 1
 
     # We search for maximum, but not from the x axis.
@@ -152,7 +157,9 @@ def _find_indices_in_range(spectrum, bands, segmented, indices, ind_fill, ibegin
     return ind_fill
 
 
-def _find_continuum_points_recursive(spectrum, bands, segmented, indices):
+def _find_continuum_points_recursive(spectrum: np.ndarray, bands: np.ndarray,
+                                     segmented: bool,
+                                     indices: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     n = len(spectrum)
     indices[0] = 0
     ind_fill = 1
@@ -165,7 +172,9 @@ def _find_continuum_points_recursive(spectrum, bands, segmented, indices):
     return (bands[indices], spectrum[indices])
 
 
-def _process_continuum(spectra, bands, remove_continuum, segmented, out):
+def _process_continuum(spectra: np.ndarray, bands: np.ndarray,
+                       remove_continuum: bool, segmented: bool,
+                       out: np.ndarray | None) -> np.ndarray:
     if not isinstance(spectra, np.ndarray):
         raise TypeError('Expected spectra to be a numpy.ndarray.')
     if not isinstance(bands, np.ndarray):
@@ -223,7 +232,8 @@ def _process_continuum(spectra, bands, remove_continuum, segmented, out):
     return out
 
 
-def continuum_points(spectrum, bands, mode='convex'):
+def continuum_points(spectrum: np.ndarray, bands: np.ndarray,
+                     mode: str = 'convex') -> tuple[np.ndarray, np.ndarray]:
     '''Returns points of spectra that belong to it's continuum.
 
     Arguments:
@@ -268,7 +278,9 @@ def continuum_points(spectrum, bands, mode='convex'):
     return _find_continuum_points_recursive(spectrum, bands, mode == 'segmented', indices)
 
 
-def spectral_continuum(spectra, bands, mode='convex', out=None):
+def spectral_continuum(spectra: np.ndarray, bands: np.ndarray,
+                       mode: str = 'convex',
+                       out: np.ndarray | None = None) -> np.ndarray:
     '''Returns continua of spectra.
     Continuum is defined as convex hull of spectra.
 
@@ -308,7 +320,9 @@ def spectral_continuum(spectra, bands, mode='convex', out=None):
     return _process_continuum(spectra, bands, False, mode == 'segmented', out)
 
 
-def remove_continuum(spectra, bands, mode='convex', out=None):
+def remove_continuum(spectra: np.ndarray, bands: np.ndarray,
+                     mode: str = 'convex',
+                     out: np.ndarray | None = None) -> np.ndarray:
     '''Returns spectra with continuum removed.
     Continuum is defined as convex hull of spectra. Continuum is removed from
     spectra by dividing spectra by its continuum.

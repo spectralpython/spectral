@@ -1,21 +1,27 @@
 '''
 Generic functions for handling spectral images.
 '''
+from __future__ import annotations
 
 import numbers
+from typing import Any, Sequence, TYPE_CHECKING
+
 import numpy as np
 
 from .spectral import BandInfo
+
+if TYPE_CHECKING:
+    from .io.spyfile import SpyFile
 
 
 class Image(object):
     '''spectral.Image is the common base class for spectral image objects.'''
 
-    def __init__(self, params, metadata=None):
+    def __init__(self, params: Any, metadata: dict | None = None) -> None:
         self.bands = BandInfo()
         self.set_params(params, metadata)
 
-    def set_params(self, params, metadata):
+    def set_params(self, params: Any, metadata: dict | None) -> None:
         self.nbands = params.nbands
         self.nrows = params.nrows
         self.ncols = params.ncols
@@ -27,7 +33,7 @@ class Image(object):
         else:
             self.metadata = metadata
 
-    def params(self):
+    def params(self) -> Any:
         '''Return an object containing the SpyFile parameters.'''
 
         class P:
@@ -42,7 +48,7 @@ class Image(object):
 
         return p
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__str__()
 
 
@@ -55,12 +61,12 @@ class ImageArray(np.ndarray, Image):
 
     format = 'f'        # Use 4-byte floats for data arrays
 
-    def __new__(subclass, data, spyfile):
+    def __new__(subclass, data: np.ndarray, spyfile: SpyFile) -> ImageArray:
         obj = np.asarray(data).view(subclass)
         ImageArray.__init__(obj, data, spyfile)
         return obj
 
-    def __init__(self, data, spyfile):
+    def __init__(self, data: np.ndarray, spyfile: SpyFile) -> None:
         # Add param data to Image initializer
         params = spyfile.params()
         params.dtype = data.dtype
@@ -71,11 +77,11 @@ class ImageArray(np.ndarray, Image):
         self.filename = spyfile.filename
         self.interleave = 2  # bip
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         lst = np.array2string(np.asarray(self), prefix="ImageArray(")
         return "{}({}, dtype={})".format('ImageArray', lst, self.dtype.name)
 
-    def __getitem__(self, args):
+    def __getitem__(self, args: Any) -> Any:
         # Duplicate the indexing behavior of SpyFile.  If args is iterable
         # with length greater than one, and if not all of the args are
         # scalars, then the scalars need to be replaced with slices.
@@ -112,24 +118,25 @@ class ImageArray(np.ndarray, Image):
 
         return self._parent_getitem(updated_args)
 
-    def _parent_getitem(self, args):
+    def _parent_getitem(self, args: Any) -> Any:
         return np.ndarray.__getitem__(self, args)
 
-    def read_band(self, band):
+    def read_band(self, band: int) -> np.ndarray:
         '''
         For compatibility with SpyFile objects. Returns arr[:,:,i].squeeze()
         '''
         return np.asarray(self[:, :, band].squeeze())
 
-    def read_bands(self, bands):
+    def read_bands(self, bands: list[int]) -> np.ndarray:
         '''For SpyFile compatibility. Equivalent to arr.take(bands, 2)'''
         return np.asarray(self.take(bands, 2))
 
-    def read_pixel(self, row, col):
+    def read_pixel(self, row: int, col: int) -> np.ndarray:
         '''For SpyFile compatibility. Equivalent to arr[row, col]'''
         return np.asarray(self[row, col])
 
-    def read_subregion(self, row_bounds, col_bounds, bands=None):
+    def read_subregion(self, row_bounds: Sequence[int], col_bounds: Sequence[int],
+                        bands: list[int] | None = None) -> np.ndarray:
         '''
         For SpyFile compatibility.
 
@@ -144,7 +151,8 @@ class ImageArray(np.ndarray, Image):
             return np.asarray(self[slice(*row_bounds),
                                    slice(*col_bounds)])
 
-    def read_subimage(self, rows, cols, bands=None):
+    def read_subimage(self, rows: list[int], cols: list[int],
+                       bands: list[int] | None = None) -> np.ndarray:
         '''
         For SpyFile compatibility.
 
@@ -156,15 +164,15 @@ class ImageArray(np.ndarray, Image):
         else:
             return np.asarray(self[rows][:, cols])
 
-    def read_datum(self, i, j, k):
+    def read_datum(self, i: int, j: int, k: int) -> Any:
         '''For SpyFile compatibility. Equivalent to arr[i, j, k]'''
         return self[i, j, k]
 
-    def load(self):
+    def load(self) -> ImageArray:
         '''For compatibility with SpyFile objects. Returns self'''
         return self
 
-    def asarray(self, writable=False):
+    def asarray(self, writable: bool = False) -> np.ndarray:
         '''Returns an object with a standard numpy array interface.
 
         The return value is the same as calling `numpy.asarray`, except
@@ -186,7 +194,7 @@ class ImageArray(np.ndarray, Image):
             arr.setflags(write=False)
         return arr
 
-    def info(self):
+    def info(self) -> str:
         s = '\t# Rows:         %6d\n' % (self.nrows)
         s += '\t# Samples:      %6d\n' % (self.ncols)
         s += '\t# Bands:        %6d\n' % (self.shape[2])
@@ -194,7 +202,8 @@ class ImageArray(np.ndarray, Image):
         s += '\tData format:  %8s' % self.dtype.name
         return s
 
-    def __array_wrap__(self, out_arr, context=None, return_scalar=False):
+    def __array_wrap__(self, out_arr: np.ndarray, context: tuple | None = None,
+                        return_scalar: bool = False) -> np.ndarray:
         # The ndarray __array_wrap__ causes ufunc results to be of type
         # ImageArray.  Instead, return a plain ndarray.
         return out_arr
@@ -203,7 +212,7 @@ class ImageArray(np.ndarray, Image):
     # Currently, these need to be overridden individually or with
     # __getattribute__ magic.
 
-    def __getattribute__(self, name):
+    def __getattribute__(self, name: str) -> Any:
         if ((name in np.ndarray.__dict__) and
           (name not in ImageArray.__dict__)):
             return getattr(np.asarray(self), name)

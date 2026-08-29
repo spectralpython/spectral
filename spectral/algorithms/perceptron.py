@@ -1,16 +1,20 @@
 '''
 Classes and functions for classification with neural networks.
 '''
+from __future__ import annotations
 
 import math
-import numpy as np
 import os
 import sys
+from typing import Any, Callable, Sequence
+
+import numpy as np
 
 
 class PerceptronLayer:
     '''A multilayer perceptron layer with sigmoid activation function.'''
-    def __init__(self, shape, k=1.0, weights=None):
+    def __init__(self, shape: tuple[int, int], k: float = 1.0,
+                weights: np.ndarray | None = None) -> None:
         '''
         Arguments:
 
@@ -42,7 +46,7 @@ class PerceptronLayer:
         self.dW_buf = np.zeros_like(self.dW)
         self.x = np.ones(self.shape[1], float)
 
-    def randomize_weights(self):
+    def randomize_weights(self) -> None:
         '''Randomizes the layer weight matrix.
         The bias weight will be in the range [0, 1). The remaining weights will
         correspond to a vector with unit length and uniform random orientation.
@@ -52,7 +56,7 @@ class PerceptronLayer:
             row[1:] /= math.sqrt(np.sum(row[1:]**2))
             row[0] = -0.5 * np.random.rand() - 0.5 * np.sum(row[1:])
 
-    def input(self, x, clip=0.0):
+    def input(self, x: Sequence[float] | np.ndarray, clip: float = 0.0) -> np.ndarray:
         '''Sets layer input and computes output.
 
         Arguments:
@@ -84,18 +88,18 @@ class PerceptronLayer:
             self.y = self.g(self.z)
         return self.y
 
-    def g(self, a):
+    def g(self, a: np.ndarray) -> np.ndarray:
         '''Neuron activation function (logistic sigmoid)'''
         return 1. / (1. + np.exp(- self.k * a))
 
-    def dy_da(self):
+    def dy_da(self) -> np.ndarray:
         '''Derivative of activation function at current activation level.'''
         return self.k * (self.y * (1.0 - self.y))
 
 
 class Perceptron:
     ''' A Multi-Layer Perceptron network with backpropagation learning.'''
-    def __init__(self, layers, k=1.0):
+    def __init__(self, layers: list[int], k: float = 1.0) -> None:
         '''
         Creates the Perceptron network.
 
@@ -127,7 +131,7 @@ class Perceptron:
         # training (with CTRL-C)
         self.cache_weights = True
 
-    def input(self, x, clip=0.0):
+    def input(self, x: Sequence[float] | np.ndarray, clip: float = 0.0) -> np.ndarray:
         '''Sets Perceptron input, activates neurons and sets & returns output.
 
         Arguments:
@@ -154,15 +158,19 @@ class Perceptron:
         self.y = np.array(x)
         return x
 
-    def classify(self, x):
+    def classify(self, x: Sequence[float] | np.ndarray) -> list[int]:
         '''Classifies the given sample.
         This has the same result as calling input and rounding the result.
         '''
         return [int(round(xx)) for xx in self.input(x)]
 
-    def train(self, X, Y, max_iterations=10000, accuracy=100.0, rate=0.3,
-              momentum=0., batch=1, clip=0.0, on_iteration=None,
-              stdout=sys.stdout):
+    def train(self, X: Sequence[Sequence[float]] | np.ndarray,
+             Y: Sequence[Sequence[float]] | np.ndarray,
+             max_iterations: int = 10000, accuracy: float = 100.0,
+             rate: float = 0.3, momentum: float = 0., batch: int = 1,
+             clip: float = 0.0,
+             on_iteration: Callable[[Perceptron], bool] | None = None,
+             stdout: Any = sys.stdout) -> bool:
         '''
         Trains the Perceptron to classify the given samples.
 
@@ -303,7 +311,7 @@ class Perceptron:
                      (iteration + 1))
         return False
 
-    def _update_dWs(self, t):
+    def _update_dWs(self, t: Sequence[float] | np.ndarray) -> None:
         '''Update weight adjustment values for the current sample.'''
 
         # Output layer:
@@ -320,7 +328,8 @@ class Perceptron:
             layerJ.delta = layerJ.dy_da() * b
             layerJ.dW += np.outer(layerJ.delta, layerJ.x)
 
-    def _adjust_weights(self, rate, momentum, num_summed, stdout):
+    def _adjust_weights(self, rate: float, momentum: float, num_summed: int,
+                        stdout: Any) -> None:
         '''Applies aggregated weight adjustments to the perceptron weights.'''
         if self.cache_weights:
             weights = [np.array(layer.weights) for layer in self.layers]
@@ -349,11 +358,11 @@ class Perceptron:
         finally:
             self._reset_corrections()
 
-    def _reset_corrections(self):
+    def _reset_corrections(self) -> None:
         for layer in self.layers:
             layer.dW.fill(0)
 
-    def _set_scaling(self, X):
+    def _set_scaling(self, X: Sequence[Sequence[float]] | np.ndarray) -> None:
         '''Sets translation/scaling of inputs to map X to the range [0, 1].'''
         mins = maxes = None
         for x in X:
@@ -392,32 +401,33 @@ and_data = [
 ]
 
 
-def test_case(XY, shape, *args, **kwargs):
+def test_case(XY: Sequence[Sequence[Any]], shape: list[int], *args: Any,
+             **kwargs: Any) -> tuple[bool, Perceptron]:
     (X, Y) = list(zip(*XY))
     p = Perceptron(shape)
     trained = p.train(X, Y, *args, **kwargs)
     return (trained, p)
 
 
-def test_xor(*args, **kwargs):
+def test_xor(*args: Any, **kwargs: Any) -> tuple[bool, Perceptron]:
     XY = xor_data
     shape = [2, 2, 1]
     return test_case(XY, shape, *args, **kwargs)
 
 
-def test_xor222(*args, **kwargs):
+def test_xor222(*args: Any, **kwargs: Any) -> tuple[bool, Perceptron]:
     XY = xor_data2
     shape = [2, 2, 2]
     return test_case(XY, shape, *args, **kwargs)
 
 
-def test_xor231(*args, **kwargs):
+def test_xor231(*args: Any, **kwargs: Any) -> tuple[bool, Perceptron]:
     XY = xor_data
     shape = [2, 3, 1]
     return test_case(XY, shape, *args, **kwargs)
 
 
-def test_and(*args, **kwargs):
+def test_and(*args: Any, **kwargs: Any) -> tuple[bool, Perceptron]:
     XY = and_data
     shape = [2, 1]
     return test_case(XY, shape, *args, **kwargs)

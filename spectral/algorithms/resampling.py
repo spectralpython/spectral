@@ -1,15 +1,18 @@
 '''
 Functions for resampling a spectrum from one band discretization to another.
 '''
+from __future__ import annotations
 
 import logging
 import math
+from typing import Sequence
+
 import numpy as np
 
 from ..spectral import BandInfo
 
 
-def erf_local(x):
+def erf_local(x: float) -> float:
     # save the sign of x
     sign = 1 if x >= 0 else -1
     x = abs(x)
@@ -37,23 +40,23 @@ except:
         erf = erf_local
 
 
-def erfc(z):
+def erfc(z: float) -> float:
     '''Complement of the error function.'''
     return 1.0 - erf(z)
 
 
-def normal_cdf(x):
+def normal_cdf(x: float) -> float:
     '''CDF of the normal distribution.'''
     sqrt2 = 1.4142135623730951
     return 0.5 * erfc(-x / sqrt2)
 
 
-def normal_integral(a, b):
+def normal_integral(a: float, b: float) -> float:
     '''Integral of the normal distribution from a to b.'''
     return normal_cdf(b) - normal_cdf(a)
 
 
-def ranges_overlap(R1, R2):
+def ranges_overlap(R1: Sequence[float], R2: Sequence[float]) -> bool:
     '''Returns True if there is overlap between ranges of pairs R1 and R2.'''
     if (R1[0] < R2[0] and R1[1] < R2[0]) or \
        (R1[0] > R2[1] and R1[1] > R2[1]):
@@ -61,17 +64,17 @@ def ranges_overlap(R1, R2):
     return True
 
 
-def overlap(R1, R2):
+def overlap(R1: Sequence[float], R2: Sequence[float]) -> tuple[float, float]:
     '''Returns (min, max) of overlap between the ranges of pairs R1 and R2.'''
     return (max(R1[0], R2[0]), min(R1[1], R2[1]))
 
 
-def normal(mean, stdev, x):
+def normal(mean: float, stdev: float, x: float) -> float:
     sqrt_2pi = 2.5066282746310002
     return math.exp(-((x - mean) / stdev)**2 / 2.0) / (sqrt_2pi * stdev)
 
 
-def build_fwhm(centers):
+def build_fwhm(centers: Sequence[float]) -> list[float]:
     '''Returns FWHM list, assuming FWHM is midway between adjacent bands.
     '''
     fwhm = [0] * len(centers)
@@ -82,7 +85,9 @@ def build_fwhm(centers):
     return fwhm
 
 
-def create_resampling_matrix(centers1, fwhm1, centers2, fwhm2):
+def create_resampling_matrix(centers1: Sequence[float], fwhm1: Sequence[float],
+                             centers2: Sequence[float],
+                             fwhm2: Sequence[float]) -> np.ndarray:
     '''
     Returns a resampling matrix to convert spectra from one band discretization
     to another.  Arguments are the band centers and full-width half maximum
@@ -169,7 +174,10 @@ class BandResampler:
     are assumed to have FWHM values that span half the distance to the adjacent
     bands.
     '''
-    def __init__(self, centers1, centers2, fwhm1=None, fwhm2=None):
+    def __init__(self, centers1: BandInfo | Sequence[float],
+                centers2: BandInfo | Sequence[float],
+                fwhm1: Sequence[float] | None = None,
+                fwhm2: Sequence[float] | None = None) -> None:
         '''BandResampler constructor.
 
         Usage:
@@ -226,7 +234,7 @@ class BandResampler:
         self.matrix = create_resampling_matrix(
             centers1, fwhm1, centers2, fwhm2)
 
-    def __call__(self, spectrum):
+    def __call__(self, spectrum: Sequence[float] | np.ndarray) -> np.ndarray:
         '''Takes a source spectrum as input and returns a resampled spectrum.
 
         Arguments:

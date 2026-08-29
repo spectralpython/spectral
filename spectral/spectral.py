@@ -1,14 +1,20 @@
 '''
 Top-level functions & classes.
 '''
+from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 from warnings import warn
 
 from . import settings  # noqa: F401
 
+if TYPE_CHECKING:
+    from .algorithms.algorithms import TrainingClassSet
+    from .io.spyfile import SpyFile
 
-def _init():
+
+def _init() -> None:
     '''Basic configuration of the spectral package.'''
     _setup_logger()
     try:
@@ -27,7 +33,7 @@ def _init():
     spectral._status = status.StatusDisplay()
 
 
-def _setup_logger():
+def _setup_logger() -> None:
     logger = logging.getLogger('spectral')
     logger.setLevel(logging.INFO)
     ch = logging.StreamHandler()
@@ -52,7 +58,7 @@ class BandInfo:
     band_unit           Band unit (e.g., "nanometer")           ""
     =================   =====================================   =======
     '''
-    def __init__(self):
+    def __init__(self) -> None:
         self.centers = None
         self.bandwidths = None
         self.centers_stdevs = None
@@ -61,7 +67,7 @@ class BandInfo:
         self.band_unit = None
 
 
-def open_image(file):
+def open_image(file: str) -> SpyFile:
     '''
     Locates & opens the specified hyperspectral image.
 
@@ -111,7 +117,7 @@ def open_image(file):
     raise IOError('Unable to determine file type or type not supported.')
 
 
-def load_training_sets(file, image=None):
+def load_training_sets(file: str, image: SpyFile | None = None) -> TrainingClassSet:
     '''
     Loads a list of TrainingSet objects from a file.  This function assumes
     that all the sets in the list refer to the same image and mask array.

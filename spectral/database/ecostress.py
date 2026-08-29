@@ -1,27 +1,29 @@
 '''
 Code for reading and managing ECOSTRESS spectral library data.
 '''
+from __future__ import annotations
 
 import itertools
 import logging
 import os
 
 from glob import glob
+from typing import Any, TextIO
 
 from .aster import AsterDatabase, Signature
 
 
-def readline(fin): return fin.readline()
-def open_file(filename): return open(filename, encoding='iso-8859-1')
+def readline(fin: TextIO) -> str: return fin.readline()
+def open_file(filename: str) -> TextIO: return open(filename, encoding='iso-8859-1')
 
 
-def read_ecostress_file(filename):
+def read_ecostress_file(filename: str) -> Signature:
     '''Reads an ECOSTRESS v1 spectrum file.'''
 
     logger = logging.getLogger('spectral')
     lines = open_file(filename).readlines()
 
-    def metaline_to_pair(line): return [x.strip() for x in line.split(':', 1)]
+    def metaline_to_pair(line: str) -> list[str]: return [x.strip() for x in line.split(':', 1)]
 
     s = Signature()
 
@@ -94,7 +96,7 @@ class EcostressDatabase(AsterDatabase):
     '''A relational database to manage ECOSTRESS spectral library data.'''
 
     @classmethod
-    def create(cls, filename, data_dir=None):
+    def create(cls, filename: str, data_dir: str | None = None) -> EcostressDatabase:
         '''Creates an ECOSTRESS relational database by parsing ECOSTRESS data files.
 
         Arguments:
@@ -137,10 +139,10 @@ class EcostressDatabase(AsterDatabase):
             db._import_files(data_dir)
         return db
 
-    def read_file(self, filename):
+    def read_file(self, filename: str) -> Signature:
         return read_ecostress_file(filename)
 
-    def _import_files(self, data_dir, ignore=None):
+    def _import_files(self, data_dir: str, ignore: list[str] | None = None) -> list[Any]:
         '''Import each file from the ECOSTRESS library into the database.'''
         logger = logging.getLogger('spectral')
         if not os.path.isdir(data_dir):

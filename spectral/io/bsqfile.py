@@ -2,11 +2,14 @@
 Code for handling files that are band sequential (BSQ).
 '''
 
+from __future__ import annotations
+
 import array
 import logging
 import numpy as np
 import os
 import sys
+from typing import Any, Sequence
 
 import spectral as spy
 from .spyfile import SpyFile, MemmapFile
@@ -19,7 +22,7 @@ class BsqFile(SpyFile, MemmapFile):
     A class to represent image files stored with bands sequential.
     '''
 
-    def __init__(self, params, metadata=None):
+    def __init__(self, params: Any, metadata: dict[str, Any] | None = None) -> None:
         self.interleave = spy.BSQ
         if metadata is None:
             metadata = {}
@@ -27,7 +30,7 @@ class BsqFile(SpyFile, MemmapFile):
 
         self._memmap = self._open_memmap('r')
 
-    def _open_memmap(self, mode):
+    def _open_memmap(self, mode: str) -> np.ndarray | None:
         logger = logging.getLogger('spectral')
         if (os.path.getsize(self.filename) < sys.maxsize):
             try:
@@ -40,7 +43,7 @@ class BsqFile(SpyFile, MemmapFile):
         else:
             return None
 
-    def read_band(self, band, use_memmap=True):
+    def read_band(self, band: int, use_memmap: bool = True) -> np.ndarray:
         '''Reads a single band from the image.
 
         Arguments:
@@ -84,7 +87,7 @@ class BsqFile(SpyFile, MemmapFile):
             return arr / float(self.scale_factor)
         return arr
 
-    def read_bands(self, bands, use_memmap=False):
+    def read_bands(self, bands: list[int], use_memmap: bool = False) -> np.ndarray:
         '''Reads multiple bands from the image.
 
         Arguments:
@@ -134,7 +137,7 @@ class BsqFile(SpyFile, MemmapFile):
             return arr / float(self.scale_factor)
         return arr
 
-    def read_pixel(self, row, col, use_memmap=True):
+    def read_pixel(self, row: int, col: int, use_memmap: bool = True) -> np.ndarray:
         '''Reads the pixel at position (row,col) from the file.
 
         Arguments:
@@ -183,8 +186,8 @@ class BsqFile(SpyFile, MemmapFile):
             return pixel / float(self.scale_factor)
         return pixel
 
-    def read_subregion(self, row_bounds, col_bounds, bands=None,
-                       use_memmap=True):
+    def read_subregion(self, row_bounds: Sequence[int], col_bounds: Sequence[int], bands: list[int] | None = None,
+                       use_memmap: bool = True) -> np.ndarray:
         '''
         Reads a contiguous rectangular sub-region from the image.
 
@@ -267,7 +270,8 @@ class BsqFile(SpyFile, MemmapFile):
             return arr / float(self.scale_factor)
         return arr
 
-    def read_subimage(self, rows, cols, bands=None, use_memmap=False):
+    def read_subimage(self, rows: list[int], cols: list[int], bands: list[int] | None = None,
+                      use_memmap: bool = False) -> np.ndarray:
         '''
         Reads arbitrary rows, columns, and bands from the image.
 
@@ -352,7 +356,7 @@ class BsqFile(SpyFile, MemmapFile):
             return arr / float(self.scale_factor)
         return arr
 
-    def read_datum(self, i, j, k, use_memmap=True):
+    def read_datum(self, i: int, j: int, k: int, use_memmap: bool = True) -> Any:
         '''Reads the band `k` value for pixel at row `i` and column `j`.
 
         Arguments:

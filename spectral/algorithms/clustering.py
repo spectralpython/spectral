@@ -1,26 +1,32 @@
 '''
 k-means clustering.
 '''
+from __future__ import annotations
 
 import logging
+from typing import Any
+
 import numpy as np
 
 import spectral as spy
+from ..image import Image
 from ..utilities.errors import has_nan, NaNValueError
 
 
-def L1(v1, v2):
+def L1(v1: np.ndarray, v2: np.ndarray) -> float:
     'Returns L1 distance between 2 rank-1 arrays.'
     return np.sum(abs((v1 - v2)))
 
 
-def L2(v1, v2):
+def L2(v1: np.ndarray, v2: np.ndarray) -> float:
     'Returns Euclidean distance between 2 rank-1 arrays.'
     delta = v1 - v2
     return np.sqrt(np.dot(delta, delta))
 
 
-def kmeans(image, nclusters=10, max_iterations=20, **kwargs):
+def kmeans(image: np.ndarray | Image, nclusters: int = 10,
+          max_iterations: int = 20,
+          **kwargs: Any) -> tuple[np.ndarray, np.ndarray]:
     '''
     Performs iterative clustering using the k-means algorithm.
 
@@ -198,7 +204,9 @@ def kmeans(image, nclusters=10, max_iterations=20, **kwargs):
     return (old_clusters, centers)
 
 
-def kmeans_ndarray(image, nclusters=10, max_iterations=20, **kwargs):
+def kmeans_ndarray(image: np.ndarray, nclusters: int = 10,
+                   max_iterations: int = 20,
+                   **kwargs: Any) -> tuple[np.ndarray, np.ndarray]:
     '''
     Performs iterative clustering using the k-means algorithm.
 

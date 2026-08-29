@@ -2,6 +2,8 @@
 Functions for handling AVIRIS image files.
 '''
 
+from __future__ import annotations
+
 import numpy as np
 import os
 
@@ -13,7 +15,7 @@ from .bipfile import BipFile
 from .spyfile import find_file_path, InvalidFileError
 
 
-def open(file, band_file=None):
+def open(file: str, band_file: str | None = None) -> BipFile:
     '''
     Returns a SpyFile object for an AVIRIS image file.
 
@@ -62,7 +64,7 @@ def open(file, band_file=None):
     return img
 
 
-def read_aviris_bands(cal_filename):
+def read_aviris_bands(cal_filename: str) -> BandInfo:
     '''
     Returns a BandInfo object for an AVIRIS spectral calibration file.
 

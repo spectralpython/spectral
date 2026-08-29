@@ -1,18 +1,23 @@
 '''
 Functions over spatial regions of images.
 '''
+from __future__ import annotations
 
 __all__ = ['map_window', 'map_outer_window_stats', 'map_class_ids',
            'map_classes']
 
 import itertools
+from typing import Any, Callable
+
 import numpy as np
 
 import spectral as spy
 from .algorithms import GaussianStats, iterator_ij
+from ..io.spyfile import SpyFile
 
 
-def get_window_bounds(nrows, ncols, height, width, i, j):
+def get_window_bounds(nrows: int, ncols: int, height: int, width: int, i: int,
+                      j: int) -> tuple[int, int, int, int]:
     '''Returns boundaries of an image window centered on a specified pixel.
 
     Arguments:
@@ -80,7 +85,8 @@ def get_window_bounds(nrows, ncols, height, width, i, j):
     return (rmin, rmax, cmin, cmax)
 
 
-def get_window_bounds_clipped(nrows, ncols, height, width, i, j):
+def get_window_bounds_clipped(nrows: int, ncols: int, height: int, width: int,
+                              i: int, j: int) -> tuple[int, int, int, int]:
     '''Returns boundaries of an image window centered on a specified pixel.
 
     Arguments:
@@ -141,8 +147,13 @@ def get_window_bounds_clipped(nrows, ncols, height, width, i, j):
     return (rmin, rmax, cmin, cmax)
 
 
-def map_window(func, image, window, rslice=(None,), cslice=(None,),
-               border='shift', dtype=None):
+def map_window(func: Callable[[np.ndarray, tuple[int, int]], np.ndarray],
+              image: np.ndarray | SpyFile,
+              window: int | tuple[int, int],
+              rslice: tuple[Any, ...] = (None,),
+              cslice: tuple[Any, ...] = (None,),
+              border: str = 'shift',
+              dtype: np.dtype | None = None) -> np.ndarray:
     '''Applies a function over a rolling spatial window.
 
     Arguments:
@@ -240,7 +251,7 @@ def map_window(func, image, window, rslice=(None,), cslice=(None,),
     rvals = list(range(*slice(*rslice).indices(nrows)))
     cvals = list(range(*slice(*cslice).indices(ncols)))
 
-    def get_val(i, j):
+    def get_val(i: int, j: int) -> np.ndarray:
         (r0, r1, c0, c1) = get_window(nrows, ncols, height, width, i, j)
         return func(image[r0:r1, c0:c1],
                     (i - r0, j - c0)).astype(dtype)
@@ -249,8 +260,15 @@ def map_window(func, image, window, rslice=(None,), cslice=(None,),
                      for r in rvals]).astype(dtype)
 
 
-def map_outer_window_stats(func, image, inner, outer, dim_out=1, cov=None,
-                           dtype=None, rslice=(None,), cslice=(None,)):
+def map_outer_window_stats(func: Callable[[GaussianStats, np.ndarray], Any],
+                           image: np.ndarray | SpyFile,
+                           inner: int | tuple[int, int],
+                           outer: int | tuple[int, int],
+                           dim_out: int = 1,
+                           cov: np.ndarray | None = None,
+                           dtype: np.dtype | None = None,
+                           rslice: tuple[Any, ...] = (None,),
+                           cslice: tuple[Any, ...] = (None,)) -> np.ndarray:
     '''Maps a function accepting `GaussianStats` over a rolling spatial window.
 
     Arguments:
@@ -331,8 +349,12 @@ def map_outer_window_stats(func, image, inner, outer, dim_out=1, cov=None,
 class WindowedGaussianBackgroundMapper(object):
     '''A class for producing window statistics with an inner exclusion window.
     '''
-    def __init__(self, inner, outer, function=None, cov=None, dim_out=None,
-                 dtype=None):
+    def __init__(self, inner: int | tuple[int, int],
+                outer: int | tuple[int, int],
+                function: Callable[[GaussianStats, np.ndarray], Any] | None = None,
+                cov: np.ndarray | None = None,
+                dim_out: int | None = None,
+                dtype: np.dtype | None = None) -> None:
         '''Creates a detector with the given inner/outer window.
 
         Arguments:
@@ -393,7 +415,8 @@ class WindowedGaussianBackgroundMapper(object):
         else:
             self.dtype = np.float32
 
-    def __call__(self, image, rslice=(None,), cslice=(None,)):
+    def __call__(self, image: np.ndarray, rslice: tuple[Any, ...] = (None,),
+                cslice: tuple[Any, ...] = (None,)) -> np.ndarray:
         '''Applies the objects callable function to the image data.
 
         Arguments:
@@ -515,7 +538,9 @@ class WindowedGaussianBackgroundMapper(object):
         return x
 
 
-def inner_outer_window_mask_creator(image_shape, inner, outer):
+def inner_outer_window_mask_creator(image_shape: tuple[int, ...],
+                                    inner: int | tuple[int, int],
+                                    outer: int | tuple[int, int]) -> Callable[..., tuple[Any, ...]]:
     '''Returns a function to give  inner/outer windows.
 
     Arguments:
@@ -575,7 +600,7 @@ def inner_outer_window_mask_creator(image_shape, inner, outer):
     (ai, bi) = (hi // 2, wi // 2)
     (ao, bo) = (ho // 2, wo // 2)
 
-    def create_mask(i, j, gen_mask=False):
+    def create_mask(i: int, j: int, gen_mask: bool = False) -> tuple[Any, ...]:
 
         # Inner window
         inner_imin = i - ai
@@ -626,7 +651,8 @@ def inner_outer_window_mask_creator(image_shape, inner, outer):
     return create_mask
 
 
-def map_class_ids(src_class_image, dest_class_image, unlabeled=None):
+def map_class_ids(src_class_image: np.ndarray, dest_class_image: np.ndarray,
+                  unlabeled: int | list[int] | None = None) -> dict[int, int]:
     '''Create a mapping between class labels in two classification images.
 
     Running a classification algorithm (particularly an unsupervised one)
@@ -702,7 +728,7 @@ def map_class_ids(src_class_image, dest_class_image, unlabeled=None):
             for old in unmapped:
                 # The list of target classes has been exhausted. Pick the
                 # smallest dest value that isn't already used.
-                def next_id():
+                def next_id() -> int:
                     for ii in itertools.count():
                         if ii not in unlabeled and ii not in cmap.values():
                             return ii
@@ -716,7 +742,8 @@ def map_class_ids(src_class_image, dest_class_image, unlabeled=None):
     return cmap
 
 
-def map_classes(class_image, class_id_map, allow_unmapped=False):
+def map_classes(class_image: np.ndarray, class_id_map: dict[int, int],
+                allow_unmapped: bool = False) -> np.ndarray:
     '''Modifies class indices according to a class index mapping.
 
     Arguments:
@@ -761,7 +788,8 @@ def map_classes(class_image, class_id_map, allow_unmapped=False):
     return mapped
 
 
-def expand_binary_mask_for_window(mask, height, width):
+def expand_binary_mask_for_window(mask: np.ndarray, height: int,
+                                  width: int) -> np.ndarray:
     '''Returns a new mask including window around each pixel in source mask.
 
     Arguments:
