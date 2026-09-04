@@ -6,6 +6,7 @@ To run the unit tests, type the following from the system command line:
 '''
 
 import os
+import pickle
 from types import SimpleNamespace
 
 import numpy as np
@@ -621,6 +622,44 @@ class TestTrainingClassSet:
             assert_allclose(loaded[i].stats.mean, classes[i].stats.mean)
             assert_allclose(loaded[i].stats.cov, classes[i].stats.cov)
             assert loaded[i].stats.nsamples == classes[i].stats.nsamples
+
+    def test_load_raises_for_legacy_pickle_format(self, classes, testdir,
+                                                  masked_classes_image):
+        '''Files written by the old pickle-based `save` are no longer
+        readable via `load` directly -- it should raise an explanatory
+        exception (mentioning the conversion utility) rather than
+        unpickling the file.'''
+        (img, _) = masked_classes_image
+        classes.calc_stats()
+        fname = os.path.join(testdir, 'legacy.classes')
+        ids = sorted(classes.classes.keys())
+        with open(fname, 'wb') as f:
+            pickle.dump(classes.classes[ids[0]].mask, f)
+            pickle.dump(len(classes), f)
+            for id in ids:
+                c = classes.classes[id]
+                pickle.dump(c.index, f)
+                pickle.dump(c.stats.cov, f)
+                pickle.dump(c.stats.mean, f)
+                pickle.dump(c.stats.nsamples, f)
+                pickle.dump(c.class_prob, f)
+
+        loaded = TrainingClassSet()
+        with pytest.raises(Exception, match='convert_legacy_class_file'):
+            loaded.load(fname, img)
+
+    def test_load_raises_for_non_npz_file(self, testdir,
+                                          masked_classes_image):
+        '''`load` should reject any file that isn't a valid `.npz`
+        archive, without attempting to unpickle it.'''
+        (img, _) = masked_classes_image
+        fname = os.path.join(testdir, 'not_a_training_set.classes')
+        with open(fname, 'wb') as f:
+            f.write(b'not an npz file')
+
+        loaded = TrainingClassSet()
+        with pytest.raises(Exception, match='not a valid TrainingClassSet'):
+            loaded.load(fname, img)
 
 
 class TestCreateTrainingClassesIndices:

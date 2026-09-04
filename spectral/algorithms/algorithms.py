@@ -4,10 +4,10 @@ Basic algorithms and data handling code.
 from __future__ import annotations
 
 import math
+import zipfile
 from numbers import Integral
 from typing import Any, Generator, Iterable, Sequence
 import numpy as np
-import pickle
 
 import spectral as spy
 from ..image import Image
@@ -1067,6 +1067,11 @@ class TrainingClassSet:
         self.nbands = list(self.classes.values())[0].nbands
 
     def save(self, filename: str, calc_stats: bool = False) -> None:
+        '''Saves the training class data to `filename` in a `numpy` `.npz`
+        archive (a zipped collection of `.npy` arrays), which can be
+        loaded back via :meth:`load` without the arbitrary-code-execution
+        risk that a `pickle`-based format would carry.
+        '''
         for c in list(self.classes.values()):
             if c.stats is None:
                 if calc_stats is False:
@@ -1078,36 +1083,91 @@ class TrainingClassSet:
                     raise Exception(msg)
                 else:
                     c.calc_stats()
-        f = open(filename, 'wb')
         ids = sorted(self.classes.keys())
-        pickle.dump(self.classes[ids[0]].mask, f)
-        pickle.dump(len(self), f)
-        for id in ids:
+        data = {
+            'mask': self.classes[ids[0]].mask,
+            'nclasses': np.array(len(self)),
+        }
+        for i, id in enumerate(ids):
             c = self.classes[id]
-            pickle.dump(c.index, f)
-            pickle.dump(c.stats.cov, f)
-            pickle.dump(c.stats.mean, f)
-            pickle.dump(c.stats.nsamples, f)
-            pickle.dump(c.class_prob, f)
-        f.close()
+            data[f'index_{i}'] = np.array(c.index)
+            data[f'cov_{i}'] = (c.stats.cov if c.stats.cov is not None
+                                 else np.empty(0))
+            data[f'mean_{i}'] = (c.stats.mean if c.stats.mean is not None
+                                  else np.empty(0))
+            data[f'nsamples_{i}'] = np.array(
+                c.stats.nsamples if c.stats.nsamples is not None else -1)
+            data[f'class_prob_{i}'] = np.array(
+                c.class_prob if c.class_prob is not None else np.nan)
+        # Write via an explicit file handle rather than passing `filename`
+        # directly, since np.savez appends a `.npz` suffix to bare
+        # filenames but not to open file objects, and callers of this API
+        # expect `filename` to be used verbatim.
+        with open(filename, 'wb') as f:
+            np.savez(f, **data)
 
     def load(self, filename: str, image: np.ndarray | Image) -> None:
-        f = open(filename, 'rb')
-        mask = pickle.load(f)
-        nclasses = pickle.load(f)
-        for i in range(nclasses):
-            index = pickle.load(f)
-            cov = pickle.load(f)
-            mean = pickle.load(f)
-            nsamples = pickle.load(f)
-            class_prob = pickle.load(f)
-            c = TrainingClass(image, mask, index, class_prob)
-            c.stats = GaussianStats(mean=mean, cov=cov, nsamples=nsamples)
-            if not (cov is None or mean is None or nsamples is None):
-                c.stats_valid(True)
-                c.nbands = len(mean)
-            self.add_class(c)
-        f.close
+        '''Loads training class data saved by :meth:`save`.
+
+        `filename` must be a `numpy` `.npz` archive, as written by
+        :meth:`save`. Older versions of SPy saved this data with
+        `pickle`; that format is no longer accepted here, since
+        unpickling an untrusted or tampered file can execute arbitrary
+        code. Such a file must first be converted with
+        `spectral.utilities.convert_legacy_class_file.convert_legacy_class_file`
+        (also runnable as a command-line script) -- see that function's
+        docstring for the security considerations of doing so -- and the
+        converted file loaded instead.
+        '''
+        with open(filename, 'rb') as f:
+            if not zipfile.is_zipfile(f):
+                raise Exception(
+                    f"'{filename}' is not a valid TrainingClassSet file. "
+                    "TrainingClassSet.load only accepts the numpy .npz "
+                    "format written by TrainingClassSet.save.\n\n"
+                    "If this file was written by an old version of SPy, "
+                    "it is in the legacy pickle-based format, which "
+                    "TrainingClassSet.load no longer reads "
+                    "directly: unpickling an untrusted or tampered file "
+                    "can execute arbitrary code on your machine, so this "
+                    "format is not safe to load automatically.\n\n"
+                    "If -- and only if -- you trust the origin of this "
+                    "file, you can migrate it to the current format "
+                    "with:\n\n"
+                    "    from spectral.utilities.convert_legacy_class_file "
+                    "import convert_legacy_class_file\n"
+                    f"    convert_legacy_class_file('{filename}', "
+                    "'<new_filename>')\n\n"
+                    "or from the command line:\n\n"
+                    "    python -m spectral.utilities.convert_legacy_class_file "
+                    f"{filename} <new_filename>\n\n"
+                    "and then load '<new_filename>' instead. That "
+                    "conversion still has to unpickle the file; it does so "
+                    "through a restricted unpickler that only allows "
+                    "constructing numpy arrays/scalars, as defense in "
+                    "depth, but that is a mitigation, not a guarantee of "
+                    "safety -- do not run it on a file you do not trust.")
+            f.seek(0)
+            with np.load(f, allow_pickle=False) as data:
+                mask = data['mask']
+                nclasses = int(data['nclasses'])
+                for i in range(nclasses):
+                    index = int(data[f'index_{i}'])
+                    cov = data[f'cov_{i}']
+                    cov = cov if cov.size else None
+                    mean = data[f'mean_{i}']
+                    mean = mean if mean.size else None
+                    nsamples = int(data[f'nsamples_{i}'])
+                    nsamples = None if nsamples < 0 else nsamples
+                    class_prob = float(data[f'class_prob_{i}'])
+                    class_prob = None if math.isnan(class_prob) else class_prob
+                    c = TrainingClass(image, mask, index, class_prob)
+                    c.stats = GaussianStats(
+                        mean=mean, cov=cov, nsamples=nsamples)
+                    if not (cov is None or mean is None or nsamples is None):
+                        c.stats_valid(True)
+                        c.nbands = len(mean)
+                    self.add_class(c)
 
 
 def create_training_classes(image: np.ndarray | Image, class_mask: np.ndarray,
