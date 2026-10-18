@@ -338,6 +338,17 @@ class TestNdvi:
         assert result.shape == expected.shape
         assert_allclose(result, expected)
 
+    def test_loaded_image_scalar_bands_preserve_pixel_shape(self, av3c_image):
+        image = av3c_image.load()
+        values = np.asarray(image)
+        red = values[:, :, 27].astype(float)
+        nir = values[:, :, 47].astype(float)
+
+        result = ndvi(image, 27, 47)
+
+        assert result.shape == image.shape[:2]
+        assert_allclose(np.asarray(result), (nir - red) / (nir + red))
+
 
 class TestBdist:
 
