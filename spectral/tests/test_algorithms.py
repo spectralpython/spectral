@@ -432,6 +432,29 @@ class TestUnmix:
 
 class TestSpectralAngles:
 
+    @pytest.mark.parametrize('dtype,scale', [
+        (np.int16, 100), (np.uint16, 100),
+        (np.int32, 100), (np.uint32, 100),
+        (np.int64, 100), (np.uint64, 100),
+        (np.float16, 100), (np.float32, 100),
+        (np.float64, 100), (np.longdouble, 100),
+        (np.int32, 100000), (np.uint32, 100000),
+        (np.int64, 1000000000), (np.uint64, 1000000000),
+    ])
+    def test_angles_preserve_direction_for_scaled_dtypes(self, dtype, scale):
+        import math
+        data = np.array([[[3 * scale, 4 * scale],
+                          [4 * scale, 3 * scale]]], dtype=dtype)
+        members = np.eye(2)
+        expected = [[math.atan2(4, 3), math.atan2(3, 4)],
+                    [math.atan2(3, 4), math.atan2(4, 3)]]
+
+        angles = spectral_angles(data, members)
+
+        assert_allclose(angles[0], expected, atol=1e-12)
+        if dtype is np.longdouble:
+            assert angles.dtype == np.dtype(np.longdouble)
+
     def test_same_direction_is_zero(self):
         data = np.zeros((1, 2, 3))
         data[0, 0] = [2.0, 0.0, 0.0]    # same direction as member, scaled
