@@ -5,6 +5,7 @@ To run the unit tests, type the following from the system command line:
     # pytest spectral/tests/test_algorithms.py
 '''
 
+import math
 import os
 import pickle
 from types import SimpleNamespace
@@ -442,7 +443,6 @@ class TestSpectralAngles:
         (np.int64, 1000000000), (np.uint64, 1000000000),
     ])
     def test_angles_preserve_direction_for_scaled_dtypes(self, dtype, scale):
-        import math
         data = np.array([[[3 * scale, 4 * scale],
                           [4 * scale, 3 * scale]]], dtype=dtype)
         members = np.eye(2)

@@ -1443,7 +1443,8 @@ def spectral_angles(data: np.ndarray, members: np.ndarray) -> np.ndarray:
     m = np.array(members, np.float64)
     m /= np.sqrt(np.einsum('ij,ij->i', m, m))[:, np.newaxis]
 
-    norms = np.sqrt(np.einsum('ijk,ijk->ij', data, data))
+    norms = np.sqrt(np.einsum('ijk,ijk->ij', data, data,
+                             dtype=np.result_type(data.dtype, np.float64)))
     dots = np.einsum('ijk,mk->ijm', data, m)
     dots = np.clip(dots / norms[:, :, np.newaxis], -1, 1)
     return np.arccos(dots)
