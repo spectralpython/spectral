@@ -1,4 +1,43 @@
 ================================================================================
+SPy 0.26
+================================================================================
+Release date: 2026.11.01
+
+Changes
+-------
+
+* Migrated `TrainingClassSet` load/save to remove risk of remote code
+  execution (breaking change)
+* Require Python 3.8+; removed legacy Python 2 compatibility code
+* Updated tested Python versions in CI
+* Migrated unit testing framework to pytest
+* Added function/method type hints
+
+Bug Fixes
+---------
+
+* [#186] Prevent integer overflow when computing spectral angles
+* [#187] Preserve pixel shape for single-band NDVI selections
+* [#188] Honor header offsets when opening ENVI spectral libraries
+* Prevented segfaults when an exception is raised inside a Qt/OpenGL
+  rendering callback (`initializeGL`/`paintGL`/`resizeGL`)
+* Fixed order-of-operations bug affecting chained transforms
+* Use band means instead of sums to avoid potential bias in NDVI
+* Fixed potentially missing column in `SubImage`, and other potential
+  crashes
+* Fixed missing `else` statement that prevented `nbands` from being set in
+  `TrainingClass`
+* Fixed bad string comparison causing all ASTER/ECOSTRESS samples to be
+  labeled "solid"
+* Fixed minor bug when canceling class selection with mouse
+* Minor `ImageView` and plotting bugfixes
+* Fixed possible bad return in `interleave_transpose` method
+* Create non-specified ERDAS header params as lowercase, for consistency
+  with other header params
+* Various minor correctness fixes (invalid keyword validation in `ACE`,
+  array/None comparisons, exception types, numpy deprecation warnings)
+
+================================================================================
 SPy 0.25
 ================================================================================
 Release date: 2026.07.25

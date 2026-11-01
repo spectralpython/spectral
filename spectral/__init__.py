@@ -4,7 +4,7 @@ Basic package setup and global imports.
 
 # flake8: noqa
 
-__version__ = '0.25'
+__version__ = '0.26'
 
 import sys
 if sys.byteorder == 'little':
