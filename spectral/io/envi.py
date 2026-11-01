@@ -330,7 +330,9 @@ def open(file: str, image: str | None = None) -> SpyFile | SpectralLibrary:
 
     if h.get('file type') == 'ENVI Spectral Library':
         # File is a spectral library
-        data = np.fromfile(p.filename, p.dtype, p.ncols * p.nrows)
+        with builtins.open(p.filename, 'rb') as fid:
+            fid.seek(p.offset)
+            data = np.fromfile(fid, p.dtype, p.ncols * p.nrows)
         data = data.reshape((p.nrows, p.ncols))
         return SpectralLibrary(data, h, p)
 
