@@ -313,6 +313,42 @@ class TestNdvi:
         n = np.mean(wide_data[:, :, nir].astype(float), axis=2)
         assert_allclose(result, (n - r) / (n + r))
 
+    @pytest.mark.parametrize('red,nir,red_bands,nir_bands', [
+        (2, 6, [2], [6]),
+        ([2], 6, [2], [6]),
+        (2, [6], [2], [6]),
+        ([2], [6], [2], [6]),
+        (slice(2, 3), 6, [2], [6]),
+        (2, slice(6, 7), [2], [6]),
+        (np.array([2]), np.array([6]), [2], [6]),
+        ((2,), slice(6, 7), [2], [6]),
+        (slice(2, 4), [6], [2, 3], [6]),
+        ([2], slice(5, 8), [2], [5, 6, 7]),
+    ])
+    def test_singleton_band_selectors_preserve_pixel_shape(
+            self, wide_data, red, nir, red_bands, nir_bands):
+        expected = np.empty(wide_data.shape[:2])
+        for row, col in np.ndindex(expected.shape):
+            r = sum(float(wide_data[row, col, b]) for b in red_bands) / len(red_bands)
+            n = sum(float(wide_data[row, col, b]) for b in nir_bands) / len(nir_bands)
+            expected[row, col] = (n - r) / (n + r)
+
+        result = ndvi(wide_data, red, nir)
+
+        assert result.shape == expected.shape
+        assert_allclose(result, expected)
+
+    def test_loaded_image_scalar_bands_preserve_pixel_shape(self, av3c_image):
+        image = av3c_image.load()
+        values = np.asarray(image)
+        red = values[:, :, 27].astype(float)
+        nir = values[:, :, 47].astype(float)
+
+        result = ndvi(image, 27, 47)
+
+        assert result.shape == image.shape[:2]
+        assert_allclose(np.asarray(result), (nir - red) / (nir + red))
+
 
 class TestBdist:
 

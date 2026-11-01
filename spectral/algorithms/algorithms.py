@@ -1245,10 +1245,10 @@ def ndvi(data: np.ndarray | Image, red: int | slice | Sequence[int],
     '''
 
     r = data[:, :, red].astype(float)
-    if len(r.shape) == 3 and r.shape[2] > 1:
+    if len(r.shape) == 3:
         r = np.mean(r, axis=2)
     n = data[:, :, nir].astype(float)
-    if len(n.shape) == 3 and n.shape[2] > 1:
+    if len(n.shape) == 3:
         n = np.mean(n, axis=2)
 
     return (n - r) / (n + r)
