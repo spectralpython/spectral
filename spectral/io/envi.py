@@ -259,6 +259,10 @@ def check_compatibility(header: str | bytes | dict[str, Any]) -> None:
         if p not in header:
             raise MissingEnviHeaderParameter(p)
 
+    if header.get('file type') == 'PCI':
+        raise EnviFeatureNotSupported(
+            'ENVI headers for PCI images are not supported.')
+
     if _has_frame_offset(header):
         raise EnviFeatureNotSupported(
             'ENVI image frame offsets are not supported.')
@@ -285,7 +289,7 @@ def open(file: str, image: str | None = None) -> SpyFile | SpectralLibrary:
 
     Raises:
 
-        TypeError, EnviDataFileNotFoundError
+        TypeError, EnviDataFileNotFoundError, EnviFeatureNotSupported
 
     If the specified file is not found in the current directory, all
     directories listed in the SPECTRAL_DATA environment variable will be
@@ -294,6 +298,7 @@ def open(file: str, image: str | None = None) -> SpyFile | SpectralLibrary:
     header, looking for a file with the same name as the header but different
     extension. Extensions recognized are .img, .dat, .sli, and no extension.
     Capitalized versions of the file extensions are also searched.
+    PCI images require custom read procedures and are not supported.
     '''
 
     header_path = find_file_path(file)
