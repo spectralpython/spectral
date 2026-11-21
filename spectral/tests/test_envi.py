@@ -234,6 +234,22 @@ class TestENVIWrite:
         slib = spy.envi.open(basename + '.hdr')
         assert (slib.spectra.shape == (20, nbands))
 
+    @pytest.mark.parametrize('header, expected', [
+        ({'data ignore value': '-1.23e+34'}, '-1.23e+34'),
+        ({}, 'NaN'),
+    ])
+    def test_spectral_library_ignore_value(self, tmp_path, header, expected):
+        spectra = np.array([[0.25, -1.23e34]], dtype=np.float32)
+        library = SpectralLibrary(spectra, header)
+        basename = str(tmp_path / 'library')
+        library.save(basename)
+
+        saved_header = spy.envi.read_envi_header(basename + '.hdr')
+        assert saved_header['data ignore value'] == expected
+        restored = spy.envi.open(basename + '.hdr')
+        assert restored.metadata['data ignore value'] == expected
+        np.testing.assert_array_equal(restored.spectra, spectra)
+
     def test_create_spectral_lib_without_header(self, testdir, av3c_image):
         '''Can create ENVI spectral library from numpy array without bands.'''
         (nrows, ncols, nbands) = av3c_image.shape
