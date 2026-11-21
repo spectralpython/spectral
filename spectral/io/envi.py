@@ -941,7 +941,7 @@ class SpectralLibrary:
         self.bands.band_quantity = "Wavelength"
         self.params = params
         self.metadata = header.copy()
-        self.metadata['data ignore value'] = 'NaN'
+        self.metadata.setdefault('data ignore value', 'NaN')
 
     def save(self, file_basename: str, description: str | None = None) -> None:
         '''
